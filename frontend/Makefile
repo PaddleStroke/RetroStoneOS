@@ -248,8 +248,8 @@ uipreview: $(UIPREVIEW)
 
 # ------------------------------------------------------------------ checks
 # Every module's tests. Paths are used as they are (BUILDDIR may be absolute).
-check: check-display check-host check-power check-transfer check-ui check-loader check-splash check-board \
-	check-i18n check-frontend check-update check-b2
+check: check-display check-host check-power check-transfer check-ui check-ui-assets check-loader check-splash \
+	check-board check-i18n check-frontend check-update check-b2
 
 check-display: $(SELFTEST) $(KMS_TEST)
 	$(SELFTEST)
@@ -347,6 +347,50 @@ check-ui: $(UIPREVIEW)
 		--keys "a wait:500 expect:list down down select wait:300 expect:menu:C_Game|Favorite a wait:300 \
 			a wait:300 expect:menu:C_Game|Favorite b b"
 	! grep -q 'Game.nes	1' $(UI_CHECK_DIR)-games/data/rsos/gamedb.tsv
+
+# The asset worker (src/ui/prefetch.c, docs/ui-design.md §4.2), with the
+# preview's per-frame accounting of the UI thread's work (costcheck:on: a
+# frame that decodes an image, composites a backdrop, reads a cache file or
+# parses a theme on the UI thread fails the run):
+#  1. once everything is prefetched, first visits of every system, a list, a
+#     game next to the first, the neighbour's list: no such frame (gbz35-dark:
+#     per-system photos and SVG logos; rsos-dark: text logos and SVG art);
+#  2. an empty cache and a slow worker (RSOS_PREFETCH_DELAY_MS): a move is
+#     drawn at once with a placeholder (no late frame: costmax), then the
+#     backdrop and logos arrive; the same while the key repeats.
+UI_ASSETS_DIR = $(BUILDDIR)/ui-assets
+UI_ASSETS_SYSTEMS = nes snes gb gba megadrive mastersystem gamegear pcengine
+UI_ASSETS_PV = $(UIPREVIEW) --root $(UI_ASSETS_DIR) --quiet
+check-ui-assets: $(UIPREVIEW)
+	rm -rf $(UI_ASSETS_DIR) && mkdir -p $(UI_ASSETS_DIR)/data/rsos $(UI_ASSETS_DIR)/usr/share/rsos/cores
+	printf '[core]\nid = c_all\nsystems = %s\nextensions = rom\n' "$$(echo $(UI_ASSETS_SYSTEMS) | sed 's/ /, /g')" \
+		> $(UI_ASSETS_DIR)/usr/share/rsos/cores/c_all.ini
+	for s in $(UI_ASSETS_SYSTEMS); do mkdir -p $(UI_ASSETS_DIR)/data/roms/$$s && \
+		printf 'x' > "$(UI_ASSETS_DIR)/data/roms/$$s/A Game.rom" && printf 'x' > "$(UI_ASSETS_DIR)/data/roms/$$s/B Game.rom" || exit 1; done
+	mkdir -p $(UI_ASSETS_DIR)/data/roms/snes/media
+	cp themes/gbz35-dark/snes/background.png $(UI_ASSETS_DIR)/data/roms/snes/media/a.png
+	cp themes/gbz35-dark/nes/background.png $(UI_ASSETS_DIR)/data/roms/snes/media/b.png
+	printf '<?xml version="1.0"?>\n<gameList>\n<game><path>./A Game.rom</path><name>A Game</name><desc>Box art and a marquee.</desc><image>./media/a.png</image><marquee>./media/b.png</marquee></game>\n<game><path>./B Game.rom</path><name>B Game</name><image>./media/b.png</image><marquee>./media/a.png</marquee></game>\n</gameList>\n' \
+		> $(UI_ASSETS_DIR)/data/roms/snes/gamelist.xml
+	for t in gbz35-dark rsos-dark; do \
+		echo "check-ui-assets: $$t: prefetch complete: first visits do no decode, composite, cache read or theme parse on the UI thread"; \
+		rm -rf $(UI_ASSETS_DIR)/data/rsos/cache; \
+		printf 'language = en\nlast_system = snes\n' > $(UI_ASSETS_DIR)/data/rsos/settings.ini; \
+		$(UI_ASSETS_PV) --theme $$t --keys "bgwait:all expect-assets:worker=idle costcheck:on \
+			right right right right right right right right right left left left left left left left left left \
+			expect:carousel expect-assets:sys=snes_backdrop=ready_logos=ready bgwait:all a wait:500 expect:list:snes \
+			bgwait:all down wait:500 expect:game=B_Game bgwait:all right wait:500 expect:list: b costcheck:off" \
+			|| exit 1; \
+	done
+	@echo "check-ui-assets: empty cache, slow worker: the move is drawn at once (placeholder), then the backdrop"
+	rm -rf $(UI_ASSETS_DIR)/data/rsos/cache
+	printf 'language = en\nlast_system = snes\n' > $(UI_ASSETS_DIR)/data/rsos/settings.ini
+	RSOS_PREFETCH_DELAY_MS=3000 $(UI_ASSETS_PV) --theme gbz35-dark --keys "costcheck:on bgsync:off tap:right \
+		expect-assets:backdrop=pending costmax:100000 costcheck:off bgwait wait:300 \
+		expect-assets:backdrop=ready_logos=ready"
+	rm -rf $(UI_ASSETS_DIR)/data/rsos/cache
+	RSOS_PREFETCH_DELAY_MS=150 $(UI_ASSETS_PV) --theme rsos-dark --keys "costcheck:on bgsync:off hold:right:1200 \
+		costmax:100000 costcheck:off bgwait wait:300 expect-assets:backdrop=ready_logos=ready"
 
 # The carousel snapshot and the background game list loader (src/ui/loader.c):
 # a 34-folder library, first boot, snapshot boot (menu before the lists),
@@ -746,7 +790,7 @@ clean:
 	rm -rf $(BUILDDIR)
 
 .PHONY: all frontend-all install clean check check-display check-host check-power check-transfer \
-	check-ui check-loader check-splash check-board check-frontend check-syntax check-asan uipreview \
+	check-ui check-ui-assets check-loader check-splash check-board check-frontend check-syntax check-asan uipreview \
 	splash-previews FORCE catalogs pot po-update po-stats check-i18n cjk-fonts
 
 # the batch 2 checks (check-b2), after every variable they use

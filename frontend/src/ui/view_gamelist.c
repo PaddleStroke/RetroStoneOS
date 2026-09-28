@@ -132,9 +132,22 @@ struct layer {
 	int order;
 };
 
+/* What the layout of a list view is built from (build()): on the UI thread
+ * from its entry and the settings, on the asset worker from copies. */
+struct gl_in {
+	const struct theme *theme;
+	bool media;                   /* the list has images or descriptions */
+	char pref[16];                /* setting gamelist_view: auto, basic, detailed */
+	char fullname[96];
+};
+
 struct glview {
 	struct screen base;
 	struct sysent *se;
+	struct gl_in in;
+	/* built ahead by the worker (glview_prefetch()): for which entry and look */
+	struct sysent *pre_se;
+	unsigned pre_look;
 	char view[16];
 	bool detailed;
 	bool laid_out;
@@ -174,6 +187,8 @@ struct glview {
 	bool owns_se;
 	bool md_images_for_cursor;
 	int64_t moved_at;
+	int dir;                      /* last move: -1 / +1 */
+	int md_pf_row;                /* the rows around it have their images prefetched */
 	/* description scrolling */
 	struct gfx_image *desc_img;
 	int desc_scroll;
@@ -318,11 +333,20 @@ static void textlist_layout(struct ui *ui, struct textlist *tl)
 	}
 }
 
-static void choose_view(struct ui *ui, struct glview *v)
+/* The inputs of build() for an entry, now (UI thread). */
+static void gl_inputs(struct ui *ui, struct sysent *se, struct gl_in *in)
 {
-	const struct theme *t = ui_sys_theme(ui, v->se);
-	bool media = v->se->games && v->se->games->has_media;
-	const char *pref = settings_get(ui->settings, "gamelist_view", "auto");
+	in->theme = ui_sys_theme(ui, se);
+	in->media = se->games && se->games->has_media;
+	strlcpy_(in->pref, settings_get(ui->settings, "gamelist_view", "auto"), sizeof(in->pref));
+	strlcpy_(in->fullname, se->fullname, sizeof(in->fullname));
+}
+
+static void choose_view(struct glview *v)
+{
+	const struct theme *t = v->in.theme;
+	bool media = v->in.media;
+	const char *pref = v->in.pref;
 
 	if (!strcmp(pref, "basic"))
 		media = false;
@@ -342,7 +366,8 @@ static void choose_view(struct ui *ui, struct glview *v)
 static const struct theme_elem *TE(struct ui *ui, struct glview *v, const char *name,
 				   const char *type)
 {
-	return theme_elem(ui_sys_theme(ui, v->se), v->view, name, type);
+	(void)ui;
+	return theme_elem(v->in.theme, v->view, name, type);
 }
 
 static int cmp_layer(const void *a, const void *b)
@@ -373,14 +398,16 @@ static float line_h_norm(struct ui *ui, const struct elem *e)
 	return (float)font_height(f) * e->line_spacing / (float)ui->h;
 }
 
+/* The whole layout from v->in (no access to v->se: this also runs on the
+ * asset worker, with a stand-in ui holding w, h, now and theme_name). */
 static void build(struct ui *ui, struct glview *v)
 {
-	const struct theme *t = ui_sys_theme(ui, v->se);
+	const struct theme *t = v->in.theme;
 	const struct theme_view *tv;
 	float W = (float)ui->w, H = (float)ui->h;
 	const float pad = 0.01f;
 
-	choose_view(ui, v);
+	choose_view(v);
 	tv = theme_view(t, v->view);
 
 	/* background */
@@ -400,7 +427,7 @@ static void build(struct ui *ui, struct glview *v)
 	v->logotext.size[0] = 1.0f;
 	v->logotext.align = AL_CENTER;
 	v->logotext.z = 50;
-	elem_set_text(&v->logotext, v->se->fullname);
+	elem_set_text(&v->logotext, v->in.fullname);
 	elem_apply(&v->logotext, TE(ui, v, "logoText", "text"), TF_ALL);
 	elem_translate_theme_text(ui, &v->logotext);
 	if (!(v->logo.path[0] && file_exists(v->logo.path)))
@@ -742,7 +769,9 @@ static bool header_rect(struct ui *ui, struct glview *v, int *x, int *y, int *w,
 static void build_backdrop(struct ui *ui, struct glview *v)
 {
 	struct gfx_surface s;
+	struct ui_cost_scope cs;
 
+	ui_cost_begin(&cs, UI_COST_BACKDROP);
 	gfx_image_free(v->backdrop);
 	v->backdrop = gfx_image_new(ui->w, ui->h);
 	gfx_surface_from_image(&s, v->backdrop);
@@ -754,6 +783,7 @@ static void build_backdrop(struct ui *ui, struct glview *v)
 		elem_release(v->layers[i].e);
 	}
 	v->backdrop->flags |= GFX_IMG_OPAQUE;
+	ui_cost_end(&cs);
 }
 
 /* -------------------------------------------------------------- metadata */
@@ -950,24 +980,33 @@ static void ensure_layout(struct ui *ui, struct glview *v)
 		v->md_images_for_cursor = false;
 	}
 	if (!v->laid_out) {
+		struct ui_cost_scope cs;
+
+		ui_cost_begin(&cs, UI_COST_THEME);
+		gl_inputs(ui, v->se, &v->in);
 		build(ui, v);
 		make_names(v);
+		ui_cost_end(&cs);
 	}
+	if (!v->names)
+		make_names(v);    /* a view built ahead by the worker (glview_create) */
 	if (!v->tl.font)
 		textlist_layout(ui, &v->tl);
 	if (!v->backdrop)
 		build_backdrop(ui, v);
 }
 
+/* TRANSLATORS: help bar labels (uppercase, short: ~10 characters) */
+static const struct help_prompt g_prompts[] = {
+	{ "updown", N_("choose") }, { "a", N_("launch") }, { "b", N_("back") },
+	/* TRANSLATORS: help bar labels (uppercase, short: ~10 characters) */
+	{ "select", N_("options") }, { "x", N_("favorite") }, { "start", N_("menu") },
+};
+
 static void gv_render(struct ui *ui, struct screen *scr, struct gfx_surface *s)
 {
 	struct glview *v = GV(scr);
-	/* TRANSLATORS: help bar labels (uppercase, short: ~10 characters) */
-	static const struct help_prompt prompts[] = {
-		{ "updown", N_("choose") }, { "a", N_("launch") }, { "b", N_("back") },
-		/* TRANSLATORS: help bar labels (uppercase, short: ~10 characters) */
-		{ "select", N_("options") }, { "x", N_("favorite") }, { "start", N_("menu") },
-	};
+	const struct help_prompt *prompts = g_prompts;
 
 	ensure_layout(ui, v);
 	set_md(ui, v, v->md_images_for_cursor);
@@ -1034,7 +1073,10 @@ static void move_to(struct ui *ui, struct glview *v, int c, bool now)
 {
 	if (!v->nvis)
 		return;
-	v->cursor = CLAMP(c, 0, v->nvis - 1);
+	c = CLAMP(c, 0, v->nvis - 1);
+	if (c != v->cursor)
+		v->dir = c < v->cursor ? -1 : 1;
+	v->cursor = c;
 	v->moved_at = ui->now;
 	v->jump[0] = 0;               /* (jump_letter sets it again) */
 	v->jump_until = 0;
@@ -1215,6 +1257,118 @@ static void gv_button(struct ui *ui, struct screen *scr, enum input_btn b, enum 
 	}
 }
 
+/* Left/right switches to the neighbour systems' lists: have them built
+ * ahead (speculative: after the lists, when no button is pressed). */
+static void prefetch_neighbours(struct ui *ui, struct glview *v)
+{
+	int n = ui->nsys, idx = -1;
+
+	for (int i = 0; i < n; i++)
+		if (&ui->sys[i] == v->se)
+			idx = i;
+	if (idx < 0 || n < 2 || !prefetch_background_allowed(ui))
+		return;
+	glview_prefetch(ui, &ui->sys[(idx + 1) % n], PF_BG);
+	glview_prefetch(ui, &ui->sys[(idx + n - 1) % n], PF_BG);
+}
+
+/* The pictures of the rows next to the cursor (the direction of travel
+ * first), decoded into the image cache by the worker at the size the view
+ * draws them: when the cursor comes to rest there, no decode on the UI
+ * thread. The job has copies of the picture elements (geometry, path). */
+#define MD_AHEAD_ROWS 3
+
+struct md_job {
+	struct pf_job base;
+	int w, h;
+	int64_t now;
+	char theme_name[64];
+	struct elem e[MD_AHEAD_ROWS * 3];
+	int n;
+};
+
+static void md_job_run(struct pf_job *pj)
+{
+	struct md_job *j = (struct md_job *)pj;
+	struct ui *c = xcalloc(1, sizeof(*c));
+
+	c->w = j->w;
+	c->h = j->h;
+	c->now = j->now;
+	strlcpy_(c->theme_name, j->theme_name, sizeof(c->theme_name));
+	for (int i = 0; i < j->n && !pf_cancelled(pj); i++) {
+		elem_layout(c, &j->e[i]);
+		elem_release(&j->e[i]);   /* unreferenced, in the cache */
+	}
+	free(c);
+}
+
+static void md_job_apply(struct ui *ui, struct pf_job *pj)
+{
+	(void)ui;
+	(void)pj;   /* the images are in the image cache */
+}
+
+static void md_job_drop(struct pf_job *pj)
+{
+	struct md_job *j = (struct md_job *)pj;
+
+	for (int i = 0; i < j->n; i++)
+		elem_free(&j->e[i]);
+	free(j);
+}
+
+static void prefetch_md(struct ui *ui, struct glview *v)
+{
+	struct md_job *j;
+	int dir = v->dir ? v->dir : 1;
+	const int rows[MD_AHEAD_ROWS] = { v->cursor + dir, v->cursor + 2 * dir, v->cursor - dir };
+
+	v->md_pf_row = v->cursor + 1;
+	if (!prefetch_available(ui))
+		return;
+	j = xcalloc(1, sizeof(*j));
+	for (int r = 0; r < MD_AHEAD_ROWS; r++) {
+		const struct game *g = row_game(v, rows[r]);
+		struct elem *src[3] = { v->has_video ? &v->md_video : &v->md_image,
+					v->has_marquee ? &v->md_marquee : NULL,
+					v->has_thumbnail ? &v->md_thumbnail : NULL };
+		const char *path[3];
+
+		if (!g)
+			continue;
+		path[0] = g->image;
+		path[1] = g->marquee;
+		path[2] = g->thumbnail;
+		for (int k = 0; k < 3; k++) {
+			struct elem *e;
+
+			if (!src[k] || !src[k]->visible || !path[k] || !path[k][0])
+				continue;
+			e = &j->e[j->n++];
+			*e = *src[k];              /* geometry; no shared pointers: */
+			e->text = NULL;
+			e->img = e->img2 = e->cache = NULL;
+			e->icon_img = e->icon_img2 = false;
+			e->laid_out = false;
+			strlcpy_(e->path, path[k], sizeof(e->path));
+		}
+	}
+	if (!j->n) {
+		free(j);
+		return;
+	}
+	j->base.run = md_job_run;
+	j->base.apply = md_job_apply;
+	j->base.drop = md_job_drop;
+	j->base.prio = PF_NEAR;
+	j->w = ui->w;
+	j->h = ui->h;
+	j->now = ui->now;
+	strlcpy_(j->theme_name, ui->theme_name, sizeof(j->theme_name));
+	prefetch_submit(ui, &j->base);
+}
+
 static bool gv_update(struct ui *ui, struct screen *scr)
 {
 	struct glview *v = GV(scr);
@@ -1222,6 +1376,8 @@ static bool gv_update(struct ui *ui, struct screen *scr)
 
 	if (!v->laid_out)
 		return false;
+	if (!v->owns_se)
+		prefetch_neighbours(ui, v);
 	if (v->jump_until && ui->now >= v->jump_until) {
 		v->jump_until = 0;       /* the big letter goes (jump[] stays: tests) */
 		redraw = true;
@@ -1230,6 +1386,9 @@ static bool gv_update(struct ui *ui, struct screen *scr)
 		set_md(ui, v, true);
 		redraw = true;
 	}
+	/* resting: the pictures of the next rows, decoded by the worker */
+	if (v->detailed && v->md_images_for_cursor && v->md_pf_row != v->cursor + 1)
+		prefetch_md(ui, v);
 	/* slow auto-scroll of long descriptions (like ES) */
 	if (v->desc_img && v->desc.visible) {
 		int bh = (int)lroundf(v->desc.size[1] * (float)ui->h);
@@ -1387,17 +1546,305 @@ static const struct screen_ops gv_ops = {
 	.opaque = true,
 };
 
+static struct glview *take_prebuilt(struct ui *ui, struct sysent *se);
+
 struct screen *glview_create(struct ui *ui, struct sysent *se)
 {
-	struct glview *v = xcalloc(1, sizeof(*v));
+	/* built ahead by the worker: layout, backdrop, the first game's
+	 * images in the image cache; only the rows are made here */
+	struct glview *v = take_prebuilt(ui, se);
 
-	(void)ui;
-	v->base.ops = &gv_ops;
-	v->base.kind = SCR_GLVIEW;
+	if (!v) {
+		v = xcalloc(1, sizeof(*v));
+		v->base.ops = &gv_ops;
+		v->base.kind = SCR_GLVIEW;
+	}
 	v->se = se;
 	v->md_for = -1;
 	v->moved_at = -1000000;
 	return &v->base;
+}
+
+/* ------------------------------------------------ built ahead (worker) */
+/*
+ * A list view is prebuilt by the asset worker (prefetch.c) for the system
+ * under the carousel cursor once it rests, and for the neighbours of an
+ * open list (left/right switches system): its layout from the theme, its
+ * composited backdrop, the static layers laid out (header, labels, badge),
+ * the selector image, the glyphs of the first rows, and the first game's
+ * box art, marquee and thumbnail decoded into the image cache at their
+ * final size. glview_create() takes it if the entry, the look (theme,
+ * language, size), the view choice (media, setting) and the rows' first
+ * game still match; otherwise it builds as before. At most GL_PREBUILT are
+ * kept (~1.3 MB each, the backdrop).
+ */
+#define GL_WARM_ROWS 16
+
+struct gl_job {
+	struct pf_job base;
+	struct sysent *se;            /* identity only (never read by the worker) */
+	unsigned look_gen;
+	struct gl_in in;
+	int w, h;
+	int64_t now;
+	char theme_name[64];
+	char first[3][1024];          /* the first game's image, marquee, thumbnail */
+	char *rows[GL_WARM_ROWS];     /* the first rows' names (glyph warm-up) */
+	int nrows;
+	struct glview *v;             /* the result */
+	struct ui_icon_ahead icons[HELP_ICONS_AHEAD];   /* its help bar's */
+	int nicons;
+};
+
+static void gl_free_view(struct glview *v)
+{
+	if (!v)
+		return;
+	free_all(v);
+	free(v->vis);
+	free(v);
+}
+
+static void gl_job_run(struct pf_job *pj)
+{
+	struct gl_job *j = (struct gl_job *)pj;
+	struct ui *c = xcalloc(1, sizeof(*c));
+	struct glview *v = xcalloc(1, sizeof(*v));
+	struct elem *md[3];
+
+	c->w = j->w;
+	c->h = j->h;
+	c->now = j->now;
+	strlcpy_(c->theme_name, j->theme_name, sizeof(c->theme_name));
+	v->base.ops = &gv_ops;
+	v->base.kind = SCR_GLVIEW;
+	v->in = j->in;
+	v->pre_se = j->se;
+	v->pre_look = j->look_gen;
+	{
+		struct ui_cost_scope cs;
+
+		ui_cost_begin(&cs, UI_COST_THEME);
+		build(c, v);
+		ui_cost_end(&cs);
+	}
+	textlist_layout(c, &v->tl);
+	if (!pf_cancelled(pj))
+		build_backdrop(c, v);
+	j->nicons = help_icons_ahead(c, &v->help, g_prompts, (int)ARRAY_SIZE(g_prompts), j->icons,
+				     HELP_ICONS_AHEAD);
+	/* the static layers drawn live (header, labels, favorite badge) */
+	for (int i = v->first_live; i < v->nlayers && !pf_cancelled(pj); i++) {
+		struct elem *e = v->layers[i].e;
+
+		if (!e || v->layers[i].is_list || v->layers[i].is_desc || !e->visible || e->laid_out)
+			continue;
+		/* (the per-game values change with the cursor; the rating's
+		 * stars do not, only how much of them is filled) */
+		if (v->detailed && (e == &v->md_image || e == &v->md_video || e == &v->md_marquee ||
+				    e == &v->md_thumbnail || e == &v->name || e == &v->pt_val ||
+				    (e >= v->val && e < v->val + NLBL && e != &v->val[LBL_RATING])))
+			continue;
+		elem_layout(c, e);
+	}
+	/* the first game's pictures, at the size the view draws them: in the
+	 * image cache (unreferenced), found there when the cursor rests */
+	md[0] = v->has_video ? &v->md_video : &v->md_image;
+	md[1] = v->has_marquee ? &v->md_marquee : NULL;
+	md[2] = v->has_thumbnail ? &v->md_thumbnail : NULL;
+	for (int k = 0; k < 3 && v->detailed && !pf_cancelled(pj); k++) {
+		if (!md[k] || !j->first[k][0] || !md[k]->visible)
+			continue;
+		elem_set_path(md[k], j->first[k]);
+		elem_layout(c, md[k]);
+		elem_release(md[k]);
+		elem_set_path(md[k], "");
+		md[k]->laid_out = true;
+	}
+	/* the glyphs of the first rows */
+	for (int i = 0; i < j->nrows && v->tl.font && !pf_cancelled(pj); i++) {
+		char up[480];
+
+		if (v->tl.upper) {
+			utf8_upper(j->rows[i], up, sizeof(up));
+			font_text_width(v->tl.font, up, -1);
+		} else {
+			font_text_width(v->tl.font, j->rows[i], -1);
+		}
+	}
+	v->md_for = -1;
+	j->v = v;
+	free(c);
+}
+
+static void gl_job_apply(struct ui *ui, struct pf_job *pj)
+{
+	struct gl_job *j = (struct gl_job *)pj;
+	int slot = -1;
+
+	if (!j->v || j->look_gen != ui->look_gen)
+		return;
+	for (int k = 0; k < j->nicons; k++) {
+		ui_icon_adopt(ui, &j->icons[k]);
+		j->icons[k].img = NULL;
+	}
+	/* the same entry's older one, a free slot, else the oldest */
+	for (int i = 0; i < GL_PREBUILT && slot < 0; i++)
+		if (ui->gl_pre[i] && GV(ui->gl_pre[i])->pre_se == j->se)
+			slot = i;
+	for (int i = 0; i < GL_PREBUILT && slot < 0; i++)
+		if (!ui->gl_pre[i])
+			slot = i;
+	if (slot < 0) {
+		slot = 0;
+	}
+	if (ui->gl_pre[slot])
+		gl_free_view(GV(ui->gl_pre[slot]));
+	/* keep the newest last: slot 0 is the oldest */
+	for (int i = slot; i + 1 < GL_PREBUILT; i++)
+		ui->gl_pre[i] = ui->gl_pre[i + 1];
+	ui->gl_pre[GL_PREBUILT - 1] = &j->v->base;
+	j->v = NULL;
+}
+
+/* In flight: one list job per entry at a time (per generation). */
+static struct {
+	struct sysent *se;
+	unsigned gen;
+} g_gl_inflight[GL_PREBUILT * 2];
+
+static void gl_job_drop(struct pf_job *pj)
+{
+	struct gl_job *j = (struct gl_job *)pj;
+
+	for (size_t i = 0; i < ARRAY_SIZE(g_gl_inflight); i++)
+		if (g_gl_inflight[i].se == j->se && g_gl_inflight[i].gen == j->base.gen)
+			g_gl_inflight[i].se = NULL;
+	gl_free_view(j->v);
+	for (int i = 0; i < j->nrows; i++)
+		free(j->rows[i]);
+	for (int k = 0; k < j->nicons; k++)
+		gfx_image_free(j->icons[k].img);
+	free(j);
+}
+
+static bool gl_matches(struct ui *ui, struct glview *v, struct sysent *se);
+
+/* A prebuilt view of se that still matches (one that does not is freed). */
+static bool gl_have(struct ui *ui, struct sysent *se)
+{
+	for (int i = 0; i < GL_PREBUILT; i++) {
+		struct glview *v = ui->gl_pre[i] ? GV(ui->gl_pre[i]) : NULL;
+
+		if (!v || v->pre_se != se)
+			continue;
+		if (gl_matches(ui, v, se))
+			return true;
+		gl_free_view(v);
+		ui->gl_pre[i] = NULL;
+	}
+	return false;
+}
+
+/* The view choice and rows a prebuilt view must still match. */
+static bool gl_matches(struct ui *ui, struct glview *v, struct sysent *se)
+{
+	struct gl_in now;
+
+	if (v->pre_se != se || v->pre_look != ui->look_gen || v->i18n_gen != i18n_generation() ||
+	    !se->theme || se->theme != v->in.theme)
+		return false;
+	now.media = se->games && se->games->has_media;
+	strlcpy_(now.pref, settings_get(ui->settings, "gamelist_view", "auto"), sizeof(now.pref));
+	return now.media == v->in.media && !strcmp(now.pref, v->in.pref) &&
+	       !strcmp(se->fullname, v->in.fullname);
+}
+
+static struct glview *take_prebuilt(struct ui *ui, struct sysent *se)
+{
+	for (int i = 0; i < GL_PREBUILT; i++) {
+		struct glview *v = ui->gl_pre[i] ? GV(ui->gl_pre[i]) : NULL;
+
+		if (!v || v->pre_se != se)
+			continue;
+		ui->gl_pre[i] = NULL;
+		if (gl_matches(ui, v, se))
+			return v;
+		gl_free_view(v);
+	}
+	return NULL;
+}
+
+void glview_prefetch(struct ui *ui, struct sysent *se, int prio)
+{
+	struct gl_job *j;
+	int free_slot = -1;
+	unsigned gen = prefetch_gen(ui);
+	const struct gamelist *gl = se ? se->games : NULL;
+
+	/* its theme and list first (the carousel's jobs bring the theme) */
+	if (!se || !se->theme || !gl || se->sidx < -2 || !prefetch_available(ui) || gl_have(ui, se))
+		return;
+	for (size_t i = 0; i < ARRAY_SIZE(g_gl_inflight); i++) {
+		bool live = g_gl_inflight[i].se && g_gl_inflight[i].gen == gen;
+
+		if (live && g_gl_inflight[i].se == se)
+			return;
+		if (free_slot < 0 && !live)
+			free_slot = (int)i;
+	}
+	if (free_slot < 0)
+		return;   /* enough in flight */
+	j = xcalloc(1, sizeof(*j));
+	j->base.run = gl_job_run;
+	j->base.apply = gl_job_apply;
+	j->base.drop = gl_job_drop;
+	j->base.prio = prio;
+	j->se = se;
+	j->look_gen = ui->look_gen;
+	gl_inputs(ui, se, &j->in);
+	j->w = ui->w;
+	j->h = ui->h;
+	j->now = ui->now;
+	strlcpy_(j->theme_name, ui->theme_name, sizeof(j->theme_name));
+	if (gl->n > 0) {
+		/* the rows as the view shows them: sorted, row 0 first */
+		const struct game *g = &gl->games[0];
+
+		strlcpy_(j->first[0], g->image ? g->image : "", sizeof(j->first[0]));
+		strlcpy_(j->first[1], g->marquee ? g->marquee : "", sizeof(j->first[1]));
+		strlcpy_(j->first[2], g->thumbnail ? g->thumbnail : "", sizeof(j->first[2]));
+		for (int i = 0; i < gl->n && j->nrows < GL_WARM_ROWS; i++)
+			j->rows[j->nrows++] = xstrdup(gl->games[i].name);
+	}
+	g_gl_inflight[free_slot].se = se;
+	g_gl_inflight[free_slot].gen = gen;
+	prefetch_submit(ui, &j->base);
+}
+
+/* Theme, language or size changed, or the carousel was rebuilt (entries
+ * moved): the views built ahead are of no use. */
+void glview_prebuilt_drop(struct ui *ui)
+{
+	for (int i = 0; i < GL_PREBUILT; i++) {
+		if (ui->gl_pre[i])
+			gl_free_view(GV(ui->gl_pre[i]));
+		ui->gl_pre[i] = NULL;
+	}
+	memset(g_gl_inflight, 0, sizeof(g_gl_inflight));
+}
+
+/* Tests (ui_debug_assets): " lists=<entries built ahead>". */
+void glview_describe_prebuilt(struct ui *ui, char *buf, size_t n)
+{
+	size_t l = 0;
+
+	buf[0] = 0;
+	l += (size_t)snprintf(buf, n, " lists=");
+	for (int i = 0; i < GL_PREBUILT && l < n; i++)
+		if (ui->gl_pre[i] && GV(ui->gl_pre[i])->pre_se)
+			l += (size_t)snprintf(buf + l, n - l, "%s%s", l > 7 ? "," : "",
+					      GV(ui->gl_pre[i])->pre_se->name);
 }
 
 struct sysent *glview_system(struct screen *s)

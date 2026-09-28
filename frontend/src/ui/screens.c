@@ -1786,6 +1786,7 @@ static void lp_preview(struct ui *ui, struct langpick *lp)
 
 	if (!l)
 		return;
+	ui_assets_invalidate(ui, true);   /* the asset worker uses the fonts too */
 	i18n_set_language(l->code);
 	/* the views below hold fonts (game list): drop them first */
 	for (int i = 0; i < ui->nstack; i++)

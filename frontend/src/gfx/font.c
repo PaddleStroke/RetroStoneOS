@@ -8,6 +8,7 @@
 
 #include <fcntl.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +48,16 @@ struct font {
 	struct font *next;
 };
 
+/*
+ * Threads: the UI thread and the prefetch worker (ui/prefetch.c) both draw
+ * text. g_fmu guards the face and font lists and every glyph table; it is
+ * taken per glyph in the drawing and measuring loops (a glyph pointer and
+ * f->bits are only valid until the next glyph is added), so the UI thread
+ * waits at most for one glyph rasterization of the worker, never for a
+ * whole text. The setters (font_set_*, font_setup_dir) and
+ * font_cache_clear() run with the worker stopped.
+ */
+static pthread_mutex_t g_fmu = PTHREAD_MUTEX_INITIALIZER;
 static struct face *g_faces;
 static struct font *g_fonts;
 static char g_default_path[2][1024];
@@ -256,7 +267,9 @@ static const struct glyph *glyph_get(struct font *f, uint32_t cp)
 	{
 		int adv, lsb, x0, y0, x1, y1;
 		int w, h;
+		struct ui_cost_scope cs;
 
+		ui_cost_begin(&cs, UI_COST_TEXT);
 		stbtt_GetGlyphHMetrics(&face->info, gi, &adv, &lsb);
 		stbtt_GetGlyphBitmapBox(&face->info, gi, scale, scale, &x0, &y0, &x1, &y1);
 		w = x1 - x0;
@@ -282,8 +295,20 @@ static const struct glyph *glyph_get(struct font *f, uint32_t cp)
 			g->w = g->h = 0;
 		}
 		f->nused++;
+		ui_cost_end(&cs);
 	}
 	return g;
+}
+
+/* The advance of one glyph (rasterized if new), under the lock. */
+static float glyph_adv(struct font *f, uint32_t cp)
+{
+	float a;
+
+	pthread_mutex_lock(&g_fmu);
+	a = glyph_get(f, cp)->adv;
+	pthread_mutex_unlock(&g_fmu);
+	return a;
 }
 
 static struct font *font_new(struct face *face, int px)
@@ -382,6 +407,7 @@ struct font *font_get(const char *path, int px)
 	struct font *f = NULL;
 
 	px = CLAMP(px, 4, 256);
+	pthread_mutex_lock(&g_fmu);
 	if (path && *path) {
 		f = font_lookup(path, px);
 		if (!f)
@@ -389,13 +415,18 @@ struct font *font_get(const char *path, int px)
 	}
 	if (!f)
 		f = default_font_for(px);
+	pthread_mutex_unlock(&g_fmu);
 	return f;
 }
 
 void font_cache_clear(void)
 {
-	struct font *f = g_fonts, *nf;
-	struct face *fa = g_faces, *nfa;
+	struct font *f, *nf;
+	struct face *fa, *nfa;
+
+	pthread_mutex_lock(&g_fmu);
+	f = g_fonts;
+	fa = g_faces;
 
 	while (f) {
 		nf = f->next;
@@ -414,6 +445,7 @@ void font_cache_clear(void)
 		fa = nfa;
 	}
 	g_faces = NULL;
+	pthread_mutex_unlock(&g_fmu);
 }
 
 int font_px(const struct font *f) { return f->px; }
@@ -502,7 +534,7 @@ int font_text_width(struct font *f, const char *s, int len)
 
 		if (c == '\n')
 			break;
-		x += glyph_get(f, c)->adv;
+		x += glyph_adv(f, c);
 	}
 	return (int)ceilf(x);
 }
@@ -519,6 +551,7 @@ static int draw_mode(struct gfx_surface *s, struct font *f, int x, int y,
 
 		if (cp == '\n')
 			break;
+		pthread_mutex_lock(&g_fmu);
 		g = glyph_get(f, cp);
 		if (g->w) {
 			int gx = (int)floorf(pen + 0.5f) + g->x0;
@@ -534,6 +567,7 @@ static int draw_mode(struct gfx_surface *s, struct font *f, int x, int y,
 			}
 		}
 		pen += g->adv;
+		pthread_mutex_unlock(&g_fmu);
 	}
 	return (int)ceilf(pen) - x;
 }
@@ -560,7 +594,7 @@ int font_wrap(struct font *f, const char *text, int max_w,
 			if (!*p || *p == '\n')
 				break;
 			c = utf8_next(&q);
-			adv = glyph_get(f, c)->adv;
+			adv = glyph_adv(f, c);
 			if (c == ' ') {
 				last_break = p;
 				break_next = q;
@@ -631,7 +665,7 @@ void font_ellipsize(struct font *f, const char *text, int max_w, char *buf, size
 	while (*p && *p != '\n') {
 		const char *q = p;
 		unsigned c = utf8_next(&q);
-		float adv = glyph_get(f, c)->adv;
+		float adv = glyph_adv(f, c);
 
 		if (x + adv + ell > (float)max_w)
 			break;

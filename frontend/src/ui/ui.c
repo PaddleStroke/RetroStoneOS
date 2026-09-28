@@ -273,6 +273,14 @@ int ui_list_themes(struct ui *ui, char names[][64], int max)
 	return n;
 }
 
+void ui_assets_invalidate(struct ui *ui, bool look)
+{
+	prefetch_quiesce(ui);
+	glview_prebuilt_drop(ui);
+	if (look)
+		ui->look_gen++;
+}
+
 static void free_themes(struct ui *ui)
 {
 	for (int i = 0; i < ui->nsys; i++) {
@@ -331,10 +339,13 @@ struct theme *ui_sys_theme(struct ui *ui, struct sysent *se)
 	if (!se->theme) {
 		struct theme_sysinfo si = { se->name, se->fullname, se->theme_alias[0] };
 		int64_t t0 = ui_now_us();
+		struct ui_cost_scope cs;
 
+		ui_cost_begin(&cs, UI_COST_THEME);
 		se->theme = theme_load_system(ui->theme_dir, se->is_collection ? NULL : se->rom_dir,
 					      se->theme_alias, &si);
 		strlcpy_(se->theme_name, si.theme ? si.theme : "", sizeof(se->theme_name));
+		ui_cost_end(&cs);
 		se->theme_us = ui_now_us() - t0;
 		ui->timings.theme_us += se->theme_us;
 	}
@@ -377,6 +388,10 @@ void ui_set_theme(struct ui *ui, const char *name)
 
 	if (!strcmp(name, ui->theme_name))
 		return;
+	/* the worker reads the old themes: stop it first. The new theme's
+	 * assets are built by it again, the current system's first (the
+	 * carousel shows placeholders for the few frames that takes) */
+	ui_assets_invalidate(ui, true);
 	/* views hold images of the old theme: release them first */
 	for (int i = 0; i < ui->nstack; i++)
 		if (ui->stack[i]->ops->relayout)
@@ -406,8 +421,10 @@ void ui_set_theme(struct ui *ui, const char *name)
 int ui_set_language(struct ui *ui, const char *code, bool save)
 {
 	int64_t t0 = ui_now_us();
-	int r = i18n_set_language(code);
+	int r;
 
+	ui_assets_invalidate(ui, true);   /* before the catalog and fonts change */
+	r = i18n_set_language(code);
 	while (ui->nstack > 1 && screen_is_menu(ui_top(ui)))
 		ui_pop(ui);
 	for (int i = 0; i < ui->nstack; i++)
@@ -547,12 +564,14 @@ static void launch_req(struct ui *ui, struct game *g, struct ui_launch *req_in)
 	if (ui->cfg.power && ui->cfg.power->set_game_running)
 		ui->cfg.power->set_game_running(true);
 	loader_pause(ui, true);   /* the SD card belongs to the game */
+	prefetch_pause(ui, true); /* and the CPU (the job running ends first) */
 	ui->in_game = true;              /* a USB drive plugged now waits for the end */
 	if (ui->cfg.cb.launch)
 		r = ui->cfg.cb.launch(&req, ui->cfg.cb.user);
 	else
 		ui_toastf(ui, "Launch stub: %s / %s", core, path_basename(g->path));
 	ui->in_game = false;
+	prefetch_pause(ui, false);
 	loader_pause(ui, false);
 	if (ui->cfg.transfer)
 		transfer_after_game(ui);    /* under a launch error message, if any */
@@ -1025,6 +1044,7 @@ struct ui *ui_create(const struct ui_config *cfg)
 	 * included) would be drawn with an all-zero, invisible style */
 	ui_refresh_look(ui);
 	loader_init(ui);
+	prefetch_init(ui);        /* its thread starts after the first frame */
 	ui->snapshot_depth = -1;
 	ui->created_at = ui_now_ms();
 	ui->load_started = -1;
@@ -1045,6 +1065,8 @@ void ui_destroy(struct ui *ui)
 {
 	if (!ui)
 		return;
+	glview_prebuilt_drop(ui);
+	prefetch_destroy(ui);     /* joined before anything it reads goes */
 	loader_save_snapshot(ui);
 	while (ui->nstack) {
 		struct screen *s = ui->stack[--ui->nstack];
@@ -1077,6 +1099,7 @@ void ui_set_size(struct ui *ui, int w, int h)
 	if (w == ui->w && h == ui->h)
 		return;
 	LOGI("ui: logical size %dx%d", w, h);
+	ui_assets_invalidate(ui, true);   /* fonts, the cache folder change */
 	for (int i = 0; i < ui->nstack; i++)
 		if (ui->stack[i]->ops->relayout)
 			ui->stack[i]->ops->relayout(ui, ui->stack[i]);
@@ -1110,6 +1133,7 @@ void ui_button(struct ui *ui, enum input_btn btn, enum input_nav_type type)
 		return;
 	if (!ui->loaded || !s || ui->charge_mode || ui->big_msg[0])
 		return;
+	prefetch_input(ui);           /* speculative work waits for a quiet moment */
 	s->ops->button(ui, s, btn, type);
 	ui->dirty = true;
 }
@@ -1240,6 +1264,14 @@ bool ui_update(struct ui *ui, int64_t now_ms)
 		screens_job_done(ui, &jr);
 		ui->dirty = true;
 	}
+	/* the asset worker: install what it built (the jobs set dirty when it
+	 * shows); its speculative part starts once the menu is up and every
+	 * list is in (never on the boot path) */
+	prefetch_poll(ui);
+	if (ui->first_frame_done && ui_lists_complete(ui) && !ui->lang_prompt)
+		prefetch_allow_background(ui);
+	if (ui->nstack)
+		sysview_prefetch(ui, ui->stack[0]);
 	/* the game switcher chose another game: it starts now (the launch
 	 * callback of the one before has returned) */
 	if (ui->switch_req.active && !ui->in_game) {
@@ -1311,6 +1343,7 @@ int ui_timeout_ms(const struct ui *ui, int64_t now_ms)
 		MINT(MAX(0, ui->flush_at - now_ms));
 	if (ui->scan_orphan)
 		MINT(200);
+	MINT(prefetch_timeout(ui));     /* results of the asset worker to install */
 	MINT(update_timeout(ui));
 	if (ui->usb_pending[0] && !ui->in_game)
 		MINT(0);                  /* the dialog of a drive plugged meanwhile */
@@ -1489,6 +1522,48 @@ bool ui_is_loaded(const struct ui *ui)
 void ui_pause_background(struct ui *ui, bool pause)
 {
 	loader_pause(ui, pause);
+	prefetch_pause(ui, pause);
+}
+
+void ui_set_background_polling(struct ui *ui, bool on)
+{
+	prefetch_set_polling(ui, on);
+}
+
+bool ui_background_wait(struct ui *ui, bool all, int max_ms)
+{
+	bool r = prefetch_wait(ui, all ? PF_BG : PF_URGENT, max_ms);
+
+	/* what the jobs asked for next (a window, the rest) */
+	if (all && ui->nstack) {
+		for (int k = 0; k < 64 && r; k++) {
+			sysview_prefetch(ui, ui->stack[0]);
+			if (!prefetch_busy(ui))
+				break;
+			r = prefetch_wait(ui, PF_BG, max_ms);
+		}
+	}
+	return r;
+}
+
+void ui_debug_assets(struct ui *ui, char *buf, size_t n)
+{
+	size_t l;
+	int jobs, queued;
+	int64_t us;
+
+	if (!ui->nstack) {
+		snprintf(buf, n, "none");
+		return;
+	}
+	sysview_describe_assets(ui, ui->stack[0], buf, n);
+	l = strlen(buf);
+	if (l < n)
+		glview_describe_prebuilt(ui, buf + l, n - l);
+	l = strlen(buf);
+	prefetch_stats(ui, &jobs, &us, &queued);
+	if (l < n)
+		snprintf(buf + l, n - l, " worker=%s", queued ? "busy" : "idle");
 }
 
 void ui_select_theme(struct ui *ui, const char *name)

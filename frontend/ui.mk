@@ -23,6 +23,7 @@ UI_SRCS := \
 	$(UI_DIR)/src/ui/games.c \
 	$(UI_DIR)/src/ui/fswarm.c \
 	$(UI_DIR)/src/ui/loader.c \
+	$(UI_DIR)/src/ui/prefetch.c \
 	$(UI_DIR)/src/ui/hw.c \
 	$(UI_DIR)/src/ui/widgets.c \
 	$(UI_DIR)/src/ui/view_system.c \

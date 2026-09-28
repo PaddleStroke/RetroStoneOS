@@ -413,8 +413,19 @@ bool ui_update_busy(const struct ui *ui);
  * loader is done and the carousel matches a full load). */
 bool ui_lists_complete(const struct ui *ui);
 /* The background loader stops touching the SD card while a game runs (the
- * UI calls it around its launch callback itself). */
+ * UI calls it around its launch callback itself); the asset worker stops
+ * too. */
 void ui_pause_background(struct ui *ui, bool pause);
+/* Tests: blocks (real time, at most max_ms) until the asset worker has
+ * built what is on screen (all: everything it will prefetch), installing
+ * the results; false on timeout. */
+bool ui_background_wait(struct ui *ui, bool all, int max_ms);
+/* The preview's virtual clock: ui_timeout_ms() does not ask for polls while
+ * the asset worker runs (the preview waits for it with the call above). */
+void ui_set_background_polling(struct ui *ui, bool on);
+/* Tests: "sys=<carousel system> backdrop=ready|fading|pending
+ * logos=ready|pending lists=<list views built ahead> worker=idle|busy". */
+void ui_debug_assets(struct ui *ui, char *buf, size_t n);
 /* Tests: "carousel=nes:2,gb:5,...;cursor=gb;top=list:gb:5;complete=1;
  * digest=<hex>" (top=carousel|list:<system>:<games>|other; the digest covers
  * every entry and game, and is only meaningful once complete). */

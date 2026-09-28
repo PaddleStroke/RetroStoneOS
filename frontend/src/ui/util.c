@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,9 +56,11 @@ void ui_log(enum ui_log_level lvl, const char *fmt, ...)
 	log_emit(lvl, buf);
 }
 
-/* A small open-addressing set of 64-bit key hashes. */
+/* A small open-addressing set of 64-bit key hashes. Locked: the theme,
+ * image and font code also run on the prefetch worker (prefetch.c). */
 #define ONCE_SLOTS 1024
 static uint64_t g_once[ONCE_SLOTS];
+static pthread_mutex_t g_once_mu = PTHREAD_MUTEX_INITIALIZER;
 
 void ui_log_once(const char *key, const char *fmt, ...)
 {
@@ -67,14 +70,18 @@ void ui_log_once(const char *key, const char *fmt, ...)
 	unsigned i = (unsigned)h & (ONCE_SLOTS - 1);
 	unsigned n;
 
+	pthread_mutex_lock(&g_once_mu);
 	for (n = 0; n < ONCE_SLOTS; n++, i = (i + 1) & (ONCE_SLOTS - 1)) {
-		if (g_once[i] == h)
+		if (g_once[i] == h) {
+			pthread_mutex_unlock(&g_once_mu);
 			return;
+		}
 		if (!g_once[i]) {
 			g_once[i] = h;
 			break;
 		}
 	}
+	pthread_mutex_unlock(&g_once_mu);
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
@@ -93,6 +100,48 @@ int64_t ui_now_us(void)
 int64_t ui_now_ms(void)
 {
 	return ui_now_us() / 1000;
+}
+
+/* ------------------------------------------------------------ work costs */
+static __thread struct ui_cost_scope *t_cost_top;
+static __thread struct ui_cost_sample t_cost;
+
+void ui_cost_begin(struct ui_cost_scope *s, enum ui_cost cat)
+{
+	s->cat = (int)cat;
+	s->child = 0;
+	s->up = t_cost_top;
+	t_cost_top = s;
+	t_cost.n[cat]++;
+	s->t0 = ui_now_us();
+}
+
+void ui_cost_end(struct ui_cost_scope *s)
+{
+	int64_t el = ui_now_us() - s->t0;
+
+	t_cost.us[s->cat] += el - s->child;
+	t_cost_top = s->up;
+	if (t_cost_top)
+		t_cost_top->child += el;
+}
+
+void ui_cost_take(struct ui_cost_sample *out)
+{
+	*out = t_cost;
+	memset(&t_cost, 0, sizeof(t_cost));
+}
+
+void ui_cost_peek(struct ui_cost_sample *out)
+{
+	*out = t_cost;
+}
+
+const char *ui_cost_name(int cat)
+{
+	static const char *const names[UI_COST_N] = { "decode", "backdrop", "cache", "theme", "text" };
+
+	return cat >= 0 && cat < UI_COST_N ? names[cat] : "?";
 }
 
 /* ---------------------------------------------------------------- arena */

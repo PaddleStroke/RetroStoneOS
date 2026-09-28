@@ -71,7 +71,7 @@ msgid "%s needs %s in %s"
 msgstr ""
 
 #. TRANSLATORS: toast over the last game picture while the saves are written
-#: src/host/host.c:425 src/ui/ui.c:1568
+#: src/host/host.c:425 src/ui/ui.c:1643
 msgid "Powering off..."
 msgstr ""
 
@@ -80,7 +80,7 @@ msgid "Player 1 controller disconnected: paused"
 msgstr ""
 
 #. TRANSLATORS: toast; %s is the controller's name
-#: src/host/host.c:753 src/ui/ui.c:1182
+#: src/host/host.c:753 src/ui/ui.c:1206
 #, c-format
 msgid "Player 1: %s"
 msgstr ""
@@ -157,7 +157,7 @@ msgstr ""
 
 #. TRANSLATORS: shown 10 s before the automatic power-off (no input
 #. for the time set in Settings > Power); any button cancels it
-#: src/host/host.c:1280 src/ui/ui.c:1584 src/ui/ui.c:1591
+#: src/host/host.c:1280 src/ui/ui.c:1659 src/ui/ui.c:1666
 msgid "Powering off in 10 s — press any button to cancel"
 msgstr ""
 
@@ -295,34 +295,34 @@ msgid "The emulator failed (code %d)"
 msgstr ""
 
 #. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
-#: src/host/menu.c:110 src/ui/screens.c:2418 src/ui/screens.c:2422
+#: src/host/menu.c:110 src/ui/screens.c:2419 src/ui/screens.c:2423
 msgctxt "scaling"
 msgid "Integer"
 msgstr ""
 
-#: src/host/menu.c:111 src/ui/screens.c:2423
+#: src/host/menu.c:111 src/ui/screens.c:2424
 msgctxt "scaling"
 msgid "Stretch"
 msgstr ""
 
-#: src/host/menu.c:111 src/ui/screens.c:2419 src/ui/screens.c:2421
+#: src/host/menu.c:111 src/ui/screens.c:2420 src/ui/screens.c:2422
 msgctxt "scaling"
 msgid "Aspect"
 msgstr ""
 
 #. TRANSLATORS: in-game menu > CPU profile values: the emulator's own
 #. setting / full speed / slower and cooler, saves battery
-#: src/host/menu.c:126 src/ui/screens.c:2431
+#: src/host/menu.c:126 src/ui/screens.c:2432
 msgctxt "cpu profile"
 msgid "Performance"
 msgstr ""
 
-#: src/host/menu.c:127 src/ui/screens.c:2432
+#: src/host/menu.c:127 src/ui/screens.c:2433
 msgctxt "cpu profile"
 msgid "Battery saver"
 msgstr ""
 
-#: src/host/menu.c:127 src/ui/screens.c:2430
+#: src/host/menu.c:127 src/ui/screens.c:2431
 msgctxt "cpu profile"
 msgid "Automatic"
 msgstr ""
@@ -415,13 +415,13 @@ msgid "Core options"
 msgstr ""
 
 #. TRANSLATORS: game options: how the picture fills the screen, for this game
-#: src/host/menu.c:218 src/ui/screens.c:2428
+#: src/host/menu.c:218 src/ui/screens.c:2429
 msgid "Scaling"
 msgstr ""
 
 #. TRANSLATORS: in-game menu: how fast the processor runs for this game
 #. TRANSLATORS: game options: how fast the processor runs for this game
-#: src/host/menu.c:222 src/ui/screens.c:2438
+#: src/host/menu.c:222 src/ui/screens.c:2439
 msgid "CPU profile"
 msgstr ""
 
@@ -746,62 +746,62 @@ msgctxt "strftime"
 msgid "%Y-%m-%d %H:%M"
 msgstr ""
 
-#: src/main.c:1023
+#: src/main.c:1057
 msgid "The screen refused this refresh rate"
 msgstr ""
 
-#: src/main.c:1942
+#: src/main.c:2005
 msgid "No emulator is installed for this game."
 msgstr ""
 
-#: src/main.c:1949
+#: src/main.c:2012
 msgid "This game cannot start (missing BIOS?)."
 msgstr ""
 
 #. TRANSLATORS: %s is a system error message (in English)
-#: src/main.c:2116
+#: src/main.c:2179
 #, c-format
 msgid "Cannot start the game process (%s)."
 msgstr ""
 
 #. TRANSLATORS: the automatic power-off (no input for a while)
 #. was stopped because the game's state could not be saved
-#: src/main.c:2131
+#: src/main.c:2194
 msgid "Automatic power-off cancelled: the game could not be saved."
 msgstr ""
 
-#: src/main.c:2142 src/ui/ui.c:563
+#: src/main.c:2205 src/ui/ui.c:582
 msgid "The game could not be started."
 msgstr ""
 
 #. TRANSLATORS: boot message: the SD card's data partition (games, saves)
-#: src/main.c:2227
+#: src/main.c:2290
 msgid "The data partition could not be restored. Your games and saves may need to be copied again."
 msgstr ""
 
-#: src/main.c:2231
+#: src/main.c:2294
 msgid "The data partition was unreadable and was reformatted."
 msgstr ""
 
-#: src/main.c:2234
+#: src/main.c:2297
 msgid "The data partition has errors: saving may fail. Back up your saves."
 msgstr ""
 
-#: src/main.c:2240
+#: src/main.c:2303
 msgid "The last update didn't start; the previous version was restored."
 msgstr ""
 
-#: src/main.c:2246
+#: src/main.c:2309
 msgid "The SD card was checked after an unexpected power loss"
 msgstr ""
 
 #. TRANSLATORS: boot screen under the logo (first start, or after an update)
-#: src/main.c:2515
+#: src/main.c:2578
 msgid "Preparing the SD card, please wait..."
 msgstr ""
 
 #. TRANSLATORS: boot screen under the logo, after the power was cut
-#: src/main.c:2517
+#: src/main.c:2580
 msgid "Checking the SD card, please wait..."
 msgstr ""
 
@@ -819,15 +819,15 @@ msgstr ""
 
 #. TRANSLATORS: toast when a system opened from the carousel has no
 #. game any more (removed while the console was off)
-#: src/ui/loader.c:1230
+#: src/ui/loader.c:1236
 msgid "No games found any more in this folder"
 msgstr ""
 
 #. TRANSLATORS: help bar at the bottom of the screen: one short word each
 #. TRANSLATORS: first-boot language picker: help bar, one short word each
 #. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
-#: src/ui/menu.c:99 src/ui/menu.c:471 src/ui/menu.c:474 src/ui/screens.c:1811
-#: src/ui/view_gamelist.c:967 src/ui/view_system.c:543 src/ui/view_system.c:547
+#: src/ui/menu.c:99 src/ui/menu.c:471 src/ui/menu.c:474 src/ui/screens.c:1812
+#: src/ui/view_gamelist.c:1001 src/ui/view_system.c:115 src/ui/view_system.c:119
 msgid "choose"
 msgstr ""
 
@@ -835,18 +835,18 @@ msgstr ""
 msgid "change"
 msgstr ""
 
-#: src/ui/menu.c:99 src/ui/menu.c:471 src/ui/menu.c:474 src/ui/view_system.c:543
-#: src/ui/view_system.c:547
+#: src/ui/menu.c:99 src/ui/menu.c:471 src/ui/menu.c:474 src/ui/view_system.c:115
+#: src/ui/view_system.c:119
 msgid "select"
 msgstr ""
 
 #: src/ui/menu.c:100 src/ui/menu.c:471 src/ui/menu.c:474 src/ui/transfer_ui.c:1788
-#: src/ui/view_gamelist.c:967
+#: src/ui/view_gamelist.c:1001
 msgid "back"
 msgstr ""
 
 #. TRANSLATORS: dialog button, uppercase, short
-#: src/ui/menu.c:633 src/ui/screens.c:1811 src/ui/transfer_ui.c:269
+#: src/ui/menu.c:633 src/ui/screens.c:1812 src/ui/transfer_ui.c:269
 msgid "OK"
 msgstr ""
 
@@ -964,7 +964,7 @@ msgstr ""
 msgid "External"
 msgstr ""
 
-#: src/ui/screens.c:103 src/ui/ui.c:429 src/ui/ui.c:646
+#: src/ui/screens.c:103 src/ui/ui.c:446 src/ui/ui.c:665
 msgid "Could not save the settings"
 msgstr ""
 
@@ -1003,7 +1003,7 @@ msgstr ""
 msgid "Display"
 msgstr ""
 
-#: src/ui/screens.c:282 src/ui/ui.c:1368
+#: src/ui/screens.c:282 src/ui/ui.c:1401
 msgid "Brightness"
 msgstr ""
 
@@ -1480,7 +1480,7 @@ msgstr ""
 msgid "REBOOT NOW"
 msgstr ""
 
-#: src/ui/screens.c:1242 src/ui/ui.c:1131 src/ui/update_ui.c:830
+#: src/ui/screens.c:1242 src/ui/ui.c:1155 src/ui/update_ui.c:830
 msgid "LATER"
 msgstr ""
 
@@ -1682,12 +1682,12 @@ msgid "AXP fuel gauge"
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short
-#: src/ui/screens.c:1455 src/ui/screens.c:2237
+#: src/ui/screens.c:1455 src/ui/screens.c:2238
 msgid "YES"
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short (NO is selected)
-#: src/ui/screens.c:1456 src/ui/screens.c:2236
+#: src/ui/screens.c:1456 src/ui/screens.c:2237
 msgid "NO"
 msgstr ""
 
@@ -1812,7 +1812,7 @@ msgid "System update"
 msgstr ""
 
 #. TRANSLATORS: Settings item: find a game by its name in every system
-#: src/ui/screens.c:1724 src/ui/screens.c:2102
+#: src/ui/screens.c:1724 src/ui/screens.c:2103
 msgid "Search all games"
 msgstr ""
 
@@ -1823,13 +1823,13 @@ msgstr ""
 
 #. TRANSLATORS: first-boot language picker title (shown in each language as
 #. the cursor moves: keep it short and simple, children read it)
-#: src/ui/screens.c:1822 src/ui/screens.c:1884
+#: src/ui/screens.c:1823 src/ui/screens.c:1885
 msgid "Choose your language"
 msgstr ""
 
 #. TRANSLATORS: title of the search keyboard, with the number of games
 #. that match what is typed so far
-#: src/ui/screens.c:2033
+#: src/ui/screens.c:2034
 #, c-format
 msgid "Search: %s game"
 msgid_plural "Search: %s games"
@@ -1839,142 +1839,142 @@ msgstr[1] ""
 #. TRANSLATORS: title of the search keyboard (nothing typed yet)
 #. TRANSLATORS: game options: find games of this list by name (the
 #. keyboard opens; the list shows the matches as you type)
-#: src/ui/screens.c:2036 src/ui/screens.c:2070 src/ui/screens.c:2360
+#: src/ui/screens.c:2037 src/ui/screens.c:2071 src/ui/screens.c:2361
 msgid "Search this list"
 msgstr ""
 
 #. TRANSLATORS: toast: "Search all games" found nothing; %s is the text searched
-#: src/ui/screens.c:2091
+#: src/ui/screens.c:2092
 #, c-format
 msgid "No game found for \"%s\""
 msgstr ""
 
 #. TRANSLATORS: toast after "Hide this game"; the menu path must match
 #. your translations of Settings, Game lists and Show hidden games
-#: src/ui/screens.c:2123
+#: src/ui/screens.c:2124
 msgid "Game hidden: Settings > Game lists > Show hidden games shows it again"
 msgstr ""
 
 #. TRANSLATORS: toast after deleting a game and its saves
-#: src/ui/screens.c:2195
+#: src/ui/screens.c:2196
 msgid "Game and saves deleted"
 msgstr ""
 
 #. TRANSLATORS: toast after deleting a game (its saves are kept)
-#: src/ui/screens.c:2198
+#: src/ui/screens.c:2199
 msgid "Game deleted"
 msgstr ""
 
 #. TRANSLATORS: the game file could not be deleted; %s is the system's reason
-#: src/ui/screens.c:2220
+#: src/ui/screens.c:2221
 #, c-format
 msgid "The game could not be deleted (%s)."
 msgstr ""
 
 #. TRANSLATORS: second question after deleting a game
-#: src/ui/screens.c:2240
+#: src/ui/screens.c:2241
 msgid "Also delete its saves and save states?"
 msgstr ""
 
 #. TRANSLATORS: delete confirmation; %s is the game's file name (French
 #. quotes: « %s »)
-#: src/ui/screens.c:2260
+#: src/ui/screens.c:2261
 #, c-format
 msgid "Delete \"%s\" from the SD card?"
 msgstr ""
 
 #. TRANSLATORS: added to the delete confirmation of a multi-disc playlist
-#: src/ui/screens.c:2265
+#: src/ui/screens.c:2266
 msgid "Only this playlist is deleted: the disc files it lists stay on the SD card."
 msgstr ""
 
 #. TRANSLATORS: added to the delete confirmation of a CD image's .cue file
-#: src/ui/screens.c:2267
+#: src/ui/screens.c:2268
 msgid "Only this .cue file is deleted: the track files it lists stay on the SD card."
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short (CANCEL is selected)
-#: src/ui/screens.c:2269
+#: src/ui/screens.c:2270
 msgid "DELETE"
 msgstr ""
 
-#: src/ui/screens.c:2270 src/ui/update_ui.c:465 src/ui/update_ui.c:905
+#: src/ui/screens.c:2271 src/ui/update_ui.c:465 src/ui/update_ui.c:905
 msgid "CANCEL"
 msgstr ""
 
-#: src/ui/screens.c:2284
+#: src/ui/screens.c:2285
 msgid "This game is not in the list any more"
 msgstr ""
 
 #. TRANSLATORS: the game is one of the favorites (on/off)
-#: src/ui/screens.c:2352
+#: src/ui/screens.c:2353
 msgid "Favorite"
 msgstr ""
 
 #. TRANSLATORS: core for this game: the one chosen for the whole system
-#: src/ui/screens.c:2367
+#: src/ui/screens.c:2368
 msgid "System default"
 msgstr ""
 
 #. TRANSLATORS: a core (emulator) name, marked as not finished
-#: src/ui/screens.c:2371
+#: src/ui/screens.c:2372
 #, c-format
 msgid "%s (experimental)"
 msgstr ""
 
 #. TRANSLATORS: the default core of a system, with its name
-#: src/ui/screens.c:2376 src/ui/screens.c:2417
+#: src/ui/screens.c:2377 src/ui/screens.c:2418
 #, c-format
 msgid "Default (%s)"
 msgstr ""
 
 #. TRANSLATORS: no core
-#: src/ui/screens.c:2378
+#: src/ui/screens.c:2379
 msgid "none"
 msgstr ""
 
 #. TRANSLATORS: "core" = the emulator used to run the game
-#: src/ui/screens.c:2392
+#: src/ui/screens.c:2393
 msgid "Core for this game"
 msgstr ""
 
 #. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
-#: src/ui/screens.c:2403
+#: src/ui/screens.c:2404
 #, c-format
 msgid "Core for all %s games"
 msgstr ""
 
-#: src/ui/screens.c:2408
+#: src/ui/screens.c:2409
 msgid "Core"
 msgstr ""
 
-#: src/ui/screens.c:2409
+#: src/ui/screens.c:2410
 msgid "none installed"
 msgstr ""
 
 #. TRANSLATORS: start the game
-#: src/ui/screens.c:2442
+#: src/ui/screens.c:2443
 msgid "Launch"
 msgstr ""
 
 #. TRANSLATORS: game options: take the game out of the lists (Settings >
 #. Game lists > Show hidden games brings it back)
-#: src/ui/screens.c:2445
+#: src/ui/screens.c:2446
 msgid "Hide this game"
 msgstr ""
 
 #. TRANSLATORS: game options: delete the game's file from the SD card (asks first)
-#: src/ui/screens.c:2448
+#: src/ui/screens.c:2449
 msgid "Delete this game"
 msgstr ""
 
 #. TRANSLATORS: game options: the time spent playing this game
-#: src/ui/screens.c:2450
+#: src/ui/screens.c:2451
 msgid "Play time"
 msgstr ""
 
 #. TRANSLATORS: the game's file name
-#: src/ui/screens.c:2453
+#: src/ui/screens.c:2454
 msgid "File"
 msgstr ""
 
@@ -2991,141 +2991,141 @@ msgstr ""
 
 #. TRANSLATORS: toast after ALWAYS RESUME / NEVER ASK at boot; the
 #. path must match your translations of Settings and Games
-#: src/ui/ui.c:650
+#: src/ui/ui.c:669
 msgid "Setting saved: you can change it in Settings > Games"
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
 #. start the game from the beginning
-#: src/ui/ui.c:705 src/ui/ui.c:899
+#: src/ui/ui.c:724 src/ui/ui.c:918
 msgid "RESUME"
 msgstr ""
 
-#: src/ui/ui.c:706 src/ui/ui.c:900
+#: src/ui/ui.c:725 src/ui/ui.c:919
 msgid "START FRESH"
 msgstr ""
 
 #. TRANSLATORS: boot resume dialog buttons, uppercase, short: resume now and
 #. at every start from now on / start fresh now and never ask again (both
 #. saved in Settings > Games > Resume on boot)
-#: src/ui/ui.c:710
+#: src/ui/ui.c:729
 msgid "ALWAYS RESUME"
 msgstr ""
 
-#: src/ui/ui.c:711
+#: src/ui/ui.c:730
 msgid "NEVER ASK"
 msgstr ""
 
 #. TRANSLATORS: %s is a game name: continue it where it was left?
-#: src/ui/ui.c:714
+#: src/ui/ui.c:733
 #, c-format
 msgid "Resume %s?"
 msgstr ""
 
-#: src/ui/ui.c:801 src/ui/ui.c:904
+#: src/ui/ui.c:820 src/ui/ui.c:923
 msgid "No emulator is installed for this system."
 msgstr ""
 
-#: src/ui/ui.c:914
+#: src/ui/ui.c:933
 msgid "Files are being copied. Wait for the copy to finish, or cancel it."
 msgstr ""
 
-#: src/ui/ui.c:938
+#: src/ui/ui.c:957
 msgid "Resume where you left off?"
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short
-#: src/ui/ui.c:1130
+#: src/ui/ui.c:1154
 msgid "SETTINGS"
 msgstr ""
 
-#: src/ui/ui.c:1153
+#: src/ui/ui.c:1177
 #, c-format
 msgid "Controller connected: %s"
 msgstr ""
 
-#: src/ui/ui.c:1156
+#: src/ui/ui.c:1180
 #, c-format
 msgid "Controller removed: %s"
 msgstr ""
 
 #. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
 #. the menu path: use your translations of "Settings" and "Controls"
-#: src/ui/ui.c:1166 src/ui/ui.c:1173
+#: src/ui/ui.c:1190 src/ui/ui.c:1197
 #, c-format
 msgid "New controller: %s (Settings > Controls)"
 msgstr ""
 
-#: src/ui/ui.c:1170
+#: src/ui/ui.c:1194
 #, c-format
 msgid "New controller: %s. Configure it in Settings > Controls?"
 msgstr ""
 
 #. TRANSLATORS: first boot, "Preparing your console": %s is a system name
-#: src/ui/ui.c:1228
+#: src/ui/ui.c:1252
 #, c-format
 msgid "Reading %s games"
 msgstr ""
 
 #. TRANSLATORS: first boot, while the game lists are read
-#: src/ui/ui.c:1336
+#: src/ui/ui.c:1369
 msgid "Preparing your console..."
 msgstr ""
 
-#: src/ui/ui.c:1554
+#: src/ui/ui.c:1629
 #, c-format
 msgid "Battery low (%d %%)"
 msgstr ""
 
-#: src/ui/ui.c:1563
+#: src/ui/ui.c:1638
 msgid "Battery empty, saving..."
 msgstr ""
 
-#: src/ui/ui.c:1568
+#: src/ui/ui.c:1643
 msgid "Restarting..."
 msgstr ""
 
 #. TRANSLATORS: the console is hot and runs slower to cool down
-#: src/ui/ui.c:1577
+#: src/ui/ui.c:1652
 msgid "Hot, slowing down"
 msgstr ""
 
 #. TRANSLATORS: charge screen (the console is off, on the charger)
-#: src/ui/ui.c:1620
+#: src/ui/ui.c:1695
 msgid "Charging"
 msgstr ""
 
-#: src/ui/ui.c:1625
+#: src/ui/ui.c:1700
 msgid "Fully charged"
 msgstr ""
 
-#: src/ui/ui.c:1627
+#: src/ui/ui.c:1702
 msgid "Charger unplugged"
 msgstr ""
 
-#: src/ui/ui.c:1630
+#: src/ui/ui.c:1705
 msgid "Not charging"
 msgstr ""
 
 #. TRANSLATORS: the big battery percentage of the charge screen ("80%")
 #. TRANSLATORS: battery level in the help bar ("%d %%" in French)
-#: src/ui/ui.c:1643 src/ui/widgets.c:661
+#: src/ui/ui.c:1718 src/ui/widgets.c:731
 #, c-format
 msgctxt "battery"
 msgid "%d%%"
 msgstr ""
 
 #. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
-#: src/ui/ui.c:1650
+#: src/ui/ui.c:1725
 #, c-format
 msgid "Full in %d h %02d min"
 msgstr ""
 
-#: src/ui/ui.c:1656
+#: src/ui/ui.c:1731
 msgid "Press the power button to start"
 msgstr ""
 
-#: src/ui/ui.c:1667
+#: src/ui/ui.c:1742
 msgid "Battery very low: plug in the charger"
 msgstr ""
 
@@ -3615,19 +3615,19 @@ msgstr ""
 
 #. TRANSLATORS: game metadata label (as "Times played: "): the time
 #. spent playing the game; keep the trailing ": " (French " : ")
-#: src/ui/view_gamelist.c:583
+#: src/ui/view_gamelist.c:610
 msgid "Played: "
 msgstr ""
 
 #. TRANSLATORS: a hidden game's row in a list (Settings > Game
 #. lists > Show hidden games is on); %s is its name
-#: src/ui/view_gamelist.c:650
+#: src/ui/view_gamelist.c:677
 #, c-format
 msgid "%s (hidden)"
 msgstr ""
 
 #. TRANSLATORS: play time under an hour ("25 min"); at least 1
-#: src/ui/view_gamelist.c:685
+#: src/ui/view_gamelist.c:712
 #, c-format
 msgid "%d min"
 msgid_plural "%d min"
@@ -3635,69 +3635,69 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. TRANSLATORS: play time: hours and minutes ("3 h 12 min")
-#: src/ui/view_gamelist.c:688
+#: src/ui/view_gamelist.c:715
 #, c-format
 msgid "%d h %02d min"
 msgstr ""
 
 #. TRANSLATORS: a game metadata value missing from gamelist.xml
 #. (developer, publisher, genre)
-#: src/ui/view_gamelist.c:775
+#: src/ui/view_gamelist.c:805
 msgctxt "metadata"
 msgid "unknown"
 msgstr ""
 
 #. TRANSLATORS: an empty game list (one line, uppercase in some themes)
-#: src/ui/view_gamelist.c:884
+#: src/ui/view_gamelist.c:914
 msgid "No game matches this search"
 msgstr ""
 
-#: src/ui/view_gamelist.c:884
+#: src/ui/view_gamelist.c:914
 msgid "no games"
 msgstr ""
 
-#: src/ui/view_gamelist.c:967
+#: src/ui/view_gamelist.c:1001
 msgid "launch"
 msgstr ""
 
 #. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
-#: src/ui/view_gamelist.c:969
+#: src/ui/view_gamelist.c:1003
 msgid "options"
 msgstr ""
 
-#: src/ui/view_gamelist.c:969
+#: src/ui/view_gamelist.c:1003
 msgid "favorite"
 msgstr ""
 
-#: src/ui/view_gamelist.c:969 src/ui/view_system.c:543 src/ui/view_system.c:547
+#: src/ui/view_gamelist.c:1003 src/ui/view_system.c:115 src/ui/view_system.c:119
 msgid "menu"
 msgstr ""
 
 #. TRANSLATORS: a game list filtered by a search: the text searched,
 #. then the number of games found (French: « Recherche : mario (3) »)
-#: src/ui/view_gamelist.c:997
+#: src/ui/view_gamelist.c:1036
 #, c-format
 msgid "Search: %s (%s)"
 msgstr ""
 
 #. TRANSLATORS: toast after X in a game list
-#: src/ui/view_gamelist.c:1200
+#: src/ui/view_gamelist.c:1242
 msgid "Added to favorites"
 msgstr ""
 
-#: src/ui/view_gamelist.c:1201
+#: src/ui/view_gamelist.c:1243
 msgid "Removed from favorites"
 msgstr ""
 
 #. TRANSLATORS: header of the "Search all games" results; %s is the text searched
-#: src/ui/view_gamelist.c:1572
+#: src/ui/view_gamelist.c:2019
 #, c-format
 msgid "Search: %s"
 msgstr ""
 
 #. TRANSLATORS: system carousel info bar (uppercase in most themes);
 #. the whole bar is ~50 characters wide at 640x480
-#: src/ui/view_system.c:518
+#: src/ui/view_system.c:1057
 #, c-format
 msgid "%d game available"
 msgid_plural "%d games available"
@@ -3705,7 +3705,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. TRANSLATORS: system carousel info bar, after "N games available, "
-#: src/ui/view_system.c:523
+#: src/ui/view_system.c:1062
 #, c-format
 msgid "%d favorite"
 msgid_plural "%d favorites"
@@ -3714,7 +3714,7 @@ msgstr[1] ""
 
 #. TRANSLATORS: system carousel info bar: "%1$s" is "N games
 #. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
-#: src/ui/view_system.c:526
+#: src/ui/view_system.c:1065
 #, c-format
 msgctxt "system info"
 msgid "%s, %s"
@@ -3722,24 +3722,24 @@ msgstr ""
 
 #. TRANSLATORS: the carousel with no game at all; keep the path
 #. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
-#: src/ui/view_system.c:561
+#: src/ui/view_system.c:1109
 msgid "No games found. Copy ROMs to /data/roms/<system>/"
 msgstr ""
 
 #. TRANSLATORS: game metadata date: never played (last played) or no
 #. release date known. Short (~15 characters).
-#: src/ui/widgets.c:112
+#: src/ui/widgets.c:115
 msgctxt "date"
 msgid "never"
 msgstr ""
 
-#: src/ui/widgets.c:112
+#: src/ui/widgets.c:115
 msgctxt "date"
 msgid "unknown"
 msgstr ""
 
 #. TRANSLATORS: when a game was last played. Short (~15 characters).
-#: src/ui/widgets.c:124
+#: src/ui/widgets.c:127
 #, c-format
 msgid "%d sec ago"
 msgid_plural "%d secs ago"
@@ -3747,7 +3747,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. TRANSLATORS: when a game was last played. Short (~15 characters).
-#: src/ui/widgets.c:128
+#: src/ui/widgets.c:131
 #, c-format
 msgid "%d minute ago"
 msgid_plural "%d minutes ago"
@@ -3755,7 +3755,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. TRANSLATORS: when a game was last played. Short (~15 characters).
-#: src/ui/widgets.c:132
+#: src/ui/widgets.c:135
 #, c-format
 msgid "%d hour ago"
 msgid_plural "%d hours ago"
@@ -3763,7 +3763,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. TRANSLATORS: when a game was last played. Short (~15 characters).
-#: src/ui/widgets.c:136
+#: src/ui/widgets.c:139
 #, c-format
 msgid "%d day ago"
 msgid_plural "%d days ago"
@@ -3772,7 +3772,7 @@ msgstr[1] ""
 
 #. TRANSLATORS: default date of theme metadata (release date, last
 #. played) when the theme sets no format; strftime; French %d/%m/%Y
-#: src/ui/widgets.c:144
+#: src/ui/widgets.c:147
 #, no-c-format
 msgctxt "strftime"
 msgid "%m/%d/%Y"

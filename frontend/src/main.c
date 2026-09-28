@@ -155,6 +155,7 @@ static struct {
 	bool need_redraw;
 	int draw_fails;            /* frames that could not be drawn, in a row */
 	int64_t draw_retry_at;     /* back-off after a failed frame (now_ms) */
+	int64_t update_us;         /* the last ui_update() (frame log) */
 	int64_t t0_ms;
 	int64_t t0_us;
 
@@ -627,26 +628,52 @@ static bool scr_active(void)
 }
 
 /*
- * Frame timing (boot instrumentation, cheap): the first frames and any slow
- * one in the first minute are logged with the time spent waiting for a free
- * buffer (display_begin_frame: the previous flip), rendering and presenting.
+ * Frame timing (cheap, always on): the first frames at boot, then any frame
+ * over FRAME_LOG_SLOW_US (25 ms: a frame and a half at 60 Hz), with the time
+ * of ui_update(), the wait for a free buffer (display_begin_frame: the
+ * previous flip), rendering and presenting, and where the UI thread's time
+ * went since the frame before (ui_cost_take(), util.h): image decoding,
+ * backdrop compositing, cache files, theme parsing, text; "draw" is the
+ * rest of the render (blits, fills). Rate-limited: one line per
+ * FRAME_LOG_GAP_MS, the slow frames in between counted in the next line.
+ * Cost when frames are fast: a few clock reads.
  */
 #define FRAME_LOG_FIRST 4
-#define FRAME_LOG_SLOW_US 40000
-#define FRAME_LOG_MAX 40
+#define FRAME_LOG_SLOW_US 25000
+#define FRAME_LOG_GAP_MS 2000
 
-static void frame_log(int64_t wait_us, int64_t render_us, int64_t present_us)
+static void frame_log(int64_t update_us, int64_t wait_us, int64_t render_us, int64_t present_us,
+		      const struct ui_cost_sample *before, const struct ui_cost_sample *in)
 {
-	static int logged;
-	int64_t total = wait_us + render_us + present_us;
+	static int64_t last_ms;
+	static int skipped;
+	int64_t total = update_us + wait_us + render_us + present_us, in_work = 0, now = now_ms();
+	char costs[320];
+	int o = 0;
 
-	if (logged >= FRAME_LOG_MAX || (M.frames >= FRAME_LOG_FIRST &&
-	    (total < FRAME_LOG_SLOW_US || now_ms() - M.t0_ms > 60000)))
+	if (M.frames >= FRAME_LOG_FIRST && total < FRAME_LOG_SLOW_US)
 		return;
-	logged++;
-	mlog("frame %d: %lld us (wait for a buffer %lld, render %lld, present %lld)%s", M.frames,
-	     (long long)total, (long long)wait_us, (long long)render_us, (long long)present_us,
+	if (M.frames >= FRAME_LOG_FIRST && last_ms && now - last_ms < FRAME_LOG_GAP_MS) {
+		skipped++;
+		return;
+	}
+	costs[0] = 0;
+	for (int k = 0; k < UI_COST_N && o < (int)sizeof(costs); k++) {
+		int n = before->n[k] + in->n[k];
+
+		in_work += in->us[k];
+		if (n)
+			o += snprintf(costs + o, sizeof(costs) - (size_t)o, "%s %lld x%d, ", ui_cost_name(k),
+				      (long long)(before->us[k] + in->us[k]), n);
+	}
+	mlog("frame %d: %lld us (update %lld, wait for a buffer %lld, render %lld [%sdraw %lld], "
+	     "present %lld)%s", M.frames, (long long)total, (long long)update_us, (long long)wait_us,
+	     (long long)render_us, costs, (long long)MAX(0, render_us - in_work), (long long)present_us,
 	     M.frames >= FRAME_LOG_FIRST ? " slow" : "");
+	if (skipped)
+		mlog("frame: %d more slow frame(s) since the last line", skipped);
+	last_ms = now;
+	skipped = 0;
 }
 
 /* Draws one UI frame. Returns false if nothing could be drawn. */
@@ -654,9 +681,12 @@ static bool scr_draw(void)
 {
 	struct gfx_surface fs;
 	int64_t t0 = now_us(), t1, t2;
+	struct ui_cost_sample before, in;
 
 	if (!M.ui || !M.display_ok || M.display_left)
 		return false;
+	/* the UI thread's work since the last frame (update, buttons) */
+	ui_cost_take(&before);
 	if (M.headless) {
 		if (!M.hl_fb || M.hl_suspended)
 			return false;
@@ -698,7 +728,8 @@ static bool scr_draw(void)
 		t2 = now_us();
 		display_present();
 	}
-	frame_log(t1 - t0, t2 - t1, now_us() - t2);
+	ui_cost_take(&in);
+	frame_log(M.update_us, t1 - t0, t2 - t1, now_us() - t2, &before, &in);
 	M.frames++;
 	if (!M.first_frame) {
 		struct ui_timings t;
@@ -2878,11 +2909,17 @@ int main(int argc, char **argv)
 		if (M.splash_at && !M.first_frame && now < M.splash_at + M.logo_min_ms) {
 			ui_update(M.ui, now);   /* the UI keeps loading meanwhile */
 			M.need_redraw = true;
-		} else if (ui_update(M.ui, now) || M.need_redraw) {
-			if (now < M.draw_retry_at)
-				M.need_redraw = true;   /* drawn once the back-off is over */
-			else if (scr_draw())
-				M.need_redraw = false;
+		} else {
+			int64_t tu = now_us();
+			bool dirty = ui_update(M.ui, now);
+
+			M.update_us = now_us() - tu;   /* (frame log) */
+			if (dirty || M.need_redraw) {
+				if (now < M.draw_retry_at)
+					M.need_redraw = true;   /* drawn once the back-off is over */
+				else if (scr_draw())
+					M.need_redraw = false;
+			}
 		}
 
 		if (!M.power_tried && (M.first_frame || now - M.t0_ms >= POWER_LATE_MS))

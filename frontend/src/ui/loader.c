@@ -566,8 +566,11 @@ static int entry_update(struct ui *ui, struct sysent *se)
 		nfav = gl ? count_fav(gl) : L->snap_nfav[s];
 		if (gl && strcmp(se->rom_dir, gl->rom_dir)) {
 			/* the games now come from another folder (alias): its
-			 * theme.xml may differ */
+			 * theme.xml may differ (the asset worker may be reading
+			 * this one: stopped first) */
 			strlcpy_(se->rom_dir, gl->rom_dir, sizeof(se->rom_dir));
+			if (se->theme)
+				ui_assets_invalidate(ui, false);
 			theme_free(se->theme);
 			se->theme = NULL;
 		}
@@ -621,6 +624,9 @@ static int carousel_sync(struct ui *ui, bool force)
 			sysview_refresh_info(ui, ui->stack[0]);
 		return changed;
 	}
+	/* the entries move (and some themes go): the asset worker stops first,
+	 * the list views it built for the old entries go */
+	ui_assets_invalidate(ui, false);
 	if (ui->nsys)
 		strlcpy_(keep, ui->sys[CLAMP(ui->sys_cursor, 0, ui->nsys - 1)].name, sizeof(keep));
 	cursor = ui->sys_cursor;

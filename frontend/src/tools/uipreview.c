@@ -24,7 +24,18 @@
  *   charge / nocharge      charge mode screen on/off
  *   toast:<sev>:<text>     ui_toast() (sev: info, warning, error; _ = space)
  *   lang:<code>            switch the language live (Settings > Language), saved
- * Time is virtual: animations run to completion between tokens.
+ *   costcheck:on|off       while on, a frame that decodes, composites, reads a
+ *                          cache file or parses a theme on the UI thread fails
+ *                          the run (--frame-costs N prints each frame's work)
+ *   costmax:<us>           the slowest frame since costcheck:on was under us
+ *   bgwait / bgwait:all    wait (real time) for the asset worker: what is on
+ *                          screen / everything it prefetches
+ *   bgsync:off|on          off: settling does not wait for the worker (the
+ *                          placeholders stay visible)
+ *   expect-assets:<text>   like expect:, on ui_debug_assets() ("sys=snes
+ *                          backdrop=pending logos=ready lists=snes worker=idle")
+ * Time is virtual: animations run to completion between tokens; the asset
+ * worker runs in real time and settling waits for what is on screen.
  */
 #include <errno.h>
 #include <stdio.h>
@@ -58,6 +69,13 @@ struct preview {
 	int64_t render_us;
 	int64_t render_max_us;
 	int png_bits;          /* 8 = exact; 5..7: posterize (smaller doc PNGs) */
+	/* --frame-costs: print each frame's UI-thread work; costcheck:on */
+	bool cost_print;
+	int64_t cost_print_us;
+	bool cost_check;
+	int cost_failed;
+	int64_t cost_max_us;
+	bool bg_nosync;        /* bgsync:off - do not wait for the asset worker */
 };
 
 static void usage(void)
@@ -83,6 +101,47 @@ static void alloc_fb(struct preview *p, int w, int h)
 	ui_set_size(p->ui, w, h);
 }
 
+/* The UI thread's heavy work of one frame (and of the input and updates
+ * since the one before), as the frontend's frame log splits it. */
+static void frame_costs(struct preview *p, int64_t render_us)
+{
+	struct ui_cost_sample c;
+	int64_t work = 0;
+	int nwork = 0;
+	char line[512];
+	int o;
+
+	ui_cost_take(&c);
+	for (int k = 0; k < UI_COST_N; k++) {
+		work += c.us[k];
+		nwork += c.n[k];
+	}
+	if (p->cost_print && (nwork || render_us >= p->cost_print_us)) {
+		o = snprintf(line, sizeof(line), "FRAME %d t=%lld: render %lld us", p->frames,
+			     (long long)p->now, (long long)render_us);
+		for (int k = 0; k < UI_COST_N && o < (int)sizeof(line); k++)
+			if (c.n[k])
+				o += snprintf(line + o, sizeof(line) - (size_t)o, ", %s %lld us x%d",
+					      ui_cost_name(k), (long long)c.us[k], c.n[k]);
+		printf("%s\n", line);
+	}
+	/* costcheck:on - navigation must not decode, composite, read a cache
+	 * file or parse a theme on the UI thread */
+	if (p->cost_check && (c.n[UI_COST_DECODE] || c.n[UI_COST_BACKDROP] || c.n[UI_COST_CACHE] ||
+			      c.n[UI_COST_THEME])) {
+		fprintf(stderr, "costcheck: frame %d at t=%lld did first-visit work on the UI thread:"
+			" decode x%d (%lld us), backdrop x%d (%lld us), cache x%d (%lld us), theme x%d"
+			" (%lld us)\n", p->frames, (long long)p->now, c.n[UI_COST_DECODE],
+			(long long)c.us[UI_COST_DECODE], c.n[UI_COST_BACKDROP], (long long)c.us[UI_COST_BACKDROP],
+			c.n[UI_COST_CACHE], (long long)c.us[UI_COST_CACHE], c.n[UI_COST_THEME],
+			(long long)c.us[UI_COST_THEME]);
+		p->cost_failed++;
+	}
+	if (p->cost_check && render_us > p->cost_max_us)
+		p->cost_max_us = render_us;
+	(void)work;
+}
+
 static void render(struct preview *p)
 {
 	int64_t t0 = ui_now_us(), dt;
@@ -93,12 +152,17 @@ static void render(struct preview *p)
 	p->render_us += dt;
 	if (dt > p->render_max_us)
 		p->render_max_us = dt;
+	frame_costs(p, dt);
 }
 
-/* Advances virtual time until the UI is idle (or max_ms passed). */
+/* Advances virtual time until the UI is idle (or max_ms passed). The asset
+ * worker runs in real time: what the screen shows and it is still building
+ * is waited for (real time) at the end, then its fade runs, so shots and
+ * expects see the finished screen (bgsync:off leaves the placeholders). */
 static void settle(struct preview *p, int max_ms)
 {
 	int64_t end = p->now + max_ms;
+	bool waited = false;
 
 	for (;;) {
 		int t;
@@ -106,8 +170,17 @@ static void settle(struct preview *p, int max_ms)
 		if (ui_update(p->ui, p->now))
 			render(p);
 		t = ui_timeout_ms(p->ui, p->now);
-		if (t < 0 || p->now >= end)
+		if (t < 0 || p->now >= end) {
+			if (!p->bg_nosync && !waited && !ui_background_wait(p->ui, false, 0)) {
+				if (!ui_background_wait(p->ui, false, 20000))
+					fprintf(stderr, "uipreview: the asset worker did not finish in 20 s\n");
+				waited = true;
+				if (end < p->now + 300)
+					end = p->now + 300;
+				continue;
+			}
 			break;
+		}
 		p->now += t < 16 ? 16 : t;
 		if (p->now > end)
 			p->now = end;
@@ -240,6 +313,54 @@ static int run_script(struct preview *p, const char *script)
 			settle(p, 100);
 		} else if (!strncmp(tok, "idle:", 5)) {
 			p->now += atoi(tok + 5);
+		} else if (!strcmp(tok, "bgwait") || !strcmp(tok, "bgwait:all")) {
+			/* real time: the asset worker built what is on screen (all:
+			 * everything it prefetches, every system and list) */
+			if (!ui_background_wait(p->ui, !strcmp(tok, "bgwait:all"), 60000)) {
+				fprintf(stderr, "uipreview: bgwait: the asset worker did not finish\n");
+				r = -1;
+			}
+			settle(p, 300);
+		} else if (!strncmp(tok, "bgsync:", 7)) {
+			p->bg_nosync = !strcmp(tok + 7, "off");
+		} else if (!strncmp(tok, "expect-assets:", 14)) {
+			char want[200], got[600];
+
+			snprintf(want, sizeof(want), "%s", tok + 14);
+			for (char *c = want; *c; c++)
+				if (*c == '_')
+					*c = ' ';
+			ui_debug_assets(p->ui, got, sizeof(got));
+			if (strstr(got, want)) {
+				printf("uipreview: expect-assets ok: %s (%s)\n", want, got);
+			} else {
+				fprintf(stderr, "uipreview: EXPECT FAILED: want assets \"%s\", got \"%s\"\n", want, got);
+				r = -1;
+			}
+		} else if (!strncmp(tok, "costmax:", 8)) {
+			/* the slowest frame since costcheck:on must be under N us */
+			if (p->cost_max_us > atoll(tok + 8)) {
+				fprintf(stderr, "uipreview: costmax: a frame took %lld us (max %s)\n",
+					(long long)p->cost_max_us, tok + 8);
+				r = -1;
+			} else {
+				printf("uipreview: costmax ok: slowest frame %lld us\n", (long long)p->cost_max_us);
+			}
+		} else if (!strncmp(tok, "costcheck:", 10)) {
+			/* on: from now, a frame that decodes, composites, reads a cache
+			 * file or parses a theme on the UI thread fails the run */
+			struct ui_cost_sample c;
+
+			ui_cost_take(&c);          /* what happened before does not count */
+			p->cost_check = !strcmp(tok + 10, "on");
+			if (!p->cost_check) {
+				printf("uipreview: costcheck: %d frame(s) with UI-thread work, slowest frame %lld us\n",
+				       p->cost_failed, (long long)p->cost_max_us);
+				if (p->cost_failed)
+					r = -1;
+				p->cost_failed = 0;
+				p->cost_max_us = 0;
+			}
 		} else if (!strncmp(tok, "usbtrees:", 9)) {
 			g_fake_ntrees = atoi(tok + 9);
 		} else if (!strncmp(tok, "usbfs:", 6)) {
@@ -922,6 +1043,11 @@ int main(int argc, char **argv)
 			timing = true;
 		else if (!strcmp(a, "--bench"))
 			do_bench = true;
+		else if (OPT("--frame-costs")) {
+			/* every frame with UI-thread work, or rendered in >= N us */
+			p.cost_print = true;
+			p.cost_print_us = atoll(v);
+		}
 		else if (!strcmp(a, "--quiet"))
 			quiet = true;
 		else if (!strcmp(a, "--resume"))
@@ -987,6 +1113,7 @@ int main(int argc, char **argv)
 		ui_log_set(NULL, NULL, UI_LOG_WARN);
 
 	p.ui = ui_create(&cfg);
+	ui_set_background_polling(p.ui, false);   /* virtual time: settle() waits instead */
 	p.now = 1000;
 	alloc_fb(&p, w, h);
 	if (theme)

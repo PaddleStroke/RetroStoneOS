@@ -109,6 +109,21 @@ void help_style_apply(struct help_style *hs, const struct theme_elem *te);
 void help_draw(struct ui *ui, struct gfx_surface *s, const struct help_style *hs,
 	       const struct help_prompt *p, int n);
 
+/* A help bar icon rendered ahead by the asset worker (help_icons_ahead(),
+ * thread-safe: ui is the worker's stand-in), put in the UI's icon table on
+ * the UI thread (ui_icon_adopt(), which takes img). */
+struct ui_icon_ahead {
+	char name[16];
+	int px;
+	gfx_color color;
+	struct gfx_image *img;
+};
+#define HELP_ICONS_AHEAD 8
+struct gfx_image *icon_render(const char *name, int px, gfx_color c);
+int help_icons_ahead(struct ui *ui, const struct help_style *hs, const struct help_prompt *p, int n,
+		     struct ui_icon_ahead *out, int max);
+void ui_icon_adopt(struct ui *ui, const struct ui_icon_ahead *ic);
+
 /* ------------------------------------------------------------ menu look */
 struct menu_style {
 	gfx_color bg;          /* panel background */
@@ -177,7 +192,61 @@ struct screen {
 
 #define MAX_SCREENS 12
 
+/* ------------------------------------------------------------ prefetch */
+/* prefetch.c - the asset worker (docs/ui-design.md §4.2). A job is filled
+ * by a view on the UI thread; run() does the heavy work on the worker with
+ * its own copies only; apply() installs the result on the UI thread (only
+ * if nothing was invalidated meanwhile); drop() frees the job and whatever
+ * apply() did not take, on the UI thread. */
+enum { PF_URGENT = 0, PF_NEAR, PF_BG, PF_NPRIO };
+
+struct pf_job {
+	void (*run)(struct pf_job *j);
+	void (*apply)(struct ui *ui, struct pf_job *j);
+	void (*drop)(struct pf_job *j);
+	int prio;
+	unsigned gen;                 /* prefetch_gen() when submitted */
+	bool cancelled;               /* run() may stop early: read with pf_cancelled() */
+	struct pf_job *next;
+};
+
+static inline bool pf_cancelled(const struct pf_job *j)
+{
+	return __atomic_load_n(&j->cancelled, __ATOMIC_RELAXED);
+}
+
+struct prefetch;
+void prefetch_init(struct ui *ui);
+void prefetch_destroy(struct ui *ui);
+/* The worker can take jobs (after the first frame, when it could start). */
+bool prefetch_available(struct ui *ui);
+/* Bumped by prefetch_quiesce(): marks of jobs in flight older than this
+ * are stale. */
+unsigned prefetch_gen(const struct ui *ui);
+/* Queues j (its prio set). Without a worker: PF_URGENT runs and applies at
+ * once, anything else is dropped; returns false then (j is gone). */
+bool prefetch_submit(struct ui *ui, struct pf_job *j);
+void prefetch_raise(struct ui *ui, struct pf_job *j, int prio);
+/* From ui_update(): installs finished jobs; true if any was applied. */
+bool prefetch_poll(struct ui *ui);
+/* Before freeing anything a job may read (themes, fonts, the cache
+ * directory, sysents): drops the queue, waits for the running job, drops
+ * every result; a new generation. */
+void prefetch_quiesce(struct ui *ui);
+void prefetch_pause(struct ui *ui, bool pause);       /* a game runs */
+void prefetch_input(struct ui *ui);                   /* a button: PF_BG waits */
+void prefetch_allow_background(struct ui *ui);        /* menu up, lists in */
+bool prefetch_background_allowed(const struct ui *ui);
+bool prefetch_busy(const struct ui *ui);
+bool prefetch_urgent_busy(const struct ui *ui);
+int prefetch_timeout(const struct ui *ui);
+bool prefetch_wait(struct ui *ui, int prio, int max_ms);
+void prefetch_set_polling(struct ui *ui, bool on);
+void prefetch_stats(const struct ui *ui, int *jobs, int64_t *work_us, int *queued);
+
 /* ------------------------------------------------------------------ ui */
+#define GL_PREBUILT 3                 /* game list views built ahead */
+
 struct ui {
 	struct ui_config cfg;
 	char paths[16][1024];         /* storage for the config strings */
@@ -284,6 +353,11 @@ struct ui {
 	struct power_status bat_fallback;
 	int64_t bat_read_at;
 	int64_t flush_at;             /* sync the caches when idle */
+	/* the asset worker (prefetch.c) and the game list views it built
+	 * ahead (view_gamelist.c: glview_create() takes them) */
+	struct prefetch *pf;
+	struct screen *gl_pre[GL_PREBUILT];
+	unsigned look_gen;            /* bumped by every theme, language or size change */
 };
 
 /* ui.c */
@@ -301,6 +375,10 @@ void ui_set_theme(struct ui *ui, const char *name);
 int ui_list_themes(struct ui *ui, char names[][64], int max);
 struct theme *ui_sys_theme(struct ui *ui, struct sysent *se);
 void ui_refresh_look(struct ui *ui);
+/* Before freeing what the asset worker reads (themes, fonts, sysents, the
+ * image cache folder): the worker quiesced, the list views built ahead
+ * dropped; look: the theme, language or size changes (ui->look_gen). */
+void ui_assets_invalidate(struct ui *ui, bool look);
 void ui_io_sample(struct ui *ui, struct ui_io *io);
 
 /* loader.c - game lists: snapshot, background loading, carousel */
@@ -345,6 +423,9 @@ struct screen *sysview_create(struct ui *ui);
 void sysview_set_cursor(struct ui *ui, struct screen *s, int idx);
 void sysview_jump(struct ui *ui, struct screen *s, int idx);
 void sysview_refresh_info(struct ui *ui, struct screen *s);   /* counts changed */
+/* Queues what the carousel wants built by the asset worker (ui_update). */
+void sysview_prefetch(struct ui *ui, struct screen *s);
+void sysview_describe_assets(struct ui *ui, struct screen *s, char *buf, size_t n);
 
 /* view_gamelist.c */
 struct screen *glview_create(struct ui *ui, struct sysent *se);
@@ -357,6 +438,11 @@ const char *glview_search(struct screen *s);
 void glview_describe(struct screen *s, char *buf, size_t n);
 void glview_game_removed(struct ui *ui, const char *system, const char *path);
 struct screen *glview_create_search_all(struct ui *ui, const char *text);
+/* The list view of se built ahead by the asset worker (glview_create()
+ * takes it); dropped when the look changes or the carousel is rebuilt. */
+void glview_prefetch(struct ui *ui, struct sysent *se, int prio);
+void glview_prebuilt_drop(struct ui *ui);
+void glview_describe_prebuilt(struct ui *ui, char *buf, size_t n);
 /* "3 h 12 min", "25 min", "-" */
 void ui_format_playtime(int64_t seconds, char *out, size_t n);
 

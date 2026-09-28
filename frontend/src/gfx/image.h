@@ -37,6 +37,10 @@ struct gfx_image *img_get(const char *path, int w, int h, gfx_color tint);
 /* Rasterizes an in-memory SVG document (built-in icons). Not shared. */
 struct gfx_image *img_from_svg_string(const char *svg, int w, int h, gfx_color tint);
 void img_put(struct gfx_image *img);
+/* The same, for an image unlikely to be wanted again (a layer composited
+ * into a cached backdrop): unreferenced, it is the first one evicted, so
+ * the prefetch of every system does not push useful images out. */
+void img_put_cold(struct gfx_image *img);
 /* Adds a reference. */
 struct gfx_image *img_ref(struct gfx_image *img);
 
@@ -74,5 +78,16 @@ void img_note_written(void);
 /* Generic raw-pixel cache helpers, also used for composited backdrops. */
 struct gfx_image *rpx_load(const char *path, uint64_t key);
 int rpx_save(const char *path, const struct gfx_image *img, uint64_t key);
+
+/*
+ * Threads (ui/prefetch.c): every function here may be called from the UI
+ * thread and one worker at the same time, except img_set_cache_dir() and
+ * img_trim(), which the UI calls with the worker stopped. SVG rasterizers
+ * are per thread: a worker calls img_thread_exit() before it ends.
+ */
+void img_thread_exit(void);
+/* Touches every page of a mapped (.rpx) image: the reads happen now, on
+ * the calling thread, not later while drawing it. */
+void img_prefault(const struct gfx_image *img);
 
 #endif

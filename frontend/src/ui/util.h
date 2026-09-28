@@ -39,6 +39,45 @@ void ui_log_once(const char *key, const char *fmt, ...)
 int64_t ui_now_ms(void);
 int64_t ui_now_us(void);
 
+/* ------------------------------------------------------------ work costs */
+/*
+ * Where a thread's time goes, per kind of work that can make a frame late
+ * (docs/ui-design.md §11.1): each expensive step is wrapped in a scope;
+ * nested scopes are exclusive (a decode inside a backdrop composite counts
+ * as decode, not twice). The totals are per thread (the prefetch worker's
+ * work never shows in the UI thread's), taken and reset once per frame by
+ * the frame log. Two clock reads per scope; scopes only wrap real work
+ * (a decode, a file read, a composite, a theme parse, a glyph or text
+ * render), never a per-pixel or per-glyph-draw path.
+ */
+enum ui_cost {
+	UI_COST_DECODE = 0,    /* image decode + scale + tint (PNG/JPG/SVG) */
+	UI_COST_BACKDROP,      /* compositing a view's static layers */
+	UI_COST_CACHE,         /* .rpx / .inf cache files read or written */
+	UI_COST_THEME,         /* theme.xml parse, elements and keys from it */
+	UI_COST_TEXT,          /* glyph rasterization, text images */
+	UI_COST_N
+};
+
+struct ui_cost_scope {
+	int cat;
+	int64_t t0, child;
+	struct ui_cost_scope *up;
+};
+
+struct ui_cost_sample {
+	int64_t us[UI_COST_N];   /* exclusive time */
+	int n[UI_COST_N];        /* scopes entered */
+};
+
+void ui_cost_begin(struct ui_cost_scope *s, enum ui_cost cat);
+void ui_cost_end(struct ui_cost_scope *s);
+/* The calling thread's totals since its last take (then reset). */
+void ui_cost_take(struct ui_cost_sample *out);
+/* Without resetting (tests). */
+void ui_cost_peek(struct ui_cost_sample *out);
+const char *ui_cost_name(int cat);
+
 /* ---------------------------------------------------------------- arena */
 struct arena_chunk;
 struct arena {

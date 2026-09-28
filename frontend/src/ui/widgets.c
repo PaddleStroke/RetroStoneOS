@@ -41,7 +41,9 @@ struct gfx_image *render_text_image(struct font *f, const char *text, int max_w,
 	int n, lh, w = 0, h;
 	struct gfx_image *img;
 	struct gfx_surface s;
+	struct ui_cost_scope cs;
 
+	ui_cost_begin(&cs, UI_COST_TEXT);
 	if (max_lines > 64)
 		max_lines = 64;
 	n = font_wrap(f, text, max_w, lines, max_lines);
@@ -65,6 +67,7 @@ struct gfx_image *render_text_image(struct font *f, const char *text, int max_w,
 		*out_w = w;
 	if (out_h)
 		*out_h = h;
+	ui_cost_end(&cs);
 	return img;
 }
 
@@ -507,9 +510,14 @@ void elem_layout(struct ui *ui, struct elem *e)
 		layout_image(ui, e);
 		break;
 	case EK_TEXT:
-	case EK_DATETIME:
+	case EK_DATETIME: {
+		struct ui_cost_scope cs;
+
+		ui_cost_begin(&cs, UI_COST_TEXT);
 		layout_text(ui, e);
+		ui_cost_end(&cs);
 		break;
+	}
 	case EK_RATING:
 		layout_rating(ui, e);
 		break;
@@ -577,19 +585,14 @@ static void svg_dpad(char *out, size_t n, bool up, bool down, bool left, bool ri
 		 up ? "1" : "0.45", down ? "1" : "0.45", left ? "1" : "0.45", right ? "1" : "0.45");
 }
 
-struct gfx_image *ui_icon(struct ui *ui, const char *name, int px, gfx_color c)
+/* Renders a button icon (no cache; thread-safe: the asset worker renders
+ * the help bar icons of a view ahead, ui_icon_adopt()). */
+struct gfx_image *icon_render(const char *name, int px, gfx_color c)
 {
-	char key[48];
 	struct gfx_image *img = NULL;
 	struct gfx_surface s;
 	char svg[1024];
 
-	snprintf(key, sizeof(key), "%s/%d/%08x", name, px, c);
-	for (int i = 0; i < ui->nicons; i++)
-		if (!strcmp(ui->icons[i].key, key)) {
-			ui->icons[i].used = ++ui->icon_tick;
-			return ui->icons[i].img;
-		}
 	if (!strcmp(name, "bolt")) {
 		img = img_from_svg_string(svg_bolt, 0, px, c);
 	} else if (!strcmp(name, "star_filled")) {
@@ -631,8 +634,17 @@ struct gfx_image *ui_icon(struct ui *ui, const char *name, int px, gfx_color c)
 		font_erase(&s, f, (w - tw) / 2, font_baseline_in_box(f, 0, px), upper, -1);
 		gfx_image_update_flags(img);
 	}
-	if (!img)
-		return NULL;
+	return img;
+}
+
+static void icon_key(const char *name, int px, gfx_color c, char *key, size_t n)
+{
+	snprintf(key, n, "%s/%d/%08x", name, px, c);
+}
+
+/* Into the icon table (img is the table's then). */
+static struct gfx_image *icon_insert(struct ui *ui, const char *key, struct gfx_image *img)
+{
 	/* The icon table is small: recycle the least recently used entry.
 	 * Callers use an icon within one draw (help_draw fetches its <= 12
 	 * icons, then draws them): those are the most recently used, so they
@@ -651,6 +663,64 @@ struct gfx_image *ui_icon(struct ui *ui, const char *name, int px, gfx_color c)
 	ui->icons[ui->nicons].used = ++ui->icon_tick;
 	ui->nicons++;
 	return img;
+}
+
+static struct gfx_image *icon_find(struct ui *ui, const char *key)
+{
+	for (int i = 0; i < ui->nicons; i++)
+		if (!strcmp(ui->icons[i].key, key)) {
+			ui->icons[i].used = ++ui->icon_tick;
+			return ui->icons[i].img;
+		}
+	return NULL;
+}
+
+struct gfx_image *ui_icon(struct ui *ui, const char *name, int px, gfx_color c)
+{
+	char key[48];
+	struct gfx_image *img;
+
+	icon_key(name, px, c, key, sizeof(key));
+	if ((img = icon_find(ui, key)))
+		return img;
+	img = icon_render(name, px, c);
+	return img ? icon_insert(ui, key, img) : NULL;
+}
+
+void ui_icon_adopt(struct ui *ui, const struct ui_icon_ahead *ic)
+{
+	char key[48];
+
+	if (!ic->img)
+		return;
+	icon_key(ic->name, ic->px, ic->color, key, sizeof(key));
+	if (icon_find(ui, key))
+		gfx_image_free(ic->img);
+	else
+		icon_insert(ui, key, ic->img);
+}
+
+/* The icon height help_draw() uses for a style. */
+static int help_icon_px(struct ui *ui, const struct help_style *hs)
+{
+	struct font *f = font_get(hs->font_path, ui_font_px(ui, hs->font_size));
+
+	return MAX(8, (int)lroundf((float)font_cap_height(f) * 1.25f));
+}
+
+int help_icons_ahead(struct ui *ui, const struct help_style *hs, const struct help_prompt *p, int n,
+		     struct ui_icon_ahead *out, int max)
+{
+	int px = help_icon_px(ui, hs), k = 0;
+
+	for (int i = 0; i < n && k < max; i++) {
+		strlcpy_(out[k].name, p[i].icon, sizeof(out[k].name));
+		out[k].px = px;
+		out[k].color = hs->icon;
+		out[k].img = icon_render(p[i].icon, px, hs->icon);
+		k++;
+	}
+	return k;
 }
 
 /* ------------------------------------------------------------------- help */

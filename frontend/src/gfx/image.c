@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,16 +55,29 @@ static size_t g_budget_bytes = IMG_BUDGET_BYTES_DEFAULT;
 static int g_budget_entries = IMG_BUDGET_ENTRIES_DEFAULT;
 static uint64_t g_tick;
 
+/*
+ * Threads: the UI thread and the prefetch worker (ui/prefetch.c) both load
+ * images. g_mu guards the cache list, the budget, the stats and the cache
+ * directory state; decoding and cache file I/O run outside it, so the UI
+ * thread never waits for the worker's decode (two threads decoding the same
+ * key: the second insert finds the first and drops its copy). The cache
+ * directory itself only changes while the worker is stopped
+ * (prefetch_quiesce() before img_set_cache_dir()).
+ */
+static pthread_mutex_t g_mu = PTHREAD_MUTEX_INITIALIZER;
 static struct centry *g_cache;
 static char g_dir[1024];
 static bool g_dir_ok;
 static struct img_stats g_stats;
-static NSVGrasterizer *g_rast;
+static __thread NSVGrasterizer *t_rast;   /* one per thread (img_thread_exit) */
+static int g_unsynced;
 
 void img_set_cache_dir(const char *dir)
 {
+	pthread_mutex_lock(&g_mu);
 	strlcpy_(g_dir, dir ? dir : "", sizeof(g_dir));
 	g_dir_ok = false;
+	pthread_mutex_unlock(&g_mu);
 }
 
 const char *img_cache_dir(void)
@@ -73,39 +87,75 @@ const char *img_cache_dir(void)
 
 static bool cache_dir_ready(void)
 {
-	if (!g_dir[0])
-		return false;
-	if (!g_dir_ok) {
-		if (mkdir_p(g_dir) < 0) {
+	bool ok;
+
+	pthread_mutex_lock(&g_mu);
+	if (g_dir[0] && !g_dir_ok) {
+		if (mkdir_p(g_dir) < 0)
 			ui_log_once(g_dir, "image cache: cannot create %s", g_dir);
-			return false;
-		}
-		g_dir_ok = true;
+		else
+			g_dir_ok = true;
 	}
-	return true;
+	ok = g_dir[0] && g_dir_ok;
+	pthread_mutex_unlock(&g_mu);
+	return ok;
 }
 
 void img_get_stats(struct img_stats *st)
 {
+	pthread_mutex_lock(&g_mu);
 	*st = g_stats;
+	pthread_mutex_unlock(&g_mu);
 }
 
 void img_note_backdrop(bool hit, int64_t us)
 {
+	pthread_mutex_lock(&g_mu);
 	if (hit)
 		g_stats.bd_hits++;
 	else
 		g_stats.bd_built++;
 	g_stats.bd_us += us;
+	pthread_mutex_unlock(&g_mu);
 }
 
 size_t img_mem_used(void)
 {
 	size_t n = 0;
 
+	pthread_mutex_lock(&g_mu);
 	for (struct centry *e = g_cache; e; e = e->next)
 		n += e->bytes;
+	pthread_mutex_unlock(&g_mu);
 	return n;
+}
+
+void img_thread_exit(void)
+{
+	if (t_rast) {
+		nsvgDeleteRasterizer(t_rast);
+		t_rast = NULL;
+	}
+}
+
+/* Reads every page of a mapped image once, so that drawing it later takes
+ * no page fault: on the SD card a raw 640x480 backdrop is 1.2 MB, ~60 ms of
+ * reads, which the prefetch worker pays instead of the UI thread. */
+void img_prefault(const struct gfx_image *img)
+{
+	const volatile unsigned char *p;
+	size_t len;
+	unsigned sum = 0;
+
+	if (!img || !(img->flags & GFX_IMG_MMAPPED) || !img->map)
+		return;
+	p = img->map;
+	len = img->map_len;
+	for (size_t o = 0; o < len; o += 4096)
+		sum += p[o];
+	if (len)
+		sum += p[len - 1];
+	(void)sum;
 }
 
 /* ------------------------------------------------------------ rpx files */
@@ -191,7 +241,7 @@ static bool rle_decode(const uint32_t *in, size_t nw, uint32_t *px, size_t npx)
 	return o == npx;
 }
 
-struct gfx_image *rpx_load(const char *path, uint64_t key)
+static struct gfx_image *rpx_load_(const char *path, uint64_t key)
 {
 	int fd = open(path, O_RDONLY | O_CLOEXEC);
 	struct stat st;
@@ -245,13 +295,26 @@ struct gfx_image *rpx_load(const char *path, uint64_t key)
 	return img;
 }
 
+struct gfx_image *rpx_load(const char *path, uint64_t key)
+{
+	struct ui_cost_scope cs;
+	struct gfx_image *img;
+
+	ui_cost_begin(&cs, UI_COST_CACHE);
+	img = rpx_load_(path, key);
+	ui_cost_end(&cs);
+	return img;
+}
+
 int rpx_save(const char *path, const struct gfx_image *img, uint64_t key)
 {
 	struct rpx_hdr h;
 	size_t npx = (size_t)img->w * img->h, len = sizeof(h) + npx * 4, nw;
 	char *buf = xmalloc(len);
 	int r;
+	struct ui_cost_scope cs;
 
+	ui_cost_begin(&cs, UI_COST_CACHE);
 	memset(&h, 0, sizeof(h));
 	memcpy(h.magic, RPX_MAGIC, 4);
 	h.w = (uint32_t)img->w;
@@ -273,6 +336,7 @@ int rpx_save(const char *path, const struct gfx_image *img, uint64_t key)
 	if (r == 0)
 		img_note_written();
 	free(buf);
+	ui_cost_end(&cs);
 	return r;
 }
 
@@ -329,7 +393,7 @@ static NSVGimage *svg_parse_file(const char *path)
 	return im;
 }
 
-bool img_info(const char *path, int *w, int *h)
+static bool img_info_(const char *path, int *w, int *h)
 {
 	struct src_id id;
 
@@ -346,9 +410,11 @@ bool img_info(const char *path, int *w, int *h)
 		char cp[1200];
 		int32_t dims[2];
 		int fd;
+		bool dir = cache_dir_ready();
 		NSVGimage *im;
+		struct ui_cost_scope cs;
 
-		if (cache_dir_ready()) {
+		if (dir) {
 			cache_path(key, "inf", cp, sizeof(cp));
 			fd = open(cp, O_RDONLY | O_CLOEXEC);
 			if (fd >= 0) {
@@ -362,7 +428,9 @@ bool img_info(const char *path, int *w, int *h)
 				}
 			}
 		}
+		ui_cost_begin(&cs, UI_COST_DECODE);
 		im = svg_parse_file(path);
+		ui_cost_end(&cs);
 		if (!im)
 			return false;
 		*w = (int)ceilf(im->width);
@@ -370,13 +438,55 @@ bool img_info(const char *path, int *w, int *h)
 		nsvgDelete(im);
 		if (*w <= 0 || *h <= 0)
 			return false;
-		if (g_dir_ok) {
+		if (dir) {
 			dims[0] = *w;
 			dims[1] = *h;
 			file_write_atomic_nosync(cp, dims, sizeof(dims));
 		}
 		return true;
 	}
+}
+
+/* Natural sizes already read (a direct-mapped memo under g_mu): the layout
+ * of an image the worker prepared asks for its size again on the UI
+ * thread; this answers without opening the file (a stat() only). */
+#define INFO_SLOTS 512
+static struct {
+	uint64_t key;
+	int32_t w, h;
+} g_info[INFO_SLOTS];
+
+bool img_info(const char *path, int *w, int *h)
+{
+	struct ui_cost_scope cs;
+	struct src_id id;
+	uint64_t key;
+	unsigned slot;
+	bool r;
+
+	if (!path || !*path || !src_stat(path, &id))
+		return false;
+	key = make_key(path, &id, -2, -2, 0) | 1;
+	slot = (unsigned)(key % INFO_SLOTS);
+	pthread_mutex_lock(&g_mu);
+	if (g_info[slot].key == key) {
+		*w = g_info[slot].w;
+		*h = g_info[slot].h;
+		pthread_mutex_unlock(&g_mu);
+		return true;
+	}
+	pthread_mutex_unlock(&g_mu);
+	ui_cost_begin(&cs, UI_COST_CACHE);
+	r = img_info_(path, w, h);
+	ui_cost_end(&cs);
+	if (r) {
+		pthread_mutex_lock(&g_mu);
+		g_info[slot].key = key;
+		g_info[slot].w = *w;
+		g_info[slot].h = *h;
+		pthread_mutex_unlock(&g_mu);
+	}
+	return r;
 }
 
 /* --------------------------------------------------------------- decode */
@@ -386,8 +496,8 @@ static struct gfx_image *svg_raster(NSVGimage *im, int w, int h)
 	float sx, sy, s;
 	int rw, rh;
 
-	if (!g_rast)
-		g_rast = nsvgCreateRasterizer();
+	if (!t_rast)
+		t_rast = nsvgCreateRasterizer();
 	if (im->width <= 0 || im->height <= 0)
 		return NULL;
 	sx = (float)w / im->width;
@@ -400,7 +510,7 @@ static struct gfx_image *svg_raster(NSVGimage *im, int w, int h)
 	if (fabsf(sx - sy) < 0.01f)
 		s = sx;
 	img = gfx_image_new(rw, rh);
-	nsvgRasterize(g_rast, im, 0, 0, s, (unsigned char *)img->px, rw, rh, rw * 4);
+	nsvgRasterize(t_rast, im, 0, 0, s, (unsigned char *)img->px, rw, rh, rw * 4);
 	gfx_image_from_rgba(img);
 	if (rw != w || rh != h) {
 		struct gfx_image *sc = gfx_image_scale(img, w, h);
@@ -411,7 +521,7 @@ static struct gfx_image *svg_raster(NSVGimage *im, int w, int h)
 	return img;
 }
 
-static struct gfx_image *decode(const char *path, int w, int h, gfx_color tint)
+static struct gfx_image *decode_(const char *path, int w, int h, gfx_color tint)
 {
 	struct gfx_image *img = NULL;
 
@@ -455,6 +565,17 @@ static struct gfx_image *decode(const char *path, int w, int h, gfx_color tint)
 	return img;
 }
 
+static struct gfx_image *decode(const char *path, int w, int h, gfx_color tint)
+{
+	struct ui_cost_scope cs;
+	struct gfx_image *img;
+
+	ui_cost_begin(&cs, UI_COST_DECODE);
+	img = decode_(path, w, h, tint);
+	ui_cost_end(&cs);
+	return img;
+}
+
 /* ----------------------------------------------------------------- cache */
 static void centry_free(struct centry *e)
 {
@@ -466,7 +587,7 @@ static void centry_free(struct centry *e)
 }
 
 /* Evicts unreferenced entries, least recently used first, until those fit
- * the budget. Referenced images are never touched. */
+ * the budget. Referenced images are never touched. Under g_mu. */
 static void cache_fit_budget(void)
 {
 	for (;;) {
@@ -495,24 +616,55 @@ static void cache_fit_budget(void)
 
 void img_set_cache_budget(size_t bytes, int entries)
 {
+	pthread_mutex_lock(&g_mu);
 	g_budget_bytes = bytes;
 	g_budget_entries = entries < 0 ? 0 : entries;
 	cache_fit_budget();
+	pthread_mutex_unlock(&g_mu);
 }
 
 int img_cache_entries(void)
 {
 	int n = 0;
 
+	pthread_mutex_lock(&g_mu);
 	for (struct centry *e = g_cache; e; e = e->next)
 		n++;
+	pthread_mutex_unlock(&g_mu);
 	return n;
 }
 
+/* Under g_mu: the entry with this key, moved to the front, referenced. */
+static struct gfx_image *cache_find(uint64_t key)
+{
+	struct centry *e;
+
+	for (struct centry **pp = &g_cache; (e = *pp); pp = &e->next) {
+		if (e->key == key) {
+			e->refs++;
+			e->used = ++g_tick;
+			/* move to the front: the next lookup is short */
+			*pp = e->next;
+			e->next = g_cache;
+			g_cache = e;
+			return &e->img;
+		}
+	}
+	return NULL;
+}
+
+/* Under g_mu. Another thread may have inserted the same key meanwhile:
+ * then that one is returned and img is freed. */
 static struct gfx_image *cache_insert(struct gfx_image *img, uint64_t key)
 {
-	struct centry *e = xcalloc(1, sizeof(*e));
+	struct gfx_image *have = cache_find(key);
+	struct centry *e;
 
+	if (have) {
+		gfx_image_free(img);
+		return have;
+	}
+	e = xcalloc(1, sizeof(*e));
 	e->img = *img;
 	free(img);  /* the struct shell only; pixels now belong to e->img */
 	e->key = key;
@@ -529,10 +681,10 @@ struct gfx_image *img_get(const char *path, int w, int h, gfx_color tint)
 {
 	struct src_id id;
 	uint64_t key;
-	struct centry *e;
 	struct gfx_image *img;
 	char cp[1200];
 	int64_t t0;
+	bool dir;
 
 	if (!path || !*path)
 		return NULL;
@@ -563,70 +715,80 @@ struct gfx_image *img_get(const char *path, int w, int h, gfx_color tint)
 		h = MIN(h, 4096);
 	}
 	key = make_key(path, &id, w, h, tint);
-	for (struct centry **pp = &g_cache; (e = *pp); pp = &e->next) {
-		if (e->key == key) {
-			e->refs++;
-			e->used = ++g_tick;
-			g_stats.mem_hits++;
-			/* move to the front: the next lookup is short */
-			*pp = e->next;
-			e->next = g_cache;
-			g_cache = e;
-			return &e->img;
-		}
-	}
-	if (cache_dir_ready()) {
+	pthread_mutex_lock(&g_mu);
+	img = cache_find(key);
+	if (img)
+		g_stats.mem_hits++;
+	pthread_mutex_unlock(&g_mu);
+	if (img)
+		return img;
+	dir = cache_dir_ready();
+	if (dir) {
 		t0 = ui_now_us();
 		cache_path(key, "rpx", cp, sizeof(cp));
 		img = rpx_load(cp, key);
 		if (img) {
+			pthread_mutex_lock(&g_mu);
 			g_stats.disk_hits++;
 			g_stats.disk_us += ui_now_us() - t0;
-			return cache_insert(img, key);
+			img = cache_insert(img, key);
+			pthread_mutex_unlock(&g_mu);
+			return img;
 		}
 	}
 	t0 = ui_now_us();
 	img = decode(path, w, h, tint);
-	g_stats.decode_us += ui_now_us() - t0;
+	t0 = ui_now_us() - t0;
 	if (!img) {
 		ui_log_once(path, "image: cannot decode %s", path);
 		return NULL;
 	}
-	g_stats.decoded++;
-	if (g_dir_ok) {
+	if (dir) {
 		int r = rpx_save(cp, img, key);
 
 		if (r < 0)
 			ui_log_once(g_dir, "image cache: cannot write %s: %s", cp, strerror(-r));
 	}
-	return cache_insert(img, key);
+	pthread_mutex_lock(&g_mu);
+	g_stats.decode_us += t0;
+	g_stats.decoded++;
+	img = cache_insert(img, key);
+	pthread_mutex_unlock(&g_mu);
+	return img;
 }
 
 struct gfx_image *img_from_svg_string(const char *svg, int w, int h, gfx_color tint)
 {
 	char *buf = xstrdup(svg);
-	NSVGimage *im = nsvgParse(buf, "px", 96.0f);
+	NSVGimage *im;
 	struct gfx_image *img = NULL;
+	struct ui_cost_scope cs;
 
+	ui_cost_begin(&cs, UI_COST_DECODE);
+	im = nsvgParse(buf, "px", 96.0f);
 	free(buf);
-	if (!im)
-		return NULL;
-	if (w <= 0 && h > 0 && im->height > 0)
-		w = MAX(1, (int)lroundf(im->width * (float)h / im->height));
-	if (h <= 0 && w > 0 && im->width > 0)
-		h = MAX(1, (int)lroundf(im->height * (float)w / im->width));
-	if (w > 0 && h > 0)
-		img = svg_raster(im, w, h);
-	nsvgDelete(im);
-	if (img && tint != 0xffffffffu)
-		gfx_image_tint(img, tint);
+	if (im) {
+		if (w <= 0 && h > 0 && im->height > 0)
+			w = MAX(1, (int)lroundf(im->width * (float)h / im->height));
+		if (h <= 0 && w > 0 && im->width > 0)
+			h = MAX(1, (int)lroundf(im->height * (float)w / im->width));
+		if (w > 0 && h > 0)
+			img = svg_raster(im, w, h);
+		nsvgDelete(im);
+		if (img && tint != 0xffffffffu)
+			gfx_image_tint(img, tint);
+	}
+	ui_cost_end(&cs);
 	return img;
 }
 
 struct gfx_image *img_ref(struct gfx_image *img)
 {
-	if (img)
+	if (img) {
+		pthread_mutex_lock(&g_mu);
 		((struct centry *)img)->refs++;
+		pthread_mutex_unlock(&g_mu);
+	}
 	return img;
 }
 
@@ -636,15 +798,34 @@ void img_put(struct gfx_image *img)
 
 	if (!e)
 		return;
+	pthread_mutex_lock(&g_mu);
 	e->used = ++g_tick;
 	if (--e->refs <= 0)
 		cache_fit_budget();
+	pthread_mutex_unlock(&g_mu);
+}
+
+void img_put_cold(struct gfx_image *img)
+{
+	struct centry *e = (struct centry *)img;
+
+	if (!e)
+		return;
+	pthread_mutex_lock(&g_mu);
+	if (--e->refs <= 0) {
+		e->used = 0;             /* the first one to go */
+		cache_fit_budget();
+	} else {
+		e->used = ++g_tick;
+	}
+	pthread_mutex_unlock(&g_mu);
 }
 
 void img_trim(void)
 {
 	struct centry **pp = &g_cache;
 
+	pthread_mutex_lock(&g_mu);
 	while (*pp) {
 		struct centry *e = *pp;
 
@@ -655,27 +836,31 @@ void img_trim(void)
 			pp = &e->next;
 		}
 	}
+	pthread_mutex_unlock(&g_mu);
 }
 
 /* Cache files are written without fsync (fast first boot); this flushes
  * them all at once, when the UI is idle. */
-static int g_unsynced;
-
 void img_note_written(void)
 {
+	pthread_mutex_lock(&g_mu);
 	g_unsynced++;
+	pthread_mutex_unlock(&g_mu);
 }
 
 void img_cache_flush(void)
 {
-	int fd;
+	int fd, n;
 
-	if (!g_unsynced || !g_dir[0])
+	pthread_mutex_lock(&g_mu);
+	n = g_unsynced;
+	g_unsynced = 0;
+	pthread_mutex_unlock(&g_mu);
+	if (!n || !g_dir[0])
 		return;
 	fd = open(g_dir, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
 	if (fd >= 0) {
 		syncfs(fd);
 		close(fd);
 	}
-	g_unsynced = 0;
 }

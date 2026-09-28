@@ -38,12 +38,17 @@ Previews: `docs/ui-previews/*.png` (list in §16).
 | Menus | `ui/menu.c`, `ui/screens.c`, `ui/transfer_ui.c`, `ui/update_ui.c` | generic list menu, dialogs (up to 6 buttons), on-screen keyboard, every settings screen, button test, controller wizard, USB import, web share, system update (the `rsos-update` helper process, docs/updates.md) |
 | Data | `ui/games.c`, `ui/systems.c`, `ui/settings.c`, `ui/hw.c`, `ui/xml.c`, `ui/util.c` | ROM scan, gamelist.xml, scan cache, per-game data, core .ini files, settings.ini, battery/storage/rsos.env/WiFi, async helpers |
 | Loading | `ui/loader.c`, `ui/fswarm.c` | carousel snapshot (`systems.idx`), background game list loader, on-demand loading, carousel sync; exFAT folder warm-up (§4.1) |
+| Assets | `ui/prefetch.c` | the asset worker: themes, backdrops, logos, prebuilt game list views, box art, built ahead off the UI thread (§4.2) |
 | Input | `input/input.{c,h}`, `input/remaps/*.ini` | evdev devices, merged built-in pad, gamepad mappings, ports, hotkeys, remaps, key repeat (shared with the libretro host) |
 | Preview | `tools/uipreview.c` | runs the whole UI on the host with scripted input and writes PNG screenshots |
 
 The UI itself is single-threaded. One worker thread loads game lists in the background (§4.1): it only reads files
-and parses them into lists it owns, and the main thread installs them; the transfer module's threads are behind its
-status API. No allocation happens per frame except for text caches when a text changes.
+and parses them into lists it owns, and the main thread installs them. A second one, the asset worker (§4.2), builds
+theme assets (theme parsing, image decoding, backdrop compositing, text logos) into objects it owns, which the main
+thread installs; the image cache (`gfx/image.c`), the fonts (`gfx/font.c`) and the log-once table are thread-safe
+for it, and everything else it reads is a copy or a theme the main thread frees only after stopping it
+(`prefetch_quiesce()`). The transfer module's threads are behind its status API. No allocation happens per frame
+except for text caches when a text changes.
 
 ## 2. Integration (for `main.c`)
 
@@ -243,9 +248,10 @@ LCD ↔ HDMI costs a decode only the first time.
 
 Cache files are written without fsync (a torn file fails its header/size/key check and is rebuilt) and synced
 once with `syncfs()` when the UI has been idle 1.5 s. User data (settings.ini, gamedb.tsv, mappings, rsos.env,
-wpa_supplicant.conf) uses tmp + fsync + rename + fsync(dir). Loading is lazy: themes are parsed per system on first
-use; a system's images load when it scrolls into view; game images load when the cursor rests (150 ms) or at once on
-a single press; only ±2 systems keep their backdrop in memory.
+wpa_supplicant.conf) uses tmp + fsync + rename + fsync(dir). Loading is lazy but not on the UI thread (§4.2): the
+first frame builds what it shows, then the asset worker parses themes and builds backdrops and logos ahead of the
+cursor; game images load when the cursor rests (150 ms) or at once on a single press, from the image cache where the
+worker put the first game's and the neighbour rows'; ±3 systems keep their backdrop in memory.
 
 ### 4.1 Loading model (boot)
 
@@ -301,8 +307,8 @@ reads, K KiB)`; `ui: menu from the snapshot: ... (warm-up ..., io N reads)`; `ui
 images decoded vs from the cache, io reads/KiB)`; one `games: <system>: ...` line per system with the time split
 (folder lookup, cache read, validation stats, decode, or readdir/gamelist.xml/cache write for a scan); `ui: game lists
 complete: ...` (worker time, warm-up reads, carousel unchanged/updated, lists replaced, block-device reads, a digest
-of the final state) and `ui: game list time by step`; main.c's `frame N: ... (wait for a buffer, render, present)` for
-the first frames and any slow one; `menu up N ms after start` and `game lists complete N ms after start`. The
+of the final state) and `ui: game list time by step`; main.c's `frame N: ...` for the first frames and any frame over
+25 ms (§11.1); `menu up N ms after start` and `game lists complete N ms after start`. The
 `io` counters are the read requests of `/sys/dev/block/<dev>/stat` for the device holding `/data`.
 
 Coming back to the carousel re-checks the folder mtimes (a few `stat()`) and rescans what changed; Settings > Game
@@ -310,6 +316,66 @@ lists > Refresh forces it (both synchronous, with the worker stopped). The check
 on top at the next `ui_update()`: the USB import pops its menus and pushes its progress screen in one step, and the
 copy that starts meanwhile changes the folders; the reload used to pop the progress screen (the import then waited
 forever for an answer nobody could give). The import reloads the lists itself when it ends.
+
+### 4.2 The asset worker (2026-09-28)
+
+**The lag it removes.** On the RetroStone2, moving the carousel to a system not shown yet since boot was a little
+late; later visits were smooth. Game lists were not the cause (they are all in ~0.75 s after boot, §4.1). The UI
+thread built the new system's assets inside the frames of the move: the frame that starts the slide read the
+incoming backdrop's `.rpx` and decoded it (run-length coded: a 1.2 MB write at 640x480), and the frame that ends it
+parsed the theme of the system entering at the edge and read its two logos (`.inf`, two `.rpx`). Measured with the
+frame cost accounting below (`rsos-uipreview --frame-costs`, 42 systems, gbz35-dark, build host): 0.45 ms + 0.3 ms
+per new system with a warm page cache, 0.9 ms + 1.5 ms after dropping it; after a theme change or on a first boot
+(empty cache) 4-5 ms + 1.2-1.6 ms (a 640x480 PNG decoded and tinted, composited, written; SVG logos rasterized).
+At the host/A7 ratio of §11 (~20x on this code) plus the SD card's ~1.6 ms per request, that is ~10-20 ms and
+~10-15 ms on the device (its first-frame log shows one backdrop read at ~16 ms), i.e. one or two dropped frames per
+new system, and ~100 ms per system after a theme change. The game list's first open composited its backdrop and
+decoded the first game's box art on the UI thread too (~6 ms host cold, gbz35-dark; ~20 ms with rsos-dark's SVG
+art the first time: 0.1-0.4 s on the device).
+
+**Design** (`ui/prefetch.c`, the jobs in `view_system.c` and `view_gamelist.c`). One thread, started at the first
+job after the first frame, nice +10 and the lowest best-effort I/O priority. A job carries copies of what it needs
+(the system's names and folders, sizes, the theme pointer or none), runs on the worker (`run`), and is installed by
+the UI thread in `ui_update()` (`apply`: pointer moves, a few microseconds), or dropped. What it builds:
+
+| Job | Built on the worker | Installed |
+|---|---|---|
+| carousel item | the system's theme (parsed if not yet), its extras, both logo sizes (image or text logo), live extras laid out, the help bar icons in its colours, and its backdrop: read from its `.rpx` (pages touched, so the first blit takes no page fault) or composited and written | into the carousel's item, if it is still that item (a rebuild bumps a generation); a backdrop only within ±3 of the cursor |
+| carousel item, far | the same without keeping the backdrop: its `.rpx` is made if missing and read once (page cache) | logos, theme |
+| game list view | the whole `struct glview` of a system: layout from the theme, composited backdrop, header/labels/rating laid out, selector image, the glyphs of the first rows, the first game's box art, marquee and thumbnail decoded into the image cache at their drawn size, help icons | kept aside (3 at most); `glview_create()` takes it if the entry, theme, language, size and view choice still match |
+| game list pictures | the next rows' pictures (direction of travel first) when the cursor rests | nothing: they wait in the image cache |
+
+Order and priority: **urgent** (something on screen now lacks it: a move got ahead of the worker, a theme switch),
+**near** (the ±3 window around the cursor after the user moved it, the direction of travel first; the list of the
+system the carousel rests on; the pictures of the rows next to the cursor), **background** (before any move: the
+neighbours; then every other system nearest first, and the neighbour systems' lists while a list is open). The
+background part starts only once the menu is up and every list is in (`ui_lists_complete()`, never on the boot
+path: the first frame and the boot logs are unchanged, below), and waits 250 ms after every button (an input burst
+goes first). The worker is paused while a game runs (`launch_req()`, `ui_pause_background()`), and quiesced (queue
+dropped, the running job waited for) before anything it reads goes: theme or language switch, size change, carousel
+rebuild, a theme freed by the loader, exit.
+
+**A frame never waits.** The first frame at boot builds what it shows, as before (nothing else is up yet); from
+then on a frame builds nothing: a backdrop not there yet is a flat field of the neighbouring backdrop's average
+colour, a logo not there is left out, the help bar keeps the last system's style, and what arrives while shown fades
+in over 120 ms (a plain swap under a menu, whose snapshot is refreshed). Without a worker (it could not start,
+`RSOS_PREFETCH=0`) the old synchronous path runs. After a theme switch the carousel behind the menu fills in the same
+way; only the menu style (the first system's theme) is parsed on the spot.
+
+**Memory** (the A20 unit has 1 GiB): the carousel keeps the backdrops of ±3 systems (7 x 1.2 MB at 640x480,
+1.6 MB at 854x480) and every system's logos (~100 KB each, ~4-5 MB for 42 systems, what a tour of the carousel kept
+before); at most 8 results wait for the UI thread; 3 prebuilt list views (~1.3 MB each); the pictures ahead are
+unreferenced entries of the image cache's 24 MB LRU budget. The layers of a composited system backdrop are released
+"cold" (`img_put_cold()`: the first ones evicted), so prefetching every system does not push the images in use out
+of the cache; natural image sizes are remembered (`img_info()`), so laying out a prefetched picture on the UI thread
+opens no file.
+
+**Cost** (build host, 42 systems, gbz35-dark): the whole prefetch is 42 jobs, ~60-70 ms of worker time from a warm
+disk cache (~1.5-2 s on the A20 on its second core, plus ~3 MB of `.rpx` reads), ~190 ms on a first boot (~4 s).
+Boot, headless frontend, same library, page cache dropped, medians of 9 normal boots before / after: first frame 29 /
+29 ms, menu up 32 / 32 ms, every list 53 / 54 ms, `ui: first frame` 10.1 / 10.3 ms; 6 first boots: menu up 66 / 66
+ms (the differences are noise). `ui: assets prefetched N ms after the lists (J jobs, W ms of worker time)` is logged
+once.
 
 ## 5. EmulationStation theme support
 
@@ -636,12 +702,29 @@ its own time. Estimates:
 | Second boot, UI part of "power on → menu" | 0.1-0.25 s: ~80 ms CPU (cache reads, text logos, first frame) + reading ~1.5 MB (one 1.2 MB backdrop, logos, scan caches) from the SD card |
 | First boot (empty caches) | 0.7-1.5 s for the images (SVG rasterization dominates) + the SD readdir of the ROM folders; the "Preparing your console" screen shows meanwhile |
 | Full frame / carousel scroll frame | 3-5 ms (one 1.2 MB copy + blends): 60 fps with margin |
-| First scroll to a system not seen yet this boot | 15-30 ms (one late frame) |
-| Game list key-repeat frame | 3-5 ms; a game image decoded on rest: 30-80 ms for a 640x480 PNG the first time, then from cache |
-| Theme switch | 50-150 ms warm, ~1 s the first time |
+| First scroll to a system not seen yet this boot | was 20-35 ms (one or two late frames); now a normal frame: the asset worker built it ahead (§4.2) |
+| Game list key-repeat frame | 3-5 ms; a game image decoded on rest: 30-80 ms for a 640x480 PNG the first time, then from cache (the first game's and the next rows' now decoded ahead by the worker) |
+| Theme switch | the carousel behind the menu fills in from the worker (a few frames of placeholders, ~0.1 s warm, ~1-4 s for every system the first time, in the background); only the menu style's theme is parsed on the spot |
 
 TODO(hw): measure on a unit (`rsos-frontend` logs "first frame in N us", and the preview tool's `--bench` code can
 run on the device against a real /data). Backdrops are now run-length coded (§4).
+
+### 11.1 Frame costs (2026-09-28)
+
+Every expensive step of the UI code is wrapped in a cost scope (`ui_cost_begin/end()`, `ui/util.h`): image decode
+(PNG/JPG/SVG, with scaling and tint), backdrop compositing, cache files (`.rpx`/`.inf` read or written), theme
+(parsing, elements and keys from it) and text (glyph rasterization, text images). Nested scopes are exclusive (a
+decode inside a composite counts as decode); the totals are per thread, so the asset worker's never show in the UI
+thread's. Two clock reads per scope, and scopes only wrap real work. main.c logs, always, the first frames and any
+frame over 25 ms, at most one line per 2 s (the others counted in the next line):
+
+```
+frame 812: 41230 us (update 180, wait for a buffer 2100, render 38700 [decode 21400 x1, cache 9800 x3, theme 4100 x1, text 900 x6, draw 2500], present 250) slow
+```
+
+(`draw` is the rest of the render: blits, fills.) The preview tool prints the same per frame with `--frame-costs N`
+(every frame with UI-thread work, or rendered in ≥ N us), and its `costcheck:on` token fails a run in which a frame
+decodes, composites, reads a cache file or parses a theme on the UI thread (§12).
 
 **Boot on an exFAT card (2026-09-27).** The headless frontend (`--headless --root`) on the owner's layout (34 ROM
 folders, 5 with 15 games, rsos-dark), /data on exFAT on an emulated SD card (loop → dm-delay 2 ms → loop with direct
@@ -665,7 +748,11 @@ menu instead of ~2400 requests and 1.2 MB, i.e. the menu within ~0.3 s of the lo
   `--keys "right a down shot:x.png start ..."` (tokens: buttons, `hold:btn:ms`, `combo:b1+b2:ms`, `wait:ms`,
   `shot:file`, `size:WxH`, `theme:name`, `hdmi`, `lcd`, `usb`, `unplug`, `charge`, `toast:sev:text`, `idle:ms` (time
   passes *without* `ui_update()`, like the device's `poll()` sleep before an event), `expect:text` (the run fails
-  unless `ui_debug_screen()` contains the text; `_` = space), `usbtrees:N`, `usbfs:NAME`), `--resume` (every game
+  unless `ui_debug_screen()` contains the text; `_` = space), `usbtrees:N`, `usbfs:NAME`, and for the asset worker
+  (§4.2) `bgwait` / `bgwait:all` (real time: what is on screen / everything is built), `bgsync:off` (settling does
+  not wait for the worker: the placeholders stay), `expect-assets:text` (`ui_debug_assets()`: `sys=snes
+  backdrop=ready|fading|pending logos=ready|pending lists=<prebuilt> worker=idle|busy`), `costcheck:on|off` and
+  `costmax:<us>` (§11.1)), `--frame-costs N`, `--resume` (every game
   has an auto state: exercises the prompt), `--fake-transfer` (a canned USB drive, library search, plan, import with
   four duplicate questions, export and saves backup, web share; it prints `ANSWER`, `PLAN`, `BACKUP`, `REMOUNT` lines
   for the checks), `--timing`, `--bench`, `--png-bits`. Virtual time: animations complete between tokens.
@@ -680,6 +767,13 @@ menu instead of ~2400 requests and 1.2 MB, i.e. the menu within ~0.3 s of the lo
   (every list first); RLE cache files (round trip, raw fallback, corrupt = miss). Clean under ThreadSanitizer and
   ASan/UBSan. `check-frontend` step 1a does the same with the real main loop (menu up "game lists still loading",
   same digest and same pixels as a full load).
+- `make check-ui-assets` (in `make check`, 2026-09-28, §4.2): an 8-system library with box art and marquees,
+  gbz35-dark and rsos-dark: (1) once everything is prefetched (`bgwait:all`), first visits of every system, the SNES
+  list, its second game and the neighbour's list with `costcheck:on`: no frame decodes, composites, reads a cache file
+  or parses a theme on the UI thread; (2) an empty cache and a slow worker (`RSOS_PREFETCH_DELAY_MS=3000`): `right`
+  is drawn at once with the placeholder (`backdrop=pending`, no heavy work, `costmax`), the backdrop and logos follow
+  (`bgwait`, `backdrop=ready`); the same during 1.2 s of key repeat (150 ms per job). The worker also runs clean
+  under ThreadSanitizer (preview tour with theme, language and size switches during the prefetch).
 - `make check-ui` also runs the USB screens with the fake transfer module: the USB dialog after 9 s of `idle:` (the
   regression for the missing "USB drive" message), B, unplug; the toast with `usb_import_prompt=0`; the library
   picker, the four duplicate answers (checked from the printed `ANSWER` lines), no picker with one library; export and
