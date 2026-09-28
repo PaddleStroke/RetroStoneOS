@@ -27,14 +27,19 @@ include $(sort $(wildcard $(BR2_EXTERNAL_RETROSTONE_PATH)/package/*/*.mk))
 # After editing the DTS, run "make linux-rebuild".
 ################################################################################
 RSOS_DTS_DIR = $(call qstrip,$(BR2_RETROSTONE_DTS_DIR))
-# Only for a board with its own device tree in this tree (the RetroStone2):
-# other boards leave BR2_RETROSTONE_DTS_DIR empty (docs/porting.md).
+# Only for a board with its own device tree in this tree (the RetroStone2,
+# the RetroStone1): other boards leave BR2_RETROSTONE_DTS_DIR empty
+# (docs/porting.md). The board's .dts is the first name of
+# BR2_LINUX_KERNEL_INTREE_DTS_NAME; its SoC prefix picks the kernel Makefile
+# symbol (sun7i- -> CONFIG_MACH_SUN7I, sun8i- -> CONFIG_MACH_SUN8I).
 ifneq ($(RSOS_DTS_DIR),)
 RSOS_KERNEL_DTS_DIR = $(LINUX_DIR)/arch/arm/boot/dts/allwinner
+RSOS_DTS_MAIN = $(notdir $(firstword $(call qstrip,$(BR2_LINUX_KERNEL_INTREE_DTS_NAME))))
+RSOS_DTS_MACH = $(if $(filter sun8i-%,$(RSOS_DTS_MAIN)),CONFIG_MACH_SUN8I,CONFIG_MACH_SUN7I)
 
 define RSOS_LINUX_INSTALL_DTS
-	@if [ ! -f "$(RSOS_DTS_DIR)/sun7i-a20-retrostone2.dts" ]; then \
-		echo "RetroStoneOS: $(RSOS_DTS_DIR)/sun7i-a20-retrostone2.dts is missing" >&2; \
+	@if [ ! -f "$(RSOS_DTS_DIR)/$(RSOS_DTS_MAIN).dts" ]; then \
+		echo "RetroStoneOS: $(RSOS_DTS_DIR)/$(RSOS_DTS_MAIN).dts is missing" >&2; \
 		exit 1; \
 	fi
 	for f in $(RSOS_DTS_DIR)/*.dts $(RSOS_DTS_DIR)/*.dtsi \
@@ -47,22 +52,23 @@ define RSOS_LINUX_INSTALL_DTS
 		*) continue ;; \
 		esac; \
 		grep -q "+= $$out\$$" $(RSOS_KERNEL_DTS_DIR)/Makefile || \
-			printf 'dtb-$$(CONFIG_MACH_SUN7I) += %s\n' "$$out" \
+			printf 'dtb-$$(%s) += %s\n' "$(RSOS_DTS_MACH)" "$$out" \
 				>> $(RSOS_KERNEL_DTS_DIR)/Makefile || exit 1; \
 	done
 endef
 LINUX_PRE_BUILD_HOOKS += RSOS_LINUX_INSTALL_DTS
 
 # Install the overlays as /boot/overlays/<name>.dtbo, where <name> is the
-# .dtso basename without its "retrostone2-" prefix (retrostone2-sata.dtso ->
+# .dtso basename without its "retrostone<N>-" prefix (retrostone2-sata.dtso ->
 # sata.dtbo), which is what rsos_overlays in the U-Boot environment refers to.
 define RSOS_LINUX_INSTALL_OVERLAYS
 	rm -rf $(TARGET_DIR)/boot/overlays
 	for f in $(RSOS_DTS_DIR)/overlays/*.dtso; do \
 		[ -f "$$f" ] || continue; \
 		n=$$(basename "$$f" .dtso); \
+		o=$${n#retrostone2-}; o=$${o#retrostone1-}; \
 		$(INSTALL) -D -m 0644 $(RSOS_KERNEL_DTS_DIR)/$$n.dtbo \
-			$(TARGET_DIR)/boot/overlays/$${n#retrostone2-}.dtbo || exit 1; \
+			$(TARGET_DIR)/boot/overlays/$$o.dtbo || exit 1; \
 	done
 endef
 LINUX_POST_INSTALL_TARGET_HOOKS += RSOS_LINUX_INSTALL_OVERLAYS

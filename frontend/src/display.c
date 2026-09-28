@@ -57,6 +57,10 @@ struct conn {
 	bool has_edid;
 	char monitor[16];
 	bool failed;          /* last modeset on it failed; retried on next hotplug */
+	/* Analog TV connectors (sun4i_tv): the "TV mode" enum and its values */
+	uint32_t prop_tv_mode;
+	uint64_t tv_ntsc, tv_pal;
+	bool has_tv_ntsc, has_tv_pal;
 };
 
 struct crtc {
@@ -64,6 +68,10 @@ struct crtc {
 	uint32_t prop_active;
 	uint32_t prop_mode_id;
 	int primary;          /* index in planes[] of the plane we use, -1 none */
+	/* The overlay plane is the CRTC's DRM primary plane, the game being on
+	 * a lower overlay plane (crtc_pick_planes(): DE2 mixer 1). */
+	bool ov_swapped;
+	int ov_idx;
 };
 
 struct plane {
@@ -73,6 +81,19 @@ struct plane {
 	bool xrgb8888, rgb565, argb8888;
 	uint32_t fb_id, crtc_id, src_x, src_y, src_w, src_h;
 	uint32_t crtc_x, crtc_y, crtc_w, crtc_h;
+	uint32_t prop_zpos;   /* 0: no zpos property */
+	uint64_t zpos;        /* its value when enumerated */
+};
+
+/*
+ * Screen geometry of the output being lit (geo_for()): the shape of a
+ * screen pixel (width / height, 0 = square) and the overscan inset in
+ * pixels on each edge. Only analog TV connectors have anything but square
+ * pixels and no inset.
+ */
+struct geo {
+	double par;
+	int ix, iy;
 };
 
 enum bstate { B_FREE = 0, B_DRAW, B_QUEUED, B_PENDING, B_FRONT };
@@ -209,6 +230,10 @@ static struct {
 	drmModeModeInfo mode;
 	uint32_t mode_blob;
 	struct display_output_info info;
+	struct geo geo;         /* of conn/mode (set by apply() before planning) */
+	bool tv_pal_fallback;   /* NTSC was refused on the internal TV output */
+	bool pend_tv;           /* the next modeset sets the connector's TV mode */
+	uint64_t pend_tv_val;
 
 	/* Game surface. */
 	bool surf_set;
@@ -535,6 +560,13 @@ static void load_props(uint32_t obj, uint32_t type, struct prop_want *w, int n)
 /* Enumeration and probing                                             */
 /* ------------------------------------------------------------------ */
 
+/* Analog TV outputs (sun4i_tv registers "Composite-1"): 4:3 interlaced. */
+static bool conn_is_tv(uint32_t type)
+{
+	return type == DRM_MODE_CONNECTOR_Composite || type == DRM_MODE_CONNECTOR_SVIDEO ||
+	       type == DRM_MODE_CONNECTOR_TV || type == DRM_MODE_CONNECTOR_Component;
+}
+
 static enum display_output_type classify(uint32_t type)
 {
 	enum display_output_type internal = DISPLAY_OUTPUT_LCD;
@@ -543,6 +575,15 @@ static enum display_output_type classify(uint32_t type)
 	    (D.cfg.internal_mode == DISPLAY_INTERNAL_LIST &&
 	     (type >= 32 || !(D.cfg.internal_types & (1u << type)))))
 		internal = DISPLAY_OUTPUT_NONE;
+	/*
+	 * A connector the board lists by name is its built-in screen, even an
+	 * analog TV one: the RetroStone1 feeds its composite output to the
+	 * AMT630A converter of its panel (board.ini internal_display =
+	 * composite). HDMI stays external whatever the list says.
+	 */
+	if (internal == DISPLAY_OUTPUT_LCD && D.cfg.internal_mode == DISPLAY_INTERNAL_LIST &&
+	    conn_is_tv(type))
+		return DISPLAY_OUTPUT_LCD;
 	switch (type) {
 	case DRM_MODE_CONNECTOR_HDMIA:
 	case DRM_MODE_CONNECTOR_HDMIB:
@@ -632,6 +673,82 @@ static void probe_conn(struct conn *c, bool full)
 	}
 }
 
+/* The "TV mode" enum of an analog TV connector (drm_mode_create_tv_properties():
+ * sun4i_tv offers NTSC and PAL). */
+static void load_tv_modes(struct conn *c)
+{
+	drmModeObjectProperties *props = drmModeObjectGetProperties(D.fd, c->id, DRM_MODE_OBJECT_CONNECTOR);
+	uint32_t i;
+
+	if (!props)
+		return;
+	for (i = 0; i < props->count_props; i++) {
+		drmModePropertyRes *p = drmModeGetProperty(D.fd, props->props[i]);
+
+		if (!p)
+			continue;
+		if (!strcmp(p->name, "TV mode") && (p->flags & DRM_MODE_PROP_ENUM)) {
+			c->prop_tv_mode = p->prop_id;
+			for (int k = 0; k < p->count_enums; k++) {
+				if (!strcmp(p->enums[k].name, "NTSC")) {
+					c->tv_ntsc = p->enums[k].value;
+					c->has_tv_ntsc = true;
+				} else if (!strcmp(p->enums[k].name, "PAL")) {
+					c->tv_pal = p->enums[k].value;
+					c->has_tv_pal = true;
+				}
+			}
+		}
+		drmModeFreeProperty(p);
+	}
+	drmModeFreeObjectProperties(props);
+}
+
+/*
+ * The planes of CRTC ki beyond the game plane: the overlay of
+ * display_set_overlay() is an ARGB8888 overlay plane other than the game
+ * plane (ov_scan()). A CRTC without one but whose game (DRM primary) plane
+ * takes ARGB8888, with an XRGB8888 overlay plane below it, is used the other
+ * way round: the game on that lower plane, the overlay on the primary. That
+ * is the H3 DE2 mixer 1 behind the composite output (one VI plane without
+ * alpha formats at zpos 0, the primary UI plane at zpos 1). Mixers with
+ * spare UI planes (the H3 mixer 0, the A20 backends) keep the game on the
+ * primary plane.
+ */
+static int ov_scan(int ki)
+{
+	int i;
+
+	for (i = 0; i < D.nplane; i++)
+		if (i != D.crtcs[ki].primary && (D.planes[i].possible_crtcs & (1u << ki)) &&
+		    D.planes[i].type == DRM_PLANE_TYPE_OVERLAY && D.planes[i].argb8888 &&
+		    D.planes[i].fb_id)
+			return i;
+	return -1;
+}
+
+static void crtc_pick_planes(int ki)
+{
+	struct crtc *c = &D.crtcs[ki];
+	int g = c->primary, j;
+
+	c->ov_swapped = false;
+	c->ov_idx = -1;
+	if (g < 0 || ov_scan(ki) >= 0 || !D.planes[g].argb8888 || !D.planes[g].prop_zpos)
+		return;
+	for (j = 0; j < D.nplane; j++) {
+		const struct plane *p = &D.planes[j];
+
+		if (j == g || !(p->possible_crtcs & (1u << ki)) || p->type != DRM_PLANE_TYPE_OVERLAY ||
+		    !p->xrgb8888 || !p->fb_id || !p->prop_zpos || p->zpos >= D.planes[g].zpos)
+			continue;
+		c->primary = j;
+		c->ov_idx = g;
+		c->ov_swapped = true;
+		return;
+	}
+}
+
 static int enumerate(void)
 {
 	drmModeRes *res;
@@ -687,6 +804,8 @@ static int enumerate(void)
 			};
 			load_props(c->id, DRM_MODE_OBJECT_CONNECTOR, w, 2);
 		}
+		if (conn_is_tv(c->type))
+			load_tv_modes(c);
 		drmModeFreeConnector(mc);
 	}
 	drmModeFreeResources(res);
@@ -728,8 +847,9 @@ static int enumerate(void)
 				{ "CRTC_Y", &p->crtc_y, NULL },
 				{ "CRTC_W", &p->crtc_w, NULL },
 				{ "CRTC_H", &p->crtc_h, NULL },
+				{ "zpos", &p->prop_zpos, &p->zpos },
 			};
-			load_props(p->id, DRM_MODE_OBJECT_PLANE, w, 11);
+			load_props(p->id, DRM_MODE_OBJECT_PLANE, w, 12);
 		}
 	}
 	drmModeFreePlaneResources(pres);
@@ -753,6 +873,7 @@ static int enumerate(void)
 			if (D.crtcs[i].primary < 0 && p->type == DRM_PLANE_TYPE_OVERLAY)
 				D.crtcs[i].primary = j;
 		}
+		crtc_pick_planes(i);
 	}
 
 	for (i = 0; i < D.nconn; i++)
@@ -762,8 +883,9 @@ static int enumerate(void)
 		     D.conns[i].kind == DISPLAY_OUTPUT_LCD ? "internal" : "ignored",
 		     D.conns[i].possible_crtcs);
 	for (i = 0; i < D.ncrtc; i++)
-		dlog(DISPLAY_LOG_DEBUG, "crtc %u index %d plane %u", D.crtcs[i].id, i,
-		     D.crtcs[i].primary >= 0 ? D.planes[D.crtcs[i].primary].id : 0);
+		dlog(DISPLAY_LOG_DEBUG, "crtc %u index %d plane %u%s", D.crtcs[i].id, i,
+		     D.crtcs[i].primary >= 0 ? D.planes[D.crtcs[i].primary].id : 0,
+		     D.crtcs[i].ov_swapped ? " (below the primary plane, which takes the overlay)" : "");
 	return 0;
 }
 
@@ -796,6 +918,29 @@ static const drmModeModeInfo *find_mode(const struct conn *c, int w, int h, int 
 	return best;
 }
 
+/* The TV mode with `lines` active lines (480 = NTSC, 576 = PAL), interlaced
+ * first. drm_connector_helper_tv_get_modes() lists 720x480i and 720x576i. */
+static const drmModeModeInfo *find_tv_mode(const struct conn *c, int lines)
+{
+	const drmModeModeInfo *best = NULL;
+
+	for (int i = 0; i < c->count_modes; i++) {
+		const drmModeModeInfo *m = &c->modes[i];
+
+		if (m->vdisplay != lines)
+			continue;
+		if (!best || ((m->flags & DRM_MODE_FLAG_INTERLACE) && !(best->flags & DRM_MODE_FLAG_INTERLACE)))
+			best = m;
+	}
+	return best;
+}
+
+/* The TV standard of a mode on an analog TV connector: 576 lines = PAL. */
+static bool tv_mode_is_pal(const drmModeModeInfo *m)
+{
+	return m->vdisplay == 576;
+}
+
 static bool pick_mode(const struct conn *c, drmModeModeInfo *out, bool *builtin)
 {
 	const drmModeModeInfo *m = NULL;
@@ -806,6 +951,20 @@ static bool pick_mode(const struct conn *c, drmModeModeInfo *out, bool *builtin)
 		m = find_mode(c, D.cfg.force_width, D.cfg.force_height,
 			      D.cfg.hdmi_refresh > 0 ? D.cfg.hdmi_refresh : 60);
 
+	if (!m && c->kind == DISPLAY_OUTPUT_LCD && conn_is_tv(c->type) && D.cfg.tv_norm != DISPLAY_TV_AUTO) {
+		/*
+		 * The built-in composite screen (display_config.tv_norm): NTSC
+		 * 720x480i at 59.94 Hz by default, for the game timing, PAL
+		 * 720x576i at 50 Hz on request, and each one the fallback of the
+		 * other when it is missing (or NTSC was refused, do_switch()).
+		 */
+		int lines = D.cfg.tv_norm == DISPLAY_TV_PAL || D.tv_pal_fallback ? 576 : 480;
+
+		m = find_tv_mode(c, lines);
+		if (!m)
+			m = find_tv_mode(c, lines == 480 ? 576 : 480);
+	}
+
 	if (!m && c->kind == DISPLAY_OUTPUT_HDMI) {
 		/*
 		 * No EDID: the kernel only offers its no-EDID DMT list (up to
@@ -813,7 +972,7 @@ static bool pick_mode(const struct conn *c, drmModeModeInfo *out, bool *builtin)
 		 * Use the CEA timing of the policy mode: 720p60 (accepted by
 		 * every HDMI TV) or 480p60 (mandatory for every sink).
 		 */
-		if ((!c->has_edid || c->count_modes == 0) && D.cfg.hdmi_builtin_mode) {
+		if ((!c->has_edid || c->count_modes == 0) && D.cfg.hdmi_builtin_mode && !conn_is_tv(c->type)) {
 			*out = (D.cfg.hdmi_width == 640 && D.cfg.hdmi_height == 480)
 				       ? mode_cea_480p60 : mode_cea_720p60;
 			*builtin = true;
@@ -1194,31 +1353,71 @@ static void blit(struct fbuf *b, uint32_t dfmt, const struct display_rect *img, 
 /* Geometry                                                            */
 /* ------------------------------------------------------------------ */
 
+/*
+ * The screen geometry of connector ci in a W x H mode (struct geo). An
+ * analog TV picture is 4:3 whatever the line length: 720x480 has pixels
+ * 0.889 wide, 720x576 1.067. The overscan inset (display_config.tv_overscan)
+ * only applies to the built-in TV screen.
+ */
+static void geo_for(int ci, int W, int H, struct geo *g)
+{
+	int o = D.cfg.tv_overscan;
+
+	g->par = 1.0;
+	g->ix = g->iy = 0;
+	if (ci < 0 || ci >= D.nconn || !conn_is_tv(D.conns[ci].type) || W <= 0 || H <= 0)
+		return;
+	g->par = (4.0 * H) / (3.0 * W);
+	if (D.conns[ci].kind != DISPLAY_OUTPUT_LCD)
+		return;
+	o = o < 0 ? 0 : o > 20 ? 20 : o;
+	g->ix = W * o / 100;
+	g->iy = H * o / 100;
+}
+
+/*
+ * Where a sw x sh image goes on a W x H screen, inside the overscan inset of
+ * D.geo and for its pixel shape (D.geo.par; 0 = square, as in the tests).
+ * INTEGER keeps square source pixels: the factor is taken on the physical
+ * width (W x par), the on-screen width is then divided by par again
+ * (320x240 x2 on 720x480i = 720x480, 4:3 on the panel).
+ */
 static struct display_rect compute_scaled(int sw, int sh, int W, int H,
 					  enum display_scale_mode mode, double aspect)
 {
-	struct display_rect r = { 0, 0, W, H };
+	double par = D.geo.par > 0.0 ? D.geo.par : 1.0;
+	int ix = D.geo.ix, iy = D.geo.iy;
+	struct display_rect r;
 
+	if (ix < 0 || 2 * ix >= W)
+		ix = 0;
+	if (iy < 0 || 2 * iy >= H)
+		iy = 0;
+	W -= 2 * ix;
+	H -= 2 * iy;
+	r = (struct display_rect){ 0, 0, W, H };
 	if (aspect <= 0.0)
 		aspect = (double)sw / (double)sh;
 
 	if (mode == DISPLAY_SCALE_INTEGER) {
-		int n = W / sw < H / sh ? W / sw : H / sh;
+		/* (+1e-9: 720 x 8/9 must count as 640, not 639.999...) */
+		int nw = (int)((double)W * par / (double)sw + 1e-9);
+		int n = nw < H / sh ? nw : H / sh;
 
 		if (n >= 1) {
-			r.w = sw * n;
+			r.w = (int)((double)(sw * n) / par + 0.5);
 			r.h = sh * n;
 		} else {
 			mode = DISPLAY_SCALE_ASPECT; /* image larger than screen */
 		}
 	}
 	if (mode == DISPLAY_SCALE_ASPECT) {
-		if ((double)W / (double)H > aspect) {
+		if ((double)W * par / (double)H > aspect) {
 			r.h = H;
-			r.w = (int)(H * aspect + 0.5);
+			r.w = (int)(H * aspect / par + 0.5);
 		} else {
 			r.w = W;
-			r.h = (int)(W / aspect + 0.5);
+			r.h = (int)(W * par / aspect + 0.5);
 		}
 	}
 	if (r.w > W)
@@ -1230,8 +1429,8 @@ static struct display_rect compute_scaled(int sw, int sh, int W, int H,
 	if (r.h < 1)
 		r.h = 1;
 	/* sun4i has no plane clipping: the rect must stay inside the CRTC. */
-	r.x = (W - r.w) / 2;
-	r.y = (H - r.h) / 2;
+	r.x = ix + (W - r.w) / 2;
+	r.y = iy + (H - r.h) / 2;
 	return r;
 }
 
@@ -1309,25 +1508,38 @@ bool display_overlay_rect(int W, int H, int w, int h, enum display_corner corner
 	return true;
 }
 
+/* display_overlay_rect() inside the overscan inset of the output (D.geo). */
+static bool ov_rect_inset(int W, int H, int w, int h, enum display_corner corner, int margin,
+			  struct display_rect *out)
+{
+	int ix = D.geo.ix, iy = D.geo.iy;
+
+	if (ix < 0 || 2 * ix >= W)
+		ix = 0;
+	if (iy < 0 || 2 * iy >= H)
+		iy = 0;
+	if (!display_overlay_rect(W - 2 * ix, H - 2 * iy, w, h, corner, margin, out))
+		return false;
+	out->x += ix;
+	out->y += iy;
+	return true;
+}
+
 static bool ov_key_eq(const struct ov_key *a, const struct ov_key *b)
 {
 	return a->pi == b->pi && a->crtc_id == b->crtc_id && a->dst.x == b->dst.x &&
 	       a->dst.y == b->dst.y && a->dst.w == b->dst.w && a->dst.h == b->dst.h;
 }
 
-/* An overlay plane of CRTC ki that takes ARGB8888 (not the game plane). */
+/* A plane of CRTC ki that takes ARGB8888, above the game plane and not the
+ * game plane: an overlay plane, or the primary one (crtc_pick_planes()). */
 static int ov_plane(int ki)
 {
-	int i;
-
 	if (ki < 0 || ki >= D.ncrtc)
 		return -1;
-	for (i = 0; i < D.nplane; i++)
-		if (i != D.crtcs[ki].primary && (D.planes[i].possible_crtcs & (1u << ki)) &&
-		    D.planes[i].type == DRM_PLANE_TYPE_OVERLAY && D.planes[i].argb8888 &&
-		    D.planes[i].fb_id)
-			return i;
-	return -1;
+	if (D.crtcs[ki].ov_swapped)
+		return D.crtcs[ki].ov_idx;
+	return ov_scan(ki);
 }
 
 /*
@@ -1349,7 +1561,7 @@ static bool ov_prepare(int ki, int W, int H, bool full, struct ov_plan *op)
 	op->key.pi = pi;
 	op->key.crtc_id = ki >= 0 ? D.crtcs[ki].id : 0;
 	if (!o->want || !o->pix || pi < 0 ||
-	    !display_overlay_rect(W, H, o->w, o->h, o->corner, o->margin, &op->key.dst) ||
+	    !ov_rect_inset(W, H, o->w, o->h, o->corner, o->margin, &op->key.dst) ||
 	    (o->failed && ov_key_eq(&o->failed_key, &op->key))) {
 		if (!on_screen || full)
 			return false;
@@ -1606,6 +1818,10 @@ static int commit_state(int ci, int ki, int pi, uint32_t blob, bool modeset,
 		for (i = 0; i < D.nconn; i++)
 			ret |= add(r, D.conns[i].id, D.conns[i].prop_crtc_id,
 				   i == ci ? D.crtcs[ki].id : 0);
+		/* sun4i_tv encodes the connector's TV mode, not the CRTC mode:
+		 * keep the two in step (apply()). */
+		if (D.pend_tv)
+			ret |= add(r, D.conns[ci].id, D.conns[ci].prop_tv_mode, D.pend_tv_val);
 		for (i = 0; i < D.ncrtc; i++) {
 			/* display_set_active(false) survives switches and resumes. */
 			ret |= add(r, D.crtcs[i].id, D.crtcs[i].prop_active,
@@ -2339,11 +2555,25 @@ static int apply(int ci, int ki, const drmModeModeInfo *mode, bool modeset)
 	struct strat_cache *cached = NULL;
 	struct ov_plan ovp;
 	const struct ov_plan *op;
+	struct geo old_geo = D.geo;
 	bool ext_on;
 
 	if (ki < 0 || D.crtcs[ki].primary < 0)
 		return -ENODEV;
 	pi = D.crtcs[ki].primary;
+
+	/* The geometry of this output first: the plans and the overlay
+	 * placement below depend on it (restored if nothing is committed). */
+	geo_for(ci, W, H, &D.geo);
+	D.pend_tv = false;
+	if (modeset && ci >= 0 && ci < D.nconn && D.conns[ci].prop_tv_mode) {
+		const struct conn *c = &D.conns[ci];
+
+		if (tv_mode_is_pal(mode) ? c->has_tv_pal : c->has_tv_ntsc) {
+			D.pend_tv = true;
+			D.pend_tv_val = tv_mode_is_pal(mode) ? c->tv_pal : c->tv_ntsc;
+		}
+	}
 
 	drain_flip(FLIP_DRAIN_MS);
 	ext_on = D.ext_shown && D.ext_front.valid;
@@ -2353,8 +2583,11 @@ static int apply(int ci, int ki, const drmModeModeInfo *mode, bool modeset)
 
 	if (modeset) {
 		ret = drmModeCreatePropertyBlob(D.fd, mode, sizeof(*mode), &blob);
-		if (ret)
+		if (ret) {
+			D.geo = old_geo;
+			D.pend_tv = false;
 			return ret;
+		}
 	}
 	ntries = build_tries(pi, tries);
 	if (D.surf_set) {
@@ -2405,6 +2638,7 @@ static int apply(int ci, int ki, const drmModeModeInfo *mode, bool modeset)
 				     path_names[pl.path]);
 			if (D.surf_set)
 				cache_store(D.crtcs[ki].id, W, H, &key_dst, t);
+			D.pend_tv = false;
 			finalize(ci, ki, pi, blob, modeset, mode, &pl, &tmp);
 			if (op)
 				ov_shown(op);
@@ -2427,6 +2661,8 @@ static int apply(int ci, int ki, const drmModeModeInfo *mode, bool modeset)
 	}
 	if (blob)
 		drmModeDestroyPropertyBlob(D.fd, blob);
+	D.geo = old_geo;
+	D.pend_tv = false;
 	return ret;
 }
 
@@ -2450,6 +2686,14 @@ static void fill_info(struct display_output_info *in, bool builtin)
 	in->crtc_id = D.crtcs[D.crtc].id;
 	in->plane_id = D.planes[D.plane].id;
 	in->crtc_index = D.crtc;
+	in->interlaced = (D.mode.flags & DRM_MODE_FLAG_INTERLACE) != 0;
+	in->pixel_aspect = D.geo.par > 0.0 ? D.geo.par : 1.0;
+	in->overscan_x = D.geo.ix;
+	in->overscan_y = D.geo.iy;
+	if (in->interlaced)
+		snprintf(in->mode_name, sizeof(in->mode_name), "%dx%di@%d.%02d%s", D.mode.hdisplay,
+			 D.mode.vdisplay, hz / 1000, (hz % 1000) / 10,
+			 !conn_is_tv(c->type) ? "" : tv_mode_is_pal(&D.mode) ? " PAL" : " NTSC");
 }
 
 static void arm_timer(int ms, int reason)
@@ -2499,6 +2743,14 @@ static int do_switch(int ci, enum display_event_reason why, struct display_switc
 		     strerror(-ret));
 		D.cfg.lcd_refresh_hz = 0;
 		if (pick_mode(&D.conns[ci], &mode, &builtin))
+			ret = apply(ci, ki, &mode, true);
+	}
+	if (ret && D.conns[ci].kind == DISPLAY_OUTPUT_LCD && conn_is_tv(D.conns[ci].type) &&
+	    !tv_mode_is_pal(&mode) && !D.tv_pal_fallback && D.cfg.tv_norm == DISPLAY_TV_NTSC) {
+		/* The built-in composite screen: PAL is the fallback of NTSC. */
+		dlog(DISPLAY_LOG_ERROR, "NTSC refused on %s (%s): trying PAL", D.conns[ci].name, strerror(-ret));
+		D.tv_pal_fallback = true;
+		if (pick_mode(&D.conns[ci], &mode, &builtin) && tv_mode_is_pal(&mode))
 			ret = apply(ci, ki, &mode, true);
 	}
 	if (ret) {

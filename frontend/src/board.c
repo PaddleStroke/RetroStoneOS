@@ -87,6 +87,17 @@ static void parse_internal(struct board_profile *b, const char *v)
 	b->internal_display = b->internal_types ? BOARD_INTERNAL_LIST : BOARD_INTERNAL_NONE;
 }
 
+/* tv_norm: ntsc (also the default for an unknown value), pal, auto */
+static void parse_tv_norm(struct board_profile *b, const char *v)
+{
+	if (!strcasecmp(v, "pal"))
+		b->tv_norm = BOARD_TV_PAL;
+	else if (!strcasecmp(v, "auto"))
+		b->tv_norm = BOARD_TV_AUTO;
+	else
+		b->tv_norm = BOARD_TV_NTSC;
+}
+
 static void parse_refresh(struct board_profile *b, const char *v)
 {
 	char buf[128], *tok, *save = NULL;
@@ -132,6 +143,10 @@ static void set_key(struct board_profile *b, const char *k, const char *v)
 		parse_internal(b, v);
 	else if (!strcmp(k, "internal_refresh_options"))
 		parse_refresh(b, v);
+	else if (!strcmp(k, "tv_norm"))
+		parse_tv_norm(b, v);
+	else if (!strcmp(k, "tv_overscan"))
+		b->tv_overscan = atoi(v) < 0 ? 0 : atoi(v) > 20 ? 20 : atoi(v);
 	NAME("backlight", backlight);
 	NAME("battery_supply", battery_supply);
 	NAME("ac_supply", ac_supply);

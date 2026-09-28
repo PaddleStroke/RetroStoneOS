@@ -43,8 +43,23 @@
 
 enum display_output_type {
 	DISPLAY_OUTPUT_NONE = 0,
-	DISPLAY_OUTPUT_LCD,   /* internal panel (DPI/Unknown/LVDS/DSI/Virtual) */
-	DISPLAY_OUTPUT_HDMI,  /* external (HDMI/DVI/DP/VGA) */
+	DISPLAY_OUTPUT_LCD,   /* internal panel (DPI/Unknown/LVDS/DSI/Virtual; a
+				 composite/TV connector the board lists as its
+				 built-in screen, e.g. the RetroStone1) */
+	DISPLAY_OUTPUT_HDMI,  /* external (HDMI/DVI/DP/VGA, analog TV otherwise) */
+};
+
+/*
+ * Analog TV standard of an internal composite/TV connector (board.ini
+ * tv_norm). NTSC = 720x480 interlaced at 59.94 Hz, PAL = 720x576 interlaced
+ * at 50 Hz; when the chosen one is missing or refused, the other one is
+ * used (PAL is the NTSC fallback). AUTO = the kernel's preferred mode (the
+ * driver default, or video=Composite-1:PAL on the command line).
+ */
+enum display_tv_norm {
+	DISPLAY_TV_NTSC = 0,
+	DISPLAY_TV_PAL,
+	DISPLAY_TV_AUTO,
 };
 
 enum display_internal_mode {
@@ -83,6 +98,20 @@ struct display_output_info {
 	char mode_name[32];
 	uint32_t connector_id, crtc_id, plane_id;
 	int crtc_index;
+	bool interlaced;        /* the active mode is interlaced (composite) */
+	/*
+	 * Shape of one screen pixel, width / height: 1.0 for square pixels
+	 * (panels, HDMI); an analog TV connector shows its 720-pixel lines on a
+	 * 4:3 picture, so 720x480 has 0.889 and 720x576 has 1.067. The scaled
+	 * planes use it for the aspect ratio; a UI laid out for the screen
+	 * should use width * pixel_aspect x height (640x480 for 720x480i).
+	 * 0 (callers that fill this struct themselves) means 1.0.
+	 */
+	double pixel_aspect;
+	/* Overscan inset kept clear on each edge, in screen pixels (the
+	 * built-in composite screen, display_config.tv_overscan; else 0). The
+	 * overlay and the scaled planes stay inside it. */
+	int overscan_x, overscan_y;
 };
 
 /* Why a callback fired. */
@@ -159,7 +188,9 @@ struct display_config {
 	 * Which connectors are the built-in screen (board profile key
 	 * internal_display, docs/porting.md). DISPLAY_INTERNAL_AUTO (default):
 	 * every type that is not external (HDMI/DVI/DP/VGA/TV); _LIST: the
-	 * DRM_MODE_CONNECTOR_* bits of internal_types; _NONE: no built-in
+	 * DRM_MODE_CONNECTOR_* bits of internal_types (an analog TV type listed
+	 * there is the built-in screen: the RetroStone1's composite output to
+	 * its AMT630A converter); _NONE: no built-in
 	 * screen, the other connectors are ignored. A board with no built-in
 	 * screen and no display connected lights the first external connector
 	 * anyway (the CEA mode of the HDMI policy), so the menu starts and moves
@@ -167,6 +198,16 @@ struct display_config {
 	 */
 	int internal_mode;           /* enum display_internal_mode */
 	uint32_t internal_types;
+	/*
+	 * Internal composite/TV screen (internal_types lists composite, svideo,
+	 * tv or component): the TV standard (board.ini tv_norm, default NTSC)
+	 * and an overscan margin, in percent of the width and of the height on
+	 * each edge (board.ini tv_overscan, 0..20, default 0), inside which the
+	 * scaled game/UI planes and the overlay are kept. The picture is 4:3.
+	 * HDMI and panels ignore both.
+	 */
+	int tv_norm;                 /* enum display_tv_norm */
+	int tv_overscan;
 	/* Log the A20 TCON0 pixel clock model when the panel is retimed (board
 	 * quirk sun4i-tcon0-clock). Default on. */
 	bool a20_clock_log;

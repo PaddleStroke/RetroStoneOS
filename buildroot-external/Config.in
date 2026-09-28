@@ -1,11 +1,13 @@
 config BR2_RETROSTONE_DTS_DIR
-	string "RetroStone2 device tree source directory"
+	string "RetroStone device tree source directory"
 	help
-	  Directory holding sun7i-a20-retrostone2.dts (plus any .dtsi it
-	  includes, and overlays/*.dtso). They are copied into the
-	  kernel's arch/arm/boot/dts/allwinner/ before the kernel is
-	  built (see external.mk). Normally
-	  $(BR2_EXTERNAL_RETROSTONE_PATH)/board/retrostone2/dts.
+	  Directory holding the board's .dts, named as the first entry of
+	  BR2_LINUX_KERNEL_INTREE_DTS_NAME (sun7i-a20-retrostone2.dts,
+	  sun8i-h3-retrostone1.dts), plus any .dtsi it includes, and
+	  overlays/*.dtso. They are copied into the kernel's
+	  arch/arm/boot/dts/allwinner/ before the kernel is built (see
+	  external.mk). Normally
+	  $(BR2_EXTERNAL_RETROSTONE_PATH)/board/<board>/dts.
 
 menu "RetroStoneOS build"
 

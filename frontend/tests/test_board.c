@@ -50,6 +50,7 @@ static bool streq(const char *a, const char *b)
 #define T_DSI 16
 #define T_DPI 17
 #define T_LVDS 7
+#define T_COMPOSITE 5
 
 /* ------------------------------------------------------------ 1. values */
 static void test_retrostone2_values(const struct board_profile *b)
@@ -119,6 +120,8 @@ static void test_retrostone2_values(const struct board_profile *b)
 	CHECK((dc.internal_types & (1u << T_UNKNOWN)) && (dc.internal_types & (1u << T_DPI)) &&
 	      !(dc.internal_types & (1u << T_HDMIA)), "display: Unknown + DPI");
 	CHECK(dc.a20_clock_log == ddef.a20_clock_log, "display: A20 clock log");
+	CHECK(dc.tv_norm == ddef.tv_norm && dc.tv_overscan == ddef.tv_overscan && !(dc.internal_types & (1u << T_COMPOSITE)),
+	      "display: no composite screen, TV settings at their defaults");
 
 	/* UI */
 	ui_config_defaults(&udef);
@@ -373,6 +376,28 @@ static void test_parser(void)
 	board_defaults(&b);
 	board_parse(&b, "internal_display = bogus\n");
 	CHECK(b.internal_display == BOARD_INTERNAL_NONE, "unknown connector names only: none");
+	/* the built-in composite screen */
+	board_defaults(&b);
+	CHECK(b.tv_norm == BOARD_TV_NTSC && b.tv_overscan == 0, "TV defaults: NTSC, no overscan");
+	board_parse(&b, "internal_display = composite\ntv_norm = PAL\ntv_overscan = 50\n");
+	CHECK(b.internal_display == BOARD_INTERNAL_LIST && board_connector_is_internal(&b, T_COMPOSITE) &&
+	      !board_connector_is_internal(&b, T_HDMIA) && !board_connector_is_internal(&b, T_UNKNOWN),
+	      "composite is the built-in screen");
+	CHECK(b.tv_norm == BOARD_TV_PAL && b.tv_overscan == 20, "tv_norm PAL, overscan capped: %d", b.tv_overscan);
+	board_parse(&b, "tv_norm = auto\ntv_overscan = -3\n");
+	CHECK(b.tv_norm == BOARD_TV_AUTO && b.tv_overscan == 0, "tv_norm auto, overscan floor");
+	board_parse(&b, "tv_norm = secam\n");
+	CHECK(b.tv_norm == BOARD_TV_NTSC, "unknown tv_norm: NTSC");
+	{
+		struct display_config dc;
+
+		display_config_defaults(&dc);
+		CHECK(dc.tv_norm == DISPLAY_TV_NTSC && dc.tv_overscan == 0, "display defaults: NTSC, 0");
+		board_parse(&b, "tv_norm = pal\ntv_overscan = 4\n");
+		board_apply_display(&b, &dc);
+		CHECK(dc.tv_norm == DISPLAY_TV_PAL && dc.tv_overscan == 4 && dc.internal_mode == DISPLAY_INTERNAL_LIST &&
+		      (dc.internal_types & (1u << T_COMPOSITE)), "applied to the display config");
+	}
 }
 
 static void test_other(const char *path)
@@ -388,6 +413,24 @@ static void test_other(const char *path)
 		CHECK(!b.builtin_pad_prefix[0] && !b.refresh_native && !b.storage_overlays[0],
 		      "Pi 4: no built-in pad, refresh choice, overlays");
 		CHECK(streq(board_name_or_auto(b.battery_supply), ""), "Pi 4: no battery");
+	}
+	if (strstr(path, "retrostone1")) {
+		struct display_config dc;
+		struct ui_config uc;
+
+		CHECK(b.internal_display == BOARD_INTERNAL_LIST && board_connector_is_internal(&b, T_COMPOSITE) &&
+		      !board_connector_is_internal(&b, T_HDMIA), "RetroStone1: the composite output is the built-in screen");
+		CHECK(b.tv_norm == BOARD_TV_NTSC && b.tv_overscan == 0, "RetroStone1: NTSC, no overscan");
+		CHECK(streq(board_name_or_auto(b.battery_supply), "") && streq(board_name_or_auto(b.backlight), ""),
+		      "RetroStone1: no battery, no backlight");
+		display_config_defaults(&dc);
+		board_apply_display(&b, &dc);
+		CHECK(dc.internal_mode == DISPLAY_INTERNAL_LIST && dc.internal_types == (1u << T_COMPOSITE) &&
+		      dc.tv_norm == DISPLAY_TV_NTSC, "RetroStone1: display config");
+		ui_config_defaults(&uc);
+		board_apply_ui(&b, &uc);
+		CHECK(!uc.has_internal_display && !uc.lcd_refresh_choice,
+		      "RetroStone1: no Brightness (the AMT630A drives the backlight), no refresh choice");
 	}
 }
 

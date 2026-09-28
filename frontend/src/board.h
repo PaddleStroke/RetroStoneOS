@@ -23,6 +23,14 @@
  *                             auto (any non-external type) | none |
  *                             a list of dpi, unknown, lvds, dsi, edp,
  *                             virtual, spi, composite, svideo, tv
+ *                             (a listed analog TV type is the built-in
+ *                             screen: the RetroStone1's composite output)
+ *   tv_norm                   built-in composite screen: ntsc (720x480i  ntsc
+ *                             at 59.94 Hz) | pal (720x576i at 50 Hz) |
+ *                             auto (the kernel's preferred mode); ntsc
+ *                             and pal fall back to each other
+ *   tv_overscan               built-in composite screen: margin kept     0
+ *                             clear on each edge, percent (0..20)
  *   internal_refresh_options  refresh rates offered for the built-in     "" (no choice)
  *                             screen: "<native>,60" (e.g. "78,60")
  *   backlight                 /sys/class/backlight entry: auto | none    auto
@@ -64,6 +72,12 @@
 #define BOARD_INI_DEFAULT "/etc/rsos/board.ini"
 #define BOARD_STR 64
 
+enum board_tv_norm {
+	BOARD_TV_NTSC = 0,
+	BOARD_TV_PAL,
+	BOARD_TV_AUTO,
+};
+
 enum board_internal_display {
 	BOARD_INTERNAL_AUTO = 0,   /* every connector type that is not external */
 	BOARD_INTERNAL_LIST,       /* the types in internal_types */
@@ -81,6 +95,8 @@ struct board_profile {
 	char builtin_pad_name[BOARD_STR + 16];/* "<name> built-in" (derived) */
 	enum board_internal_display internal_display;
 	uint32_t internal_types;              /* DRM_MODE_CONNECTOR_* bits (LIST) */
+	enum board_tv_norm tv_norm;           /* built-in composite screen */
+	int tv_overscan;                      /* percent per edge, 0..20 */
 	int refresh_native;                   /* internal_refresh_options: first value, 0 = none */
 	bool refresh_60;                      /* 60 is offered as well */
 	char backlight[BOARD_STR];            /* "" = auto, "none", or a name */

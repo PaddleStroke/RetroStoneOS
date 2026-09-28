@@ -1,0 +1,381 @@
+From ad14b52fea47d7d6722ab8420069886614182892 Mon Sep 17 00:00:00 2001
+From: RetroStoneOS <noreply@8bcraft.com>
+Date: Mon, 28 Sep 2026 10:12:35 +0200
+Subject: [PATCH] drm/sun4i: add the H3 TV encoder (composite output)
+
+Composite (CVBS) output for the Allwinner H3, for the RetroStone1, whose
+built-in screen is an AMT630A CVBS-to-RGB converter fed by the H3 TVOUT
+pin. Mainline 6.18 only drives the A10/A20 TV encoder; the H3 has the same
+block behind its second DE2 pipeline (mixer1 -> TCON1 -> TVE).
+
+Source: the Armbian build framework, sunxi-6.18 kernel patches, by
+enthropy7 (August 2026, Signed-off-by: enthropy7), tested there on an
+Orange Pi Zero (H2+) with a capture card:
+  https://github.com/armbian/build/tree/main/patch/kernel/archive/sunxi-6.18/patches.armbian
+  - clk-sunxi-ng-h3-add-the-tve-clock.patch
+  - drm-sun4i-support-the-h3-and-h5-tv-encoders.patch
+  - drm-sun4i-fix-null-deref-when-unbinding-the-tv-encoder.patch
+  - dt-bindings-display-allwinner-add-h3-h5-tv-encoder-and-mixer1.patch
+  (armbian/build at faa60b8b7015, 2026-09-28). Licence: GPL-2.0, like the
+files it modifies. Earlier work on the same hardware: Jernej Skrabec's
+"wip h3/h5 cvbs" patch (LibreELEC.tv,
+projects/Allwinner/patches/linux/0055-wip-h3-h5-cvbs.patch) and Icenowy
+Zheng's 2017 DE2 series ("drm: sun4i: add support for the TV encoder in
+H3 SoC").
+
+What it does:
+- clk: sunxi-ng: h3: the TVE module clock (0x120) has an undocumented fixed
+  post-divider of 16; without it the TCON1/TVE dot clock is set 16 times
+  too high and the picture never locks.
+- drm/sun4i: tv: per-SoC quirks. The H3 needs a DAC calibration value
+  (0x02000c00) at 0x304 before the DAC drives anything, the H5 another
+  value plus an undocumented register at 0x30c. New compatibles
+  allwinner,sun8i-h3-tv-encoder and allwinner,sun50i-h5-tv-encoder; the
+  regmap grows to 0x400 to reach them.
+- drm/sun4i: tv: do not clean the connector and encoder up again in
+  unbind (drm_mode_config_cleanup() already did: NULL dereference).
+- drm/sun4i: sun8i-mixer: the TV encoder takes YUV, so the mixer's DCSC
+  converts its RGB output (BT.601) through the apply/disable
+  color_correction engine callbacks, which sun4i_tv.c already calls at
+  enable/disable (DE2 only). New allwinner,sun8i-h3-de2-mixer-1 (one VI and
+  one UI channel, both scaled, 432 MHz).
+- dt-bindings: the three new compatibles, and the H3 display engine may
+  list two pipelines (mixer 0 and mixer 1; not in the Armbian patches).
+
+Changes against the Armbian patches: the mixer1 configuration and the
+color correction are rewritten for the 6.18 sun8i_mixer_cfg (Armbian
+applies them on top of Jernej Skrabec's sun4i-drm refactor series, which
+6.18 does not have: no lay_cfg, no de2_fcc_alpha); the color correction
+callbacks return early on DE3/DE3.3 mixers. The device tree part (mixer1,
+TCON1 and the TVE node) is not in this patch: it lives in the RetroStone1
+board directory (sun8i-h3-tve-pipeline.dtsi).
+
+Not tested on RetroStone1 hardware yet (docs/boards.md, "RetroStone1").
+---
+ .../allwinner,sun4i-a10-display-engine.yaml   | 14 +++-
+ .../allwinner,sun4i-a10-tv-encoder.yaml       |  7 +-
+ .../allwinner,sun8i-a83t-de2-mixer.yaml       |  1 +
+ drivers/clk/sunxi-ng/ccu-sun8i-h3.c           | 19 +++++-
+ drivers/gpu/drm/sun4i/sun4i_tv.c              | 41 +++++++++--
+ drivers/gpu/drm/sun4i/sun8i_mixer.c           | 68 ++++++++++++++++++-
+ drivers/gpu/drm/sun4i/sun8i_mixer.h           |  8 ++-
+ 7 files changed, 143 insertions(+), 15 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/display/allwinner,sun4i-a10-display-engine.yaml b/Documentation/devicetree/bindings/display/allwinner,sun4i-a10-display-engine.yaml
+index e6088f379..999b6cf46 100644
+--- a/Documentation/devicetree/bindings/display/allwinner,sun4i-a10-display-engine.yaml
++++ b/Documentation/devicetree/bindings/display/allwinner,sun4i-a10-display-engine.yaml
+@@ -103,9 +103,17 @@ then:
+       minItems: 2
+ 
+ else:
+-  properties:
+-    allwinner,pipelines:
+-      maxItems: 1
++  # The H3 has a second mixer, which drives the TV encoder: one or two
++  if:
++    not:
++      properties:
++        compatible:
++          contains:
++            const: allwinner,sun8i-h3-display-engine
++  then:
++    properties:
++      allwinner,pipelines:
++        maxItems: 1
+ 
+ examples:
+   - |
+diff --git a/Documentation/devicetree/bindings/display/allwinner,sun4i-a10-tv-encoder.yaml b/Documentation/devicetree/bindings/display/allwinner,sun4i-a10-tv-encoder.yaml
+index c39e90a59..ce85b474b 100644
+--- a/Documentation/devicetree/bindings/display/allwinner,sun4i-a10-tv-encoder.yaml
++++ b/Documentation/devicetree/bindings/display/allwinner,sun4i-a10-tv-encoder.yaml
+@@ -4,7 +4,7 @@
+ $id: http://devicetree.org/schemas/display/allwinner,sun4i-a10-tv-encoder.yaml#
+ $schema: http://devicetree.org/meta-schemas/core.yaml#
+ 
+-title: Allwinner A10 TV Encoder
++title: Allwinner A10/H3/H5 TV Encoder
+ 
+ maintainers:
+   - Chen-Yu Tsai <wens@csie.org>
+@@ -12,7 +12,10 @@ maintainers:
+ 
+ properties:
+   compatible:
+-    const: allwinner,sun4i-a10-tv-encoder
++    enum:
++      - allwinner,sun4i-a10-tv-encoder
++      - allwinner,sun8i-h3-tv-encoder
++      - allwinner,sun50i-h5-tv-encoder
+ 
+   reg:
+     maxItems: 1
+diff --git a/Documentation/devicetree/bindings/display/allwinner,sun8i-a83t-de2-mixer.yaml b/Documentation/devicetree/bindings/display/allwinner,sun8i-a83t-de2-mixer.yaml
+index cbd18fd83..468d86b5c 100644
+--- a/Documentation/devicetree/bindings/display/allwinner,sun8i-a83t-de2-mixer.yaml
++++ b/Documentation/devicetree/bindings/display/allwinner,sun8i-a83t-de2-mixer.yaml
+@@ -16,6 +16,7 @@ properties:
+       - allwinner,sun8i-a83t-de2-mixer-0
+       - allwinner,sun8i-a83t-de2-mixer-1
+       - allwinner,sun8i-h3-de2-mixer-0
++      - allwinner,sun8i-h3-de2-mixer-1
+       - allwinner,sun8i-r40-de2-mixer-0
+       - allwinner,sun8i-r40-de2-mixer-1
+       - allwinner,sun8i-v3s-de2-mixer
+diff --git a/drivers/clk/sunxi-ng/ccu-sun8i-h3.c b/drivers/clk/sunxi-ng/ccu-sun8i-h3.c
+index 740c4c973..5bf3ca774 100644
+--- a/drivers/clk/sunxi-ng/ccu-sun8i-h3.c
++++ b/drivers/clk/sunxi-ng/ccu-sun8i-h3.c
+@@ -463,8 +463,23 @@ static SUNXI_CCU_M_WITH_MUX_GATE(tcon_clk, "tcon", tcon_parents,
+ 				 CLK_SET_RATE_PARENT);
+ 
+ static const char * const tve_parents[] = { "pll-de", "pll-periph1" };
+-static SUNXI_CCU_M_WITH_MUX_GATE(tve_clk, "tve", tve_parents,
+-				 0x120, 0, 4, 24, 3, BIT(31), 0);
++/*
++ * The TVE clock has an undocumented fixed post-divider of 16. Without it the
++ * rate the TV encoder asks for is set sixteen times too high and the picture
++ * never locks.
++ */
++static struct ccu_div tve_clk = {
++	.enable	= BIT(31),
++	.div	= _SUNXI_CCU_DIV(0, 4),
++	.mux	= _SUNXI_CCU_MUX(24, 3),
++	.fixed_post_div = 16,
++	.common	= {
++		.reg		= 0x120,
++		.features	= CCU_FEATURE_FIXED_POSTDIV,
++		.hw.init	= CLK_HW_INIT_PARENTS("tve", tve_parents,
++						      &ccu_div_ops, 0),
++	},
++};
+ 
+ static const char * const deinterlace_parents[] = { "pll-periph0", "pll-periph1" };
+ static SUNXI_CCU_M_WITH_MUX_GATE(deinterlace_clk, "deinterlace", deinterlace_parents,
+diff --git a/drivers/gpu/drm/sun4i/sun4i_tv.c b/drivers/gpu/drm/sun4i/sun4i_tv.c
+index cce4e3878..07c60d79c 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_tv.c
++++ b/drivers/gpu/drm/sun4i/sun4i_tv.c
+@@ -9,6 +9,7 @@
+ #include <linux/clk.h>
+ #include <linux/component.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/platform_device.h>
+ #include <linux/regmap.h>
+@@ -159,6 +160,16 @@ struct tv_mode {
+ 	const struct resync_parameters	*resync_params;
+ };
+ 
++/*
++ * The H3 and H5 encoders need a calibration value written before the DAC will
++ * drive anything, and the H5 needs one more undocumented register. The A10
++ * encoder this driver was written for needs neither, so it takes the empty set.
++ */
++struct sun4i_tv_quirks {
++	unsigned int calibration;
++	unsigned int unknown : 1;
++};
++
+ struct sun4i_tv {
+ 	struct drm_connector	connector;
+ 	struct drm_encoder	encoder;
+@@ -419,7 +430,7 @@ static const struct regmap_config sun4i_tv_regmap_config = {
+ 	.reg_bits	= 32,
+ 	.val_bits	= 32,
+ 	.reg_stride	= 4,
+-	.max_register	= SUN4I_TVE_WSS_DATA2_REG,
++	.max_register	= 0x400,
+ 	.name		= "tv-encoder",
+ };
+ 
+@@ -429,10 +440,15 @@ static int sun4i_tv_bind(struct device *dev, struct device *master,
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct drm_device *drm = data;
+ 	struct sun4i_drv *drv = drm->dev_private;
++	const struct sun4i_tv_quirks *quirks;
+ 	struct sun4i_tv *tv;
+ 	void __iomem *regs;
+ 	int ret;
+ 
++	quirks = of_device_get_match_data(dev);
++	if (!quirks)
++		return -EINVAL;
++
+ 	tv = devm_kzalloc(dev, sizeof(*tv), GFP_KERNEL);
+ 	if (!tv)
+ 		return -ENOMEM;
+@@ -472,6 +488,11 @@ static int sun4i_tv_bind(struct device *dev, struct device *master,
+ 	}
+ 	clk_prepare_enable(tv->clk);
+ 
++	if (quirks->calibration)
++		regmap_write(tv->regs, 0x304, quirks->calibration);
++	if (quirks->unknown)
++		regmap_write(tv->regs, 0x30c, 0x00101110);
++
+ 	drm_encoder_helper_add(&tv->encoder,
+ 			       &sun4i_tv_helper_funcs);
+ 	ret = drm_simple_encoder_init(drm, &tv->encoder,
+@@ -530,8 +551,6 @@ static void sun4i_tv_unbind(struct device *dev, struct device *master,
+ {
+ 	struct sun4i_tv *tv = dev_get_drvdata(dev);
+ 
+-	drm_connector_cleanup(&tv->connector);
+-	drm_encoder_cleanup(&tv->encoder);
+ 	clk_disable_unprepare(tv->clk);
+ 	reset_control_assert(tv->reset);
+ }
+@@ -551,8 +570,22 @@ static void sun4i_tv_remove(struct platform_device *pdev)
+ 	component_del(&pdev->dev, &sun4i_tv_ops);
+ }
+ 
++static const struct sun4i_tv_quirks a10_quirks = {
++};
++
++static const struct sun4i_tv_quirks h3_quirks = {
++	.calibration = 0x02000c00,
++};
++
++static const struct sun4i_tv_quirks h5_quirks = {
++	.calibration = 0x02850000,
++	.unknown = 1,
++};
++
+ static const struct of_device_id sun4i_tv_of_table[] = {
+-	{ .compatible = "allwinner,sun4i-a10-tv-encoder" },
++	{ .compatible = "allwinner,sun4i-a10-tv-encoder", .data = &a10_quirks },
++	{ .compatible = "allwinner,sun8i-h3-tv-encoder", .data = &h3_quirks },
++	{ .compatible = "allwinner,sun50i-h5-tv-encoder", .data = &h5_quirks },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, sun4i_tv_of_table);
+diff --git a/drivers/gpu/drm/sun4i/sun8i_mixer.c b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+index 31a8409b9..0f9d4dbe5 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_mixer.c
++++ b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+@@ -34,6 +34,16 @@ struct de2_fmt_info {
+ 	u32	de2_fmt;
+ };
+ 
++/*
++ * The TV encoder takes YUV, so the mixer has to convert on the way out. These
++ * are the BT.601 coefficients the DCSC sub-engine is programmed with.
++ */
++static const u32 sun8i_rgb2yuv_coef[12] = {
++	0x00000107, 0x00000204, 0x00000064, 0x00004200,
++	0x00001f68, 0x00001ed6, 0x000001c2, 0x00020200,
++	0x000001c2, 0x00001e87, 0x00001fb7, 0x00020200,
++};
++
+ static const struct de2_fmt_info de2_formats[] = {
+ 	{
+ 		.drm_fmt = DRM_FORMAT_ARGB8888,
+@@ -400,10 +410,43 @@ static void sun8i_mixer_mode_set(struct sunxi_engine *engine,
+ 			 interlaced ? "on" : "off");
+ }
+ 
++/*
++ * Only the TV encoder calls these (sun4i_tv.c, at enable and disable), and it
++ * only sits behind a DE2 mixer (H3/H5). The DCSC registers are not at the same
++ * place on DE3 and DE3.3, so leave those alone.
++ */
++static void sun8i_mixer_apply_color_correction(struct sunxi_engine *engine)
++{
++	struct sun8i_mixer *mixer = engine_to_sun8i_mixer(engine);
++
++	if (mixer->cfg->de_type != SUN8I_MIXER_DE2)
++		return;
++
++	DRM_DEBUG_DRIVER("Applying RGB to YUV color correction\n");
++
++	regmap_bulk_write(engine->regs, SUN8I_MIXER_DCSC_COEF_REG(0),
++			  sun8i_rgb2yuv_coef, ARRAY_SIZE(sun8i_rgb2yuv_coef));
++	regmap_write(engine->regs, SUN8I_MIXER_DCSC_EN, 1);
++}
++
++static void sun8i_mixer_disable_color_correction(struct sunxi_engine *engine)
++{
++	struct sun8i_mixer *mixer = engine_to_sun8i_mixer(engine);
++
++	if (mixer->cfg->de_type != SUN8I_MIXER_DE2)
++		return;
++
++	DRM_DEBUG_DRIVER("Disabling color correction\n");
++
++	regmap_write(engine->regs, SUN8I_MIXER_DCSC_EN, 0);
++}
++
+ static const struct sunxi_engine_ops sun8i_engine_ops = {
+-	.commit		= sun8i_mixer_commit,
+-	.layers_init	= sun8i_layers_init,
+-	.mode_set	= sun8i_mixer_mode_set,
++	.commit			= sun8i_mixer_commit,
++	.layers_init		= sun8i_layers_init,
++	.mode_set		= sun8i_mixer_mode_set,
++	.apply_color_correction	= sun8i_mixer_apply_color_correction,
++	.disable_color_correction = sun8i_mixer_disable_color_correction,
+ };
+ 
+ static const struct regmap_config sun8i_mixer_regmap_config = {
+@@ -719,6 +762,21 @@ static const struct sun8i_mixer_cfg sun8i_h3_mixer0_cfg = {
+ 	.vi_num		= 1,
+ };
+ 
++/*
++ * Mixer1 drives TCON1 and from there the TV encoder. It is a cut-down block:
++ * one VI and one UI channel, each with its scaler, against mixer0's four
++ * channels. It shares pll-de with mixer0, hence the same module rate.
++ */
++static const struct sun8i_mixer_cfg sun8i_h3_mixer1_cfg = {
++	.ccsc		= CCSC_MIXER1_LAYOUT,
++	.de_type	= SUN8I_MIXER_DE2,
++	.mod_rate	= 432000000,
++	.scaler_mask	= 0x3,
++	.scanline_yuv	= 2048,
++	.ui_num		= 1,
++	.vi_num		= 1,
++};
++
+ static const struct sun8i_mixer_cfg sun8i_r40_mixer0_cfg = {
+ 	.ccsc		= CCSC_MIXER0_LAYOUT,
+ 	.de_type	= SUN8I_MIXER_DE2,
+@@ -823,6 +881,10 @@ static const struct of_device_id sun8i_mixer_of_table[] = {
+ 		.compatible = "allwinner,sun8i-h3-de2-mixer-0",
+ 		.data = &sun8i_h3_mixer0_cfg,
+ 	},
++	{
++		.compatible = "allwinner,sun8i-h3-de2-mixer-1",
++		.data = &sun8i_h3_mixer1_cfg,
++	},
+ 	{
+ 		.compatible = "allwinner,sun8i-r40-de2-mixer-0",
+ 		.data = &sun8i_r40_mixer0_cfg,
+diff --git a/drivers/gpu/drm/sun4i/sun8i_mixer.h b/drivers/gpu/drm/sun4i/sun8i_mixer.h
+index a1c1cbccc..7fee013b7 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_mixer.h
++++ b/drivers/gpu/drm/sun4i/sun8i_mixer.h
+@@ -122,6 +122,13 @@
+ /* format 20 is packed YVU444 10-bit */
+ /* format 21 is packed YUV444 10-bit */
+ 
++/*
++ * The DCSC sub-engine converts the mixer's RGB output to YUV, which is what
++ * the TV encoder expects (DE2 only). It is unused on the HDMI and LCD paths.
++ */
++#define SUN8I_MIXER_DCSC_EN			0xb0000
++#define SUN8I_MIXER_DCSC_COEF_REG(x)		(0xb0010 + 0x4 * (x))
++
+ /*
+  * Sub-engines listed bellow are unused for now. The EN registers are here only
+  * to be used to disable these sub-engines.
+@@ -132,7 +139,6 @@
+ #define SUN8I_MIXER_PEAK_EN			0xa6000
+ #define SUN8I_MIXER_ASE_EN			0xa8000
+ #define SUN8I_MIXER_FCC_EN			0xaa000
+-#define SUN8I_MIXER_DCSC_EN			0xb0000
+ 
+ #define SUN50I_MIXER_FCE_EN			0x70000
+ #define SUN50I_MIXER_PEAK_EN			0x70800

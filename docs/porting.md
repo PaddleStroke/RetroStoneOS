@@ -8,6 +8,7 @@ to other hardware does not touch the frontend or the shared scripts. The first p
 | Board | Defconfig | Status |
 |---|---|---|
 | RetroStone2 | `retrostone2_defconfig` | tested on hardware |
+| RetroStone1 (Allwinner H3) | `retrostone1_defconfig` | untested, built by CI; board folder `board/retrostone1/` with its own device tree (like the RetroStone2) and the A/B boot of `board/sbc-uboot/`; the built-in screen is the H3 composite output (kernel patch 0002, `internal_display = composite`), not yet seen on hardware: [boards.md](boards.md) |
 | Raspberry Pi 4 (64-bit) | `rpi4_64_defconfig` | **community-tested**: it builds; the RetroStoneOS developers have not run it on hardware. Reports and fixes are welcome. |
 | Raspberry Pi 2 (and 3 / Zero 2 W in 32-bit mode), Raspberry Pi 3 / 3B+ / Zero 2 W (64-bit), Raspberry Pi 5, Orange Pi PC / PC Plus, Orange Pi One / Lite, Orange Pi 5 | `rpi2_defconfig`, `rpi3_64_defconfig`, `rpi5_64_defconfig`, `orangepi_h3_pc_defconfig`, `orangepi_h3_one_defconfig`, `orangepi5_defconfig` | **community-tested**; the support matrix, the per-board notes and the boards that were dropped are in [boards.md](boards.md) |
 
@@ -107,7 +108,9 @@ switching, a power key only if an input device is a power button, and HDMI outpu
 | `name` | board name, in the logs and in "<name> built-in" | `Generic` | `RetroStone2` | `Raspberry Pi 4` |
 | `builtin_pad_prefix` | evdev name prefix of the built-in buttons; they are merged into one pad | none | `RetroStone2` | none |
 | `builtin_stick` | evdev name of the built-in analog stick (merged into that pad) | none | `analog-stick` | none |
-| `internal_display` | connector types of the built-in screen: `auto` (every type that is not HDMI/DVI/DP/VGA/TV), `none`, or a list of `dpi`, `unknown`, `lvds`, `dsi`, `edp`, `virtual`, `spi`, `composite`, `svideo`, `tv` | `auto` | `unknown, dpi` (sun4i_rgb registers the panel as "Unknown-1") | `none` |
+| `internal_display` | connector types of the built-in screen: `auto` (every type that is not HDMI/DVI/DP/VGA/TV), `none`, or a list of `dpi`, `unknown`, `lvds`, `dsi`, `edp`, `virtual`, `spi`, `composite`, `svideo`, `tv`. An analog TV type in the list is the built-in screen (the RetroStone1: `composite`) and is switched with HDMI like a panel | `auto` | `unknown, dpi` (sun4i_rgb registers the panel as "Unknown-1") | `none` |
+| `tv_norm` | built-in composite screen only: `ntsc` (720x480 interlaced, 59.94 Hz), `pal` (720x576 interlaced, 50 Hz) or `auto` (the kernel's preferred mode, which `video=Composite-1:PAL` on the command line changes); `ntsc` and `pal` fall back to each other when the mode is missing or refused. The picture is taken as 4:3 | `ntsc` | not used | not used |
+| `tv_overscan` | built-in composite screen only: margin kept clear on each edge, in percent (0-20); the scaled game/UI planes and the overlay stay inside it | `0` | not used | not used |
 | `internal_refresh_options` | refresh rates offered for the built-in screen: `<native>,60` gives Settings > Display > LCD refresh rate | none | `78, 60` | none |
 | `backlight` | `/sys/class/backlight` entry: `auto` (the first), `none`, or a name | `auto` | `auto` | `none` |
 | `battery_supply`, `ac_supply`, `usb_supply` | `/sys/class/power_supply` entries: `auto` (the first of each type), `none`, or a name (a missing name falls back to auto) | `auto` | `axp20x-battery`, `axp20x-ac`, `axp20x-usb` | `none` |

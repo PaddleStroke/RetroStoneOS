@@ -1,0 +1,157 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Allwinner H3: the second display pipeline, mixer 1 -> TCON1 -> TV encoder
+ * (composite output on the TVOUT pin), for mainline Linux 6.18 with the
+ * RetroStone1 kernel patch 0002 (drm/sun4i: add the H3 TV encoder).
+ *
+ * Mainline sun8i-h3.dtsi / sunxi-h3-h5.dtsi only describe mixer 0 -> TCON0
+ * -> HDMI. This file adds the rest, as the Armbian sunxi-6.18 patch
+ * "ARM: dts: sunxi: h3: describe the TV encoder pipeline" (enthropy7,
+ * GPL-2.0, https://github.com/armbian/build, patch/kernel/archive/
+ * sunxi-6.18/patches.armbian/arm-dts-sunxi-h3-describe-the-tv-encoder-
+ * pipeline.patch) does in the SoC dtsi, but from a board-level include:
+ * the single mixer0 -> TCON0 endpoints of the SoC dtsi are replaced by
+ * endpoint@0 / endpoint@1 pairs so that either mixer can reach either TCON
+ * (the A83T layout, which the sun4i-drm driver resolves by endpoint id:
+ * mixer 0 -> TCON0 -> HDMI, mixer 1 -> TCON1 -> TVE).
+ *
+ * Everything new is left disabled here: the board enables &mixer1, &tcon1
+ * and &tve when it routes TVOUT somewhere (a running display engine keeps
+ * pll-de at 432 MHz).
+ *
+ * The TVOUT pin is a dedicated analog output of the H3 (TV DAC): there is
+ * no pin multiplexing to set up, and its supply (AVCC) is always on.
+ */
+
+/* Mixer 0 can feed TCON0 (HDMI) and TCON1 */
+/delete-node/ &mixer0_out_tcon0;
+/delete-node/ &tcon0_in_mixer0;
+
+&de {
+	allwinner,pipelines = <&mixer0>, <&mixer1>;
+};
+
+&mixer0_out {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	mixer0_out_tcon0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&tcon0_in_mixer0>;
+	};
+
+	mixer0_out_tcon1: endpoint@1 {
+		reg = <1>;
+		remote-endpoint = <&tcon1_in_mixer0>;
+	};
+};
+
+&tcon0_in {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	tcon0_in_mixer0: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&mixer0_out_tcon0>;
+	};
+
+	tcon0_in_mixer1: endpoint@1 {
+		reg = <1>;
+		remote-endpoint = <&mixer1_out_tcon0>;
+	};
+};
+
+&{/soc} {
+	mixer1: mixer@1200000 {
+		compatible = "allwinner,sun8i-h3-de2-mixer-1";
+		reg = <0x01200000 0x100000>;
+		clocks = <&display_clocks CLK_BUS_MIXER1>,
+			 <&display_clocks CLK_MIXER1>;
+		clock-names = "bus",
+			      "mod";
+		/* The H3 DE2 clock unit exports mixer 1's reset as RST_WB
+		 * (ccu-sun8i-de2.c: the line is shared with the write-back) */
+		resets = <&display_clocks RST_WB>;
+		status = "disabled";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mixer1_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+
+				mixer1_out_tcon0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&tcon0_in_mixer1>;
+				};
+
+				mixer1_out_tcon1: endpoint@1 {
+					reg = <1>;
+					remote-endpoint = <&tcon1_in_mixer1>;
+				};
+			};
+		};
+	};
+
+	/* TCON1 has no clock of its own: its channel 1 runs on the TVE clock */
+	tcon1: lcd-controller@1c0d000 {
+		compatible = "allwinner,sun8i-h3-tcon-tv",
+			     "allwinner,sun8i-a83t-tcon-tv";
+		reg = <0x01c0d000 0x1000>;
+		interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&ccu CLK_BUS_TCON1>, <&ccu CLK_TVE>;
+		clock-names = "ahb", "tcon-ch1";
+		resets = <&ccu RST_BUS_TCON1>;
+		reset-names = "lcd";
+		status = "disabled";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			tcon1_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+
+				tcon1_in_mixer0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&mixer0_out_tcon1>;
+				};
+
+				tcon1_in_mixer1: endpoint@1 {
+					reg = <1>;
+					remote-endpoint = <&mixer1_out_tcon1>;
+				};
+			};
+
+			tcon1_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+
+				tcon1_out_tve: endpoint@1 {
+					reg = <1>;
+					remote-endpoint = <&tve_in_tcon1>;
+				};
+			};
+		};
+	};
+
+	tve: tv-encoder@1e00000 {
+		compatible = "allwinner,sun8i-h3-tv-encoder";
+		reg = <0x01e00000 0x1000>;
+		clocks = <&ccu CLK_BUS_TVE>;
+		resets = <&ccu RST_BUS_TVE>;
+		status = "disabled";
+
+		port {
+			tve_in_tcon1: endpoint {
+				remote-endpoint = <&tcon1_out_tve>;
+			};
+		};
+	};
+};

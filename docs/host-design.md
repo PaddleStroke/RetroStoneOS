@@ -462,7 +462,9 @@ second, frames not shown since the start (host skips + display drops), busy % of
 GLES the milliseconds per frame in the quad blit + `eglSwapBuffers`. It is refreshed once a second and shown on the
 **display's overlay plane**, in the same image as the battery indicator: a strip across the top (or the bottom, with
 a bottom battery corner), text on the side away from the battery, so the one alpha plane the A20 has holds both and
-nothing is drawn into the game frame: **the N64 zero-copy path stays zero-copy with the overlay on**. If the plane
+nothing is drawn into the game frame: **the N64 zero-copy path stays zero-copy with the overlay on**. On the
+RetroStone1's composite screen (H3 DE2 mixer 1, two planes) the game goes on the VI plane and the strip on the
+primary plane above it (display-design.md §3.2); that board has no battery, so the strip only carries the FPS text. If the plane
 never shows the strip (TEST_ONLY refusal: `display_overlay_visible()` still false 1.5 s after the set), it falls back
 to drawing the line into the frame, which on GLES means the readback path while it is on (logged once). During a
 benchmark run a second, yellow line shows the run and its countdown.
@@ -508,7 +510,10 @@ nothing per frame and works the same for every core, including the N64 zero-copy
 - **Content** (`src/host/batt_overlay.c`, `bov_render()`): drawn with the 8x8 font (nothing to load in the game
   process) into a 72x20 ARGB8888 buffer (the pill is about 56x20 for "70%", 70x20 for a bolt and "100%"), hugging the
   corner side. Pixels are either clear, opaque, or black with alpha 0xA8 (the pill), so premultiplied and straight
-  alpha blending give the same picture. 2x (144x40) on outputs of 900 lines or more.
+  alpha blending give the same picture. 2x (144x40) on outputs of 900 lines or more, and on interlaced ones (the
+  RetroStone1's composite screen, `display_output()->interlaced`: 1-pixel strokes would only be drawn every other
+  field). The FPS strip follows the same rule, and its width leaves out the composite screen's overscan inset
+  (`overscan_x`, display-design.md §3.2).
 - **Place**: `game_battery_corner`; margin 4 px on the LCD, 3 % of the height on HDMI (21 px at 720p, 32 px at
   1080p) to stay clear of TV overscan. The display re-places it on every output switch; `on_output` also forces a
   redraw at the new scale and margin.

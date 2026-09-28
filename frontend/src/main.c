@@ -718,7 +718,10 @@ static void on_output(const struct display_output_info *now, const struct displa
 	(void)before;
 	(void)user;
 	M.out = *now;
-	ui_pick_logical_size(now->width, now->height, &w, &h);
+	/* The UI is laid out for the picture's shape: 720x480i on a 4:3
+	 * composite screen is a 640x480 UI, scaled to the mode by the plane. */
+	ui_pick_logical_size(now->pixel_aspect > 0.0 ? (int)(now->width * now->pixel_aspect + 0.5) : now->width,
+			     now->height, &w, &h);
 	M.ui_w = w;
 	M.ui_h = h;
 	/* The surface must exist before the display commits the new output;

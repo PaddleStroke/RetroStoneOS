@@ -1,0 +1,5 @@
+# RetroStone1 release build (retrostone1_release_defconfig): merged after
+# uboot.fragment. As board/retrostone2/uboot-release.fragment: no stop on a
+# key during the boot delay, so a noisy UART line cannot hold the boot in
+# the U-Boot prompt.
+CONFIG_BOOTDELAY=-2

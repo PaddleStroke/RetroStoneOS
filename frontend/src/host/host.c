@@ -519,9 +519,11 @@ void host_reevaluate_pacing(void)
 static void strip_update(int64_t now_ms, const char *const *lines, int nl, bool batt)
 {
 	const struct display_output_info *o = display_output();
-	int scale = o && o->height >= 900 ? 2 : 1;
+	/* 2x on large outputs, and on an interlaced one (composite), where
+	 * 1-pixel strokes would only be drawn every other field */
+	int scale = o && (o->height >= 900 || o->interlaced) ? 2 : 1;
 	int margin = o && o->type == DISPLAY_OUTPUT_HDMI ? o->height * 3 / 100 : 4;
-	int W = o && o->width > 0 ? o->width : 640, w1 = (W - 2 * margin) / scale, h;
+	int W = o && o->width > 0 ? o->width - 2 * o->overscan_x : 640, w1 = (W - 2 * margin) / scale, h;
 	bool right = BOV.corner == DISPLAY_CORNER_TOP_RIGHT || BOV.corner == DISPLAY_CORNER_BOTTOM_RIGHT;
 	size_t need;
 
@@ -617,8 +619,9 @@ static void bov_update(int64_t now_ms)
 		return;
 	}
 	o = display_output();
-	/* 2x on large outputs; on a TV keep clear of the overscan (~3 %) */
-	scale = o && o->height >= 900 ? 2 : 1;
+	/* 2x on large outputs and interlaced ones; on a TV keep clear of the
+	 * overscan (~3 %) */
+	scale = o && (o->height >= 900 || o->interlaced) ? 2 : 1;
 	margin = o && o->type == DISPLAY_OUTPUT_HDMI ? o->height * 3 / 100 : 4;
 	if (BOV.shown && !BOV.strip && !BOV.force && BOV.pct == BOV.drawn_pct && BOV.charging == BOV.drawn_charging &&
 	    scale == BOV.drawn_scale)

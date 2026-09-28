@@ -1,0 +1,71 @@
+# RetroStone1 (Allwinner H3) kernel options, merged on top of sunxi_defconfig
+# and board/common/linux-rsos.fragment. Mainline Linux 6.18 LTS. Untested on
+# hardware (docs/boards.md, "RetroStone1").
+#
+# sunxi_defconfig already builds the display (sun4i-drm: DE2 mixer + TCON +
+# sun8i DesignWare HDMI), the Mali-400 (lima), the analog codec, the I2S
+# controllers, the SPI controller (spi-sun6i), the watchdog, cpufreq-dt, the
+# thermal sensor, the GPIO regulator, IIO and EHCI/OHCI/MUSB in. What is
+# added or changed here:
+
+# --- The built-in screen: composite output (mixer 1 -> TCON1 -> TV encoder
+# -> AMT630A). sun4i_tv.o is built by DRM_SUN4I, the H3 support comes from
+# patches/linux/0002 (docs/kernel-patches.md). Spelled out so that the
+# screen cannot become a module that nothing loads.
+CONFIG_DRM_SUN4I=y
+CONFIG_DRM_SUN8I_MIXER=y
+
+# --- HDMI audio: the DesignWare HDMI I2S input and the simple-audio-card of
+# the device tree (card "allwinner-hdmi")
+CONFIG_SND_SIMPLE_CARD=y
+CONFIG_DRM_DW_HDMI_I2S_AUDIO=y
+CONFIG_SND_SOC_HDMI_CODEC=y
+
+# --- Built-in controls: the pad (gpio-keys-polled), the power key
+# (gpio-keys on PA1) and the analog stick (adc-joystick on the MCP3208 SPI
+# ADC). Built in: nothing would load them as modules.
+CONFIG_INPUT_KEYBOARD=y
+CONFIG_KEYBOARD_GPIO=y
+CONFIG_KEYBOARD_GPIO_POLLED=y
+CONFIG_JOYSTICK_ADC=y
+CONFIG_SPI=y
+CONFIG_SPI_SUN6I=y
+CONFIG_IIO=y
+CONFIG_MCP320X=y
+
+# --- Power-off through PL8 (PWR-STB: the CPU and 3.3 V bucks), no PMIC
+CONFIG_POWER_RESET=y
+CONFIG_POWER_RESET_GPIO=y
+
+# --- CPU voltage: the PL6 GPIO regulator (1.1 / 1.3 V)
+CONFIG_REGULATOR_GPIO=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y
+
+# --- Watchdog (the frontend pets /dev/watchdog; U-Boot starts it)
+CONFIG_SUNXI_WATCHDOG=y
+
+# --- Ethernet (RJ45 on the internal PHY): off by default, so dwmac-sun8i
+# is a module that rsos-net loads when Ethernet is turned on (board.ini
+# eth_modules), not a driver probed on every boot.
+CONFIG_STMMAC_ETH=m
+CONFIG_STMMAC_PLATFORM=m
+CONFIG_DWMAC_GENERIC=m
+CONFIG_DWMAC_SUNXI=m
+CONFIG_DWMAC_SUN8I=m
+CONFIG_DWMAC_SUN55I=m
+
+# --- USB storage (rcS loads usb-storage, uas and sd_mod once the menu is
+# up)
+CONFIG_SCSI=y
+CONFIG_BLK_DEV_SD=m
+CONFIG_USB_STORAGE=m
+CONFIG_USB_UAS=m
+
+# --- No on-board WiFi or Bluetooth (only test pads for a module). USB
+# Bluetooth dongles (btusb) as modules for rsos-net's BlueZ.
+CONFIG_BT=m
+CONFIG_BT_HCIBTUSB=m
+
+# --- The lockup detectors of the common fragment depend on DEBUG_KERNEL,
+# which sunxi_defconfig does not set
+CONFIG_DEBUG_KERNEL=y

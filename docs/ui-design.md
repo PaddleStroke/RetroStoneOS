@@ -502,7 +502,8 @@ START: settings (from anywhere). Menus: up/down, left/right change values, A sel
 | Language | every language in its own name (Français, 日本語...), the one in use ticked; applied at once (§17). The item is last (one press of UP from the top: the menu wraps) and reads "Langue (Language)" in any language but English, so it can always be found |
 
 Board-dependent items (`ui_config`, from the board profile, docs/porting.md; the defaults are the RetroStone2's):
-Brightness and LCD refresh rate only on a board with a built-in screen (`internal_display` not `none`), the LCD
+Brightness and LCD refresh rate only on a board with a built-in screen (`internal_display` not `none`) whose
+backlight the SoC drives (`backlight` not `none`: the RetroStone1's AMT630A sets its own), the LCD
 refresh rate only with `internal_refresh_options = <native>,60`, and the Storage "Advanced" toggles only for the
 overlays listed in `storage_overlays`.
 

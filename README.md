@@ -89,6 +89,7 @@ BIOS files go in `RETROSTONE/bios/` (see [docs/cores.md](docs/cores.md)). No com
 | Board | Defconfig | Status |
 |---|---|---|
 | **RetroStone2** (8BCraft, Allwinner A20) | `retrostone2` | Primary target, tested |
+| RetroStone1 (8BCraft, Allwinner H3) | `retrostone1` | Untested, built by CI; built-in screen not supported yet (HDMI only) |
 | Raspberry Pi 2 (and Pi 3 / Zero 2 W in 32-bit mode) | `rpi2` | Untested, built by CI |
 | Raspberry Pi 3 / Zero 2 W (64-bit) | `rpi3_64` | Untested, built by CI |
 | Raspberry Pi 4 / 400 / CM4 | `rpi4_64` | Untested, built by CI |

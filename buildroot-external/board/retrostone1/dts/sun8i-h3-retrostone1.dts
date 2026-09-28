@@ -1,0 +1,466 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * 8BCraft RetroStone1 handheld (Allwinner H3), device tree for RetroStoneOS.
+ * Target: mainline Linux 6.18 (arch/arm/boot/dts/allwinner/).
+ *
+ * Pin assignments come from the RetroStone1 schematic, revision 1.18
+ * (hardware/retrostoneH3-18.sch, "RetroStone Pi"), read with
+ * hardware/tools/eagle_nets.py. The board follows the Orange Pi One / PC
+ * reference design for the SoC side (DDR3, the PL6 CPU voltage switch, the
+ * internal Ethernet PHY, HDMI), so the SoC parts are modelled on
+ * sun8i-h3-orangepi-one.dts. Nothing here has run on hardware yet: every
+ * TODO(hw) is listed in docs/boards.md ("RetroStone1").
+ *
+ * THE BUILT-IN SCREEN. The H3 has no parallel LCD interface: the RetroStone1
+ * feeds its composite video output (TVOUT, the H3 TV encoder behind mixer 1
+ * and TCON1) into an AMT630A CVBS-to-RGB converter (U$23), which drives the
+ * 54-pin FPC panel, its backlight enable and the panel's SPI set-up from its
+ * own firmware (SPI flash U$18). Mainline Linux 6.18 has no H3 TV encoder
+ * driver: board/retrostone1/patches/linux/0002 adds it (from Armbian), and
+ * sun8i-h3-tve-pipeline.dtsi describes mixer 1 -> TCON1 -> TVE. The screen
+ * is the "Composite-1" DRM connector (board.ini internal_display =
+ * composite); the frontend picks NTSC 720x480i or PAL 720x576i (board.ini
+ * tv_norm). No panel timings: the AMT630A scales CVBS to the panel itself.
+ * HDMI stays on mixer 0 -> TCON0, and the frontend switches between the two.
+ */
+
+/dts-v1/;
+#include "sun8i-h3.dtsi"
+#include "sun8i-h3-tve-pipeline.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+/ {
+	model = "8BCraft RetroStone1";
+	compatible = "8bcraft,retrostone1", "allwinner,sun8i-h3";
+
+	aliases {
+		ethernet0 = &emac;	/* U-Boot derives the MAC from the SID */
+		/* The microSD is always mmcblk0 */
+		mmc0 = &mmc0;
+		serial0 = &uart0;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	/*
+	 * Optional analog stick on JOYSTICK_CON (4 pins: 3.3 V, VRY, GND, VRX),
+	 * read by the MCP3208 ADC (U$35) on SPI1: CH0 = Y, CH1 = X. 12-bit,
+	 * VREF = 3.3 V. The io-channels index is the MCP3208 single-ended
+	 * channel number. With no stick fitted the inputs float.
+	 * TODO(hw): orientation (inversions), range and centre on a unit with
+	 * the stick.
+	 */
+	analog-stick {
+		compatible = "adc-joystick";
+		io-channels = <&adc 1>, <&adc 0>;
+		poll-interval = <10>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		axis@0 {
+			reg = <0>;
+			linux,code = <ABS_X>;
+			abs-range = <0 4095>;
+			abs-fuzz = <16>;
+			abs-flat = <300>;
+		};
+
+		axis@1 {
+			reg = <1>;
+			linux,code = <ABS_Y>;
+			abs-range = <0 4095>;
+			abs-fuzz = <16>;
+			abs-flat = <300>;
+		};
+	};
+
+	hdmi-connector {
+		compatible = "hdmi-connector";
+		type = "a";
+
+		port {
+			hdmi_con_in: endpoint {
+				remote-endpoint = <&hdmi_out_con>;
+			};
+		};
+	};
+
+	/*
+	 * Face buttons, D-pad, START/SELECT, the two extra pads and the
+	 * shoulder buttons. Each one switches to GND, with an external 10k
+	 * pull-up to 3.3 V (active low). Port C, D and E pins have no external
+	 * interrupt on the H3, so the whole pad is polled.
+	 *
+	 * Codes follow Documentation/input/gamepad.rst (positional). The pads
+	 * are on the bottom layer (mirrored), so seen from the front: K1 top,
+	 * K4 bottom, K2 right, K3 left, the same K1-K4 layout as the
+	 * RetroStone2 (K2 = A = east, K4 = B = south, K1 = X = north,
+	 * K3 = Y = west). TODO(hw): confirm the labels on the case.
+	 */
+	gpio-keys-pad {
+		compatible = "gpio-keys-polled";
+		label = "RetroStone1 Buttons";
+		poll-interval = <5>;
+
+		button-a {
+			label = "A";
+			linux,code = <BTN_EAST>;
+			gpios = <&pio 3 14 GPIO_ACTIVE_LOW>;	/* PD14, K2 */
+		};
+
+		button-b {
+			label = "B";
+			linux,code = <BTN_SOUTH>;
+			gpios = <&pio 3 15 GPIO_ACTIVE_LOW>;	/* PD15, K4 */
+		};
+
+		button-x {
+			label = "X";
+			linux,code = <BTN_NORTH>;
+			gpios = <&pio 3 13 GPIO_ACTIVE_LOW>;	/* PD13, K1 */
+		};
+
+		button-y {
+			label = "Y";
+			linux,code = <BTN_WEST>;
+			gpios = <&pio 3 9 GPIO_ACTIVE_LOW>;	/* PD9, K3 */
+		};
+
+		/*
+		 * Optional pads SELECT3 (top right, next to K1/K2) and SELECT4
+		 * (next to K3/K4), as the RetroStone2's C and Z.
+		 * TODO(hw): check whether they are fitted and which is which.
+		 */
+		button-c {
+			label = "C";
+			linux,code = <BTN_C>;
+			gpios = <&pio 4 3 GPIO_ACTIVE_LOW>;	/* PE3, SELECT3 */
+		};
+
+		button-z {
+			label = "Z";
+			linux,code = <BTN_Z>;
+			gpios = <&pio 2 9 GPIO_ACTIVE_LOW>;	/* PC9, SELECT4 */
+		};
+
+		button-start {
+			label = "Start";
+			linux,code = <BTN_START>;
+			gpios = <&pio 3 1 GPIO_ACTIVE_LOW>;	/* PD1 */
+		};
+
+		button-select {
+			label = "Select";
+			linux,code = <BTN_SELECT>;
+			gpios = <&pio 3 4 GPIO_ACTIVE_LOW>;	/* PD4 */
+		};
+
+		button-dpad-up {
+			label = "D-pad Up";
+			linux,code = <BTN_DPAD_UP>;
+			gpios = <&pio 3 12 GPIO_ACTIVE_LOW>;	/* PD12, AU */
+		};
+
+		button-dpad-down {
+			label = "D-pad Down";
+			linux,code = <BTN_DPAD_DOWN>;
+			gpios = <&pio 3 5 GPIO_ACTIVE_LOW>;	/* PD5, AD */
+		};
+
+		button-dpad-left {
+			label = "D-pad Left";
+			linux,code = <BTN_DPAD_LEFT>;
+			gpios = <&pio 3 0 GPIO_ACTIVE_LOW>;	/* PD0, AL */
+		};
+
+		button-dpad-right {
+			label = "D-pad Right";
+			linux,code = <BTN_DPAD_RIGHT>;
+			gpios = <&pio 3 11 GPIO_ACTIVE_LOW>;	/* PD11, AR */
+		};
+
+		/* Shoulder buttons: the 5-pin JST connector U$4 */
+		button-l1 {
+			label = "L1";
+			linux,code = <BTN_TL>;
+			gpios = <&pio 3 8 GPIO_ACTIVE_LOW>;	/* PD8, U$4 pin 1 */
+		};
+
+		button-r1 {
+			label = "R1";
+			linux,code = <BTN_TR>;
+			gpios = <&pio 3 3 GPIO_ACTIVE_LOW>;	/* PD3, U$4 pin 2 */
+		};
+
+		button-l2 {
+			label = "L2";
+			linux,code = <BTN_TL2>;
+			gpios = <&pio 3 6 GPIO_ACTIVE_LOW>;	/* PD6, U$4 pin 4 */
+		};
+
+		button-r2 {
+			label = "R2";
+			linux,code = <BTN_TR2>;
+			gpios = <&pio 3 7 GPIO_ACTIVE_LOW>;	/* PD7, U$4 pin 3 */
+		};
+	};
+
+	/*
+	 * Side tact switch U$15 on PA1 (external 10k pull-up R113), the only
+	 * side button wired to the SoC (U$36-U$38 are the AMT630A's own keys,
+	 * on its ADC input). It is the power key: a short press is a clean
+	 * power-off (the frontend's power module, board.ini power_key_device =
+	 * auto). Its name must not start with "RetroStone1", or the frontend
+	 * would merge it into the built-in pad.
+	 * TODO(hw): confirm U$15's function on the case; if it is meant as a
+	 * menu/hotkey button, use BTN_MODE and move it into the pad above.
+	 */
+	gpio-keys-power {
+		compatible = "gpio-keys";
+		label = "Power Key";
+
+		key-power {
+			label = "Power";
+			linux,code = <KEY_POWER>;
+			gpios = <&pio 0 1 GPIO_ACTIVE_LOW>;	/* PA1, U$15 */
+			debounce-interval = <20>;
+		};
+	};
+
+	/*
+	 * Power-off: there is no PMIC. The slide switch U$6 cuts the system
+	 * rail (VBAT, after the MCP73871 charger's power path) in hardware.
+	 * PL8 "PWR-STB" (pulled up by R5) enables the CPU and 3.3 V bucks of
+	 * the quad DC-DC U57; driving it low after the kernel's shutdown turns
+	 * off the CPU, the 3.3 V rail, the AMT630A and the screen, so the user
+	 * sees that the console can be switched off. Higher priority than the
+	 * PSCI handler (U-Boot's PSCI has no SYSTEM_OFF on sunxi).
+	 * PL9 "PWR-DRAM" (the DRAM rail) stays up.
+	 * TODO(hw): check that power-off really turns the screen off, and the
+	 * current drawn afterwards (the slide switch must still be turned off).
+	 */
+	gpio-poweroff {
+		compatible = "gpio-poweroff";
+		gpios = <&r_pio 0 8 GPIO_ACTIVE_LOW>;	/* PL8, PWR-STB */
+		priority = <128>;
+		active-delay-ms = <100>;
+	};
+
+	/*
+	 * Main 3.3 V rail (U57 buck 3, enabled by PL8). It feeds the I/O
+	 * banks, the SD card, the AMT630A and the panel. Not switched by
+	 * software while running.
+	 */
+	reg_vcc3v3: regulator-vcc3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
+	/*
+	 * CPU supply: U57 buck 1 with FET2 switching R14 into its feedback
+	 * divider from PL6 (CPUX-VSET, pulled up by R15): 1.1 V with PL6 low,
+	 * 1.3 V with PL6 high (Vout = 0.6 x (1 + 10k / 11.8k) or
+	 * 0.6 x (1 + 10k / (11.8k || 30k))). The Orange Pi One scheme.
+	 */
+	reg_vdd_cpux: vdd-cpux-regulator {
+		compatible = "regulator-gpio";
+		regulator-name = "vdd-cpux";
+		regulator-type = "voltage";
+		regulator-boot-on;
+		regulator-always-on;
+		regulator-min-microvolt = <1100000>;
+		regulator-max-microvolt = <1300000>;
+		regulator-ramp-delay = <50>; /* 4ms */
+
+		gpios = <&r_pio 0 6 GPIO_ACTIVE_HIGH>;	/* PL6 */
+		enable-active-high;
+		gpios-states = <0x1>;
+		states = <1100000 0>, <1300000 1>;
+	};
+
+	/*
+	 * HDMI audio: I2S2 feeding the DesignWare HDMI controller (the
+	 * LibreELEC/Armbian card, as board/orangepi-h3/patches/linux/0001
+	 * adds for the Orange Pi boards).
+	 */
+	sound-hdmi {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "allwinner-hdmi";
+		simple-audio-card,mclk-fs = <128>;
+		simple-audio-card,frame-inversion;
+
+		simple-audio-card,codec {
+			sound-dai = <&hdmi>;
+		};
+
+		simple-audio-card,cpu {
+			sound-dai = <&i2s2>;
+			dai-tdm-slot-num = <2>;
+			dai-tdm-slot-width = <32>;
+		};
+	};
+};
+
+/*
+ * Analog codec: LINEOUT L/R -> the analog volume wheel U$27 -> the
+ * headphone jack U$24, whose switch contacts feed the mono PAM8302A speaker
+ * amplifier (U1-A, /SD tied to VBAT: always on, no enable GPIO, no
+ * headphone-detect GPIO). Volume and speaker/headphone switching are
+ * analog: the board hook sets the line out to a fixed level.
+ */
+&codec {
+	allwinner,audio-routing = "Line Out", "LINEOUT";
+	status = "okay";
+};
+
+&cpu0 {
+	cpu-supply = <&reg_vdd_cpux>;
+};
+
+&de {
+	status = "okay";
+};
+
+/*
+ * Four USB-A ports (USB1 and USB2 are stacked pairs), all powered from the
+ * SY6280 switch U8 whose EN is tied to +5 V: VBUS is always on.
+ * USB2 = USB0 (the OTG controller, host only) and USB1; USB1 = USB2 and USB3.
+ */
+&ehci0 {
+	status = "okay";
+};
+
+&ehci1 {
+	status = "okay";
+};
+
+&ehci2 {
+	status = "okay";
+};
+
+&ehci3 {
+	status = "okay";
+};
+
+/*
+ * RJ45 CON1 with magnetics on the internal PHY; link/speed LEDs to 3.3 V
+ * through R44/R45 (active low). The driver is a module that rsos-net loads
+ * only when Ethernet is turned on (board.ini eth_modules).
+ */
+&emac {
+	phy-handle = <&int_mii_phy>;
+	phy-mode = "mii";
+	allwinner,leds-active-low;
+	status = "okay";
+};
+
+&hdmi {
+	#sound-dai-cells = <0>;
+	status = "okay";
+};
+
+&hdmi_out {
+	hdmi_out_con: endpoint {
+		remote-endpoint = <&hdmi_con_in>;
+	};
+};
+
+&i2s2 {
+	status = "okay";
+};
+
+/*
+ * The built-in screen: mixer 1 -> TCON1 -> TV encoder -> TVOUT -> the
+ * AMT630A (U$23) CVBS input. TODO(hw): NTSC/PAL, picture position and
+ * overscan on the panel (docs/boards.md, "RetroStone1").
+ */
+&mixer1 {
+	status = "okay";
+};
+
+/*
+ * microSD, card detect PF6 with the external 10k pull-up R16. The card is
+ * on the always-on 3.3 V rail: no ramp to wait for (see the RetroStone2
+ * DTS).
+ */
+&mmc0 {
+	vmmc-supply = <&reg_vcc3v3>;
+	bus-width = <4>;
+	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>;	/* PF6 */
+	post-power-on-delay-ms = <1>;
+	status = "okay";
+};
+
+/*
+ * No eMMC and no on-board WiFi: PG0-PG5 (SDIO), PL0 (WIFI_EN), PL7
+ * (WIFI-POWER-EN) and PA11 (WL-WAKE-HOST) only go to test pads JP8-JP16 for
+ * an optional module, which is not described here.
+ */
+
+&ohci0 {
+	status = "okay";
+};
+
+&ohci1 {
+	status = "okay";
+};
+
+&ohci2 {
+	status = "okay";
+};
+
+&ohci3 {
+	status = "okay";
+};
+
+/*
+ * MCP3208 8-channel 12-bit ADC U$35 on SPI1 (PA13 CS, PA14 CLK, PA15 MOSI,
+ * PA16 MISO): CH0/CH1 = the analog stick. CH2 is wired straight to VBAT
+ * with no divider, so with VREF = 3.3 V it saturates for any charged cell:
+ * no battery level (docs/boards.md). CH3-CH7 go to test pads.
+ */
+&spi1 {
+	status = "okay";
+
+	adc: adc@0 {
+		compatible = "microchip,mcp3208";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+		vref-supply = <&reg_vcc3v3>;
+		#io-channel-cells = <1>;
+	};
+};
+
+/* TCON1 and the TV encoder of the built-in screen (see &mixer1) */
+&tcon1 {
+	status = "okay";
+};
+
+&tve {
+	status = "okay";
+};
+
+/* Debug console, header UART0-DBG (PA4 TX, PA5 RX through D1), 115200 */
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pa_pins>;
+	status = "okay";
+};
+
+&usb_otg {
+	dr_mode = "host";
+	status = "okay";
+};
+
+/* VBUS always on, no ID pin */
+&usbphy {
+	status = "okay";
+};

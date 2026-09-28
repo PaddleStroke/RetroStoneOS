@@ -81,7 +81,8 @@ be0 keeps the one tested frontend pairing. TCON0 channel 1 to HDMI is allowed by
 - **Startup with HDMI connected** goes through the same probe, so it starts on HDMI.
 - **Which connector is the built-in screen** comes from the board profile (`display_config.internal_mode` /
   `internal_types`, board.ini `internal_display`, docs/porting.md): by default every connector type that is not
-  HDMI/DVI/DP/VGA/TV (the RetroStone2's panel is "Unknown-1"); a list of types; or none. **A board without a built-in
+  HDMI/DVI/DP/VGA/TV (the RetroStone2's panel is "Unknown-1"); a list of types; or none. An analog TV type in the
+  list is the built-in screen: the RetroStone1's "Composite-1" (H3 TV encoder -> AMT630A), see §3.2. **A board without a built-in
   screen** (Raspberry Pi 4) that has nothing connected lights the external connector in use, else the first one, with
   the CEA timing of the policy mode, so the menu runs; a TV plugged in later is a normal hotplug (same connector: a
   `REPROBE` with its EDID mode; the other port: a switch). This never happens on a board with a panel connector.
@@ -95,6 +96,7 @@ be0 keeps the one tested frontend pairing. TCON0 channel 1 to HDMI is allowed by
 | Output | Policy |
 |---|---|
 | LCD | preferred mode, else the first one |
+| Built-in composite screen (RetroStone1) | the `tv_norm` mode: 720x480i NTSC (default) or 720x576i PAL, each the fallback of the other (§3.2) |
 | HDMI (default) | **1280x720**, progressive, refresh closest to 60 Hz (`hdmi_width/height/refresh`), else the preferred mode, else the first one |
 | HDMI "native 4:3" option | `hdmi_width/height = 640x480` (CEA VIC 1, which every sink must accept). Same geometry as the LCD: 320x240 cores get the sharp backend 2x, and the TV upscales. Not the default. |
 | HDMI without EDID | built-in CEA timing of the policy mode (720p60 or 480p60) |
@@ -154,6 +156,49 @@ never tried; the display layer can do the same **live**, as a user mode:
 - TODO(hw): the panel at 25.2 MHz (stable picture, no flicker, colours); the measured refresh line; NES/SNES in
   `vsync+DRC` pacing; then make 60 the default (one line in `lcd_hz_now()`/`display_parse_lcd_refresh()` callers)
   or change the DT.
+
+### 3.2 A composite (TV) output as the built-in screen: the RetroStone1 (2026-09-28)
+
+The RetroStone1's screen is fed by the H3 composite output (mixer 1 -> TCON1 -> TV encoder, the RetroStone1 kernel
+patch 0002, docs/kernel-patches.md) through an AMT630A CVBS-to-RGB converter. The kernel connector is
+**"Composite-1"**, with two modes (`drm_connector_helper_tv_get_modes()`): **720x480i** at 59.94 Hz (NTSC, 13.5 MHz,
+858 x 525) and **720x576i** at 50 Hz (PAL, 864 x 625), plus the connector property **"TV mode"** (NTSC, PAL).
+Nothing here is used on the RetroStone2.
+
+- **Internal.** An analog TV connector type named in `internal_types` (board.ini `internal_display = composite`) is
+  classified internal (`DISPLAY_OUTPUT_LCD`); without the list, or on another board, analog TV stays external.
+  HDMI hotplug switches between it and HDMI exactly as between the RetroStone2 LCD and HDMI (same `choose_output()`,
+  `do_switch()`, audio hooks: the codec on the built-in screen, HDMI on the TV). sun4i_tv has no `detect()`, so the
+  connector always reads connected; it is probed once at init like a panel.
+- **Mode** (`pick_mode()`): `display_config.tv_norm` (board.ini `tv_norm`): NTSC (the default: 59.94 Hz fields,
+  the lower game latency and the rate of most cores), PAL, or AUTO (the kernel's preferred mode: NTSC, or PAL with
+  `video=Composite-1:PAL` in `rsos_extraargs`). A missing mode falls back to the other standard; a refused NTSC
+  modeset is retried in PAL once (`NTSC refused on Composite-1 (...): trying PAL`). Interlaced modes are never
+  retimed (`lcd_refresh` does not apply); the no-EDID CEA fallback of HDMI is never used on an analog connector.
+- **TV mode property.** sun4i_tv encodes the connector's "TV mode", not the CRTC mode, so every modeset on the
+  connector also sets "TV mode" to NTSC for a 480-line mode and PAL for a 576-line one (`commit_state()`).
+- **Interlace.** The planes stay in frame coordinates (720x480); the DE2 mixer outputs the fields itself
+  (`SUN8I_MIXER_BLEND_OUTCTL_INTERLACED`). A 320x240 core scaled x2 vertically puts each source line on both fields,
+  so it does not flicker. `display_output()->interlaced` is set; the host draws its FPS strip at 2x there (1-pixel
+  strokes would only be drawn every other field). `refresh_mhz` is the field rate (59 940 / 50 000 mHz), which is
+  also the page-flip rate the pacing sees.
+- **Aspect ratio.** The picture is 4:3 whatever the line length, so a screen pixel is (4/3) / (W/H) wide: 0.889 in
+  NTSC, 1.067 in PAL (`geo_for()`, `display_output()->pixel_aspect`). `compute_scaled()` works on the physical width
+  `W x pixel_aspect`: ASPECT keeps the image ratio on the panel, INTEGER keeps square source pixels (the factor is
+  taken on the physical width: 320x240 is x2 = 720x480, 256x224 is 576x448 at 72,16). The menu lays its UI out at
+  `width x pixel_aspect` (640x480) and the plane scales it to 720x480. Panels and HDMI keep `pixel_aspect` 1.0 and
+  the exact old geometry (unit-tested).
+- **Overscan.** `display_config.tv_overscan` (board.ini `tv_overscan`, percent per edge, 0-20, default 0) insets the
+  area the scaled planes and the overlay use (`display_output()->overscan_x/y`); the AMT630A's own OSD also has
+  position and size settings. The software fallback (`PATH_SOFT`) ignores the pixel shape and the inset.
+- **Planes of mixer 1.** The H3 DE2 mixer 1 has only two planes: a VI plane (XRGB8888/RGB565, no alpha formats,
+  zpos 0, scaled) and the primary UI plane (ARGB8888, zpos 1, scaled). With the game on the primary plane there is
+  no ARGB8888 overlay left for the FPS counter, so `crtc_pick_planes()` puts the game on the VI plane below and the
+  overlay on the primary plane. It only does that for a CRTC with no ARGB8888 overlay plane and a lower XRGB8888
+  overlay plane (by `zpos`): the A20 backends and the H3 mixer 0 (HDMI) keep the game on their primary plane. The
+  RetroStone1 has no battery gauge, so its overlay only ever shows the FPS counter.
+- `rsos-kmstest --tv ntsc|pal|auto` treats the composite output as the built-in screen (for tests from the UART).
+- TODO(hw): everything above on a RetroStone1 (docs/boards.md, "RetroStone1").
 
 ## 4. Switching sequence
 

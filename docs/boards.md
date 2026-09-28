@@ -13,6 +13,7 @@ qemu-user with the board's profile), but the RetroStoneOS developers have not bo
 | Board(s) | Defconfig | Image | CPU | GPU (Mesa driver) | Status |
 |---|---|---|---|---|---|
 | RetroStone2 | `retrostone2_defconfig` | `retrostoneos-<version>-retrostone2.img.xz` | Allwinner A20, 2x Cortex-A7 1 GHz, 32-bit | Mali-400 MP2 (lima) | tested on hardware |
+| RetroStone1 | `retrostone1_defconfig` (release: `retrostone1_release_defconfig`) | `retrostoneos-<version>-retrostone1.img.xz` | Allwinner H3, 4x Cortex-A7 1.0-1.2 GHz, 32-bit | Mali-400 MP2 (lima) | **untested, built by CI; the built-in screen (composite, kernel patch from Armbian) is compile-tested only** |
 | Raspberry Pi 2; Pi 3 / 3B+ / Zero 2 W in 32-bit mode | `rpi2_defconfig` | `retrostoneos-<version>-rpi2.img.xz` | BCM2836/2837, 4x Cortex-A7 900 MHz (Pi 3: 4x A53 1.2-1.4 GHz running 32-bit code) | VideoCore IV (vc4) | builds, community-tested |
 | Raspberry Pi 3 / 3B+ / Zero 2 W (64-bit) | `rpi3_64_defconfig` | `retrostoneos-<version>-rpi3-64.img.xz` | BCM2837, 4x Cortex-A53 1.2-1.4 GHz (Zero 2 W: 1 GHz, 512 MB) | VideoCore IV (vc4) | builds, community-tested |
 | Raspberry Pi 4 / 400 / CM4 | `rpi4_64_defconfig` | `retrostoneos-<version>-rpi4-64.img.xz` | BCM2711, 4x Cortex-A72 1.5-1.8 GHz | VideoCore VI (v3d + vc4) | builds, community-tested |
@@ -27,7 +28,8 @@ configuration checks. The images are xz-compressed (`xz -dk`, or let balenaEtche
 the RetroStone2 image (docs/build.md, "Flashing"): the first boot grows the `RETROSTONE` data partition to the whole
 card.
 
-Every board here is an **HDMI box**: `internal_display = none`, no battery, no built-in pad
+Apart from the RetroStone handhelds (the RetroStone1 has its built-in buttons and its composite-fed screen, see its
+notes), every board here is an **HDMI box**: `internal_display = none`, no battery, no built-in pad
 (`builtin_pad_prefix` empty), a power key only if some input device reports `KEY_POWER` (the Pi 5 power button
 does). The sound follows the display, so it goes to the HDMI card; the analog jacks (Orange Pi PC, Orange Pi 5)
 are in the kernel but not used by the frontend yet.
@@ -39,12 +41,112 @@ the two N64 cores use the GPU (GLES 2.0); every other core renders in software.
 
 | Class | Boards | Expected |
 |---|---|---|
-| **A: Cortex-A7, 32-bit** | RetroStone2, Raspberry Pi 2, Orange Pi H3 (and a Pi 3 with the 32-bit image) | Like the RetroStone2: the 8/16-bit consoles and handhelds, GBA (gpsp dynarec), PlayStation (pcsx_rearmed dynarec + NEON GPU), Neo Geo and most CPS1/CPS2 arcade games, the computers (DOSBox for the lighter games). N64: only light games, with frame skipping. The H3 and the Pi 2 have four cores and a higher clock than the A20: a little more headroom. |
+| **A: Cortex-A7, 32-bit** | RetroStone2, RetroStone1, Raspberry Pi 2, Orange Pi H3 (and a Pi 3 with the 32-bit image) | Like the RetroStone2: the 8/16-bit consoles and handhelds, GBA (gpsp dynarec), PlayStation (pcsx_rearmed dynarec + NEON GPU), Neo Geo and most CPS1/CPS2 arcade games, the computers (DOSBox for the lighter games). N64: only light games, with frame skipping. The H3 and the Pi 2 have four cores and a higher clock than the A20: a little more headroom. |
 | **B: Cortex-A53, 64-bit** | Raspberry Pi 3, 3B+, Zero 2 W | Class A and a bit more (PlayStation with enhancements off, more arcade games); the vc4 GPU is weak for N64 (light games only). The Zero 2 W's 512 MB is tight for N64 and DOSBox. |
 | **C: Cortex-A72** | Raspberry Pi 4 / 400 | Everything in the core list at full speed, including most N64 games (mupen64plus-next, GLES 2.0 on v3d). Later candidates: NDS (melonDS/DeSmuME), Dreamcast (flycast, needs GLES 3 in the host) with a part of the library. |
 | **D: Cortex-A76** | Raspberry Pi 5, Orange Pi 5 | N64 well, with upscaling; the room for PSP (PPSSPP), NDS, Dreamcast and Saturn cores once they are packaged (PPSSPP and flycast need GLES 3 contexts, which the host does not offer yet: host-design.md §13). |
 
 ## Per-board notes
+
+### RetroStone1 (8BCraft, Allwinner H3)
+
+8BCraft's earlier handheld. Board folder `board/retrostone1/`, from the schematic revision 1.18
+(`hardware/retrostoneH3-18.sch`, `RSN1-1.18.pdf`). The RetrOrangePi reference files (`reference/retrostone-rop/`)
+only cover the RetroStone2, so everything below comes from the schematic. **Nobody has booted this image on a
+RetroStone1 yet**; the CI builds it (`retrostone1_release_defconfig`; `retrostone1_defconfig` is the development
+variant, as for the RetroStone2).
+
+What the schematic shows, and how the port uses it:
+
+| Part | Hardware | In RetroStoneOS |
+|---|---|---|
+| SoC, RAM | H3, 2x Samsung K4B4G1646D DDR3 = 1 GiB (32-bit); Orange Pi One/PC reference design | U-Boot `orangepi_one` + `board/retrostone1/uboot.fragment` (DRAM 624 MHz), mainline Linux 6.18 |
+| CPU supply | quad buck U57, CPU voltage 1.1 / 1.3 V switched by **PL6** (the Orange Pi One scheme) | `regulator-gpio` on PL6, cpufreq-dt |
+| Screen | **H3 composite TV-out (TVOUT) -> AMT630A (U$23) CVBS-to-RGB converter -> 54-pin FPC panel** (TVOUT, load R77, -> L7/C13 filter -> R28/R29 -> C87 -> AMT630A input CVBS1; JP1/TP7 on TVOUT). The AMT630A has its own firmware (SPI flash U$18): it sets the panel up over SPI, scales the CVBS picture to it, drives the backlight enable (KA2707 boost U$14) and reads the three side keys U$36-U$38 (its OSD / brightness keys) | sun4i-drm DE2 **mixer 1 -> TCON1 -> TV encoder**: kernel patch 0002 (the H3 TVE, ported from Armbian, docs/kernel-patches.md) and `dts/sun8i-h3-tve-pipeline.dtsi`. DRM connector "Composite-1", **NTSC 720x480i at 59.94 Hz** by default, PAL 720x576i as the fallback (board.ini `tv_norm`), 4:3 picture, optional overscan margin (`tv_overscan`). `internal_display = composite`: it is the built-in screen, switched with HDMI on hotplug like the RetroStone2 LCD. `backlight = none` (no Brightness slider: the AMT630A keys set it). **Compile-tested only** |
+| HDMI | H3 DesignWare HDMI, HPD, DDC, CEC | sun4i-drm (DE2 mixer 0 + TCON0 + dw-hdmi), HDMI audio through I2S2 (card `allwinner-hdmi`, in the board DTS). With HDMI plugged in the menu moves to the TV and the composite output is switched off, as on the RetroStone2 |
+| Buttons | D-pad PD0/5/11/12, A/B/X/Y = K2 PD14 / K4 PD15 / K1 PD13 / K3 PD9, Start PD1, Select PD4, extra pads SELECT3 PE3 / SELECT4 PC9, L1 PD8, R1 PD3, L2 PD6, R2 PD7 (JST U$4); all active low with 10k pull-ups | one `gpio-keys-polled` device "RetroStone1 Buttons" (5 ms; ports C/D/E have no interrupts on the H3) |
+| Analog stick | optional, on JOYSTICK_CON, read by an **MCP3208** SPI ADC (U$35) on SPI1 (PA13-PA16): CH0 = Y, CH1 = X | `mcp320x` IIO + `adc-joystick` "analog-stick" (`builtin_stick`) |
+| Power key | side tact switch **U$15 on PA1** | `gpio-keys` "Power Key" (`KEY_POWER`): a short press powers off cleanly |
+| Power | **no PMIC**: MCP73871 linear charger with power path (1 A, micro-USB or the Energysquare pads), charge LEDs only; **slide switch U$6** cuts the system rail in hardware; LDO VR1 (3.3 V always on), buck U57 enabled by PL8 (PWR-STB: CPU, 3.3 V) and PL9 (PWR-DRAM), VDD-SYS by PL5 (low = on) | `gpio-poweroff` on PL8: after shutdown the CPU, the 3.3 V rail and the screen go off; the user then turns the slide switch off |
+| Battery level | **no gauge**: MCP3208 CH2 is wired to VBAT without a divider, VREF = 3.3 V, so it reads full scale for any charged cell | no battery supply, no battery icon or overlay |
+| Audio | H3 codec LINEOUT -> analog volume wheel U$27 -> headphone jack U$24, whose switch feeds the PAM8302A mono amplifier (U1-A, /SD tied to VBAT); no amplifier enable or headphone-detect GPIO | codec card "H3 Audio Codec", `allwinner,audio-routing = "Line Out", "LINEOUT"`; `board-hooks.sh` sets the line out level |
+| Storage | microSD on mmc0, card detect PF6; no eMMC | `/dev/mmcblk0`, A/B layout of the Orange Pi H3 ports |
+| USB | four USB-A ports (two stacked pairs) on USB0-USB3, VBUS always on (SY6280, EN tied to 5 V) | host mode on all four (USB0 = OTG controller in host mode) |
+| Ethernet | RJ45 with magnetics (CON1) on the H3 internal PHY | `dwmac-sun8i` as a **module**, loaded by `rsos-net` only when Ethernet is turned on |
+| WiFi / Bluetooth | none: PG0-PG5 (SDIO), PL0, PL7, PA11 only go to test pads for an optional module | `wifi_module = none`, `bt_module = btusb` (USB dongle) |
+| LEDs | LED1 power (VBAT), LED2/LED4 charger status, LED3 USB power: none driven by the SoC | none in the DTS |
+| Debug UART | header UART0-DBG, PA4 TX / PA5 RX, 115200 | `ttyS0`, root shell |
+
+Kernel: `sunxi_defconfig` + the common fragment + `board/retrostone1/linux.fragment`; the device tree
+`board/retrostone1/dts/sun8i-h3-retrostone1.dts` (with `sun8i-h3-tve-pipeline.dtsi`) is copied into the kernel tree
+by `external.mk` (as the RetroStone2's). Patches (`board/retrostone1/patches/`): the Linux/U-Boot hashes, 0001 the
+RetroStone2's exFAT directory read-ahead patch (docs/kernel-patches.md, 0004), which shortens the first menu scan,
+and 0002 the H3 TV encoder (composite output) from Armbian's `sunxi-6.18` patches (docs/kernel-patches.md,
+"RetroStone1 0002"). Root file system slots: 512 MiB.
+
+**The built-in screen, how it works** (2026-09-28, compile-tested). Mainline 6.18 only drives the A10/A20 TV
+encoder. Patch 0002 adds the H3 one: the TVE clock's hidden /16 post-divider, the H3 DAC calibration, the DE2 mixer 1
+and the RGB -> YUV conversion (DCSC) the encoder needs. The dtsi describes mixer 1 -> TCON1 -> TVE next to mixer 0 ->
+TCON0 -> HDMI; the frontend sees two connectors, "HDMI-A-1" (CRTC 0) and "Composite-1" (CRTC 1). Composite is the
+internal display (board.ini `internal_display = composite`), so the menu starts on it, moves to HDMI when a TV is
+plugged in and comes back when it is unplugged, and the sound follows (codec / HDMI). The frontend sets the
+connector's "TV mode" with every modeset (NTSC for 720x480i, PAL for 720x576i), lays the menu out at 640x480 (the
+picture is 4:3, so a 720-pixel line has 0.889-wide pixels) and scales it to 720x480, and scales games with the right
+aspect ratio. Mixer 1 has only two planes, so the game goes on its VI plane and the FPS counter on the primary plane
+above it (display-design.md §3.2). NTSC is the default for the lower latency (59.94 Hz fields, the rate of most
+cores); `tv_norm = pal` in `/etc/rsos/board.ini` (or `auto` with `fw_setenv rsos_extraargs video=Composite-1:PAL`)
+selects PAL, and a refused NTSC mode falls back to PAL by itself. `rsos-kmstest --tv ntsc|pal --list` / `--tv ntsc`
+tests the output from the UART without the menu.
+
+**TODO(hw), for the owner, on a real RetroStone1** (serial console on UART0-DBG):
+
+1. **The built-in screen** (kernel patch 0002 + the composite support of the frontend; compile-tested only). There
+   is no boot logo on the panel before the kernel (U-Boot has no H3 composite output): the first picture is the
+   menu. Tests, in order:
+   1. **Probe.** `dmesg | grep -i -e tv -e mixer -e tcon -e drm`: sun4i-drm binds with no error or deferral loop;
+      `rsos-kmstest --list` shows "Composite-1" (connected, 720x480i and 720x576i, "interlaced") next to
+      "HDMI-A-1", and two CRTCs. If Composite-1 is missing, look for the TV encoder or mixer 1 in the errors.
+   2. **Menu at boot on the panel** (no HDMI cable): the menu shows on the built-in screen, 4:3, stable, right
+      colours; `/data/rsos/logs/frontend.log` has `output init: Composite-1 720x480@59.940 Hz, UI 640x480`.
+      Nothing on the panel: try `rsos-kmstest --tv ntsc` then `--tv pal` from the UART (a test pattern), and the
+      AMT630A side keys (its OSD, if its firmware shows one, also tells whether it sees a signal).
+   3. **NTSC vs PAL.** With `tv_norm = pal` in `/etc/rsos/board.ini` (`mount -o remount,rw /` first) and a
+      reboot: PAL 720x576i. Which one does the AMT630A show best (auto-detection, colour, stability)? Keep NTSC
+      if both work (lower latency, the cores' 60 Hz); if only PAL works, make `tv_norm = pal` the default here.
+      A game in NTSC should run at full speed with `vsync` pacing in game.log (59.94 Hz).
+   4. **Switching.** Plug an HDMI TV with the menu up: the menu moves to the TV (and the sound to HDMI), the panel
+      goes dark or shows "no signal"; unplug it: back on the panel, sound on the speaker. The same during a game.
+      Check the latency lines (`switch latency: ...`) in the log.
+   5. **Picture position and overscan.** Does the whole 720x480 picture reach the panel edges, or is part of it
+      cropped (a menu border or the FPS counter at a corner cut off)? Then use the AMT630A OSD position/size
+      settings, or set `tv_overscan = 3` (percent per edge) in board.ini. Also check the aspect ratio: a circle
+      in the UI must be round (else the panel is not 4:3, and `geo_for()` in display.c needs another ratio).
+   6. **Game planes.** A 320x240 game (NES/SNES/GBA) fills the height, sharp and 4:3, no interlace flicker; Show
+      FPS (Select+X) displays the counter at 2x on the panel (the overlay on mixer 1's primary plane: the log
+      must not say `overlay plane refused`).
+
+   If the TV encoder does not probe or shows nothing: the likely suspects are the TVE clock (the /16 post-divider:
+   `cat /sys/kernel/debug/clk/tve/clk_rate` should say 13500000), the DAC calibration value at 0x304 (H3:
+   0x02000c00, from Armbian; some BSPs read it from the SID) and the mixer 1 reset (RST_WB). The next step would
+   then be a register dump of the TVE (0x01e00000) against the Allwinner BSP's. **Panel timings are not needed**:
+   the AMT630A drives the panel from its own firmware.
+2. **Buttons**: that A/B/X/Y sit where the DTS says (K2 right, K4 bottom, K1 top, K3 left, as on the
+   RetroStone2); whether SELECT3 / SELECT4 are fitted, and which one should be C and which Z; `evtest` on
+   "RetroStone1 Buttons".
+3. **U$15**: that the side switch on PA1 is meant as the power key (and not a menu/hotkey button, in which case
+   make it `BTN_MODE` in the pad). `evtest` on "Power Key".
+4. **Power-off**: that driving PL8 low after shutdown turns the screen and the CPU off, and the current drawn
+   afterwards with the slide switch still on (the DRAM rail on PL9, the LDO and the speaker amplifier stay
+   powered). Also that nothing ever drives PL5 high (it would cut VDD-SYS).
+5. **DRAM clock**: 624 MHz; run `memtester`, then try the Orange Pi One's 672 MHz.
+6. **Analog stick** (units with the stick): axis directions (`abs-range` swap for an inversion), centre and
+   dead zone; with no stick fitted, check that the floating inputs do not produce phantom moves (if they do, drop
+   the `analog-stick` node for those units).
+7. **Audio**: the line out level in `board-hooks.sh` (0-31) so that the wheel covers a useful range, speaker and
+   headphones; HDMI audio at 48 kHz.
+8. **Charging**: the MCP73871 charges at 1 A (R18-C = 1k); nothing to do in software, but a low-battery warning
+   would need a divider on the MCP3208 CH2 input (a hardware change) or a gauge.
+9. **Boot time** (never measured on this board) and HDMI hotplug.
 
 ### Raspberry Pi 2 (32-bit image), also Pi 3 / Zero 2 W in 32-bit mode
 
@@ -170,10 +272,24 @@ Each defconfig was built from scratch in its own output directory (`~/rsos/outpu
   root as the library prefix) with the board's `board.ini`: the menu came up, a NES ROM started with the image's
   fceumm core and ended cleanly.
 
+The RetroStone1 (2026-09-28) got the same checks except the qemu-user run: `check-defconfigs.sh` for both
+defconfigs, a full build of `retrostone1_defconfig` (35 cores, 297 MiB target), the kernel and U-Boot `.config`
+against the fragments, the device tree compiled by the kernel build without warnings, the image layout, `/boot`,
+`board.env` and the inittab UART line. The composite screen (same day, second round): the kernel rebuilt with patch
+0002 (both patches apply with `patch -p1` on a clean 6.18.54; `drivers/gpu/drm/sun4i/` and `drivers/clk/sunxi-ng/`
+build with `W=1` without warnings; `checkpatch --strict` clean), `DRM_SUN4I`, `DRM_SUN8I_MIXER`, `SUN8I_H3_CCU` and
+`SUN8I_DE2_CCU` built in, `sun4i_tv_bind` and `sun8i_h3_mixer1_cfg` in `System.map`, the DTB with `tv-encoder@1e00000`,
+`mixer@1200000` and `lcd-controller@1c0d000` enabled and the graph mixer 0 -> TCON0 -> HDMI, mixer 1 -> TCON1 -> TVE
+(decompiled and followed), `make CHECK_DTBS=y` with only the errors every board of this tree has (the board's root
+compatible, the HDMI `#sound-dai-cells` of the HDMI sound card); the frontend rebuilt, `board.ini` / `board.env`
+with `internal_display = composite` and `tv_norm = ntsc`.
+
 Images are not published from these builds: the release CI produces them.
 
 ## Follow-ups
 
+- **The RetroStone1 built-in screen**: kernel patch 0002 and the frontend support are in; the hardware test list is
+  TODO 1 of its notes. Once it works there, the same dtsi could give the Orange Pi H3 boards their AV output.
 - **Hardware reports** for every board here (HDMI modes and hotplug, HDMI audio at 48 kHz, the N64 cores on the
   GPU, WiFi/Bluetooth, the power key, boot time).
 - A generic `rsos_board_late_modules` hook in rcS (the Orange Pi 5 loads Panthor from `rsos_board_late_audio`).

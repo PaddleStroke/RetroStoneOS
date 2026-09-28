@@ -13,6 +13,8 @@
 
 static int failures;
 
+#define NEAR(a, b) ((a) - (b) < 1e-9 && (b) - (a) < 1e-9)
+
 #define CHECK(cond, ...)                                                   \
 	do {                                                               \
 		if (!(cond)) {                                             \
@@ -338,6 +340,185 @@ static void test_lcd_refresh(void)
 	memset(&D, 0, sizeof(D));
 }
 
+/*
+ * The built-in composite screen (RetroStone1: H3 TV encoder -> AMT630A):
+ * the board's connector list makes it internal, NTSC/PAL mode choice and
+ * fallback, the TV mode property value, the 4:3 picture on 720-pixel lines,
+ * the overscan inset, the game/overlay planes of a DE2 mixer 1.
+ */
+static void test_tv(void)
+{
+	/* drm_mode_analog_ntsc_480i() / drm_mode_analog_pal_576i() */
+	static const drmModeModeInfo ntsc = {
+		.clock = 13500, .hdisplay = 720, .hsync_start = 739, .hsync_end = 801, .htotal = 858,
+		.vdisplay = 480, .vsync_start = 486, .vsync_end = 492, .vtotal = 525, .vrefresh = 60,
+		.flags = DRM_MODE_FLAG_INTERLACE, .type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
+		.name = "720x480i",
+	};
+	static const drmModeModeInfo pal = {
+		.clock = 13500, .hdisplay = 720, .hsync_start = 732, .hsync_end = 795, .htotal = 864,
+		.vdisplay = 576, .vsync_start = 581, .vsync_end = 586, .vtotal = 625, .vrefresh = 50,
+		.flags = DRM_MODE_FLAG_INTERLACE, .type = DRM_MODE_TYPE_DRIVER, .name = "720x576i",
+	};
+	drmModeModeInfo modes[2] = { ntsc, pal }, m;
+	struct display_rect r;
+	struct display_output_info in;
+	bool builtin;
+
+	CHECK(refresh_mhz(&ntsc) == 59940 && refresh_mhz(&pal) == 50000, "field rates %d / %d mHz",
+	      refresh_mhz(&ntsc), refresh_mhz(&pal));
+	CHECK(!mode_retime(&ntsc, 60, &m), "interlaced modes are never retimed");
+
+	/* classification: internal only when the board lists it */
+	memset(&D, 0, sizeof(D));
+	CHECK(classify(DRM_MODE_CONNECTOR_Composite) == DISPLAY_OUTPUT_HDMI, "auto: composite is external");
+	D.cfg.internal_mode = DISPLAY_INTERNAL_LIST;
+	D.cfg.internal_types = (1u << DRM_MODE_CONNECTOR_Unknown) | (1u << DRM_MODE_CONNECTOR_DPI);
+	CHECK(classify(DRM_MODE_CONNECTOR_Composite) == DISPLAY_OUTPUT_HDMI &&
+	      classify(DRM_MODE_CONNECTOR_Unknown) == DISPLAY_OUTPUT_LCD, "RetroStone2 list: composite external");
+	D.cfg.internal_types = 1u << DRM_MODE_CONNECTOR_Composite;
+	CHECK(classify(DRM_MODE_CONNECTOR_Composite) == DISPLAY_OUTPUT_LCD &&
+	      classify(DRM_MODE_CONNECTOR_HDMIA) == DISPLAY_OUTPUT_HDMI &&
+	      classify(DRM_MODE_CONNECTOR_Unknown) == DISPLAY_OUTPUT_NONE, "RetroStone1 list: composite internal");
+	D.cfg.internal_types |= 1u << DRM_MODE_CONNECTOR_HDMIA;
+	CHECK(classify(DRM_MODE_CONNECTOR_HDMIA) == DISPLAY_OUTPUT_HDMI, "HDMI stays external");
+
+	/* mode choice */
+	D.nconn = 1;
+	D.conns[0].type = DRM_MODE_CONNECTOR_Composite;
+	D.conns[0].kind = DISPLAY_OUTPUT_LCD;
+	D.conns[0].modes = modes;
+	D.conns[0].count_modes = 2;
+	D.cfg.tv_norm = DISPLAY_TV_NTSC;
+	D.cfg.lcd_refresh_hz = 60;   /* a panel setting: ignored here */
+	CHECK(pick_mode(&D.conns[0], &m, &builtin) && m.vdisplay == 480 && m.clock == 13500 && !builtin,
+	      "ntsc: 720x480i");
+	D.cfg.tv_norm = DISPLAY_TV_PAL;
+	CHECK(pick_mode(&D.conns[0], &m, &builtin) && m.vdisplay == 576, "pal: 720x576i");
+	D.cfg.tv_norm = DISPLAY_TV_AUTO;
+	CHECK(pick_mode(&D.conns[0], &m, &builtin) && m.vdisplay == 480, "auto: the preferred mode");
+	D.cfg.tv_norm = DISPLAY_TV_NTSC;
+	D.tv_pal_fallback = true;
+	CHECK(pick_mode(&D.conns[0], &m, &builtin) && m.vdisplay == 576, "NTSC refused: PAL");
+	D.tv_pal_fallback = false;
+	D.conns[0].modes = modes + 1;
+	D.conns[0].count_modes = 1;
+	CHECK(pick_mode(&D.conns[0], &m, &builtin) && m.vdisplay == 576, "no NTSC mode: PAL");
+	D.cfg.tv_norm = DISPLAY_TV_PAL;
+	D.conns[0].modes = modes;
+	CHECK(pick_mode(&D.conns[0], &m, &builtin) && m.vdisplay == 480, "no PAL mode: NTSC");
+	D.conns[0].count_modes = 2;
+	/* an external composite output (auto) without EDID: its own modes,
+	 * never the HDMI CEA fallback */
+	D.conns[0].kind = DISPLAY_OUTPUT_HDMI;
+	D.cfg.hdmi_builtin_mode = true;
+	CHECK(pick_mode(&D.conns[0], &m, &builtin) && m.vdisplay == 480 && !builtin, "external composite");
+	D.conns[0].kind = DISPLAY_OUTPUT_LCD;
+	CHECK(tv_mode_is_pal(&pal) && !tv_mode_is_pal(&ntsc), "TV mode property follows the lines");
+
+	/* geometry: a 4:3 picture on 720-pixel lines */
+	geo_for(0, 720, 480, &D.geo);
+	CHECK(NEAR(D.geo.par, 8.0 / 9.0) && !D.geo.ix && !D.geo.iy, "NTSC pixel %f", D.geo.par);
+	r = compute_scaled(640, 480, 720, 480, DISPLAY_SCALE_ASPECT, 4.0 / 3.0);
+	CHECK(r.x == 0 && r.y == 0 && r.w == 720 && r.h == 480, "640x480 UI fills 720x480i: %dx%d+%d+%d",
+	      r.w, r.h, r.x, r.y);
+	r = compute_scaled(320, 240, 720, 480, DISPLAY_SCALE_INTEGER, 0);
+	CHECK(r.x == 0 && r.y == 0 && r.w == 720 && r.h == 480, "320x240 x2: %dx%d+%d+%d", r.w, r.h, r.x, r.y);
+	r = compute_scaled(256, 224, 720, 480, DISPLAY_SCALE_INTEGER, 4.0 / 3.0);
+	CHECK(r.x == 72 && r.y == 16 && r.w == 576 && r.h == 448, "SNES x2 square pixels: %dx%d+%d+%d",
+	      r.w, r.h, r.x, r.y);
+	r = compute_scaled(256, 224, 720, 480, DISPLAY_SCALE_ASPECT, 4.0 / 3.0);
+	CHECK(r.w == 720 && r.h == 480, "SNES 4:3 fills: %dx%d", r.w, r.h);
+	r = compute_scaled(160, 144, 720, 480, DISPLAY_SCALE_ASPECT, 0);
+	CHECK(r.h == 480 && r.w == 600 && r.x == 60, "GB 10:9: %dx%d+%d", r.w, r.h, r.x);
+	geo_for(0, 720, 576, &D.geo);
+	CHECK(NEAR(D.geo.par, 16.0 / 15.0), "PAL pixel %f", D.geo.par);
+	r = compute_scaled(640, 480, 720, 576, DISPLAY_SCALE_ASPECT, 4.0 / 3.0);
+	CHECK(r.w == 720 && r.h == 576, "640x480 UI fills 720x576i: %dx%d", r.w, r.h);
+	r = compute_scaled(320, 240, 720, 576, DISPLAY_SCALE_INTEGER, 0);
+	CHECK(r.w == 600 && r.h == 480 && r.x == 60 && r.y == 48, "320x240 x2 on PAL: %dx%d+%d+%d", r.w, r.h,
+	      r.x, r.y);
+
+	/* overscan: planes and overlay inside the inset */
+	D.cfg.tv_overscan = 5;
+	geo_for(0, 720, 480, &D.geo);
+	CHECK(D.geo.ix == 36 && D.geo.iy == 24, "5 %% inset %d,%d", D.geo.ix, D.geo.iy);
+	r = compute_scaled(640, 480, 720, 480, DISPLAY_SCALE_ASPECT, 4.0 / 3.0);
+	CHECK(r.x == 36 && r.y == 24 && r.w == 648 && r.h == 432, "UI inside the inset: %dx%d+%d+%d", r.w, r.h,
+	      r.x, r.y);
+	CHECK(ov_rect_inset(720, 480, 72, 20, DISPLAY_CORNER_TOP_RIGHT, 4, &r) && r.x == 608 && r.y == 28,
+	      "overlay inside the inset: %d,%d", r.x, r.y);
+	CHECK(!ov_rect_inset(720, 480, 700, 20, DISPLAY_CORNER_TOP_RIGHT, 4, &r), "too wide for the inset");
+	D.cfg.tv_overscan = 90;
+	geo_for(0, 720, 480, &D.geo);
+	CHECK(D.geo.ix == 144 && D.geo.iy == 96, "inset capped at 20 %%");
+	D.conns[0].kind = DISPLAY_OUTPUT_HDMI;
+	geo_for(0, 720, 480, &D.geo);
+	CHECK(D.geo.par < 0.9 && !D.geo.ix && !D.geo.iy, "external composite: 4:3, no inset");
+	D.conns[0].type = DRM_MODE_CONNECTOR_HDMIA;
+	geo_for(0, 720, 480, &D.geo);
+	CHECK(D.geo.par == 1.0 && !D.geo.ix, "HDMI 720x480: square pixels (unchanged)");
+	geo_for(-1, 640, 480, &D.geo);
+	CHECK(D.geo.par == 1.0, "no connector");
+
+	/* what the frontend is told */
+	D.conns[0].type = DRM_MODE_CONNECTOR_Composite;
+	D.conns[0].kind = DISPLAY_OUTPUT_LCD;
+	D.cfg.tv_overscan = 0;
+	D.ncrtc = 1;
+	D.nplane = 1;
+	D.conn = D.crtc = D.plane = 0;
+	D.mode = ntsc;
+	geo_for(0, 720, 480, &D.geo);
+	fill_info(&in, false);
+	CHECK(in.interlaced && in.width == 720 && in.height == 480 && NEAR(in.pixel_aspect, 8.0 / 9.0) &&
+	      !strcmp(in.mode_name, "720x480i@59.94 NTSC") && in.type == DISPLAY_OUTPUT_LCD,
+	      "info: %s, pixel %f", in.mode_name, in.pixel_aspect);
+	D.mode = pal;
+	geo_for(0, 720, 576, &D.geo);
+	fill_info(&in, false);
+	CHECK(!strcmp(in.mode_name, "720x576i@50.00 PAL"), "info: %s", in.mode_name);
+	memset(&D, 0, sizeof(D));
+
+	/* DE2 mixer 1: VI plane (XRGB, no alpha, zpos 0) + primary UI plane
+	 * (ARGB, zpos 1): the game goes on the VI plane, the overlay on the UI */
+	D.ncrtc = 1;
+	D.nplane = 2;
+	D.planes[0] = (struct plane){ .possible_crtcs = 1, .type = DRM_PLANE_TYPE_OVERLAY, .xrgb8888 = true,
+				      .rgb565 = true, .fb_id = 1, .prop_zpos = 9, .zpos = 0 };
+	D.planes[1] = (struct plane){ .possible_crtcs = 1, .type = DRM_PLANE_TYPE_PRIMARY, .xrgb8888 = true,
+				      .argb8888 = true, .fb_id = 1, .prop_zpos = 9, .zpos = 1 };
+	D.crtcs[0].primary = 1;
+	crtc_pick_planes(0);
+	CHECK(D.crtcs[0].primary == 0 && ov_plane(0) == 1, "mixer 1: game %d, overlay %d", D.crtcs[0].primary,
+	      ov_plane(0));
+	/* mixer 0 (VI + 3 UI): unchanged, game on the primary, overlay on UI 1 */
+	D.nplane = 4;
+	D.planes[2] = D.planes[1];
+	D.planes[2].type = DRM_PLANE_TYPE_OVERLAY;
+	D.planes[2].zpos = 2;
+	D.planes[3] = D.planes[2];
+	D.planes[3].zpos = 3;
+	D.crtcs[0].primary = 1;
+	crtc_pick_planes(0);
+	CHECK(D.crtcs[0].primary == 1 && ov_plane(0) == 2, "mixer 0: game %d, overlay %d", D.crtcs[0].primary,
+	      ov_plane(0));
+	/* no zpos (A20 backend style): never swapped */
+	D.nplane = 2;
+	D.planes[0].prop_zpos = D.planes[1].prop_zpos = 0;
+	D.crtcs[0].primary = 1;
+	crtc_pick_planes(0);
+	CHECK(D.crtcs[0].primary == 1 && ov_plane(0) == -1, "no zpos: no swap");
+	/* the lower plane must be below the primary */
+	D.planes[0].prop_zpos = D.planes[1].prop_zpos = 9;
+	D.planes[0].zpos = 1;
+	D.planes[1].zpos = 0;
+	crtc_pick_planes(0);
+	CHECK(D.crtcs[0].primary == 1 && ov_plane(0) == -1, "overlay plane above the primary: no swap");
+	memset(&D, 0, sizeof(D));
+	printf("tv: composite as the built-in screen, NTSC/PAL, 4:3 on 720 pixels, overscan, mixer 1 planes\n");
+}
+
 int main(void)
 {
 	test_convert();
@@ -345,6 +526,7 @@ int main(void)
 	test_geometry_math();
 	test_overlay();
 	test_lcd_refresh();
+	test_tv();
 	bench();
 	printf("%s (%d failure(s))\n", failures ? "FAILED" : "OK", failures);
 	return failures ? 1 : 0;

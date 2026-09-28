@@ -36,6 +36,9 @@ static inline void board_apply_display(const struct board_profile *b, struct dis
 			   b->internal_display == BOARD_INTERNAL_LIST ? DISPLAY_INTERNAL_LIST :
 			   DISPLAY_INTERNAL_AUTO;
 	c->internal_types = b->internal_types;
+	c->tv_norm = b->tv_norm == BOARD_TV_PAL ? DISPLAY_TV_PAL :
+		     b->tv_norm == BOARD_TV_AUTO ? DISPLAY_TV_AUTO : DISPLAY_TV_NTSC;
+	c->tv_overscan = b->tv_overscan;
 	c->a20_clock_log = (b->display_quirks & BOARD_QUIRK_SUN4I_TCON0_CLOCK) != 0;
 }
 
@@ -62,7 +65,9 @@ static inline void board_apply_power(const struct board_profile *b, struct power
 #define RSOS_BOARD_APPLY_UI
 static inline void board_apply_ui(const struct board_profile *b, struct ui_config *c)
 {
-	c->has_internal_display = b->internal_display != BOARD_INTERNAL_NONE;
+	/* The Brightness slider needs a backlight the SoC drives (the
+	 * RetroStone1's is set by its AMT630A: backlight = none) */
+	c->has_internal_display = b->internal_display != BOARD_INTERNAL_NONE && strcasecmp(b->backlight, "none");
 	c->lcd_refresh_choice = b->refresh_native > 0 && b->refresh_60;
 	c->storage_overlays = b->storage_overlays;
 }

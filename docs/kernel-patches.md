@@ -23,6 +23,15 @@ make. Add yours before sending anything upstream. 0002 is derived from Stefan Ma
 `rsos-patches` branch, with one commit per patch. To regenerate the patch files:
 `git format-patch --no-signature -o <repo>/buildroot-external/board/retrostone2/patches/linux 1b357ecb3..rsos-patches`.
 
+**Other boards.** The RetroStone1 (`board/retrostone1/patches/linux/`) carries a copy of the RetroStone2's 0004
+(exFAT directory read-ahead plug, generic) as its own 0001; keep the two copies identical. Its 0002 is the H3 TV
+encoder (composite output), see "RetroStone1 0002" at the end of this page.
+
+| RetroStone1 # | Patch | Status |
+|---|---|---|
+| 0001 | `exfat: plug the queue around the directory read-ahead` (= RetroStone2 0004) | as the RetroStone2's |
+| 0002 | `drm/sun4i: add the H3 TV encoder (composite output)` | Compiles (`W=1`, no warnings; `checkpatch --strict` clean), from Armbian; untested on RetroStone1 hardware |
+
 ---
 
 ## 0001: fast HDMI hotplug detection
@@ -299,3 +308,72 @@ level, after drivers that depend on it. The pin controller was deferred to late_
 SD card detection to 0.309 s and delayed the root mount. Registering the CCU at `subsys_initcall` lets pinctrl, mmc and the
 rest probe in order on the first pass (estimated −100…−170 ms before /sbin/init). To be confirmed with the `initcall_debug`
 log of the round-3 dev image (bootlog writes `initcalls.txt`).
+
+## RetroStone1 0002: drm/sun4i: add the H3 TV encoder (composite output)
+
+`board/retrostone1/patches/linux/0002-drm-sun4i-add-the-H3-TV-encoder-composite-output.patch`, for the RetroStone1's
+built-in screen (H3 TVOUT -> AMT630A CVBS-to-RGB converter -> panel; docs/boards.md, "RetroStone1").
+
+### Why a patch
+Mainline 6.18 drives the TV encoder of the A10/A20 only (`sun4i_tv.c`, `allwinner,sun4i-a10-tv-encoder`, behind the
+sun4i backend). The H3 has the same encoder behind its second DE2 pipeline (mixer 1 -> TCON1 -> TVE), which neither
+the drivers nor `sun8i-h3.dtsi` describe.
+
+### Source (searched 2026-09-28)
+| Candidate | Base | Notes |
+|---|---|---|
+| **Armbian `sunxi-6.18` (chosen)** | 6.18 | `patch/kernel/archive/sunxi-6.18/patches.armbian/` in https://github.com/armbian/build (commit `faa60b8b7015`, 2026-09-28): `clk-sunxi-ng-h3-add-the-tve-clock.patch`, `drm-sun4i-support-the-h3-and-h5-tv-encoders.patch`, `drm-sun4i-fix-null-deref-when-unbinding-the-tv-encoder.patch`, `dt-bindings-display-allwinner-add-h3-h5-tv-encoder-and-mixer1.patch`, `arm-dts-sunxi-h3-describe-the-tv-encoder-pipeline.patch`, plus the overlay `overlay_32/sun8i-h3-tve.dtso`. Author enthropy7 (August 2026, Signed-off-by), GPL-2.0. Tested there on an Orange Pi Zero (H2+): 720x480i, TVE clock 13.5 MHz, picture checked on a capture card. The closest to 6.18: written for it. |
+| LibreELEC `0055-wip-h3-h5-cvbs.patch` | 5.x (2021) | Jernej Škrabec's work-in-progress (`projects/Allwinner/patches/linux/` in LibreELEC.tv), the ancestor of the Armbian series. Written against the older sun4i_tv (before the TV mode property of 6.2). |
+| Icenowy Zheng, "drm: sun4i: add support for the TV encoder in H3 SoC" (DE2 series v2, 2017) | 4.13 | Dropped before the DE2 merge. |
+| linux-sunxi wiki / Megous (xff.cz) | – | Nothing newer than the above for H3 TV-out. |
+
+### What the patch does (one commit)
+- **clk: sunxi-ng: h3**: the TVE module clock (0x120) gets its undocumented **fixed post-divider of 16**
+  (`CCU_FEATURE_FIXED_POSTDIV`). Without it TCON1 sets its channel-1 clock (which is the TVE clock) 16 times too
+  high and the picture never locks. With it, 13.5 MHz = pll-de 432 MHz / 2 / 16 (pll-de runs at 432 MHz for the
+  mixers).
+- **drm/sun4i: tv**: a quirks table per compatible. `allwinner,sun8i-h3-tv-encoder`: DAC calibration `0x02000c00`
+  written to 0x304 at bind (the H3 DAC drives nothing without it); `allwinner,sun50i-h5-tv-encoder`: `0x02850000`
+  plus 0x30c = `0x00101110`. The regmap grows to 0x400. The A10 keeps its behaviour. Also the unbind fix (no second
+  `drm_connector_cleanup()`/`drm_encoder_cleanup()`: `drm_mode_config_cleanup()` already did it, NULL dereference).
+- **drm/sun4i: sun8i-mixer**: the encoder takes YUV, so the mixer's **DCSC** converts its RGB output (BT.601
+  coefficients at 0xb0010, enable at 0xb0000). This goes through the engine's `apply_color_correction` /
+  `disable_color_correction` callbacks, which `sun4i_tv_enable()` / `_disable()` already call. New
+  `allwinner,sun8i-h3-de2-mixer-1`: one VI and one UI channel, both scaled (`scaler_mask 0x3`), CSC layout of a
+  mixer 1, 432 MHz.
+- **dt-bindings**: the three new compatibles, and (not in Armbian's series) the H3 display engine may list two
+  pipelines, so that `make CHECK_DTBS=y` accepts `allwinner,pipelines = <&mixer0>, <&mixer1>`.
+
+**Port to 6.18.54.** The clk, sun4i_tv and binding parts apply as they are. Armbian applies its mixer part on top of
+Jernej Škrabec's sun4i-drm refactor series (`patches.drm/`, 43 patches: `lay_cfg`, `de2_fcc_alpha`...), which 6.18.54
+does not have, so the mixer 1 configuration and the colour correction were rewritten for the 6.18 `sun8i_mixer_cfg`.
+The colour-correction callbacks return early on DE3/DE3.3 mixers (their DCSC is elsewhere; only the DE2 H3/H5 have
+this TV encoder).
+
+**Device tree.** Not in the patch: `board/retrostone1/dts/sun8i-h3-tve-pipeline.dtsi` (included by the board DTS)
+does what Armbian's `arm-dts-sunxi-h3-describe-the-tv-encoder-pipeline.patch` does to the SoC dtsi: `&de` gets
+`allwinner,pipelines = <&mixer0>, <&mixer1>`, the single mixer0 -> TCON0 endpoints become `endpoint@0/@1` pairs (the
+A83T layout: each mixer can reach each TCON), and it adds `mixer1` (`sun8i-h3-de2-mixer-1`, reset `RST_WB`, which the
+H3 DE2 clock unit exports for mixer 1), `tcon1` (`sun8i-h3-tcon-tv`, clocks `CLK_BUS_TCON1` + `CLK_TVE` as
+`tcon-ch1`, IRQ 87) and `tve` (`sun8i-h3-tv-encoder`, 0x01e00000, `CLK_BUS_TVE`, `RST_BUS_TVE`), all disabled; the
+board DTS enables `mixer1`, `tcon1` and `tve`. The driver resolves the pairs by endpoint id: mixer 0 = TCON0 = HDMI,
+mixer 1 = TCON1 = TVE (checked in the built DTB). TVOUT is a dedicated analog pin: no pinctrl.
+
+**Development tree.** `~/rsos/src/linux-6.18-rs1` in WSL, a git worktree of `~/rsos/src/linux-6.18` on the `rs1-tve`
+branch (one commit on v6.18.54). To regenerate: `git format-patch --no-signature --start-number 2 -o
+<repo>/buildroot-external/board/retrostone1/patches/linux 1b357ecb3..rs1-tve`. The Armbian originals it started from
+are in `~/rsos/src/tve/armbian-build` (sparse clone).
+
+**Config.** `sun4i_tv.o` is built by `CONFIG_DRM_SUN4I` (=y in `sunxi_defconfig`); `board/retrostone1/linux.fragment`
+spells out `DRM_SUN4I=y` and `DRM_SUN8I_MIXER=y`.
+
+### Userspace view
+Connector **"Composite-1"** (always "connected": no detect), modes 720x480i (NTSC, preferred by default) and 720x576i
+(PAL), connector property **"TV mode"** (NTSC, PAL; `sun4i_tv` encodes this property, not the CRTC mode, so the
+frontend sets both together). CRTC 1 with two planes: VI (zpos 0, no alpha formats) and the primary UI plane (zpos
+1). The frontend side is in display-design.md §3.2.
+
+### TODO(hw)
+The patch is only compile-tested here: the probe (`dmesg | grep -i -e tv -e mixer -e tcon`), a picture on the
+AMT630A in NTSC and PAL, the colours (DCSC coefficients, the H3 DAC calibration value), and the HDMI <-> composite
+switch (two CRTCs sharing pll-de). The test list is in docs/boards.md, "RetroStone1".

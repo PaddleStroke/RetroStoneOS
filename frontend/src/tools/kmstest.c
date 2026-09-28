@@ -621,6 +621,8 @@ static void usage(const char *argv0)
 	       "  --buffers N         2 (default) or 3\n"
 	       "  --hdmi-crtc N       force the CRTC index used for HDMI\n"
 	       "  --lcd-refresh HZ    LCD at HZ (60: the 25.2 MHz user mode; 0: the panel's own mode)\n"
+	       "  --tv NORM           the composite output is the built-in screen (RetroStone1):\n"
+	       "                      ntsc (720x480i), pal (720x576i) or auto (the kernel's choice)\n"
 	       "  --debounce MS       hotplug debounce (default 250)\n"
 	       "  --frames N          exit after N frames\n"
 	       "  --device PATH       DRM device (default: first usable /dev/dri/card*)\n"
@@ -781,6 +783,7 @@ int main(int argc, char **argv)
 		{ "buffers", required_argument, NULL, 'b' },
 		{ "hdmi-crtc", required_argument, NULL, 'c' },
 		{ "lcd-refresh", required_argument, NULL, 'L' },
+		{ "tv", required_argument, NULL, 'T' },
 		{ "debounce", required_argument, NULL, 'd' },
 		{ "frames", required_argument, NULL, 'F' },
 		{ "device", required_argument, NULL, 'D' },
@@ -806,7 +809,7 @@ int main(int argc, char **argv)
 	struct sigaction sa;
 
 	display_config_defaults(&cfg);
-	while ((opt = getopt_long(argc, argv, "lunk:m:H:s:f:CRBPAS:b:c:L:d:F:D:vh", opts, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "lunk:m:H:s:f:CRBPAS:b:c:L:T:d:F:D:vh", opts, NULL)) != -1) {
 		switch (opt) {
 		case 'l': list = true; break;
 		case 'u': monitor = true; break;
@@ -856,6 +859,22 @@ int main(int argc, char **argv)
 		case 'b': cfg.buffers = atoi(optarg); break;
 		case 'c': cfg.hdmi_crtc_index = atoi(optarg); break;
 		case 'L': cfg.lcd_refresh_hz = atoi(optarg); break;
+		case 'T':
+			/* The composite output is the built-in screen (RetroStone1),
+			 * next to the usual panel types */
+			if (strcmp(optarg, "ntsc") == 0)
+				cfg.tv_norm = DISPLAY_TV_NTSC;
+			else if (strcmp(optarg, "pal") == 0)
+				cfg.tv_norm = DISPLAY_TV_PAL;
+			else if (strcmp(optarg, "auto") == 0)
+				cfg.tv_norm = DISPLAY_TV_AUTO;
+			else
+				goto bad;
+			cfg.internal_mode = DISPLAY_INTERNAL_LIST;
+			cfg.internal_types = (1u << DRM_MODE_CONNECTOR_Composite) | (1u << DRM_MODE_CONNECTOR_Unknown) |
+					     (1u << DRM_MODE_CONNECTOR_DPI) | (1u << DRM_MODE_CONNECTOR_LVDS) |
+					     (1u << DRM_MODE_CONNECTOR_DSI);
+			break;
 		case 'd': cfg.debounce_ms = atoi(optarg); break;
 		case 'F': max_frames = atoll(optarg); break;
 		case 'D': cfg.device = optarg; break;
