@@ -163,6 +163,11 @@ static struct {
 	int64_t combo_since;
 	int64_t term_sent_at;
 	int64_t poweroff_sent_at;
+	uint16_t game_buttons;      /* the pads during a game: activity for the idle power-off */
+	int16_t axis_ref[INPUT_MAX_PORTS][2][2]; /* last stick position counted (power_axis_activity) */
+	bool activity_pending;      /* a pad moved, not reported yet (rate limit) */
+	int64_t activity_sent_at;
+	int64_t busy_checked_at;   /* the idle power-off's busy check (once a second) */
 
 	/* shutdown */
 	bool shutdown_req;
@@ -885,6 +890,22 @@ static const char *splash_path(void)
 	return p;
 }
 
+/* Panel safety (display-design.md §8.5): the boot logo is what the panel
+ * scans, backlight off, while HDMI shows the picture (black without it). */
+static void panel_picture(void)
+{
+	struct splash sp;
+	uint32_t *pix;
+
+	if (M.headless || !M.display_ok || splash_load(splash_path(), &sp) < 0)
+		return;
+	pix = malloc((size_t)sp.width * sp.height * 4);
+	if (pix && splash_draw(&sp, pix, sp.width, sp.height, sp.width) == 0)
+		display_set_panel_picture(pix, sp.width, sp.height, sp.bg);
+	free(pix);
+	splash_free(&sp);
+}
+
 /* The boot logo: right after the first display_init(), before anything
  * else loads. Never in charge mode (the charge screen comes first). */
 static void boot_splash(void)
@@ -925,6 +946,7 @@ static void display_try_init(void)
 		M.need_redraw = true;
 		if (!M.splash_tried && !M.first_frame)
 			boot_splash();
+		panel_picture();   /* after the first picture: no boot delay */
 		return;
 	}
 	if (M.display_failures++ % 20 == 0)
@@ -945,7 +967,8 @@ static void hdmi_mode_to_cfg(const char *mode, struct display_config *c)
 }
 
 static const char *const power_keys[] = {
-	"sleep_timeout_min", "sleep_wake", "idle_dim_min", "idle_off_min", "battery_gauge", "timezone",
+	"sleep_timeout_min", "sleep_wake", "idle_dim_min", "idle_off_min", "idle_poweroff_min", "battery_gauge",
+	"timezone",
 };
 
 /* settings.ini -> power module. The UI does it in ui_create(), which runs
@@ -1184,6 +1207,114 @@ static void pw_screen(enum power_screen s, void *user)
 	}
 }
 
+/* Idle power-off (docs/power.md "Idle power-off"): the 10 s notice, or its
+ * cancellation. In a game the game process shows it (its OSD). The module
+ * lit the screen again already (pw_screen). */
+static void pw_idle(enum power_idle_event ev, int seconds, void *user)
+{
+	pid_t c = host_child_pid();
+
+	(void)user;
+	mlog("idle power-off: %s", ev == POWER_IDLE_WARN ? "notice (10 s)" : "cancelled");
+	(void)seconds;
+	if (M.in_game && c > 0) {
+		kill(c, ev == POWER_IDLE_WARN ? RSOS_SIG_IDLE_WARN : RSOS_SIG_IDLE_CANCEL);
+		return;
+	}
+	if (M.ui)
+		ui_power_event(M.ui, ev == POWER_IDLE_WARN ? UI_PWR_IDLE_WARN : UI_PWR_IDLE_CANCEL);
+	M.need_redraw = true;
+}
+
+/*
+ * Idle power-off: the player on any pad (the power module sees the built-in
+ * keys itself; the menu's own button events go through power_on_input()).
+ * In a game this process reads the same pads as the game (no grab): a
+ * button held or changed, or a real stick move (power_axis_activity(): past
+ * half deflection or a 20 % move, never the noise of a drifting stick, so
+ * N64/PS1 players steering with the stick keep the unit on). Reported at
+ * most once a second (power_notify_activity()), never lost.
+ */
+static void pads_activity(bool in_game)
+{
+	bool moved = false;
+	int64_t t;
+
+	if (!M.power_ok || !M.in)
+		return;
+	if (in_game) {
+		uint16_t b = input_any_buttons(M.in);
+
+		moved = b || b != M.game_buttons;
+		M.game_buttons = b;
+	}
+	for (int p = 0; p < INPUT_MAX_PORTS; p++)
+		for (int s = 0; s < 2; s++)
+			for (int a = 0; a < 2; a++)
+				moved |= power_axis_activity(input_port_analog(M.in, p, s, a), &M.axis_ref[p][s][a]);
+	if (moved)
+		M.activity_pending = true;
+	t = now_ms();
+	if (M.activity_pending && t - M.activity_sent_at >= 1000) {
+		M.activity_pending = false;
+		M.activity_sent_at = t;
+		power_notify_activity();
+	}
+}
+
+/* An established TCP connection to local port `port` (the SMB share's
+ * clients: ksmbd has no client count of its own). */
+static bool tcp_client_on(const char *path, unsigned port)
+{
+	char line[256];
+	FILE *f = fopen(path, "r");
+	bool found = false;
+
+	if (!f)
+		return false;
+	while (!found && fgets(line, sizeof(line), f)) {
+		unsigned lport, st;
+		char local[64];
+
+		/* "  0: 0100007F:01BD 0100007F:D2A4 01 ..." (ipv4) or the ipv6 form */
+		if (sscanf(line, " %*d: %63[0-9A-Fa-f]:%x %*[0-9A-Fa-f]:%*x %x", local, &lport, &st) == 3)
+			found = lport == port && st == 0x01;   /* TCP_ESTABLISHED */
+	}
+	fclose(f);
+	return found;
+}
+
+/*
+ * The long jobs during which the unit never powers off by itself (checked
+ * once a second): a USB import, export or backup, the web share or the SMB
+ * share with a client, an OS update download/install, the game list still
+ * loading. When the last one ends, the countdown starts over.
+ */
+static void idle_busy_check(bool force)
+{
+	struct transfer_progress pr;
+	struct webshare_status ws;
+	const char *why = NULL;
+	int64_t t = now_ms();
+
+	if (!M.power_ok || (!force && t - M.busy_checked_at < 1000))
+		return;
+	M.busy_checked_at = t;
+	if (transfer_import_status(&pr) != TRANSFER_IDLE)
+		why = "usb-import";
+	else if (transfer_backup_status(&pr) != TRANSFER_IDLE)
+		why = "usb-export-backup";
+	else if (webshare_running() && (webshare_get_status(&ws), ws.clients > 0 || ws.current[0]))
+		why = "web-share-client";
+	else if (tcp_client_on(P("/proc/net/tcp"), 445) || tcp_client_on(P("/proc/net/tcp6"), 445))
+		why = "smb-client";
+	else if (M.ui && ui_update_busy(M.ui))
+		why = "os-update";
+	else if (M.ui && !M.in_game && !ui_is_loaded(M.ui))
+		why = "loading";
+	power_set_busy(why != NULL, why);
+}
+
 static void pw_thermal(int temp_mc, bool hot, void *user)
 {
 	(void)user;
@@ -1250,6 +1381,7 @@ static void power_start(void)
 	pc.cb.on_screen = pw_screen;
 	pc.cb.on_thermal = pw_thermal;
 	pc.cb.on_charge_exit = pw_charge_exit;
+	pc.cb.on_idle_poweroff = pw_idle;
 	if (M.root && *M.root) {
 		pc.sysfs = P("/sys");
 		pc.dev_input = P("/dev/input");
@@ -1424,8 +1556,10 @@ static bool launch_idle(void *user)
 	wd_pet();               /* the menu's loop is blocked in host_launch() */
 	if (M.headless)
 		script_in_game();   /* test tokens "game:..." (a power-off during the game) */
-	if (M.power_ok)
+	if (M.power_ok) {
+		idle_busy_check(power_timeout_ms() <= 0);
 		power_poll();   /* battery, power key, sleep: forwarded by the callbacks */
+	}
 	if (M.quit && c > 0) {
 		if (!M.term_sent_at) {
 			mlog("signal %d: asking the game to quit", (int)M.quit);
@@ -1446,6 +1580,8 @@ static bool launch_idle(void *user)
 		bool awake = !M.power_ok || power_get_mode() == POWER_MODE_NORMAL;
 
 		input_drain();
+		if (awake)
+			pads_activity(true);
 		if (awake && (input_any_buttons(M.in) & combo) == combo) {
 			if (!M.combo_since) {
 				M.combo_since = t;
@@ -1826,7 +1962,7 @@ static int launch_game(const struct ui_launch *req, void *user)
 	struct host_launch_opts o;
 	struct host_launch_result res;
 	struct settings *s;
-	bool suspended;
+	bool suspended, idle_cancelled = false;
 	int na = 0, r, ret = 0;
 
 	(void)user;
@@ -1969,7 +2105,27 @@ static int launch_game(const struct ui_launch *req, void *user)
 	r = host_launch(core_path, req->rom_path, req->system, &o, &res);
 
 	M.in_game = false;
-	if (r >= 0 && M.power_ok && (M.shutdown_req || res.status == HOST_EXIT_POWEROFF)) {
+	M.game_buttons = 0;
+	/*
+	 * The idle power-off never cuts the power without saving: it goes on
+	 * only if the game wrote its resume state (.state.auto, then
+	 * resume.ini below). Otherwise (no save-state support, a write error,
+	 * a game that did not exit in time) it is cancelled: the menu comes
+	 * back and says so.
+	 */
+	if (M.shutdown_req && M.shutdown_why == POWER_REASON_IDLE &&
+	    (r < 0 || res.status != HOST_EXIT_POWEROFF || !res.auto_state_saved)) {
+		mlog("idle power-off cancelled: the game did not write its resume state (status %d, state %s)",
+		     r < 0 ? -1 : res.status, r >= 0 && res.auto_state_saved ? "saved" : "not saved");
+		M.shutdown_req = false;
+		M.shutdown_at = 0;
+		if (M.power_ok)
+			power_cancel_shutdown();
+		if (M.ui)
+			ui_power_event(M.ui, UI_PWR_IDLE_CANCEL);   /* "Powering off..." down */
+		idle_cancelled = true;
+	}
+	if (r >= 0 && M.power_ok && !idle_cancelled && (M.shutdown_req || res.status == HOST_EXIT_POWEROFF)) {
 		/* powering off: the child showed "Powering off..." and its exit
 		 * turned the screen off; no modeset and panel power-up just to
 		 * exit (the resume.ini write and the flush below still happen) */
@@ -2001,7 +2157,11 @@ static int launch_game(const struct ui_launch *req, void *user)
 		if (res.auto_state_saved)
 			mlog("auto state written at exit: %lld KB in %d ms", (res.auto_state_bytes + 1023) / 1024,
 			     res.auto_state_ms);
-		if (res.status == HOST_EXIT_POWEROFF) {
+		if (idle_cancelled) {
+			/* TRANSLATORS: the automatic power-off (no input for a while)
+			 * was stopped because the game's state could not be saved */
+			set_msg(req, "%s", _("Automatic power-off cancelled: the game could not be saved."));
+		} else if (res.status == HOST_EXIT_POWEROFF) {
 			/* the game to offer at the next boot, only if its state is
 			 * really on the card */
 			if (res.auto_state_saved)
@@ -2255,6 +2415,9 @@ static void script_in_game(void)
 				power_inject_key(KEY_POWER, 1);
 			M.pending_release = SCRIPT_PEK_UP;
 			M.script_at = t + 100;
+		} else if (!strncmp(s, "idlepoweroff:", 13)) {
+			if (M.power_ok && power_set_setting("idle_poweroff_s", s + 13) < 0)
+				mlog("script: bad %s", s);
 		} else if (!strcmp(s, "poweroff")) {
 			if (M.power_ok)
 				power_request_shutdown(POWER_REASON_USER);
@@ -2321,6 +2484,10 @@ static int script_run(void)
 		} else if (!strncmp(s, "idleoff:", 8)) {
 			/* idle screen-off after N seconds (the power module's timer) */
 			if (M.power_ok && power_set_setting("idle_off_s", s + 8) < 0)
+				mlog("script: bad %s", s);
+		} else if (!strncmp(s, "idlepoweroff:", 13)) {
+			/* idle power-off after N seconds (its notice 10 s before) */
+			if (M.power_ok && power_set_setting("idle_poweroff_s", s + 13) < 0)
 				mlog("script: bad %s", s);
 		} else if (!strcmp(s, "poweroff")) {
 			if (M.power_ok)
@@ -2417,6 +2584,7 @@ static int splash_main(const char *message)
 	board_init(P(BOARD_INI_DEFAULT));
 	display_config_defaults(&M.dcfg);
 	board_apply_display(board_get(), &M.dcfg);
+	M.dcfg.backlight_dir = P("/sys/class/backlight");   /* panel_keep_scanning: bl_power */
 	M.dcfg.on_output = on_output;
 	/* The DRM driver may still be probing this early in rcS. */
 	while (!M.quit && scr_init() < 0 && ++tries < 30)
@@ -2426,6 +2594,7 @@ static int splash_main(const char *message)
 		splash_free(&sp);
 		return M.quit ? 0 : 1;
 	}
+	panel_picture();
 	M.output_dirty = true;
 	while (!M.quit) {
 		struct pollfd pfd[2];
@@ -2598,6 +2767,7 @@ int main(int argc, char **argv)
 	s = settings_open(M.settings_path);
 	display_config_defaults(&M.dcfg);
 	board_apply_display(board_get(), &M.dcfg);
+	M.dcfg.backlight_dir = P("/sys/class/backlight");   /* panel_keep_scanning: bl_power */
 	hdmi_mode_to_cfg(settings_get(s, "hdmi_mode", "auto"), &M.dcfg);
 	M.dcfg.lcd_refresh_hz = display_parse_lcd_refresh(settings_get(s, "lcd_refresh", NULL));
 	M.logo_min_ms = settings_get_int(s, "boot_logo_min_ms", 0);
@@ -2821,9 +2991,14 @@ int main(int argc, char **argv)
 		ui_set_now(M.ui, now_ms());
 		if (M.display_ok && !M.headless)
 			display_handle_events();
-		if (M.power_ok)
+		if (M.power_ok) {
+			/* a job that started while the loop slept must hold a
+			 * power-off that is due now */
+			idle_busy_check(power_timeout_ms() <= 0);
 			power_poll();
+		}
 		input_dispatch();
+		pads_activity(false);   /* a stick move in the menu (idle power-off) */
 		if (i_usb >= 0 && (pfd[i_usb].revents & POLLIN))
 			M.usb_fast_until = now_ms() + USB_FAST_MS;
 		usb_poll();

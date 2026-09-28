@@ -127,6 +127,8 @@ static void parse_quirks(struct board_profile *b, const char *v)
 	for (tok = strtok_r(buf, ", \t", &save); tok; tok = strtok_r(NULL, ", \t", &save))
 		if (!strcasecmp(tok, "sun4i-tcon0-clock"))
 			b->display_quirks |= BOARD_QUIRK_SUN4I_TCON0_CLOCK;
+		else if (!strcasecmp(tok, "panel-keep-scanning"))
+			b->display_quirks |= BOARD_QUIRK_PANEL_KEEP_SCANNING;
 }
 
 static void set_key(struct board_profile *b, const char *k, const char *v)

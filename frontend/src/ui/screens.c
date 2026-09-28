@@ -30,7 +30,7 @@ enum {
 	ID_FAVFIRST = 70, ID_COLLECTIONS, ID_REFRESH,
 	ID_EMMC = 75, ID_SATA, ID_IMPORT, ID_EJECT, ID_USBPROMPT, ID_FREE, ID_EXPORT, ID_SAVESBK,
 	ID_WEBSHARE = 190, ID_HOSTNAME, ID_WEBIDLE, ID_WEBBG, ID_SMB,
-	ID_REBOOT = 80, ID_POWEROFF, ID_DIM, ID_OFF, ID_GAUGE,
+	ID_REBOOT = 80, ID_POWEROFF, ID_DIM, ID_OFF, ID_GAUGE, ID_AUTOOFF,
 	ID_TIME = 140, ID_TZ, ID_YEAR, ID_MONTH, ID_DAY, ID_HOUR, ID_MIN, ID_SETTIME, ID_NOW,
 	ID_TZ0 = 160,
 	ID_FAV = 90, ID_GAMECORE, ID_SYSCORE, ID_LAUNCH, ID_FILE,
@@ -1429,6 +1429,10 @@ static const char *const g_dim_vals[] = { "0", "1", "2", "5" };
 static const char *const g_dim_labels[] = { N_("Never"), N_("1 min"), N_("2 min"), N_("5 min") };
 static const char *const g_off_vals[] = { "0", "2", "5", "10" };
 static const char *const g_off_labels[] = { N_("Never"), N_("2 min"), N_("5 min"), N_("10 min") };
+/* the automatic power-off (docs/power.md "Idle power-off"): never, or minutes */
+static const char *const g_autooff_vals[] = { "0", "5", "10", "15", "30", "60" };
+static const char *const g_autooff_labels[] = { N_("Never"), N_("5 min"), N_("10 min"), N_("15 min"),
+						 N_("30 min"), N_("60 min") };
 static const char *const g_gauge_vals[] = { "auto", "voltage", "axp" };
 /* TRANSLATORS: how the battery level is measured: automatic, from the voltage,
  * or the power chip's (AXP) fuel gauge */
@@ -1468,6 +1472,9 @@ static void power_item(struct ui *ui, struct menu *m, struct menu_item *it, int 
 	case ID_OFF:
 		power_setting(ui, "idle_off_min", g_off_vals[it->val]);
 		break;
+	case ID_AUTOOFF:
+		power_setting(ui, "idle_poweroff_min", g_autooff_vals[it->val]);
+		break;
 	case ID_GAUGE:
 		power_setting(ui, "battery_gauge", g_gauge_vals[it->val]);
 		break;
@@ -1489,6 +1496,11 @@ static void open_power(struct ui *ui)
 	it = menu_add(m, MI_CHOICE, ID_OFF, _("Screen off after"));
 	set_choices(it, g_off_labels, 4, index_of(g_off_vals, 4,
 		    settings_get(ui->settings, "idle_off_min", "5")));
+	/* TRANSLATORS: Settings > Power: turn the console off by itself after
+	 * this long without a button pressed (never while copying or updating) */
+	it = menu_add(m, MI_CHOICE, ID_AUTOOFF, _("Power off after"));
+	set_choices(it, g_autooff_labels, 6, index_of(g_autooff_vals, 6,
+		    settings_get(ui->settings, "idle_poweroff_min", "5")));
 	it = menu_add(m, MI_CHOICE, ID_GAUGE, _("Battery gauge"));
 	set_choices(it, g_gauge_labels, 3, index_of(g_gauge_vals, 3,
 		    settings_get(ui->settings, "battery_gauge", "auto")));

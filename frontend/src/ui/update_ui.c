@@ -130,6 +130,13 @@ static bool helper_running(void)
 	return P.pid > 0;
 }
 
+/* An OS update download or install runs (no idle power-off meanwhile). */
+bool ui_update_busy(const struct ui *ui)
+{
+	(void)ui;
+	return P.pid > 0 && (P.kind == P_APPLY || P.kind == P_BOOT);
+}
+
 static bool helper_start(struct ui *ui, int kind, const char *const *args, bool low_priority)
 {
 	const char *argv[16];

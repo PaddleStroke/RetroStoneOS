@@ -9,6 +9,9 @@ Patches for Linux 6.18.54 in `buildroot-external/board/retrostone2/patches/linux
 | 0001 | `drm/sun4i: hdmi: poll the HPD line every 500 ms from a private work` | Compiles, small, high confidence |
 | 0002 | `drm/sun4i: hdmi: add HDMI audio support (EXPERIMENTAL)` | Compiles, untested on hardware |
 | 0003 | `drm/sun4i: backend: use the backend 2x/4x integer scaler (EXPERIMENTAL)` | Compiles, untested on hardware |
+| 0004 | `exfat: plug the queue around the directory read-ahead` | See below |
+| 0005 | `clk: sunxi-ng: a10: register the CCU driver at subsys_initcall` | See below |
+| 0006 | `drm/sun4i: frontend: route the scaled picture to the backend that uses it` | Compiles, untested on hardware (HDMI on TCON1, panel safety) |
 
 **Build checks.** Each patch applies with `patch -p1` on a clean v6.18.54 tree. The series builds with `sunxi_defconfig`
 plus `linux.fragment` and `linux-patches.fragment` (zImage and modules), and `drivers/gpu/drm/sun4i/` builds with `W=1`,
@@ -257,10 +260,11 @@ cost. 0003 implements this.
   port. In `sun7i-a20.dtsi` both `be0` and `be1` list `fe0` first (`sun7i-a20.dtsi:1633,1681`), so **both backends get
   fe0**, and the driver never programs any fe→be cross routing. So:
   - LCD on CRTC0 with the frontend is the tested mainline path.
-  - **HDMI on CRTC1 plus frontend scaling is unverified** and may show nothing or garbage if fe0 cannot feed be1 by
-    default. TODO(hw).
-  - Using both CRTCs at once with the frontend would share fe0. We switch outputs and never mirror, so this does not
-    arise.
+  - **HDMI on CRTC1 plus frontend scaling** needs fe0's output port set to BE1 (`FRM_CTRL.OUT_PORT_SEL`, BE0 at reset,
+    never written by mainline): patch 0006. The RetroStone2 now always runs HDMI on CRTC1 (panel safety,
+    display-design.md §8.5). TODO(hw).
+  - Using both CRTCs at once with the frontend would share fe0. The panel kept scanning behind HDMI only shows an
+    unscaled black XRGB8888 plane (backend only), so only the output with the picture uses fe0.
   - Workarounds: use backend integer scaling (0003) on HDMI, or drive HDMI from CRTC0 (TCON0 channel 1, allowed by the
     `hdmi_in_tcon0` link and `sun4i_a10_tcon_set_mux()`; TODO(hw)).
 - **Frontend runtime PM leak.** `sun4i_backend_layer_atomic_update()` calls `sun4i_frontend_init()`
@@ -308,6 +312,19 @@ level, after drivers that depend on it. The pin controller was deferred to late_
 SD card detection to 0.309 s and delayed the root mount. Registering the CCU at `subsys_initcall` lets pinctrl, mmc and the
 rest probe in order on the first pass (estimated −100…−170 ms before /sbin/init). To be confirmed with the `initcall_debug`
 log of the round-3 dev image (bootlog writes `initcalls.txt`).
+
+## Patch 0006: drm/sun4i: frontend: route the scaled picture to the backend that uses it
+Needed by the panel safety rule (2026-09-28, display-design.md §8.5): the RetroStone2 panel cannot be powered off, so
+its TCON0 must keep scanning while HDMI shows the picture, which puts HDMI on CRTC 1 (be1 + TCON1). A scaled plane
+there goes through fe0 (`sun4i_backend_find_frontend()` returns fe0 for both backends). The DEFE has one output,
+routed by `FRM_CTRL` bits 9:8 `OUT_PORT_SEL` (0 = BE0, 1 = BE1; bit 11 `OUT_CTRL` = 0 enables it), documented only in
+the Allwinner BSP (`de_fe.h`, `__scal_frm_ctrl_reg_t`; `DE_SCAL_Output_Select()`: "0: be0, 1: be1, 2: me, 3:
+writeback"). Mainline never writes the field, so fe0 fed BE0 only and a frontend plane on be1 showed nothing. The
+backend side needs no change: a layer's video channel select (`ATTCTL_REG0` bit 4 in the BSP's
+`DE_BE_Layer_Video_Ch_Sel()`) resets to 0 = fe0. The patch adds `sun4i_frontend_set_output()` and calls it with the
+backend's id on every frontend plane update, right after `sun4i_frontend_init()` (a runtime resume resets the block).
+On be0 it writes the reset value again: the LCD path is unchanged. Status: compiles (built into the
+`retrostoneos-dev-20260928-lcdsafe` image), TODO(hw): the scaled game on HDMI (display-design.md §10).
 
 ## RetroStone1 0002: drm/sun4i: add the H3 TV encoder (composite output)
 

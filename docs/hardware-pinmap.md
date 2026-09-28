@@ -94,9 +94,18 @@ electrical full scale (0-3000 raw) and `abs-flat = 400` (200 mV).
 | PD26 | LCD HSYNC | U$7 HSYNC | same | SCH | High |
 | PD27 | LCD VSYNC | U$7 VSYNC | same | SCH | High |
 | PB2 | PWM0 backlight | R22 -> CE of U14 (KA2707 boost), R23 10k pull-down | `pwm-backlight`, 50 us period | SCH, ODTS | High |
-| - | Panel VCC | 3.3 V rail directly | `power-supply = <&reg_vcc3v3>` | SCH | High |
+| - | Panel VCC | 3.3 V rail directly (no switch: see the note below) | `power-supply = <&reg_vcc3v3>` | SCH | High |
 | - | Panel SPI / reset (P_CS, P_SCL, P_SDA, P_RST) | not connected to the SoC | none | SCH | High |
 | - | HDMI | on-chip HDMI (HTX*, HHPD with 47k pull-down R47) | `&hdmi`, `hdmi-connector` type a | SCH | High |
+
+**Panel power: worth a GPIO in a future board revision.** The panel's VCC is the always-on 3.3 V rail, so the panel
+cannot be powered off while the unit runs, and a TFT must not stay powered with its RGB signals stopped (DC bias on
+the liquid crystal and the source drivers; a panel was damaged by an hour of that, 2026-09-28). The software now keeps
+TCON0 scanning whenever the system runs (board quirk `panel-keep-scanning`, display-design.md §8.5), but the boot
+(power-on to the first modeset) and every panel modeset still drive it briefly without signals. A load switch on the
+panel VCC (e.g. a P-MOSFET or a TPS22917-class switch) driven by a free GPIO, described as the panel's
+`power-supply` (a `regulator-fixed` with `gpio`/`enable-active-high` and a start-up delay), would let drm_panel power
+the panel with its signals (panel-simple `prepare`/`unprepare`), which is the sequence the datasheets ask for.
 
 Panel timing (`panel-dpi`, OKP): 640x480, pclk 33 MHz, hfp 16 / hsync 30 / hbp 114, vfp 10 / vsync 3 / vbp 32,
 hsync and vsync active low, DE active high, pixel data driven on the rising edge (`pixelclk-active = <1>`). This

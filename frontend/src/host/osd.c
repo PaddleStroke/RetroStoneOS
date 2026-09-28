@@ -43,6 +43,13 @@ void osd_clear(void)
 	memset(T.until, 0, sizeof(T.until));
 }
 
+void osd_untoast(const char *msg)
+{
+	for (int i = 0; i < NTOAST; i++)
+		if (!strcmp(T.msg[i], msg))
+			T.until[i] = 0;
+}
+
 bool osd_active(void)
 {
 	int64_t now = hnow_ms();

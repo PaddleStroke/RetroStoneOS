@@ -108,7 +108,7 @@ $(BUILDDIR)/third_party/miniz.o: third_party/miniz/miniz.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -w -D_GNU_SOURCE -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES \
 		-c -o $@ $<
 
-$(RSOS_RUN): $(BUILDDIR)/tools/run.o $(HOST_OBJS) $(HOST_INPUT_EXTRA_OBJS) $(HOST_DISPLAY_OBJS)
+$(RSOS_RUN): $(BUILDDIR)/tools/run.o $(BUILDDIR)/splash.o $(HOST_OBJS) $(HOST_INPUT_EXTRA_OBJS) $(HOST_DISPLAY_OBJS)
 	$(CC) $(LDFLAGS) $(HOST_EXPORT_LDFLAGS) -o $@ $^ $(DRM_LIBS) $(HOST_LIBS)
 
 $(HOST_TEST): $(HOST_TEST_OBJS)

@@ -86,6 +86,12 @@ static struct power {
 	int game_max_khz;
 	bool cpu1_off;
 
+	/* idle power-off */
+	bool busy;                 /* a long job runs (power_set_busy) */
+	char busy_why[32];
+	int64_t busy_end;          /* when the last one ended: the countdown starts over */
+	bool idle_warned;          /* the 10 s notice is up */
+
 	bool docked;
 	int thermal_crit_count;
 } P = { .epfd = -1, .tfd = -1, .ufd = -1 };
@@ -171,6 +177,7 @@ const char *power_reason_name(enum power_reason r)
 	case POWER_REASON_SLEEP_TIMEOUT: return "sleep-timeout";
 	case POWER_REASON_CHARGER_REMOVED: return "charger-removed";
 	case POWER_REASON_THERMAL: return "thermal";
+	case POWER_REASON_IDLE: return "idle";
 	}
 	return "?";
 }
@@ -213,6 +220,8 @@ void power_config_defaults(struct power_config *c)
 	c->sleep_led = true;
 	c->idle_dim_s = 120;
 	c->idle_off_s = 300;
+	c->idle_poweroff_s = 300;
+	c->idle_warn_s = 10;
 	c->dim_percent = 30;
 	c->menu_governor = "schedutil";
 	c->game_governor = "performance";
@@ -618,6 +627,7 @@ void power_request_shutdown(enum power_reason why)
 {
 	if (!P.inited || P.st.mode == POWER_MODE_SHUTTING_DOWN)
 		return;
+	P.idle_warned = false;   /* "Powering off..." replaces the notice */
 	cpu1_set(true);
 	P.st.mode = POWER_MODE_SHUTTING_DOWN;
 	P.shutdown_why = why;
@@ -718,6 +728,55 @@ static void charge_exit(void)
 		P.cfg.cb.on_charge_exit(P.cfg.cb.user);
 }
 
+/* ------------------------------------------------------ idle power-off */
+/*
+ * dim (idle_dim_s) -> screen off (idle_off_s) -> power off (idle_poweroff_s),
+ * docs/power.md "Idle power-off". A stage at or after the power-off never
+ * happens (equal timers: straight to the power-off). The power-off also
+ * counts in a game (the dim and screen-off stages do not), never in charge
+ * mode, never while a long job runs (power_set_busy()); its countdown starts
+ * at the last input or at the end of the last long job. idle_warn_s before
+ * it, on_idle_poweroff(WARN) puts a notice up (the screen is lit again);
+ * any input cancels it (and is swallowed).
+ */
+static int64_t idle_since(void)
+{
+	return P.busy_end > P.last_activity ? P.busy_end : P.last_activity;
+}
+
+static bool poweroff_armed(void)
+{
+	return P.cfg.idle_poweroff_s > 0 && !P.busy && P.st.mode == POWER_MODE_NORMAL;
+}
+
+static int64_t poweroff_due(void)
+{
+	return idle_since() + (int64_t)P.cfg.idle_poweroff_s * 1000;
+}
+
+static int64_t warn_due(void)
+{
+	int64_t w = poweroff_due() - (int64_t)P.cfg.idle_warn_s * 1000;
+
+	return w > idle_since() ? w : idle_since();
+}
+
+/* A stage of s seconds that comes before the power-off. */
+static bool before_poweroff(int s)
+{
+	return s > 0 && (!P.cfg.idle_poweroff_s || s < P.cfg.idle_poweroff_s);
+}
+
+static void idle_cancel(const char *why)
+{
+	if (!P.idle_warned)
+		return;
+	P.idle_warned = false;
+	plog(2, "idle power-off cancelled (%s)", why);
+	if (P.cfg.cb.on_idle_poweroff)
+		P.cfg.cb.on_idle_poweroff(POWER_IDLE_CANCEL, 0, P.cfg.cb.user);
+}
+
 /* Any key (not the power key) or a UI input event. */
 static void activity(void)
 {
@@ -734,6 +793,11 @@ static void activity(void)
 		return;
 	case POWER_MODE_NORMAL:
 		P.last_activity = now_ms();
+		if (P.idle_warned) {
+			/* the press only cancels the power-off */
+			idle_cancel("input");
+			P.swallow = true;
+		}
 		if (P.st.screen != POWER_SCREEN_ON) {
 			screen_set(POWER_SCREEN_ON);
 			P.swallow = true;
@@ -784,7 +848,13 @@ static void key_event(int code, int value, bool pek)
 			P.pek_down_at = t;
 			P.pek_long_fired = false;
 			P.pek_press_woke = false;
-			if (P.st.mode == POWER_MODE_SLEEP) {
+			if (P.st.mode == POWER_MODE_NORMAL && P.idle_warned) {
+				/* "press any button to cancel": the power key too
+				 * (its release must not power off) */
+				idle_cancel("power key");
+				P.last_activity = t;
+				P.pek_press_woke = true;
+			} else if (P.st.mode == POWER_MODE_SLEEP) {
 				wake();
 				P.pek_press_woke = true;
 			} else if (P.st.mode == POWER_MODE_NORMAL &&
@@ -1128,12 +1198,14 @@ static int64_t next_deadline(void)
 		d = min64(d, P.pek_down_at + P.cfg.long_press_ms);
 	switch (P.st.mode) {
 	case POWER_MODE_NORMAL:
-		if (!P.st.game_running) {
-			if (P.cfg.idle_dim_s && P.st.screen == POWER_SCREEN_ON)
+		if (!P.st.game_running && !P.idle_warned) {
+			if (before_poweroff(P.cfg.idle_dim_s) && P.st.screen == POWER_SCREEN_ON)
 				d = min64(d, P.last_activity + (int64_t)P.cfg.idle_dim_s * 1000);
-			if (P.cfg.idle_off_s && P.st.screen != POWER_SCREEN_OFF)
+			if (before_poweroff(P.cfg.idle_off_s) && P.st.screen != POWER_SCREEN_OFF)
 				d = min64(d, P.last_activity + (int64_t)P.cfg.idle_off_s * 1000);
 		}
+		if (poweroff_armed())
+			d = min64(d, P.idle_warned || P.cfg.idle_warn_s <= 0 ? poweroff_due() : warn_due());
 		break;
 	case POWER_MODE_SLEEP:
 		if (P.cfg.sleep_timeout_min)
@@ -1174,11 +1246,30 @@ static void run_timers(void)
 
 	switch (P.st.mode) {
 	case POWER_MODE_NORMAL:
-		if (!P.st.game_running) {
+		if (poweroff_armed()) {
+			if (t >= poweroff_due()) {
+				plog(2, "no input for %d s: saving and powering off", P.cfg.idle_poweroff_s);
+				P.idle_warned = false;
+				power_request_shutdown(POWER_REASON_IDLE);
+				break;
+			}
+			if (!P.idle_warned && P.cfg.idle_warn_s > 0 && t >= warn_due()) {
+				int left = (int)((poweroff_due() - t + 999) / 1000);
+
+				P.idle_warned = true;
+				plog(2, "idle: powering off in %d s unless a button is pressed", left);
+				/* the notice must be seen: light the screen again */
+				if (P.st.screen != POWER_SCREEN_ON)
+					screen_set(POWER_SCREEN_ON);
+				if (P.cfg.cb.on_idle_poweroff)
+					P.cfg.cb.on_idle_poweroff(POWER_IDLE_WARN, left, P.cfg.cb.user);
+			}
+		}
+		if (!P.st.game_running && !P.idle_warned) {
 			int64_t idle = t - P.last_activity;
-			if (P.cfg.idle_off_s && idle >= (int64_t)P.cfg.idle_off_s * 1000)
+			if (before_poweroff(P.cfg.idle_off_s) && idle >= (int64_t)P.cfg.idle_off_s * 1000)
 				screen_set(POWER_SCREEN_OFF);
-			else if (P.cfg.idle_dim_s && idle >= (int64_t)P.cfg.idle_dim_s * 1000 &&
+			else if (before_poweroff(P.cfg.idle_dim_s) && idle >= (int64_t)P.cfg.idle_dim_s * 1000 &&
 				 P.st.screen == POWER_SCREEN_ON)
 				screen_set(POWER_SCREEN_DIM);
 		}
@@ -1199,7 +1290,11 @@ static void run_timers(void)
 		}
 		break;
 	case POWER_MODE_SHUTTING_DOWN:
-		if (!P.poweroff_started && t >= P.shutdown_deadline) {
+		if (!P.poweroff_started && t >= P.shutdown_deadline && P.shutdown_why == POWER_REASON_IDLE) {
+			/* never cut the power without saving for an idle power-off */
+			plog(0, "idle power-off not completed in time: cancelled, the unit stays on");
+			power_cancel_shutdown();
+		} else if (!P.poweroff_started && t >= P.shutdown_deadline) {
 			plog(0, "shutdown (%s) not completed in time: powering off now",
 			     power_reason_name(P.shutdown_why));
 			power_poweroff(P.shutdown_why == POWER_REASON_REBOOT);
@@ -1442,8 +1537,9 @@ bool power_on_input(void)
 		else
 			return true;
 	}
-	if (P.st.screen != POWER_SCREEN_ON) {
-		activity();
+	if (P.st.screen != POWER_SCREEN_ON || P.idle_warned) {
+		activity();   /* wakes the screen / cancels the idle power-off */
+		rearm();
 		return true;
 	}
 	P.last_activity = t;
@@ -1456,9 +1552,52 @@ void power_notify_activity(void)
 		return;
 	if (P.st.mode == POWER_MODE_NORMAL) {
 		P.last_activity = now_ms();
+		idle_cancel("activity");
 		if (P.st.screen != POWER_SCREEN_ON)
 			screen_set(POWER_SCREEN_ON);
+		rearm();
 	}
+}
+
+bool power_axis_activity(int16_t v, int16_t *ref)
+{
+	int d = (int)v - (int)*ref;
+
+	if (d > POWER_AXIS_MOVE || d < -POWER_AXIS_MOVE) {
+		*ref = v;
+		return true;
+	}
+	return v > POWER_AXIS_DEADZONE || v < -POWER_AXIS_DEADZONE;
+}
+
+void power_set_busy(bool busy, const char *why)
+{
+	if (!P.inited || P.busy == busy)
+		return;
+	P.busy = busy;
+	if (busy) {
+		snprintf(P.busy_why, sizeof(P.busy_why), "%s", why ? why : "busy");
+		plog(2, "idle power-off held: %s", P.busy_why);
+		idle_cancel(P.busy_why);
+	} else {
+		P.busy_end = now_ms();
+		plog(2, "idle power-off: %s ended, the countdown starts over", P.busy_why);
+	}
+	rearm();
+}
+
+int power_cancel_shutdown(void)
+{
+	if (!P.inited || P.st.mode != POWER_MODE_SHUTTING_DOWN || P.poweroff_started ||
+	    P.shutdown_why != POWER_REASON_IDLE)
+		return -EINVAL;
+	P.st.mode = POWER_MODE_NORMAL;
+	P.last_activity = now_ms();
+	P.idle_warned = false;
+	gov_apply();
+	plog(1, "idle power-off cancelled: the unit stays on");
+	rearm();
+	return 0;
 }
 
 static int parse_int(const char *v, int lo, int hi, int *out)
@@ -1493,14 +1632,21 @@ int power_set_setting(const char *key, const char *value)
 		if (parse_int(value, 0, 120, &n))
 			return -EINVAL;
 		P.cfg.idle_off_s = n * 60;
-	} else if (!strcmp(key, "idle_dim_s") || !strcmp(key, "idle_off_s")) {
+	} else if (!strcmp(key, "idle_poweroff_min")) {
+		if (parse_int(value, 0, 240, &n))
+			return -EINVAL;
+		P.cfg.idle_poweroff_s = n * 60;
+	} else if (!strcmp(key, "idle_dim_s") || !strcmp(key, "idle_off_s") ||
+		   !strcmp(key, "idle_poweroff_s")) {
 		/* seconds: development and tests only (the UI never writes them) */
 		if (parse_int(value, 0, 7200, &n))
 			return -EINVAL;
 		if (key[5] == 'd')
 			P.cfg.idle_dim_s = n;
-		else
+		else if (key[5] == 'o')
 			P.cfg.idle_off_s = n;
+		else
+			P.cfg.idle_poweroff_s = n;
 	} else if (!strcmp(key, "sleep_wake")) {
 		if (!strcmp(value, "any"))
 			P.cfg.sleep_wake_any = true;

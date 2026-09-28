@@ -27,3 +27,7 @@ CONFIG_DRM_SUN4I_BACKEND=y
 # everything behind it are not deferred to late_initcall): the CCU driver
 # must be built in.
 CONFIG_SUN4I_A10_CCU=y
+
+# 0006 (sun4i frontend output port, for HDMI on TCON1 while the panel keeps
+# TCON0 scanning): no option, part of the display frontend driver.
+CONFIG_DRM_SUN4I_BACKEND=y

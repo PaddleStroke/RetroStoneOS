@@ -1498,7 +1498,7 @@ void ui_select_theme(struct ui *ui, const char *name)
 
 /* ------------------------------------------------------------------ power */
 static const char *const g_power_keys[] = {
-	"sleep_timeout_min", "sleep_wake", "idle_dim_min", "idle_off_min", "battery_gauge",
+	"sleep_timeout_min", "sleep_wake", "idle_dim_min", "idle_off_min", "idle_poweroff_min", "battery_gauge",
 	"timezone",
 };
 
@@ -1577,6 +1577,25 @@ void ui_power_event(struct ui *ui, enum ui_power_event ev)
 		ui_toastf(ui, "%s", _("Hot, slowing down"));
 		break;
 	case UI_PWR_COOL:
+		break;
+	case UI_PWR_IDLE_WARN:
+		/* TRANSLATORS: shown 10 s before the automatic power-off (no input
+		 * for the time set in Settings > Power); any button cancels it */
+		strlcpy_(ui->toast, _("Powering off in 10 s — press any button to cancel"), sizeof(ui->toast));
+		ui->toast_sev = UI_SEV_WARNING;
+		ui->toast_pending_ms = 10000;
+		ui->toast_until = 0;
+		LOGI("ui: toast (warning): %s", ui->toast);
+		break;
+	case UI_PWR_IDLE_CANCEL:
+		if (!strcmp(ui->toast, _("Powering off in 10 s — press any button to cancel"))) {
+			ui->toast[0] = 0;
+			ui->toast_pending_ms = 0;
+			ui->toast_until = 0;
+		}
+		/* an idle power-off cancelled after "Powering off..." (the game
+		 * could not save): the menu is back */
+		ui->big_msg[0] = 0;
 		break;
 	}
 	ui->dirty = true;

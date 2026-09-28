@@ -13,6 +13,7 @@
 #include "uevent.h"
 
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -276,8 +277,32 @@ static struct {
 	bool reprobe_pending;   /* hotplug seen while suspended or inactive */
 
 	/* Power / hand-off. */
-	bool active;            /* CRTC ACTIVE (display_set_active) */
+	bool active;            /* screen on (display_set_active) */
 	bool suspended;         /* master dropped (display_suspend) */
+
+	/*
+	 * Panel safety (cfg.panel_keep_scanning, §8.5): the built-in panel
+	 * connector ci and its CRTC ki, kept ACTIVE whenever the display is
+	 * open, showing a black frame when it is not the picture.
+	 */
+	struct {
+		bool on;               /* the feature applies: a panel was found */
+		int ci, ki;
+		bool lit;              /* the committed state has it scanning */
+		bool have_mode;
+		drmModeModeInfo mode;  /* the mode last committed on it */
+		uint32_t blob;         /* blob of mode, for commits of another output */
+	} lcd;
+	struct fbuf black;         /* black XRGB8888 frame, black_w x black_h */
+	int black_w, black_h;
+	/* The panel's picture behind HDMI (display_set_panel_picture). */
+	uint32_t *pic;             /* pic_w x pic_h, NULL = black */
+	int pic_w, pic_h;
+	uint32_t pic_bg;
+	struct fbuf picfb;         /* pic drawn at picfb_w x picfb_h (the panel) */
+	int picfb_w, picfb_h;
+	char bl_path[600];         /* <backlight>/bl_power, "" = none */
+	int bl_state;              /* bl_power written: -1 unknown, 0 on, 4 off */
 
 	/* External framebuffers (display_present_fb). */
 	struct ext_fb ext_front;   /* on screen (or hidden by a surface frame) */
@@ -997,6 +1022,41 @@ static bool pick_mode(const struct conn *c, drmModeModeInfo *out, bool *builtin)
 	return true;
 }
 
+static bool crtc_usable(const struct conn *c, int i)
+{
+	return i >= 0 && i < D.ncrtc && (c->possible_crtcs & (1u << i)) &&
+	       D.crtcs[i].primary >= 0;
+}
+
+/* The built-in panel kept scanning (§8.5): connector index ci is it. */
+static bool lcd_is(int ci)
+{
+	return D.lcd.on && ci >= 0 && ci == D.lcd.ci;
+}
+
+/* The panel shows the black frame instead of the picture (screen off). */
+static bool lcd_blank(int ci)
+{
+	return lcd_is(ci) && !D.active;
+}
+
+/* CRTC i can drive connector c; never the kept panel's CRTC for another
+ * connector (it would stop the panel's signals). */
+static bool crtc_free_for(const struct conn *c, int i)
+{
+	if (!crtc_usable(c, i))
+		return false;
+	return !D.lcd.on || c == &D.conns[D.lcd.ci] || i != D.lcd.ki;
+}
+
+static bool conn_has_crtc(const struct conn *c)
+{
+	for (int i = 0; i < D.ncrtc; i++)
+		if (crtc_free_for(c, i))
+			return true;
+	return false;
+}
+
 static int choose_output(void)
 {
 	int i;
@@ -1006,8 +1066,16 @@ static int choose_output(void)
 
 		if (c->kind == DISPLAY_OUTPUT_HDMI && c->status == DRM_MODE_CONNECTED &&
 		    !c->failed && c->possible_crtcs &&
-		    (c->count_modes > 0 || D.cfg.hdmi_builtin_mode))
+		    (c->count_modes > 0 || D.cfg.hdmi_builtin_mode)) {
+			if (!conn_has_crtc(c)) {
+				/* Only the panel's CRTC could drive it: the panel
+				 * must keep scanning, so it stays on the panel. */
+				dlog(DISPLAY_LOG_WARN, "%s not used: its only CRTC is the panel's, which must keep scanning",
+				     c->name);
+				continue;
+			}
 			return i;
+		}
 	}
 	for (i = 0; i < D.nconn; i++) {
 		struct conn *c = &D.conns[i];
@@ -1039,12 +1107,6 @@ static int choose_output(void)
 	return -1;
 }
 
-static bool crtc_usable(const struct conn *c, int i)
-{
-	return i >= 0 && i < D.ncrtc && (c->possible_crtcs & (1u << i)) &&
-	       D.crtcs[i].primary >= 0;
-}
-
 /*
  * CRTC choice. The HDMI encoder can be fed by either TCON on the A20
  * (sun4i_hdmi_enc.c uses drm_of_find_possible_crtcs(), and both TCONs have
@@ -1055,12 +1117,30 @@ static bool crtc_usable(const struct conn *c, int i)
  * endpoint (fe0) to *both* backends ("TODO: This needs to take multiple
  * pipelines into account"), so the scaled plane on the second backend is
  * the least trustworthy configuration.
+ *
+ * Panel safety (§8.5): with panel_keep_scanning the panel keeps its CRTC
+ * (TCON0) for good, so HDMI goes on the other one (CRTC 1 = be1 + TCON1);
+ * kernel patch 0006 routes fe0's scaled output to be1 for it.
  */
 static int choose_crtc(int ci)
 {
 	const struct conn *c = &D.conns[ci];
 	int i, k;
 
+	if (D.lcd.on) {
+		if (ci == D.lcd.ci)
+			return D.lcd.ki;
+		if (c->kind == DISPLAY_OUTPUT_HDMI && crtc_free_for(c, D.cfg.hdmi_crtc_index))
+			return D.cfg.hdmi_crtc_index;
+		if (c->kind == DISPLAY_OUTPUT_HDMI && D.cfg.hdmi_crtc_index == D.lcd.ki)
+			dlog(DISPLAY_LOG_WARN, "HDMI CRTC %d ignored: the panel keeps it", D.cfg.hdmi_crtc_index);
+		if (crtc_free_for(c, D.crtc))
+			return D.crtc;
+		for (i = 0; i < D.ncrtc; i++)
+			if (crtc_free_for(c, i))
+				return i;
+		return -1;
+	}
 	if (c->kind == DISPLAY_OUTPUT_HDMI && crtc_usable(c, D.cfg.hdmi_crtc_index))
 		return D.cfg.hdmi_crtc_index;
 	if (crtc_usable(c, D.crtc))
@@ -1797,6 +1877,290 @@ bool display_overlay_visible(void)
 	return D.ov.want && D.ov.front >= 0;
 }
 
+/* ------------------------------------------------------------------ */
+/* Panel safety: the built-in panel keeps scanning (§8.5)              */
+/* ------------------------------------------------------------------ */
+
+/*
+ * A TFT panel that stays powered with its drive signals stopped gets a DC
+ * bias across the liquid crystal and its source drivers: permanent lines
+ * and flicker (the RetroStone2 panel after an hour of the old ACTIVE = 0
+ * screen off). The RetroStone2 panel's VCC is the always-on 3.3 V rail, so
+ * drm_panel's disable (sun4i_rgb -> panel-dpi) only turned the backlight
+ * off. With cfg.panel_keep_scanning, the panel's CRTC stays ACTIVE whenever
+ * the display is open: screen off and "on HDMI" show a black frame on it,
+ * with the backlight off (bl_power, written here since drm_panel no longer
+ * does it).
+ */
+
+/* The first entry of the backlight class, or the board's one. */
+static void bl_find(void)
+{
+	const char *dir = D.cfg.backlight_dir && *D.cfg.backlight_dir ? D.cfg.backlight_dir
+								      : "/sys/class/backlight";
+	const char *name = D.cfg.backlight_name;
+	char best[256] = "";
+	struct dirent *de;
+	DIR *d;
+
+	D.bl_path[0] = '\0';
+	if (name && !*name)
+		return;   /* none */
+	if (name) {
+		snprintf(D.bl_path, sizeof(D.bl_path), "%s/%s/bl_power", dir, name);
+		if (access(D.bl_path, W_OK) == 0)
+			return;
+		D.bl_path[0] = '\0';   /* not there: the first one */
+	}
+	d = opendir(dir);
+	if (!d)
+		return;
+	while ((de = readdir(d)) != NULL)
+		if (de->d_name[0] != '.' && (!best[0] || strcmp(de->d_name, best) < 0))
+			snprintf(best, sizeof(best), "%s", de->d_name);
+	closedir(d);
+	if (best[0])
+		snprintf(D.bl_path, sizeof(D.bl_path), "%s/%s/bl_power", dir, best);
+}
+
+/*
+ * The backlight follows what the panel shows: on only while the panel is
+ * the output and the screen is on (what drm_panel's enable/disable did).
+ * FB_BLANK_UNBLANK = 0, FB_BLANK_POWERDOWN = 4 (pwm-backlight: PWM off).
+ * Written on changes only.
+ */
+static void bl_sync(void)
+{
+	int want, fd;
+	ssize_t n;
+
+	if (!D.lcd.on || !D.lcd.lit || D.suspended || !D.bl_path[0])
+		return;
+	want = D.conn == D.lcd.ci && D.active ? 0 : 4;
+	if (want == D.bl_state)
+		return;
+	fd = open(D.bl_path, O_WRONLY | O_CLOEXEC);
+	if (fd < 0) {
+		dlog(DISPLAY_LOG_WARN, "panel backlight %s: %s", D.bl_path, strerror(errno));
+		D.bl_path[0] = '\0';
+		return;
+	}
+	n = write(fd, want ? "4\n" : "0\n", 2);
+	close(fd);
+	if (n == 2) {
+		D.bl_state = want;
+		dlog(DISPLAY_LOG_INFO, "panel backlight %s", want ? "off" : "on");
+	}
+}
+
+/* The black frame the panel shows when it is not the picture. */
+static int black_ensure(int w, int h)
+{
+	int ret;
+
+	if (D.black.fb_id && D.black_w == w && D.black_h == h)
+		return 0;
+	fb_destroy(&D.black);
+	D.black_w = D.black_h = 0;
+	ret = fb_create(&D.black, w, h, DRM_FORMAT_XRGB8888);   /* zeroed: black */
+	if (ret) {
+		dlog(DISPLAY_LOG_ERROR, "panel: no %dx%d black frame: %s", w, h, strerror(-ret));
+		return ret;
+	}
+	D.black_w = w;
+	D.black_h = h;
+	return 0;
+}
+
+/* The panel's picture behind another output, drawn at w x h (the panel):
+ * centred, cropped if larger, the rest bg. No picture: nothing (black). */
+static void pic_ensure(int w, int h)
+{
+	int x0, y0, sx0, sy0, cw, ch;
+
+	if (!D.pic || (D.picfb.fb_id && D.picfb_w == w && D.picfb_h == h))
+		return;
+	fb_destroy(&D.picfb);
+	D.picfb_w = D.picfb_h = 0;
+	if (fb_create(&D.picfb, w, h, DRM_FORMAT_XRGB8888) < 0) {
+		dlog(DISPLAY_LOG_WARN, "panel: no %dx%d picture buffer: black instead", w, h);
+		return;
+	}
+	cw = D.pic_w < w ? D.pic_w : w;
+	ch = D.pic_h < h ? D.pic_h : h;
+	x0 = (w - cw) / 2;
+	y0 = (h - ch) / 2;
+	sx0 = (D.pic_w - cw) / 2;
+	sy0 = (D.pic_h - ch) / 2;
+	for (int y = 0; y < h; y++) {
+		uint32_t *row = (uint32_t *)(void *)(D.picfb.map + (size_t)y * D.picfb.pitch);
+
+		/* whole lines, written once: write-combined memory */
+		if (y < y0 || y >= y0 + ch) {
+			for (int x = 0; x < w; x++)
+				row[x] = D.pic_bg;
+			continue;
+		}
+		for (int x = 0; x < x0; x++)
+			row[x] = D.pic_bg;
+		memcpy(row + x0, D.pic + (size_t)(sy0 + y - y0) * D.pic_w + sx0, (size_t)cw * 4);
+		for (int x = x0 + cw; x < w; x++)
+			row[x] = D.pic_bg;
+	}
+	D.picfb_w = w;
+	D.picfb_h = h;
+}
+
+/* The frame the panel scans behind another output: the picture, else black. */
+static uint32_t lcd_bg_fb(void)
+{
+	if (D.picfb.fb_id && D.picfb_w == D.black_w && D.picfb_h == D.black_h)
+		return D.picfb.fb_id;
+	return D.black.fb_id;
+}
+
+/* The mode now committed on the panel (its blob is made again if it changed). */
+static void lcd_set_mode(const drmModeModeInfo *m)
+{
+	if (D.lcd.have_mode && mode_equal(&D.lcd.mode, m))
+		return;
+	if (D.lcd.blob)
+		drmModeDestroyPropertyBlob(D.fd, D.lcd.blob);
+	D.lcd.blob = 0;
+	D.lcd.mode = *m;
+	D.lcd.have_mode = true;
+}
+
+/* At init, after the probe: which connector is the panel to keep scanning. */
+static void lcd_setup(void)
+{
+	int i, k;
+
+	memset(&D.lcd, 0, sizeof(D.lcd));
+	D.lcd.ci = D.lcd.ki = -1;
+	D.bl_state = -1;
+	if (!D.cfg.panel_keep_scanning)
+		return;
+	for (i = 0; i < D.nconn && !D.lcd.on; i++) {
+		const struct conn *c = &D.conns[i];
+
+		if (c->kind != DISPLAY_OUTPUT_LCD || c->status == DRM_MODE_DISCONNECTED || c->count_modes <= 0)
+			continue;
+		for (k = 0; k < D.ncrtc; k++)
+			if (crtc_usable(c, k)) {
+				D.lcd.on = true;
+				D.lcd.ci = i;
+				D.lcd.ki = k;
+				break;
+			}
+	}
+	if (!D.lcd.on)
+		return;
+	bl_find();
+	dlog(DISPLAY_LOG_INFO, "panel safety: %s keeps crtc %u (index %d) scanning while the display is open "
+	     "(screen off and HDMI: black frame, backlight %s)", D.conns[D.lcd.ci].name,
+	     D.crtcs[D.lcd.ki].id, D.lcd.ki, D.bl_path[0] ? D.bl_path : "none found");
+}
+
+/*
+ * Before a modeset commit of another output: the panel's part of that
+ * commit (its mode blob, the black frame), and the panel lit alone first
+ * if it is not lit yet (init or resume with HDMI). The two CRTCs are never
+ * modeset in the same commit: the TCON0 dot clock and the HDMI clocks share
+ * the pll-video PLLs, and the panel's rate is only protected once its
+ * channel is enabled (clk_rate_exclusive_get() in
+ * sun4i_tcon_channel_set_status()), so a joint modeset could re-rate the
+ * panel's PLL for HDMI.
+ */
+static int lcd_bg_prepare(void)
+{
+	const struct conn *c = &D.conns[D.lcd.ci];
+	const struct plane *p;
+	struct display_rect full;
+	drmModeModeInfo m;
+	drmModeAtomicReq *r;
+	bool builtin;
+	int ret = -EINVAL, tries;
+
+	if (D.crtcs[D.lcd.ki].primary < 0)
+		return -ENODEV;
+	p = &D.planes[D.crtcs[D.lcd.ki].primary];
+	for (tries = 0; tries < 2; tries++) {
+		if (!D.lcd.have_mode) {
+			if (!pick_mode(c, &m, &builtin))
+				return -ENOENT;
+			lcd_set_mode(&m);
+		}
+		if (!D.lcd.blob) {
+			ret = drmModeCreatePropertyBlob(D.fd, &D.lcd.mode, sizeof(D.lcd.mode), &D.lcd.blob);
+			if (ret) {
+				D.lcd.blob = 0;
+				return ret;
+			}
+		}
+		ret = black_ensure(D.lcd.mode.hdisplay, D.lcd.mode.vdisplay);
+		if (ret)
+			return ret;
+		pic_ensure(D.black_w, D.black_h);   /* the logo, if one was given */
+		if (D.lcd.lit)
+			return 0;
+
+		full = (struct display_rect){ 0, 0, D.black_w, D.black_h };
+		r = drmModeAtomicAlloc();
+		if (!r)
+			return -ENOMEM;
+		ret = add(r, c->id, c->prop_crtc_id, D.crtcs[D.lcd.ki].id);
+		ret |= add(r, D.crtcs[D.lcd.ki].id, D.crtcs[D.lcd.ki].prop_active, 1);
+		ret |= add(r, D.crtcs[D.lcd.ki].id, D.crtcs[D.lcd.ki].prop_mode_id, D.lcd.blob);
+		ret |= add_plane(r, p, D.crtcs[D.lcd.ki].id, lcd_bg_fb(), D.black_w, D.black_h, &full);
+		ret = ret ? -EINVAL : drmModeAtomicCommit(D.fd, r, DRM_MODE_ATOMIC_ALLOW_MODESET, NULL);
+		drmModeAtomicFree(r);
+		if (ret == 0) {
+			D.lcd.lit = true;
+			dlog(DISPLAY_LOG_INFO, "panel %s lit first (%s on crtc %u), before another output",
+			     c->name, lcd_bg_fb() == D.black.fb_id ? "black frame" : "logo", D.crtcs[D.lcd.ki].id);
+			return 0;
+		}
+		if (!(D.lcd.mode.type & DRM_MODE_TYPE_USERDEF))
+			break;
+		dlog(DISPLAY_LOG_ERROR, "LCD at %d Hz refused (%s): back to the panel's mode", D.cfg.lcd_refresh_hz,
+		     strerror(-ret));
+		D.cfg.lcd_refresh_hz = 0;
+		D.lcd.have_mode = false;
+		if (D.lcd.blob)
+			drmModeDestroyPropertyBlob(D.fd, D.lcd.blob);
+		D.lcd.blob = 0;
+	}
+	dlog(DISPLAY_LOG_ERROR, "panel %s cannot be kept scanning: %s", c->name, strerror(-ret));
+	return ret;
+}
+
+/*
+ * display_shutdown(): take our planes down while every CRTC stays ACTIVE
+ * (a CRTC with no plane scans the backend background). Removing a
+ * framebuffer that is still on a primary plane may make the kernel disable
+ * its CRTC (atomic_remove_fb() when the plane-only commit is refused);
+ * after this commit nothing of ours is on screen, so the panel keeps its
+ * signals until the power is cut (rcK: poweroff -f) or the next display_init().
+ */
+static void lcd_release_planes(void)
+{
+	drmModeAtomicReq *r = drmModeAtomicAlloc();
+	int i, ret = 0;
+
+	if (!r)
+		return;
+	for (i = 0; i < D.nplane; i++)
+		ret |= add_plane(r, &D.planes[i], 0, 0, 0, 0, NULL);
+	ret = ret ? -EINVAL : drmModeAtomicCommit(D.fd, r, 0, NULL);
+	drmModeAtomicFree(r);
+	if (ret)
+		dlog(DISPLAY_LOG_WARN, "panel: planes not cleared before closing (%s): the kernel may stop the "
+		     "panel's signals", strerror(-ret));
+	else
+		dlog(DISPLAY_LOG_INFO, "display closed: planes off, the panel keeps scanning");
+}
+
 /*
  * Commits the whole desired state. With modeset, every connector, CRTC and
  * plane is written, so leftovers (fbcon, a previous output) are switched
@@ -1809,34 +2173,60 @@ static int commit_state(int ci, int ki, int pi, uint32_t blob, bool modeset,
 	drmModeAtomicReq *r = drmModeAtomicAlloc();
 	uint32_t flags = test ? DRM_MODE_ATOMIC_TEST_ONLY : 0;
 	uint32_t fb = 0;
+	/* Panel safety (§8.5): screen off on the panel = black frame, CRTC
+	 * ACTIVE; another output = the panel scanning black on its own CRTC. */
+	bool blank = lcd_blank(ci) && D.black.fb_id;
+	int bgp = D.lcd.on && D.lcd.lit && !lcd_is(ci) && ki != D.lcd.ki && D.lcd.blob &&
+		  D.black.fb_id ? D.crtcs[D.lcd.ki].primary : -1;
 	int i, ret = 0;
 
 	if (!r)
 		return -ENOMEM;
+	if (bgp == pi)
+		bgp = -1;
+	if (blank)
+		op = NULL;
 	if (modeset) {
 		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
 		for (i = 0; i < D.nconn; i++)
 			ret |= add(r, D.conns[i].id, D.conns[i].prop_crtc_id,
-				   i == ci ? D.crtcs[ki].id : 0);
+				   i == ci ? D.crtcs[ki].id :
+				   bgp >= 0 && i == D.lcd.ci ? D.crtcs[D.lcd.ki].id : 0);
 		/* sun4i_tv encodes the connector's TV mode, not the CRTC mode:
 		 * keep the two in step (apply()). */
 		if (D.pend_tv)
 			ret |= add(r, D.conns[ci].id, D.conns[ci].prop_tv_mode, D.pend_tv_val);
 		for (i = 0; i < D.ncrtc; i++) {
-			/* display_set_active(false) survives switches and resumes. */
+			/* display_set_active(false) survives switches and resumes;
+			 * the kept panel is never switched off. */
+			bool bg = bgp >= 0 && i == D.lcd.ki;
+
 			ret |= add(r, D.crtcs[i].id, D.crtcs[i].prop_active,
-				   i == ki && D.active);
+				   i == ki ? D.active || lcd_is(ci) : bg);
 			ret |= add(r, D.crtcs[i].id, D.crtcs[i].prop_mode_id,
-				   i == ki ? blob : 0);
+				   i == ki ? blob : bg ? D.lcd.blob : 0);
 		}
 		for (i = 0; i < D.nplane; i++)
-			if (i != pi && !(op && op->show && i == op->key.pi))
+			if (i != pi && i != bgp && !(op && op->show && i == op->key.pi))
 				ret |= add_plane(r, &D.planes[i], 0, 0, 0, 0, NULL);
+		if (bgp >= 0) {
+			struct display_rect full = { 0, 0, D.black_w, D.black_h };
+
+			ret |= add_plane(r, &D.planes[bgp], D.crtcs[D.lcd.ki].id, lcd_bg_fb(),
+					 D.black_w, D.black_h, &full);
+		}
 	}
-	if (pl->path != PATH_NONE)
-		fb = pl->set->b[pl->idx].fb_id;
-	ret |= add_plane(r, &D.planes[pi], D.crtcs[ki].id, fb, pl->src_w, pl->src_h,
-			 &pl->dst);
+	if (blank) {
+		struct display_rect full = { 0, 0, D.black_w, D.black_h };
+
+		ret |= add_plane(r, &D.planes[pi], D.crtcs[ki].id, D.black.fb_id, D.black_w,
+				 D.black_h, &full);
+	} else {
+		if (pl->path != PATH_NONE)
+			fb = pl->set->b[pl->idx].fb_id;
+		ret |= add_plane(r, &D.planes[pi], D.crtcs[ki].id, fb, pl->src_w, pl->src_h,
+				 &pl->dst);
+	}
 	if (op && (op->show || !modeset))
 		ret |= ov_add(r, op);
 	if (ret) {
@@ -2556,11 +2946,17 @@ static int apply(int ci, int ki, const drmModeModeInfo *mode, bool modeset)
 	struct ov_plan ovp;
 	const struct ov_plan *op;
 	struct geo old_geo = D.geo;
-	bool ext_on;
+	bool ext_on, blank = lcd_blank(ci);
 
 	if (ki < 0 || D.crtcs[ki].primary < 0)
 		return -ENODEV;
 	pi = D.crtcs[ki].primary;
+	/* Panel safety (§8.5): the black frame of a screen-off panel is a full
+	 * commit, so the overlay goes off with the other planes. */
+	if (blank) {
+		modeset = true;
+		black_ensure(W, H);   /* on failure the picture stays, backlight off */
+	}
 
 	/* The geometry of this output first: the plans and the overlay
 	 * placement below depend on it (restored if nothing is committed). */
@@ -2577,9 +2973,22 @@ static int apply(int ci, int ki, const drmModeModeInfo *mode, bool modeset)
 
 	drain_flip(FLIP_DRAIN_MS);
 	ext_on = D.ext_shown && D.ext_front.valid;
+	/* Another output: the panel keeps scanning on its own CRTC, lit alone
+	 * first if needed. If it cannot be kept, the other output is refused
+	 * (the caller falls back to the panel): never stop its signals. */
+	if (modeset && D.lcd.on && !lcd_is(ci)) {
+		ret = lcd_bg_prepare();
+		if (ret) {
+			D.geo = old_geo;
+			D.pend_tv = false;
+			return ret;
+		}
+	}
 	/* The overlay rides along, placed for this mode (a modeset writes
 	 * every plane, so a visible overlay is always included then). */
 	op = ov_prepare(ki, W, H, modeset, &ovp) ? &ovp : NULL;
+	if (blank && D.black.fb_id)
+		op = NULL;
 
 	if (modeset) {
 		ret = drmModeCreatePropertyBlob(D.fd, mode, sizeof(*mode), &blob);
@@ -2644,8 +3053,17 @@ static int apply(int ci, int ki, const drmModeModeInfo *mode, bool modeset)
 				ov_shown(op);
 			else if (modeset)
 				ov_off();
-			if (ext_on)
-				ext_recommit();
+			if (D.lcd.on && modeset && lcd_is(ci)) {
+				D.lcd.lit = true;
+				lcd_set_mode(mode);
+			}
+			if (ext_on) {
+				if (blank)
+					D.ext_shown = true;   /* put back by the screen-on commit */
+				else
+					ext_recommit();
+			}
+			bl_sync();
 			return 0;
 		}
 		dlog(DISPLAY_LOG_WARN, "%s path rejected on %s/crtc %d: %s",
@@ -3035,6 +3453,7 @@ void display_config_defaults(struct display_config *cfg)
 	cfg->log_level = DISPLAY_LOG_INFO;
 	cfg->internal_mode = DISPLAY_INTERNAL_AUTO;
 	cfg->a20_clock_log = true;
+	cfg->panel_keep_scanning = true;
 }
 
 static int open_card(const char *path)
@@ -3146,6 +3565,7 @@ int display_init(const struct display_config *cfg)
 
 	/* Startup with HDMI already plugged in is just a probe like any other. */
 	probe_all(PROBE_INIT);
+	lcd_setup();
 	D.edid_retries_left = D.cfg.edid_retries;
 	want = choose_output();
 	if (want < 0) {
@@ -3171,6 +3591,9 @@ void display_shutdown(void)
 
 	if (D.fd >= 0)
 		drain_flip(FLIP_DRAIN_MS);
+	/* Panel safety (§8.5): our planes off, the CRTCs still scanning. */
+	if (D.fd >= 0 && D.lcd.on && D.lcd.lit && !D.suspended)
+		lcd_release_planes();
 	/* Hand external FBs back while the DRM fd is still open. */
 	ext_release(&D.ext_pending);
 	ext_release(&D.ext_front);
@@ -3181,8 +3604,13 @@ void display_shutdown(void)
 	if (D.fd >= 0) {
 		fb_destroy(&D.ov.fb[0]);
 		fb_destroy(&D.ov.fb[1]);
+		fb_destroy(&D.black);
+		fb_destroy(&D.picfb);
+		if (D.lcd.blob)
+			drmModeDestroyPropertyBlob(D.fd, D.lcd.blob);
 	}
 	free(D.ov.pix);
+	free(D.pic);
 	free(D.shadow);
 	D.shadow = NULL;
 	if (D.mode_blob && D.fd >= 0)
@@ -3716,12 +4144,19 @@ int display_resume(void)
 
 	/*
 	 * The child's exit removed its framebuffers: the kernel disabled the
-	 * plane, and the CRTC too when the FB was on the primary plane
-	 * (atomic_remove_fb() in drm_framebuffer.c). Assume nothing about the
-	 * hardware state: re-commit everything.
+	 * planes that showed them, and their CRTC too if the driver refused a
+	 * CRTC without its primary plane (atomic_remove_fb() in
+	 * drm_framebuffer.c: the plane-only commit is tried first; sun4i
+	 * accepts it). Assume nothing about the hardware state: re-commit
+	 * everything.
 	 */
 	D.geo_fw = -1;
 	D.flip_pending = false;
+	/* Panel safety: the child kept the panel scanning (same board profile),
+	 * but its exit took its framebuffers off: light the panel again (alone
+	 * first when the output is HDMI) and set the backlight again. */
+	D.lcd.lit = false;
+	D.bl_state = -1;
 	tm.t_probe = display_now_ms();
 	probe_all(PROBE_RESUME);
 	want = choose_output();
@@ -3757,6 +4192,25 @@ int display_set_active(bool active)
 	if (active == D.active)
 		return 0;
 
+	if (!active && lcd_is(D.conn)) {
+		/*
+		 * Panel safety (§8.5): the panel stays powered, so its signals
+		 * must keep running. Backlight off, then a black frame on the
+		 * game plane (overlay off) in a full commit that keeps the CRTC
+		 * ACTIVE. If the black frame is refused the last picture stays,
+		 * backlight off: the screen is off all the same. Never ACTIVE = 0.
+		 */
+		drain_flip(FLIP_DRAIN_MS);
+		D.active = false;
+		bl_sync();
+		ret = apply(D.conn, D.crtc, &D.mode, true);
+		if (ret)
+			dlog(DISPLAY_LOG_WARN, "screen off: black frame refused (%s), the panel keeps the last picture "
+			     "with the backlight off", strerror(-ret));
+		dlog(DISPLAY_LOG_INFO, "screen off (%s: backlight off, black frame, still scanning) in %lld ms",
+		     D.info.name, (long long)(display_now_ms() - t0));
+		return 0;
+	}
 	if (!active) {
 		drmModeAtomicReq *r;
 
@@ -3765,9 +4219,11 @@ int display_set_active(bool active)
 		if (!r)
 			return -ENOMEM;
 		/*
-		 * ACTIVE = 0 only: mode, connector routing and planes stay in
-		 * the state. The encoder disable turns the panel and its
-		 * backlight off through drm_panel (or stops the HDMI signal).
+		 * ACTIVE = 0 only, on the output's own CRTC: mode, connector
+		 * routing and planes stay in the state. The encoder disable
+		 * stops the HDMI signal (or turns a panel without
+		 * panel_keep_scanning and its backlight off through drm_panel).
+		 * A panel kept scanning behind HDMI has its own CRTC: untouched.
 		 */
 		ret = add(r, D.crtcs[D.crtc].id, D.crtcs[D.crtc].prop_active, 0);
 		if (ret == 0)
@@ -3804,6 +4260,61 @@ int display_set_active(bool active)
 bool display_is_active(void)
 {
 	return D.active;
+}
+
+int display_set_panel_picture(const uint32_t *xrgb, int w, int h, uint32_t bg)
+{
+	struct fbuf old;
+	uint32_t *p = NULL;
+
+	if (!D.inited || !D.lcd.on)
+		return 0;
+	if (xrgb && (w < 1 || h < 1 || w > 4096 || h > 4096))
+		return -EINVAL;
+	if (xrgb) {
+		p = malloc((size_t)w * h * 4);
+		if (!p)
+			return -ENOMEM;
+		memcpy(p, xrgb, (size_t)w * h * 4);
+	}
+	free(D.pic);
+	D.pic = p;
+	D.pic_w = p ? w : 0;
+	D.pic_h = p ? h : 0;
+	D.pic_bg = bg;
+	/* The old buffer stays alive until the panel no longer shows it. */
+	old = D.picfb;
+	memset(&D.picfb, 0, sizeof(D.picfb));
+	D.picfb_w = D.picfb_h = 0;
+	if (D.lcd.lit && !D.suspended && !lcd_is(D.conn) && D.black.fb_id &&
+	    D.crtcs[D.lcd.ki].primary >= 0) {
+		/* Behind HDMI now: show it (a blocking commit on the panel's
+		 * plane only; the HDMI pipeline is not touched). */
+		struct display_rect full = { 0, 0, D.black_w, D.black_h };
+		drmModeAtomicReq *r = drmModeAtomicAlloc();
+		int ret = -ENOMEM;
+
+		pic_ensure(D.black_w, D.black_h);
+		if (r) {
+			ret = add_plane(r, &D.planes[D.crtcs[D.lcd.ki].primary], D.crtcs[D.lcd.ki].id, lcd_bg_fb(),
+					D.black_w, D.black_h, &full);
+			if (ret == 0)
+				ret = drmModeAtomicCommit(D.fd, r, 0, NULL);
+			drmModeAtomicFree(r);
+		}
+		if (ret) {
+			/* old stays on screen: keep it (freed at shutdown) */
+			dlog(DISPLAY_LOG_WARN, "panel picture not shown: %s", strerror(-ret));
+			fb_destroy(&D.picfb);
+			D.picfb = old;
+			D.picfb_w = old.fb_id ? D.black_w : 0;
+			D.picfb_h = old.fb_id ? D.black_h : 0;
+			return 0;
+		}
+	}
+	fb_destroy(&old);
+	dlog(DISPLAY_LOG_DEBUG, "panel picture: %s", p ? "set" : "black");
+	return 0;
 }
 
 /* ------------------------------------------------------------------ */

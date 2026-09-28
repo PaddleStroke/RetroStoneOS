@@ -59,9 +59,14 @@
  *                             menu offers (known: emmc sata)
  *   display_quirks            driver quirks: sun4i-tcon0-clock (log the  "" (none)
  *                             A20 TCON0 pixel clock model when the panel
- *                             is retimed). Scaling and plane limits need
- *                             no quirk: they are probed with TEST_ONLY
- *                             commits.
+ *                             is retimed); panel-keep-scanning (the
+ *                             built-in panel cannot be powered off: its
+ *                             CRTC never stops while the display is open;
+ *                             screen off = backlight off + black frame,
+ *                             HDMI on another CRTC; display_config.
+ *                             panel_keep_scanning). Scaling and plane
+ *                             limits need no quirk: they are probed with
+ *                             TEST_ONLY commits.
  */
 #ifndef RSOS_BOARD_H
 #define RSOS_BOARD_H
@@ -85,6 +90,7 @@ enum board_internal_display {
 };
 
 #define BOARD_QUIRK_SUN4I_TCON0_CLOCK 0x1u
+#define BOARD_QUIRK_PANEL_KEEP_SCANNING 0x2u
 
 struct board_profile {
 	bool loaded;                          /* false: no file, all defaults */

@@ -168,7 +168,7 @@ A20 mainline has no suspend-to-RAM (§1). On `power_sleep(true)`:
 | CPU to the lowest OPP: `powersave` governor, or schedutil with `scaling_max_freq` = 144 MHz when powersave is not built | power module |
 | blue status LED (PH2) on, as an "asleep, not off" indicator | power module (`sleep_led`) |
 | cpu1 offline (U-Boot PSCI has `CPU_OFF`) | power module, **off by default** (`sleep_cpu1_offline`, TODO(hw)) |
-| pause the game, mute audio, display off (CRTC inactive) | `on_sleep_request(true)`: menu: display layer; game: signal to the child (§10) |
+| pause the game, mute audio, display off (black frame, CRTC still scanning on the RetroStone2: display-design.md §8.5; CRTC inactive on HDMI and other boards) | `on_sleep_request(true)`: menu: display layer; game: signal to the child (§10) |
 
 **Wake**: any built-in button (setting `sleep_wake=any`, default) or the power key (`sleep_wake=power`: power key
 only, better in a bag). Everything is restored, then `on_sleep_request(false)`. The waking key is swallowed: the
@@ -195,8 +195,9 @@ cpu1 offline and the DRAM clock.
 ## 7. Idle dimming (menus only)
 
 No input for `idle_dim_min` (default 2 min): the backlight goes to 30 % of the user's level. After `idle_off_min`
-(default 5 min): backlight off (`bl_power` = 4) and `on_screen(POWER_SCREEN_OFF)` (the frontend turns the CRTC off,
-`display_set_active(false)`). Any key restores it and is swallowed. Never while a game runs
+(default 5 min): backlight off (`bl_power` = 4) and `on_screen(POWER_SCREEN_OFF)` (the frontend turns the display off,
+`display_set_active(false)`: on the RetroStone2 a black frame with the panel still scanning, never CRTC off: a powered
+panel must keep its signals, display-design.md §8.5). Any key restores it and is swallowed. Never while a game runs
 (`power_set_game_running(true)`); the timers restart when the game exits. Docked on HDMI (`power_set_docked(true)`)
 the module never touches the LCD backlight; it still reports `on_screen`.
 
@@ -215,6 +216,41 @@ pass) and `make check-frontend` step 1b (the real main loop: idle screen-off, wa
 
 `idle_dim_s` / `idle_off_s` (seconds) are accepted by `power_set_setting()` for development and tests (the headless
 check uses `idleoff:2`); the UI never writes them.
+
+### 7.1 Idle power-off (2026-09-28)
+
+Settings > Power > **Power off after**: Never / 5 / 10 / 15 / 30 / 60 min (`idle_poweroff_min`, default **5**, the
+same as "Screen off after"). No input for that long and the unit powers off by itself, through the normal clean
+shutdown (the same path as the power key: saves, then rcK and `poweroff -f`).
+
+- **Order**: dim (`idle_dim_min`) -> screen off (`idle_off_min`: backlight off, the panel still scanning,
+  display-design.md §8.5) -> power off. A stage at or after the power-off never happens: **equal timers** (the
+  defaults, 5 and 5 min) power off without a screen-off stage, and a power-off **shorter** than the screen-off wins.
+- **The notice**: `idle_warn_s` (10 s) before, `on_idle_poweroff(POWER_IDLE_WARN)`: the screen is lit again if it was
+  dimmed or off, and "Powering off in 10 s — press any button to cancel" shows (a 10 s warning toast in the menu; in a
+  game the menu sends `RSOS_SIG_IDLE_WARN` and the game process shows it on its OSD). **Any input cancels it** (a
+  button on any pad, a built-in key, the power key: its release then does not power off) and restarts the countdown;
+  the cancelling press is swallowed. `POWER_IDLE_CANCEL` takes the notice down (`RSOS_SIG_IDLE_CANCEL` in a game).
+- **In a game**: the dim and screen-off stages still never happen in a game, but the power-off counts. The menu
+  process (blocked in `host_launch()`, it reads the same pads, no grab) reports the player: a button held or changed on
+  any pad, or a real stick move (`power_axis_activity()`: an axis past half deflection, or moved by more than 20 %
+  of its range since the last move counted; the jitter of a drifting stick never counts, so it cannot keep the unit
+  on), at most once a second (`pads_activity()` -> `power_notify_activity()`); the same stick check runs in the
+  menu. N64/PS1 players steering with the stick keep the unit on. The built-in keys reach the module directly.
+  The power-off sends `RSOS_SIG_POWEROFF`: the game writes SRAM and `.state.auto`, the menu records
+  `/data/rsos/resume.ini` (reason `idle`), so the next boot offers "Resume" (or resumes, per `resume_mode`), then
+  powers off. **Never without saving**: if the game did not write its resume state (no save-state support, a write
+  error, no exit within 8 s), the idle power-off is cancelled (`power_cancel_shutdown()`): the menu comes back with
+  "Automatic power-off cancelled: the game could not be saved.", the unit stays on and the countdown starts over. The
+  module's own 15 s shutdown watchdog never forces an idle power-off either: it cancels it.
+- **Never while busy** (`power_set_busy()`, checked by the menu once a second and whenever a power deadline is due): a
+  USB import, a USB export or saves backup (`transfer_*_status()`), the web share with a client connected or an upload
+  running, the SMB share with a client (an established TCP connection on port 445 in `/proc/net/tcp{,6}`: ksmbd has
+  no client count), an OS update download or install (`ui_update_busy()`), the game list still loading. A job that
+  starts cancels a pending notice; when the last one ends, the countdown **starts over** from that moment.
+- **Never in charge mode** (the charge screen has its own rules, §9), nor while asleep or already shutting down.
+- `idle_poweroff_s` (seconds) for development and tests (`idlepoweroff:N` in the headless scripts, in the menu and
+  as `game:idlepoweroff:N`).
 
 ## 8. CPU governor and thermal
 
@@ -291,7 +327,7 @@ power_init(&pc);
 - `on_warning(level)`: LOW → toast "Battery low (15 %)"; VERY_LOW → persistent banner; OK → clear. During a game the
   parent cannot draw: forward it to the child (host request below) or skip it (the child's OSD already warns).
 - `on_critical`: show "Battery empty, saving..." (menu) — the shutdown request follows at once.
-- `on_sleep_request(enter)`: (unreachable now, §6) menu: display CRTC off/on. Game: `kill(child, RSOS_SIG_SLEEP)` /
+- `on_sleep_request(enter)`: (unreachable now, §6) menu: `display_set_active(false/true)` (display-design.md §8.3, §8.5). Game: `kill(child, RSOS_SIG_SLEEP)` /
   `kill(child, RSOS_SIG_WAKE)`.
 - `on_shutdown_request(why)`: game running: `kill(child, RSOS_SIG_POWEROFF)`, wait for its exit (≤ 8 s, then SIGKILL:
   the periodic SRAM flush is on disk); menu: save settings; show "Powering off..." ("Restarting..." for REBOOT,
@@ -429,6 +465,7 @@ dtc warning; `CHECK_DTBS=y` reports nothing for the new nodes (only the known bo
 |---|---|---|
 | `idle_dim_min` | 0 (never), 1, 2, 5 | 2 |
 | `idle_off_min` | 0 (never), 2, 5, 10 | 5 |
+| `idle_poweroff_min` | 0 (never), 5, 10, 15, 30, 60 (§7.1) | 5 |
 | `battery_gauge` | `auto`, `voltage`, `axp` | auto |
 | `timezone` | a zone name | UTC |
 
@@ -445,6 +482,9 @@ Covered: the OCV curve; full simulated discharges (voltage, auto, auto with a bo
 spikes: monotonic display, exactly one LOW, one VERY_LOW and one critical, trigger timing; spike rejection (single and
 double), hovering around the threshold, short dips, emergency collapse, charger re-arm; warning hysteresis; and on
 fake sysfs trees with a fake clock: PEK force-off raised to 6 s, V_OFF, governors per state and per core, idle dim/off
+(the idle power-off, §7.1: the order dim, screen off, power off; equal timers and a shorter power-off; the
+notice, lit screen and cancel by a UI input, a built-in key, the power key and game activity; the busy hold and the
+restart after it; the cancel of a power-off that cannot save and the watchdog that never forces it; charge mode),
 and key swallowing (including the wake regression: the waking press and release as the evdev read sees them, then
 the next presses, repeats and releases must pass, after idle-off, dim and fake sleep), the power key (start-up guard,
 a lone release, short press in the menu and in a game = one shutdown request even if pressed again, screen off =

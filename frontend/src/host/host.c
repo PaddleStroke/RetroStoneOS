@@ -30,6 +30,7 @@
 #include "../i18n/i18n.h"
 #include "../board.h"
 #include "../board_apply.h"
+#include "../splash.h"
 #include "hwrender.h"
 #include "ini.h"
 #include "options.h"
@@ -51,12 +52,16 @@
 #define HOST_SIG_POWEROFF RSOS_SIG_POWEROFF
 #define HOST_SIG_SLEEP RSOS_SIG_SLEEP
 #define HOST_SIG_WAKE RSOS_SIG_WAKE
+#define HOST_SIG_IDLE_WARN RSOS_SIG_IDLE_WARN
+#define HOST_SIG_IDLE_CANCEL RSOS_SIG_IDLE_CANCEL
 #endif
 #endif
 #ifndef HOST_SIG_POWEROFF
 #define HOST_SIG_POWEROFF SIGUSR2
 #define HOST_SIG_SLEEP (SIGRTMIN + 1)
 #define HOST_SIG_WAKE (SIGRTMIN + 2)
+#define HOST_SIG_IDLE_WARN (SIGRTMIN + 3)
+#define HOST_SIG_IDLE_CANCEL (SIGRTMIN + 4)
 #endif
 
 struct host H;
@@ -74,6 +79,8 @@ void host_supervisor_signals(bool block, int *sleep_sig, int *wake_sig, int *pow
 	sigemptyset(&s);
 	sigaddset(&s, HOST_SIG_SLEEP);
 	sigaddset(&s, HOST_SIG_WAKE);
+	sigaddset(&s, HOST_SIG_IDLE_WARN);
+	sigaddset(&s, HOST_SIG_IDLE_CANCEL);
 	sigaddset(&s, HOST_SIG_POWEROFF);
 	sigprocmask(block ? SIG_BLOCK : SIG_UNBLOCK, &s, NULL);
 }
@@ -189,6 +196,10 @@ static void on_signal(int sig)
 		H.sleep_sig = 1;
 	else if (sig == HOST_SIG_WAKE)
 		H.sleep_sig = 2;
+	else if (sig == HOST_SIG_IDLE_WARN)
+		H.idle_sig = 1;
+	else if (sig == HOST_SIG_IDLE_CANCEL)
+		H.idle_sig = 2;
 	else
 		H.quit_sig = 1;
 }
@@ -1191,6 +1202,24 @@ static void pace_wait(void)
 	}
 }
 
+/*
+ * Panel safety (display-design.md 8.5): the boot logo is what the built-in
+ * panel scans, backlight off, while HDMI shows the game (black without it).
+ */
+static void host_panel_picture(void)
+{
+	struct splash sp;
+	uint32_t *pix;
+
+	if (splash_load("/usr/share/rsos/splash.rle", &sp) < 0)
+		return;
+	pix = malloc((size_t)sp.width * sp.height * 4);
+	if (pix && splash_draw(&sp, pix, sp.width, sp.height, sp.width) == 0)
+		display_set_panel_picture(pix, sp.width, sp.height, sp.bg);
+	free(pix);
+	splash_free(&sp);
+}
+
 /* ----------------------------------------------------------- main loop */
 
 /* RSOS_SIG_SLEEP: the supervisor turned the screen off. Stop everything
@@ -1242,6 +1271,20 @@ static void sleep_until_wake(void)
 
 void host_poll_signals(void)
 {
+	if (H.idle_sig) {
+		/* The supervisor's idle power-off (docs/power.md): a notice 10 s
+		 * before; the game input it sees (and the built-in keys) cancel
+		 * it; the power-off itself is RSOS_SIG_POWEROFF (state saved). */
+		/* TRANSLATORS: shown 10 s before the automatic power-off (no input
+		 * for the time set in Settings > Power); any button cancels it */
+		const char *msg = _("Powering off in 10 s — press any button to cancel");
+
+		if (H.idle_sig == 1)
+			osd_toast(msg, 10000);
+		else
+			osd_untoast(msg);
+		H.idle_sig = 0;
+	}
 	if (H.sleep_sig == 1)
 		sleep_until_wake();
 	if (H.poweroff_sig) {
@@ -2288,6 +2331,8 @@ int host_run(const struct host_config *cfg)
 	sigaction(HOST_SIG_POWEROFF, &sa, NULL);
 	sigaction(HOST_SIG_SLEEP, &sa, NULL);
 	sigaction(HOST_SIG_WAKE, &sa, NULL);
+	sigaction(HOST_SIG_IDLE_WARN, &sa, NULL);
+	sigaction(HOST_SIG_IDLE_CANCEL, &sa, NULL);
 	signal(SIGPIPE, SIG_IGN);
 	/* blocked across the exec by the benchmark driver (F-M12): the ones
 	 * that came meanwhile are delivered now, to the handlers */
@@ -2404,6 +2449,7 @@ int host_run(const struct host_config *cfg)
 			goto out_input;
 		}
 		H.display_ok = true;
+		host_panel_picture();
 	}
 
 	core_set_callbacks();

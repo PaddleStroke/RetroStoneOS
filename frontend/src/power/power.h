@@ -43,6 +43,8 @@
 #define RSOS_SIG_POWEROFF SIGUSR2        /* flush SRAM + .state.auto, exit HOST_EXIT_POWEROFF */
 #define RSOS_SIG_SLEEP    (SIGRTMIN + 1) /* pause, mute, display off, wait */
 #define RSOS_SIG_WAKE     (SIGRTMIN + 2) /* drain input, display on, resume */
+#define RSOS_SIG_IDLE_WARN   (SIGRTMIN + 3) /* idle power-off in 10 s: show the notice */
+#define RSOS_SIG_IDLE_CANCEL (SIGRTMIN + 4) /* idle power-off cancelled: clear it */
 
 /* Ordered by severity; the same values as enum batt_level. */
 enum power_level {
@@ -65,6 +67,11 @@ enum power_screen {
 	POWER_SCREEN_OFF,          /* idle longer: backlight off, display may blank */
 };
 
+enum power_idle_event {
+	POWER_IDLE_WARN = 0,          /* the idle power-off comes in `seconds` */
+	POWER_IDLE_CANCEL,            /* cancelled by an input or a busy job */
+};
+
 enum power_reason {
 	POWER_REASON_USER = 0,         /* power key long press, or the menu */
 	POWER_REASON_REBOOT,           /* the menu's "Reboot" */
@@ -72,6 +79,7 @@ enum power_reason {
 	POWER_REASON_SLEEP_TIMEOUT,    /* asleep for sleep_timeout_min */
 	POWER_REASON_CHARGER_REMOVED,  /* charge mode, charger unplugged */
 	POWER_REASON_THERMAL,          /* sustained over thermal_crit_mc */
+	POWER_REASON_IDLE,             /* no input for idle_poweroff_s (never while busy) */
 };
 
 struct power_status {
@@ -108,7 +116,8 @@ struct power_callbacks {
 	 * immediately by on_shutdown_request(POWER_REASON_CRITICAL). */
 	void (*on_critical)(const struct power_status *st, void *user);
 	/* enter = true: pause the game (RSOS_SIG_SLEEP to the game child),
-	 * mute audio, display off (CRTC off). The module already turned the
+	 * mute audio, display off (display_set_active(false): black frame
+	 * with the panel still scanning on panel-keep-scanning boards). The module already turned the
 	 * backlight off and lowered the CPU clock.
 	 * enter = false: undo it (RSOS_SIG_WAKE to the child); the module
 	 * already restored the backlight and the governor. */
@@ -118,13 +127,18 @@ struct power_callbacks {
 	 * If power_poweroff() is not called within the grace time (15 s,
 	 * 10 s when critical) the module powers off by itself. */
 	void (*on_shutdown_request)(enum power_reason why, void *user);
-	/* Idle dimming in the menu. OFF: the display layer may turn the
-	 * CRTC off too (the backlight is already off). ON: back on. */
+	/* Idle dimming in the menu. OFF: the display layer turns the
+	 * display off too (display_set_active(false)) (the backlight is already off). ON: back on. */
 	void (*on_screen)(enum power_screen s, void *user);
 	/* Temperature crossed thermal_warn_mc (hot = true) or went back. */
 	void (*on_thermal)(int temp_mc, bool hot, void *user);
 	/* Charge mode ended by a short power-key press: start the normal UI. */
 	void (*on_charge_exit)(void *user);
+	/* Idle power-off (docs/power.md, idle power-off): WARN = it happens in
+	 * `seconds` (show "Powering off in 10 s", the screen is lit again);
+	 * CANCEL = an input (or a busy job) cancelled it: take the notice down.
+	 * The power-off itself is on_shutdown_request(POWER_REASON_IDLE). */
+	void (*on_idle_poweroff)(enum power_idle_event ev, int seconds, void *user);
 	/* Log lines (NULL: stderr). level: 0 error, 1 warning, 2 info, 3 debug. */
 	void (*log)(int level, const char *msg, void *user);
 	void *user;
@@ -185,6 +199,8 @@ struct power_config {
 	/* Idle (menu only, never while a game runs) */
 	int idle_dim_s;             /* 120 (0 = never) */
 	int idle_off_s;             /* 300 (0 = never) */
+	int idle_poweroff_s;        /* 300: power off (0 = never; also in a game) */
+	int idle_warn_s;            /* 10: the notice before it */
 	int dim_percent;            /* 30: dimmed brightness, % of the user's level */
 
 	/* CPU */
@@ -259,6 +275,34 @@ bool power_on_input(void);
 /* Activity that is never swallowed (e.g. a game child reported input). */
 void power_notify_activity(void);
 
+/*
+ * Idle power-off: is this analog axis value (-32768..32767) a player? True
+ * for a real move only: the axis held beyond POWER_AXIS_DEADZONE (half
+ * deflection), or moved by more than POWER_AXIS_MOVE (20 % of the range)
+ * since the last move counted (*ref, updated then; start it at 0). The
+ * noise of a drifting stick counts for nothing, so it can never keep the
+ * unit awake. Pure: no module state.
+ */
+#define POWER_AXIS_DEADZONE 16384
+#define POWER_AXIS_MOVE     13107
+bool power_axis_activity(int16_t v, int16_t *ref);
+
+/*
+ * A long job runs (a USB import/export or backup, the web or SMB share with
+ * a client, an OS update, ...): no idle power-off while busy (a pending
+ * notice is cancelled). When it ends the power-off countdown starts over.
+ * why: for the log ("usb-import"), NULL when not busy. Call it whenever the
+ * state may have changed (cheap: only a change is acted upon).
+ */
+void power_set_busy(bool busy, const char *why);
+/*
+ * An idle power-off (POWER_REASON_IDLE) that cannot be completed safely
+ * (the game could not write its resume state): back to normal, the unit
+ * stays on and the countdown starts over. Only before power_poweroff() and
+ * only for the idle reason. 0 or -EINVAL.
+ */
+int power_cancel_shutdown(void);
+
 /* Fake sleep. Unreachable from the power key and the menu since the short
  * press powers off (docs/power.md §6); kept for tools and tests. */
 int power_sleep(bool enter);
@@ -272,8 +316,10 @@ int power_poweroff(bool reboot);
 
 /* Settings by settings.ini key (the UI forwards its setting_changed):
  *   sleep_timeout_min  0..240     idle_dim_min   0..60   idle_off_min 0..120
+ *   idle_poweroff_min  0..240 (0 = never)
  *   sleep_wake         any|power  battery_gauge  auto|axp|voltage
- *   idle_dim_s / idle_off_s  0..7200 seconds (development and tests only)
+ *   idle_dim_s / idle_off_s / idle_poweroff_s  0..7200 seconds (development
+ *                      and tests only)
  *   timezone           a zone name from power_timezones() or a POSIX TZ
  * 0, -EINVAL (bad value) or -ENOENT (not a power key). */
 int power_set_setting(const char *key, const char *value);

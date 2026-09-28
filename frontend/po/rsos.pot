@@ -71,179 +71,185 @@ msgid "%s needs %s in %s"
 msgstr ""
 
 #. TRANSLATORS: toast over the last game picture while the saves are written
-#: src/host/host.c:414 src/ui/ui.c:1568
+#: src/host/host.c:425 src/ui/ui.c:1568
 msgid "Powering off..."
 msgstr ""
 
-#: src/host/host.c:732
+#: src/host/host.c:746
 msgid "Player 1 controller disconnected: paused"
 msgstr ""
 
 #. TRANSLATORS: toast; %s is the controller's name
-#: src/host/host.c:739 src/ui/ui.c:1182
+#: src/host/host.c:753 src/ui/ui.c:1182
 #, c-format
 msgid "Player 1: %s"
 msgstr ""
 
-#: src/host/host.c:776
+#: src/host/host.c:790
 msgid "Saving..."
 msgstr ""
 
-#: src/host/host.c:799
+#: src/host/host.c:813
 msgid "This game cannot save a state now"
 msgstr ""
 
 #. TRANSLATORS: toast; %s is the system's English error text
-#: src/host/host.c:802
+#: src/host/host.c:816
 #, c-format
 msgid "State NOT saved: %s"
 msgstr ""
 
-#: src/host/host.c:811
+#: src/host/host.c:825
 #, c-format
 msgid "State loaded, slot %d"
 msgstr ""
 
-#: src/host/host.c:813
+#: src/host/host.c:827
 #, c-format
 msgid "No state in slot %d"
 msgstr ""
 
-#: src/host/host.c:815
+#: src/host/host.c:829
 #, c-format
 msgid "Cannot load the state of slot %d"
 msgstr ""
 
-#: src/host/host.c:823
+#: src/host/host.c:837
 #, c-format
 msgid "State slot %d"
 msgstr ""
 
 #. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
-#: src/host/host.c:826
+#: src/host/host.c:840
 #, c-format
 msgid "State slot %d (empty)"
 msgstr ""
 
-#: src/host/host.c:936
+#: src/host/host.c:950
 msgid "No picture to save yet"
 msgstr ""
 
 #. TRANSLATORS: toast after Select+L2
-#: src/host/host.c:969
+#: src/host/host.c:983
 msgid "Screenshot saved"
 msgstr ""
 
-#: src/host/host.c:972
+#: src/host/host.c:986
 msgid "Screenshot NOT saved"
 msgstr ""
 
 #. TRANSLATORS: toast after Select+Y when no other game was played yet
-#: src/host/host.c:987
+#: src/host/host.c:1001
 msgid "No other game played recently"
 msgstr ""
 
 #. TRANSLATORS: toast: the game was reset (Select+B)
-#: src/host/host.c:1053 src/host/menu.c:571
+#: src/host/host.c:1067 src/host/menu.c:571
 msgctxt "toast"
 msgid "Reset"
 msgstr ""
 
 #. TRANSLATORS: toast; %s is the controller's name
-#: src/host/host.c:1071
+#: src/host/host.c:1085
 #, c-format
 msgid "Connected: %s"
 msgstr ""
 
-#: src/host/host.c:1288
+#. TRANSLATORS: shown 10 s before the automatic power-off (no input
+#. for the time set in Settings > Power); any button cancels it
+#: src/host/host.c:1280 src/ui/ui.c:1584 src/ui/ui.c:1591
+msgid "Powering off in 10 s — press any button to cancel"
+msgstr ""
+
+#: src/host/host.c:1334
 msgid "Battery empty: game saved"
 msgstr ""
 
-#: src/host/host.c:1293
+#: src/host/host.c:1339
 #, c-format
 msgid "Battery low (%d%%)"
 msgstr ""
 
 #. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
 #. (right half of a 640 px row: keep it short)
-#: src/host/host.c:1640
+#: src/host/host.c:1686
 #, c-format
 msgid "%d setting, about %d min"
 msgid_plural "%d settings, about %d min"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/host/host.c:1669
+#: src/host/host.c:1715
 msgid "No benchmark for this system"
 msgstr ""
 
-#: src/host/host.c:1698
+#: src/host/host.c:1744
 msgid "Benchmark: this game cannot save a state now"
 msgstr ""
 
-#: src/host/host.c:1714
+#: src/host/host.c:1760
 #, c-format
 msgid "Benchmark: cannot write %s"
 msgstr ""
 
-#: src/host/host.c:1918
+#: src/host/host.c:1964
 msgid "No result to use"
 msgstr ""
 
 #. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
-#: src/host/host.c:1924
+#: src/host/host.c:1970
 #, c-format
 msgid "Unknown configuration %s"
 msgstr ""
 
 #. TRANSLATORS: %s is the system's English error text
-#: src/host/host.c:1933
+#: src/host/host.c:1979
 #, c-format
 msgid "Could not save: %s"
 msgstr ""
 
 #. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
-#: src/host/host.c:1938
+#: src/host/host.c:1984
 #, c-format
 msgid "Saved \"%s\" for this game (applies next start)"
 msgstr ""
 
 #. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
-#: src/host/host.c:1942
+#: src/host/host.c:1988
 #, c-format
 msgid "Saved \"%s\": next start uses %s"
 msgstr ""
 
-#: src/host/host.c:2009
+#: src/host/host.c:2055
 msgid "The emulator stopped responding"
 msgstr ""
 
-#: src/host/host.c:2334
+#: src/host/host.c:2382
 msgid "Cannot load the emulator core"
 msgstr ""
 
-#: src/host/host.c:2351
+#: src/host/host.c:2399
 msgid "Benchmark: bad plan"
 msgstr ""
 
-#: src/host/host.c:2355
+#: src/host/host.c:2403
 msgid "Cannot start the save thread"
 msgstr ""
 
-#: src/host/host.c:2400
+#: src/host/host.c:2448
 msgid "Cannot open the display"
 msgstr ""
 
-#: src/host/host.c:2424
+#: src/host/host.c:2473
 msgid "This core needs a game file"
 msgstr ""
 
-#: src/host/host.c:2431
+#: src/host/host.c:2480
 msgid "The emulator could not load this game"
 msgstr ""
 
 #. TRANSLATORS: toast: the game continues from the resume state
-#: src/host/host.c:2483 src/host/host.c:2490
+#: src/host/host.c:2532 src/host/host.c:2539
 msgid "Resumed"
 msgstr ""
 
@@ -289,34 +295,34 @@ msgid "The emulator failed (code %d)"
 msgstr ""
 
 #. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
-#: src/host/menu.c:110 src/ui/screens.c:2406 src/ui/screens.c:2410
+#: src/host/menu.c:110 src/ui/screens.c:2418 src/ui/screens.c:2422
 msgctxt "scaling"
 msgid "Integer"
 msgstr ""
 
-#: src/host/menu.c:111 src/ui/screens.c:2411
+#: src/host/menu.c:111 src/ui/screens.c:2423
 msgctxt "scaling"
 msgid "Stretch"
 msgstr ""
 
-#: src/host/menu.c:111 src/ui/screens.c:2407 src/ui/screens.c:2409
+#: src/host/menu.c:111 src/ui/screens.c:2419 src/ui/screens.c:2421
 msgctxt "scaling"
 msgid "Aspect"
 msgstr ""
 
 #. TRANSLATORS: in-game menu > CPU profile values: the emulator's own
 #. setting / full speed / slower and cooler, saves battery
-#: src/host/menu.c:126 src/ui/screens.c:2419
+#: src/host/menu.c:126 src/ui/screens.c:2431
 msgctxt "cpu profile"
 msgid "Performance"
 msgstr ""
 
-#: src/host/menu.c:127 src/ui/screens.c:2420
+#: src/host/menu.c:127 src/ui/screens.c:2432
 msgctxt "cpu profile"
 msgid "Battery saver"
 msgstr ""
 
-#: src/host/menu.c:127 src/ui/screens.c:2418
+#: src/host/menu.c:127 src/ui/screens.c:2430
 msgctxt "cpu profile"
 msgid "Automatic"
 msgstr ""
@@ -409,13 +415,13 @@ msgid "Core options"
 msgstr ""
 
 #. TRANSLATORS: game options: how the picture fills the screen, for this game
-#: src/host/menu.c:218 src/ui/screens.c:2416
+#: src/host/menu.c:218 src/ui/screens.c:2428
 msgid "Scaling"
 msgstr ""
 
 #. TRANSLATORS: in-game menu: how fast the processor runs for this game
 #. TRANSLATORS: game options: how fast the processor runs for this game
-#: src/host/menu.c:222 src/ui/screens.c:2426
+#: src/host/menu.c:222 src/ui/screens.c:2438
 msgid "CPU profile"
 msgstr ""
 
@@ -431,7 +437,7 @@ msgstr ""
 msgid "Benchmark this game"
 msgstr ""
 
-#: src/host/menu.c:231 src/host/menu.c:389 src/ui/screens.c:751 src/ui/screens.c:1699
+#: src/host/menu.c:231 src/host/menu.c:389 src/ui/screens.c:751 src/ui/screens.c:1711
 msgid "Controls"
 msgstr ""
 
@@ -740,56 +746,62 @@ msgctxt "strftime"
 msgid "%Y-%m-%d %H:%M"
 msgstr ""
 
-#: src/main.c:1000
+#: src/main.c:1023
 msgid "The screen refused this refresh rate"
 msgstr ""
 
-#: src/main.c:1835
+#: src/main.c:1942
 msgid "No emulator is installed for this game."
 msgstr ""
 
-#: src/main.c:1842
+#: src/main.c:1949
 msgid "This game cannot start (missing BIOS?)."
 msgstr ""
 
 #. TRANSLATORS: %s is a system error message (in English)
-#: src/main.c:1989
+#: src/main.c:2116
 #, c-format
 msgid "Cannot start the game process (%s)."
 msgstr ""
 
-#: src/main.c:2011 src/ui/ui.c:563
+#. TRANSLATORS: the automatic power-off (no input for a while)
+#. was stopped because the game's state could not be saved
+#: src/main.c:2131
+msgid "Automatic power-off cancelled: the game could not be saved."
+msgstr ""
+
+#: src/main.c:2142 src/ui/ui.c:563
 msgid "The game could not be started."
 msgstr ""
 
 #. TRANSLATORS: boot message: the SD card's data partition (games, saves)
-#: src/main.c:2096
+#: src/main.c:2227
 msgid "The data partition could not be restored. Your games and saves may need to be copied again."
 msgstr ""
 
-#: src/main.c:2100
+#: src/main.c:2231
 msgid "The data partition was unreadable and was reformatted."
 msgstr ""
 
-#: src/main.c:2103
+#: src/main.c:2234
 msgid "The data partition has errors: saving may fail. Back up your saves."
 msgstr ""
 
-#: src/main.c:2109
+#: src/main.c:2240
 msgid "The last update didn't start; the previous version was restored."
 msgstr ""
 
-#: src/main.c:2115
+#: src/main.c:2246
 msgid "The SD card was checked after an unexpected power loss"
 msgstr ""
 
 #. TRANSLATORS: boot screen under the logo (first start, or after an update)
-#: src/main.c:2377
+#: src/main.c:2515
 msgid "Preparing the SD card, please wait..."
 msgstr ""
 
 #. TRANSLATORS: boot screen under the logo, after the power was cut
-#: src/main.c:2379
+#: src/main.c:2517
 msgid "Checking the SD card, please wait..."
 msgstr ""
 
@@ -814,7 +826,7 @@ msgstr ""
 #. TRANSLATORS: help bar at the bottom of the screen: one short word each
 #. TRANSLATORS: first-boot language picker: help bar, one short word each
 #. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
-#: src/ui/menu.c:99 src/ui/menu.c:471 src/ui/menu.c:474 src/ui/screens.c:1799
+#: src/ui/menu.c:99 src/ui/menu.c:471 src/ui/menu.c:474 src/ui/screens.c:1811
 #: src/ui/view_gamelist.c:967 src/ui/view_system.c:543 src/ui/view_system.c:547
 msgid "choose"
 msgstr ""
@@ -834,7 +846,7 @@ msgid "back"
 msgstr ""
 
 #. TRANSLATORS: dialog button, uppercase, short
-#: src/ui/menu.c:633 src/ui/screens.c:1799 src/ui/transfer_ui.c:269
+#: src/ui/menu.c:633 src/ui/screens.c:1811 src/ui/transfer_ui.c:269
 msgid "OK"
 msgstr ""
 
@@ -905,7 +917,7 @@ msgstr ""
 #. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
 #. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
 #. or the power chip's (AXP) fuel gauge
-#: src/ui/screens.c:63 src/ui/screens.c:1435
+#: src/ui/screens.c:63 src/ui/screens.c:1439
 msgid "Automatic"
 msgstr ""
 
@@ -987,7 +999,7 @@ msgid ""
 "Keep this setting? Reverting in %d s"
 msgstr ""
 
-#: src/ui/screens.c:276 src/ui/screens.c:1409 src/ui/screens.c:1698
+#: src/ui/screens.c:276 src/ui/screens.c:1409 src/ui/screens.c:1710
 msgid "Display"
 msgstr ""
 
@@ -1187,11 +1199,11 @@ msgid "Players"
 msgstr ""
 
 #. TRANSLATORS: "stop when idle for": durations, and never
-#: src/ui/screens.c:781 src/ui/screens.c:1431
+#: src/ui/screens.c:781 src/ui/screens.c:1431 src/ui/screens.c:1434
 msgid "10 min"
 msgstr ""
 
-#: src/ui/screens.c:781
+#: src/ui/screens.c:781 src/ui/screens.c:1435
 msgid "30 min"
 msgstr ""
 
@@ -1201,6 +1213,7 @@ msgstr ""
 
 #. TRANSLATORS: dim / turn off the screen after: never, or minutes
 #: src/ui/screens.c:781 src/ui/screens.c:1148 src/ui/screens.c:1429 src/ui/screens.c:1431
+#: src/ui/screens.c:1434
 msgid "Never"
 msgstr ""
 
@@ -1230,7 +1243,7 @@ msgid "Bluetooth: turning off, please wait..."
 msgstr ""
 
 #. TRANSLATORS: toast: WiFi is being turned on for the update check
-#: src/ui/screens.c:819 src/ui/update_ui.c:861
+#: src/ui/screens.c:819 src/ui/update_ui.c:868
 msgid "WiFi: turning on, please wait..."
 msgstr ""
 
@@ -1242,7 +1255,7 @@ msgstr ""
 msgid "Bluetooth: turning on, please wait..."
 msgstr ""
 
-#: src/ui/screens.c:824 src/ui/update_ui.c:855
+#: src/ui/screens.c:824 src/ui/update_ui.c:862
 #, c-format
 msgid "Cannot run %s"
 msgstr ""
@@ -1284,7 +1297,7 @@ msgstr ""
 msgid "Console name: %s (next transfer)"
 msgstr ""
 
-#: src/ui/screens.c:972 src/ui/screens.c:1700
+#: src/ui/screens.c:972 src/ui/screens.c:1712
 msgid "Network"
 msgstr ""
 
@@ -1349,7 +1362,7 @@ msgstr ""
 msgid "failed"
 msgstr ""
 
-#: src/ui/screens.c:1060 src/ui/screens.c:1701
+#: src/ui/screens.c:1060 src/ui/screens.c:1713
 msgid "Theme"
 msgstr ""
 
@@ -1375,7 +1388,7 @@ msgstr ""
 msgid "Game lists refreshed"
 msgstr ""
 
-#: src/ui/screens.c:1114 src/ui/screens.c:1702
+#: src/ui/screens.c:1114 src/ui/screens.c:1714
 msgid "Game lists"
 msgstr ""
 
@@ -1422,7 +1435,7 @@ msgid "Always"
 msgstr ""
 
 #. TRANSLATORS: toggle: copy the games
-#: src/ui/screens.c:1175 src/ui/screens.c:1410 src/ui/screens.c:1703 src/ui/transfer_ui.c:601
+#: src/ui/screens.c:1175 src/ui/screens.c:1410 src/ui/screens.c:1715 src/ui/transfer_ui.c:601
 msgid "Games"
 msgstr ""
 
@@ -1467,7 +1480,7 @@ msgstr ""
 msgid "REBOOT NOW"
 msgstr ""
 
-#: src/ui/screens.c:1242 src/ui/ui.c:1131 src/ui/update_ui.c:823
+#: src/ui/screens.c:1242 src/ui/ui.c:1131 src/ui/update_ui.c:830
 msgid "LATER"
 msgstr ""
 
@@ -1481,7 +1494,7 @@ msgstr ""
 msgid "%s free of %s"
 msgstr ""
 
-#: src/ui/screens.c:1281 src/ui/screens.c:1408 src/ui/screens.c:1704
+#: src/ui/screens.c:1281 src/ui/screens.c:1408 src/ui/screens.c:1716
 msgid "Storage"
 msgstr ""
 
@@ -1614,7 +1627,7 @@ msgid_plural "%d games in %s"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/ui/screens.c:1398 src/ui/screens.c:1705
+#: src/ui/screens.c:1398 src/ui/screens.c:1717
 msgid "System information"
 msgstr ""
 
@@ -1648,161 +1661,175 @@ msgstr ""
 msgid "2 min"
 msgstr ""
 
-#: src/ui/screens.c:1429 src/ui/screens.c:1431
+#: src/ui/screens.c:1429 src/ui/screens.c:1431 src/ui/screens.c:1434
 msgid "5 min"
 msgstr ""
 
-#: src/ui/screens.c:1435
-msgid "Voltage"
+#: src/ui/screens.c:1434
+msgid "15 min"
 msgstr ""
 
 #: src/ui/screens.c:1435
+msgid "60 min"
+msgstr ""
+
+#: src/ui/screens.c:1439
+msgid "Voltage"
+msgstr ""
+
+#: src/ui/screens.c:1439
 msgid "AXP fuel gauge"
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short
-#: src/ui/screens.c:1451 src/ui/screens.c:2225
+#: src/ui/screens.c:1455 src/ui/screens.c:2237
 msgid "YES"
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short (NO is selected)
-#: src/ui/screens.c:1452 src/ui/screens.c:2224
+#: src/ui/screens.c:1456 src/ui/screens.c:2236
 msgid "NO"
 msgstr ""
 
-#: src/ui/screens.c:1457
+#: src/ui/screens.c:1461
 msgid "Restart the console?"
 msgstr ""
 
-#: src/ui/screens.c:1462
+#: src/ui/screens.c:1466
 msgid "Power off the console?"
 msgstr ""
 
 #. TRANSLATORS: Settings section: restart, power off, battery saving
-#: src/ui/screens.c:1480 src/ui/screens.c:1710
+#: src/ui/screens.c:1487 src/ui/screens.c:1722
 msgctxt "settings"
 msgid "Power"
 msgstr ""
 
-#: src/ui/screens.c:1483
+#: src/ui/screens.c:1490
 msgid "Restart"
 msgstr ""
 
-#: src/ui/screens.c:1484
+#: src/ui/screens.c:1491
 msgid "Power off"
 msgstr ""
 
-#: src/ui/screens.c:1485
+#: src/ui/screens.c:1492
 msgid "Battery saving"
 msgstr ""
 
-#: src/ui/screens.c:1486
+#: src/ui/screens.c:1493
 msgid "Dim the screen after"
 msgstr ""
 
-#: src/ui/screens.c:1489
+#: src/ui/screens.c:1496
 msgid "Screen off after"
 msgstr ""
 
-#: src/ui/screens.c:1492
+#. TRANSLATORS: Settings > Power: turn the console off by itself after
+#. this long without a button pressed (never while copying or updating)
+#: src/ui/screens.c:1501
+msgid "Power off after"
+msgstr ""
+
+#: src/ui/screens.c:1504
 msgid "Battery gauge"
 msgstr ""
 
-#: src/ui/screens.c:1528
+#: src/ui/screens.c:1540
 #, c-format
 msgid "Time zone: %s"
 msgstr ""
 
-#: src/ui/screens.c:1534 src/ui/screens.c:1614
+#: src/ui/screens.c:1546 src/ui/screens.c:1626
 msgid "Time zone"
 msgstr ""
 
-#: src/ui/screens.c:1588
+#: src/ui/screens.c:1600
 msgid "That date is not valid."
 msgstr ""
 
-#: src/ui/screens.c:1593
+#: src/ui/screens.c:1605
 msgid "The clock could not be set."
 msgstr ""
 
-#: src/ui/screens.c:1595
+#: src/ui/screens.c:1607
 msgid "Date and time set"
 msgstr ""
 
-#: src/ui/screens.c:1597
+#: src/ui/screens.c:1609
 msgid "Setting the clock needs the power module"
 msgstr ""
 
-#: src/ui/screens.c:1606 src/ui/screens.c:1709
+#: src/ui/screens.c:1618 src/ui/screens.c:1721
 msgid "Date & time"
 msgstr ""
 
 #. TRANSLATORS: the date and time now
-#: src/ui/screens.c:1613
+#: src/ui/screens.c:1625
 msgid "Now"
 msgstr ""
 
-#: src/ui/screens.c:1615
+#: src/ui/screens.c:1627
 msgid "Set the clock"
 msgstr ""
 
-#: src/ui/screens.c:1616
+#: src/ui/screens.c:1628
 msgid "Year"
 msgstr ""
 
-#: src/ui/screens.c:1620
+#: src/ui/screens.c:1632
 msgid "Month"
 msgstr ""
 
-#: src/ui/screens.c:1624
+#: src/ui/screens.c:1636
 msgid "Day"
 msgstr ""
 
-#: src/ui/screens.c:1628
+#: src/ui/screens.c:1640
 msgid "Hour"
 msgstr ""
 
-#: src/ui/screens.c:1632
+#: src/ui/screens.c:1644
 msgid "Minute"
 msgstr ""
 
-#: src/ui/screens.c:1636
+#: src/ui/screens.c:1648
 msgid "Set date and time"
 msgstr ""
 
 #. TRANSLATORS: Settings item that opens the list of languages
-#: src/ui/screens.c:1685
+#: src/ui/screens.c:1697
 msgid "Language"
 msgstr ""
 
-#: src/ui/screens.c:1695
+#: src/ui/screens.c:1707
 msgid "Settings"
 msgstr ""
 
 #. TRANSLATORS: Settings item: check for and install a new RetroStoneOS version
-#: src/ui/screens.c:1708 src/ui/update_ui.c:1189
+#: src/ui/screens.c:1720 src/ui/update_ui.c:1196
 msgid "System update"
 msgstr ""
 
 #. TRANSLATORS: Settings item: find a game by its name in every system
-#: src/ui/screens.c:1712 src/ui/screens.c:2090
+#: src/ui/screens.c:1724 src/ui/screens.c:2102
 msgid "Search all games"
 msgstr ""
 
-#: src/ui/screens.c:1751
+#: src/ui/screens.c:1763
 #, c-format
 msgid "%s is not installed"
 msgstr ""
 
 #. TRANSLATORS: first-boot language picker title (shown in each language as
 #. the cursor moves: keep it short and simple, children read it)
-#: src/ui/screens.c:1810 src/ui/screens.c:1872
+#: src/ui/screens.c:1822 src/ui/screens.c:1884
 msgid "Choose your language"
 msgstr ""
 
 #. TRANSLATORS: title of the search keyboard, with the number of games
 #. that match what is typed so far
-#: src/ui/screens.c:2021
+#: src/ui/screens.c:2033
 #, c-format
 msgid "Search: %s game"
 msgid_plural "Search: %s games"
@@ -1812,142 +1839,142 @@ msgstr[1] ""
 #. TRANSLATORS: title of the search keyboard (nothing typed yet)
 #. TRANSLATORS: game options: find games of this list by name (the
 #. keyboard opens; the list shows the matches as you type)
-#: src/ui/screens.c:2024 src/ui/screens.c:2058 src/ui/screens.c:2348
+#: src/ui/screens.c:2036 src/ui/screens.c:2070 src/ui/screens.c:2360
 msgid "Search this list"
 msgstr ""
 
 #. TRANSLATORS: toast: "Search all games" found nothing; %s is the text searched
-#: src/ui/screens.c:2079
+#: src/ui/screens.c:2091
 #, c-format
 msgid "No game found for \"%s\""
 msgstr ""
 
 #. TRANSLATORS: toast after "Hide this game"; the menu path must match
 #. your translations of Settings, Game lists and Show hidden games
-#: src/ui/screens.c:2111
+#: src/ui/screens.c:2123
 msgid "Game hidden: Settings > Game lists > Show hidden games shows it again"
 msgstr ""
 
 #. TRANSLATORS: toast after deleting a game and its saves
-#: src/ui/screens.c:2183
+#: src/ui/screens.c:2195
 msgid "Game and saves deleted"
 msgstr ""
 
 #. TRANSLATORS: toast after deleting a game (its saves are kept)
-#: src/ui/screens.c:2186
+#: src/ui/screens.c:2198
 msgid "Game deleted"
 msgstr ""
 
 #. TRANSLATORS: the game file could not be deleted; %s is the system's reason
-#: src/ui/screens.c:2208
+#: src/ui/screens.c:2220
 #, c-format
 msgid "The game could not be deleted (%s)."
 msgstr ""
 
 #. TRANSLATORS: second question after deleting a game
-#: src/ui/screens.c:2228
+#: src/ui/screens.c:2240
 msgid "Also delete its saves and save states?"
 msgstr ""
 
 #. TRANSLATORS: delete confirmation; %s is the game's file name (French
 #. quotes: « %s »)
-#: src/ui/screens.c:2248
+#: src/ui/screens.c:2260
 #, c-format
 msgid "Delete \"%s\" from the SD card?"
 msgstr ""
 
 #. TRANSLATORS: added to the delete confirmation of a multi-disc playlist
-#: src/ui/screens.c:2253
+#: src/ui/screens.c:2265
 msgid "Only this playlist is deleted: the disc files it lists stay on the SD card."
 msgstr ""
 
 #. TRANSLATORS: added to the delete confirmation of a CD image's .cue file
-#: src/ui/screens.c:2255
+#: src/ui/screens.c:2267
 msgid "Only this .cue file is deleted: the track files it lists stay on the SD card."
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short (CANCEL is selected)
-#: src/ui/screens.c:2257
+#: src/ui/screens.c:2269
 msgid "DELETE"
 msgstr ""
 
-#: src/ui/screens.c:2258 src/ui/update_ui.c:458 src/ui/update_ui.c:898
+#: src/ui/screens.c:2270 src/ui/update_ui.c:465 src/ui/update_ui.c:905
 msgid "CANCEL"
 msgstr ""
 
-#: src/ui/screens.c:2272
+#: src/ui/screens.c:2284
 msgid "This game is not in the list any more"
 msgstr ""
 
 #. TRANSLATORS: the game is one of the favorites (on/off)
-#: src/ui/screens.c:2340
+#: src/ui/screens.c:2352
 msgid "Favorite"
 msgstr ""
 
 #. TRANSLATORS: core for this game: the one chosen for the whole system
-#: src/ui/screens.c:2355
+#: src/ui/screens.c:2367
 msgid "System default"
 msgstr ""
 
 #. TRANSLATORS: a core (emulator) name, marked as not finished
-#: src/ui/screens.c:2359
+#: src/ui/screens.c:2371
 #, c-format
 msgid "%s (experimental)"
 msgstr ""
 
 #. TRANSLATORS: the default core of a system, with its name
-#: src/ui/screens.c:2364 src/ui/screens.c:2405
+#: src/ui/screens.c:2376 src/ui/screens.c:2417
 #, c-format
 msgid "Default (%s)"
 msgstr ""
 
 #. TRANSLATORS: no core
-#: src/ui/screens.c:2366
+#: src/ui/screens.c:2378
 msgid "none"
 msgstr ""
 
 #. TRANSLATORS: "core" = the emulator used to run the game
-#: src/ui/screens.c:2380
+#: src/ui/screens.c:2392
 msgid "Core for this game"
 msgstr ""
 
 #. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
-#: src/ui/screens.c:2391
+#: src/ui/screens.c:2403
 #, c-format
 msgid "Core for all %s games"
 msgstr ""
 
-#: src/ui/screens.c:2396
+#: src/ui/screens.c:2408
 msgid "Core"
 msgstr ""
 
-#: src/ui/screens.c:2397
+#: src/ui/screens.c:2409
 msgid "none installed"
 msgstr ""
 
 #. TRANSLATORS: start the game
-#: src/ui/screens.c:2430
+#: src/ui/screens.c:2442
 msgid "Launch"
 msgstr ""
 
 #. TRANSLATORS: game options: take the game out of the lists (Settings >
 #. Game lists > Show hidden games brings it back)
-#: src/ui/screens.c:2433
+#: src/ui/screens.c:2445
 msgid "Hide this game"
 msgstr ""
 
 #. TRANSLATORS: game options: delete the game's file from the SD card (asks first)
-#: src/ui/screens.c:2436
+#: src/ui/screens.c:2448
 msgid "Delete this game"
 msgstr ""
 
 #. TRANSLATORS: game options: the time spent playing this game
-#: src/ui/screens.c:2438
+#: src/ui/screens.c:2450
 msgid "Play time"
 msgstr ""
 
 #. TRANSLATORS: the game's file name
-#: src/ui/screens.c:2441
+#: src/ui/screens.c:2453
 msgid "File"
 msgstr ""
 
@@ -2741,11 +2768,11 @@ msgstr[1] ""
 #. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
 #. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
 #. TRANSLATORS: dialog buttons, uppercase, short: stop the update / go on
-#: src/ui/transfer_ui.c:1269 src/ui/transfer_ui.c:1938 src/ui/update_ui.c:697
+#: src/ui/transfer_ui.c:1269 src/ui/transfer_ui.c:1938 src/ui/update_ui.c:704
 msgid "STOP"
 msgstr ""
 
-#: src/ui/transfer_ui.c:1269 src/ui/update_ui.c:697
+#: src/ui/transfer_ui.c:1269 src/ui/update_ui.c:704
 msgid "CONTINUE"
 msgstr ""
 
@@ -2863,7 +2890,7 @@ msgstr ""
 
 #. TRANSLATORS: help bar: A stops the network transfer, B goes back
 #. TRANSLATORS: help bar: B stops the system update
-#: src/ui/transfer_ui.c:1788 src/ui/update_ui.c:651
+#: src/ui/transfer_ui.c:1788 src/ui/update_ui.c:658
 msgid "stop"
 msgstr ""
 
@@ -3064,391 +3091,391 @@ msgid "Hot, slowing down"
 msgstr ""
 
 #. TRANSLATORS: charge screen (the console is off, on the charger)
-#: src/ui/ui.c:1601
+#: src/ui/ui.c:1620
 msgid "Charging"
 msgstr ""
 
-#: src/ui/ui.c:1606
+#: src/ui/ui.c:1625
 msgid "Fully charged"
 msgstr ""
 
-#: src/ui/ui.c:1608
+#: src/ui/ui.c:1627
 msgid "Charger unplugged"
 msgstr ""
 
-#: src/ui/ui.c:1611
+#: src/ui/ui.c:1630
 msgid "Not charging"
 msgstr ""
 
 #. TRANSLATORS: the big battery percentage of the charge screen ("80%")
 #. TRANSLATORS: battery level in the help bar ("%d %%" in French)
-#: src/ui/ui.c:1624 src/ui/widgets.c:661
+#: src/ui/ui.c:1643 src/ui/widgets.c:661
 #, c-format
 msgctxt "battery"
 msgid "%d%%"
 msgstr ""
 
 #. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
-#: src/ui/ui.c:1631
+#: src/ui/ui.c:1650
 #, c-format
 msgid "Full in %d h %02d min"
 msgstr ""
 
-#: src/ui/ui.c:1637
+#: src/ui/ui.c:1656
 msgid "Press the power button to start"
 msgstr ""
 
-#: src/ui/ui.c:1648
+#: src/ui/ui.c:1667
 msgid "Battery very low: plug in the charger"
 msgstr ""
 
 #. TRANSLATORS: system update errors (a dialog). "Date & time" is the Settings menu
-#: src/ui/update_ui.c:308
+#: src/ui/update_ui.c:315
 msgid "The clock is not set. Connect to WiFi and wait a minute, or set the date in Settings > Date & time."
 msgstr ""
 
-#: src/ui/update_ui.c:310
+#: src/ui/update_ui.c:317
 msgid "No connection to the update server. Check the WiFi connection and try again."
 msgstr ""
 
-#: src/ui/update_ui.c:311
+#: src/ui/update_ui.c:318
 msgid "The secure connection to the update server failed."
 msgstr ""
 
-#: src/ui/update_ui.c:312
+#: src/ui/update_ui.c:319
 msgid "This build cannot connect to the update server."
 msgstr ""
 
-#: src/ui/update_ui.c:313 src/ui/update_ui.c:314
+#: src/ui/update_ui.c:320 src/ui/update_ui.c:321
 msgid "The update server gave an unexpected answer. Try again later."
 msgstr ""
 
-#: src/ui/update_ui.c:315
+#: src/ui/update_ui.c:322
 msgid "This file is not a RetroStoneOS update, or it is damaged."
 msgstr ""
 
-#: src/ui/update_ui.c:316
+#: src/ui/update_ui.c:323
 msgid "This update needs a newer updater: install the updates before it first."
 msgstr ""
 
-#: src/ui/update_ui.c:317
+#: src/ui/update_ui.c:324
 msgid "This update is not signed by RetroStoneOS: it cannot be installed."
 msgstr ""
 
-#: src/ui/update_ui.c:318
+#: src/ui/update_ui.c:325
 msgid "This update is not signed by RetroStoneOS, or it was modified: it cannot be installed."
 msgstr ""
 
-#: src/ui/update_ui.c:319
+#: src/ui/update_ui.c:326
 msgid "This system cannot check updates (no update key)."
 msgstr ""
 
-#: src/ui/update_ui.c:320
+#: src/ui/update_ui.c:327
 msgid "This update is for another console."
 msgstr ""
 
-#: src/ui/update_ui.c:321
+#: src/ui/update_ui.c:328
 msgid "This update needs a newer bootloader: flash the new image to the SD card instead (back up your saves first)."
 msgstr ""
 
-#: src/ui/update_ui.c:323
+#: src/ui/update_ui.c:330
 msgid "This version is already installed."
 msgstr ""
 
-#: src/ui/update_ui.c:324
+#: src/ui/update_ui.c:331
 msgid "This update is older than the installed version."
 msgstr ""
 
-#: src/ui/update_ui.c:325
+#: src/ui/update_ui.c:332
 msgid "The update is damaged: nothing was changed. Download or copy it again."
 msgstr ""
 
-#: src/ui/update_ui.c:326
+#: src/ui/update_ui.c:333
 msgid "The new system was not written correctly (the SD card may be failing): nothing was changed."
 msgstr ""
 
-#: src/ui/update_ui.c:328
+#: src/ui/update_ui.c:335
 msgid "Read or write error: nothing was changed."
 msgstr ""
 
-#: src/ui/update_ui.c:329
+#: src/ui/update_ui.c:336
 msgid "Not enough free space on the SD card."
 msgstr ""
 
-#: src/ui/update_ui.c:330
+#: src/ui/update_ui.c:337
 msgid "This console is updated by flashing the new image to the SD card."
 msgstr ""
 
-#: src/ui/update_ui.c:331 src/ui/update_ui.c:332
+#: src/ui/update_ui.c:338 src/ui/update_ui.c:339
 msgid "The system could not be prepared for the update: nothing was changed."
 msgstr ""
 
-#: src/ui/update_ui.c:333
+#: src/ui/update_ui.c:340
 msgid "The system is still starting up. Try again in a minute."
 msgstr ""
 
-#: src/ui/update_ui.c:334
+#: src/ui/update_ui.c:341
 msgid "An update is already installed: restart the console to use it."
 msgstr ""
 
-#: src/ui/update_ui.c:335
+#: src/ui/update_ui.c:342
 msgid "An update is already running."
 msgstr ""
 
 #. TRANSLATORS: toast: the user stopped the update
-#: src/ui/update_ui.c:336 src/ui/update_ui.c:838
+#: src/ui/update_ui.c:343 src/ui/update_ui.c:845
 msgid "Update stopped: nothing was changed."
 msgstr ""
 
 #. TRANSLATORS: system update refused; %d is the minimum battery level (30)
-#: src/ui/update_ui.c:343
+#: src/ui/update_ui.c:350
 #, c-format
 msgid "The battery is too low (under %d%%): charge it or plug in the charger."
 msgstr ""
 
 #. TRANSLATORS: system update error, when nothing more precise is known
-#: src/ui/update_ui.c:351
+#: src/ui/update_ui.c:358
 msgid "The update failed: nothing was changed."
 msgstr ""
 
 #. TRANSLATORS: Settings > System update value: installed, the restart is still to come
-#: src/ui/update_ui.c:370
+#: src/ui/update_ui.c:377
 msgid "restart to finish"
 msgstr ""
 
 #. TRANSLATORS: Settings > System update value: %s is a version, "0.2.0 available"
-#: src/ui/update_ui.c:373 src/ui/update_ui.c:375 src/ui/update_ui.c:903
-#: src/ui/update_ui.c:910
+#: src/ui/update_ui.c:380 src/ui/update_ui.c:382 src/ui/update_ui.c:910
+#: src/ui/update_ui.c:917
 #, c-format
 msgid "%s available"
 msgstr ""
 
 #. TRANSLATORS: system update on a board without in-place updates (Raspberry Pi...)
-#: src/ui/update_ui.c:445
+#: src/ui/update_ui.c:452
 msgid "This console is updated by flashing the new image to the SD card: download it from the RetroStoneOS releases page on GitHub. Back up your saves first (Settings > Storage), flashing erases the card."
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short
-#: src/ui/update_ui.c:458
+#: src/ui/update_ui.c:465
 msgid "INSTALL ANYWAY"
 msgstr ""
 
 #. TRANSLATORS: development builds only: a package without a signature
-#: src/ui/update_ui.c:464
+#: src/ui/update_ui.c:471
 msgid "This update is not signed. Install it only if you built it yourself."
 msgstr ""
 
-#: src/ui/update_ui.c:487
+#: src/ui/update_ui.c:494
 msgid "scroll"
 msgstr ""
 
 #. TRANSLATORS: help bar: A installs the update / explains how to update
-#: src/ui/update_ui.c:489
+#: src/ui/update_ui.c:496
 msgid "update"
 msgstr ""
 
-#: src/ui/update_ui.c:489
+#: src/ui/update_ui.c:496
 msgid "how to update"
 msgstr ""
 
 #. TRANSLATORS: help bar: B closes the update without installing it
-#: src/ui/update_ui.c:491
+#: src/ui/update_ui.c:498
 msgid "later"
 msgstr ""
 
 #. TRANSLATORS: system update: where it comes from; %s is a size ("84 MB")
-#: src/ui/update_ui.c:500
+#: src/ui/update_ui.c:507
 #, c-format
 msgid "Download: %s"
 msgstr ""
 
 #. TRANSLATORS: system update found on a USB drive; %s is its file name
-#: src/ui/update_ui.c:503
+#: src/ui/update_ui.c:510
 #, c-format
 msgid "On the USB drive: %s"
 msgstr ""
 
 #. TRANSLATORS: system update found on the SD card; %s is its file name
-#: src/ui/update_ui.c:506
+#: src/ui/update_ui.c:513
 #, c-format
 msgid "On the SD card: %s"
 msgstr ""
 
 #. TRANSLATORS: appended to the line above: a development package without a signature
-#: src/ui/update_ui.c:511
+#: src/ui/update_ui.c:518
 msgid "not signed"
 msgstr ""
 
 #. TRANSLATORS: appended: the version installed now
-#: src/ui/update_ui.c:517
+#: src/ui/update_ui.c:524
 msgid "installed:"
 msgstr ""
 
-#: src/ui/update_ui.c:522 src/ui/update_ui.c:527
+#: src/ui/update_ui.c:529 src/ui/update_ui.c:534
 msgid "No release notes."
 msgstr ""
 
 #. TRANSLATORS: system update progress title; %s is the new version
-#: src/ui/update_ui.c:655
+#: src/ui/update_ui.c:662
 #, c-format
 msgid "Updating to RetroStoneOS %s"
 msgstr ""
 
 #. TRANSLATORS: system update steps
-#: src/ui/update_ui.c:659
+#: src/ui/update_ui.c:666
 msgid "Downloading..."
 msgstr ""
 
-#: src/ui/update_ui.c:661
+#: src/ui/update_ui.c:668
 msgid "Checking the update..."
 msgstr ""
 
-#: src/ui/update_ui.c:663
+#: src/ui/update_ui.c:670
 msgid "Installing..."
 msgstr ""
 
-#: src/ui/update_ui.c:665
+#: src/ui/update_ui.c:672
 msgid "Checking the installation..."
 msgstr ""
 
-#: src/ui/update_ui.c:667
+#: src/ui/update_ui.c:674
 msgid "Finishing..."
 msgstr ""
 
-#: src/ui/update_ui.c:669
+#: src/ui/update_ui.c:676
 msgid "Preparing..."
 msgstr ""
 
 #. TRANSLATORS: "Downloading...  38 MB of 84 MB"
-#: src/ui/update_ui.c:677
+#: src/ui/update_ui.c:684
 #, c-format
 msgid "%s  %s of %s"
 msgstr ""
 
 #. TRANSLATORS: under the system update progress bar
-#: src/ui/update_ui.c:685
+#: src/ui/update_ui.c:692
 msgid "Your games and saves are kept. If the power goes off, the console starts the current version."
 msgstr ""
 
 #. TRANSLATORS: B during a system update
-#: src/ui/update_ui.c:701
+#: src/ui/update_ui.c:708
 msgid "Stop the update? The console keeps its current version."
 msgstr ""
 
 #. TRANSLATORS: toast: the updater is busy (a check runs)
-#: src/ui/update_ui.c:754 src/ui/update_ui.c:870
+#: src/ui/update_ui.c:761 src/ui/update_ui.c:877
 msgid "Please wait..."
 msgstr ""
 
 #. TRANSLATORS: toast after "Later": the update is used at the next start
-#: src/ui/update_ui.c:807
+#: src/ui/update_ui.c:814
 msgid "The new version starts the next time the console is turned on."
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short
-#: src/ui/update_ui.c:823
+#: src/ui/update_ui.c:830
 msgid "RESTART NOW"
 msgstr ""
 
 #. TRANSLATORS: after a system update was installed; %d counts down the seconds
-#: src/ui/update_ui.c:829
+#: src/ui/update_ui.c:836
 #, c-format
 msgid "RetroStoneOS %s is installed. Restart now to use it? Restarting in %%d s."
 msgstr ""
 
 #. TRANSLATORS: Settings > System update: the check runs
-#: src/ui/update_ui.c:891 src/ui/update_ui.c:1148
+#: src/ui/update_ui.c:898 src/ui/update_ui.c:1155
 msgid "Checking..."
 msgstr ""
 
 #. TRANSLATORS: dialog buttons, uppercase, short
-#: src/ui/update_ui.c:898
+#: src/ui/update_ui.c:905
 msgid "TURN WIFI ON"
 msgstr ""
 
 #. TRANSLATORS: a package was found but cannot be installed: %1$s its version, %2$s why
-#: src/ui/update_ui.c:919
+#: src/ui/update_ui.c:926
 #, c-format
 msgid "RetroStoneOS %s was found, but: %s"
 msgstr ""
 
 #. TRANSLATORS: Settings > System update value after a failed check
-#: src/ui/update_ui.c:925
+#: src/ui/update_ui.c:932
 msgid "Check failed"
 msgstr ""
 
 #. TRANSLATORS: Settings > System update value: no newer version
-#: src/ui/update_ui.c:931
+#: src/ui/update_ui.c:938
 msgid "Up to date"
 msgstr ""
 
-#: src/ui/update_ui.c:932
+#: src/ui/update_ui.c:939
 msgid "RetroStoneOS is up to date."
 msgstr ""
 
 #. TRANSLATORS: toast: nothing for this console on the USB drive
-#: src/ui/update_ui.c:937
+#: src/ui/update_ui.c:944
 msgid "No update for this console on the USB drive."
 msgstr ""
 
 #. TRANSLATORS: no update on the SD card or a USB drive, and no network
-#: src/ui/update_ui.c:943
+#: src/ui/update_ui.c:950
 msgid "No update was found on the SD card or on a USB drive. Turn WiFi on to check online?"
 msgstr ""
 
-#: src/ui/update_ui.c:946
+#: src/ui/update_ui.c:953
 msgid "No update was found on the SD card or on a USB drive, and WiFi is not connected yet. Check the WiFi settings (Settings > Network)."
 msgstr ""
 
 #. TRANSLATORS: Settings > System update value: no release for this console yet
-#: src/ui/update_ui.c:952
+#: src/ui/update_ui.c:959
 msgid "No update found"
 msgstr ""
 
-#: src/ui/update_ui.c:953
+#: src/ui/update_ui.c:960
 msgid "No update found for this console."
 msgstr ""
 
 #. TRANSLATORS: toast after the daily check; "Settings > System update" must match those menus
-#: src/ui/update_ui.c:973
+#: src/ui/update_ui.c:980
 #, c-format
 msgid "RetroStoneOS %s is available: Settings > System update"
 msgstr ""
 
 #. TRANSLATORS: shown once after a system update, at the first start of the new version
-#: src/ui/update_ui.c:984
+#: src/ui/update_ui.c:991
 #, c-format
 msgid "Updated to RetroStoneOS %s."
 msgstr ""
 
 #. TRANSLATORS: Settings > System update: the found update; %s is its version
-#: src/ui/update_ui.c:1154
+#: src/ui/update_ui.c:1161
 #, c-format
 msgid "Install RetroStoneOS %s"
 msgstr ""
 
 #. TRANSLATORS: Settings > System update, before an update was found
-#: src/ui/update_ui.c:1157 src/ui/update_ui.c:1196
+#: src/ui/update_ui.c:1164 src/ui/update_ui.c:1203
 msgid "Install an update"
 msgstr ""
 
 #. TRANSLATORS: Settings > System update: the version installed now
-#: src/ui/update_ui.c:1193
+#: src/ui/update_ui.c:1200
 msgid "Installed version"
 msgstr ""
 
 #. TRANSLATORS: Settings > System update action
-#: src/ui/update_ui.c:1195
+#: src/ui/update_ui.c:1202
 msgid "Check for updates"
 msgstr ""
 
 #. TRANSLATORS: Settings > System update toggle: a daily check when WiFi is connected
-#: src/ui/update_ui.c:1198
+#: src/ui/update_ui.c:1205
 msgid "Check every day (WiFi)"
 msgstr ""
 
 #. TRANSLATORS: Settings > System update, boards without in-place updates (Raspberry Pi...)
-#: src/ui/update_ui.c:1202
+#: src/ui/update_ui.c:1209
 msgid "Updates: flash the new image to the SD card"
 msgstr ""
 

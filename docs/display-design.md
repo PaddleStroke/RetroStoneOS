@@ -48,13 +48,20 @@ noted. See also `docs/kernel-patches.md`, section "Display scaling on A20".
   `DRM_MODE_CONNECTOR_Unknown`, not DPI.
 
 ### CRTC choice
-`choose_crtc()`, in order: `hdmi_crtc_index` if forced (`rsos-kmstest --hdmi-crtc N`), then **the CRTC already in
-use**, then the LCD's CRTC, then the lowest usable one. So HDMI runs on **CRTC 0 = be0 + fe0 + TCON0 channel 1** by
-default. The reason is `sun4i_backend_find_frontend()` (`sun4i_backend.c:735-763`, "TODO: This needs to take multiple
-pipelines into account"): it returns the first frontend on the backend's input port, and both `be0` and `be1` list
-`fe0` first in `sun7i-a20.dtsi`. So be1 gets fe0 too, and the driver never programs any cross routing. Keeping HDMI on
-be0 keeps the one tested frontend pairing. TCON0 channel 1 to HDMI is allowed by the DT graph and
-`sun4i_a10_tcon_set_mux()`, but it is untested on hardware (see the checklist).
+**With `panel_keep_scanning` (the RetroStone2, §8.5)** the panel keeps CRTC 0 (TCON0) for good, so HDMI runs on
+**CRTC 1 = be1 + TCON1 channel 1**, and `choose_crtc()` never gives another output the panel's CRTC
+(`hdmi_crtc_index` pointing at it is ignored with a warning; an HDMI connector that could only use it is not used).
+be1 gets its scaled planes from fe0 (`sun4i_backend_find_frontend()`, below), whose output goes to BE0 unless its
+`OUT_PORT_SEL` field says otherwise: **kernel patch 0006** sets it to the backend that uses the frontend
+(docs/kernel-patches.md). TODO(hw): the scaled game on HDMI via CRTC 1.
+
+Without the quirk (other boards): `choose_crtc()`, in order: `hdmi_crtc_index` if forced (`rsos-kmstest --hdmi-crtc
+N`), then **the CRTC already in use**, then the LCD's CRTC, then the lowest usable one. So HDMI runs on **CRTC 0 = be0
++ fe0 + TCON0 channel 1** there. The reason is `sun4i_backend_find_frontend()` (`sun4i_backend.c:735-763`, "TODO: This
+needs to take multiple pipelines into account"): it returns the first frontend on the backend's input port, and both
+`be0` and `be1` list `fe0` first in `sun7i-a20.dtsi`. So be1 gets fe0 too, and the unpatched driver never programs the
+fe0 output port (BE0 at reset). Keeping HDMI on be0 keeps the one tested frontend pairing. TCON0 channel 1 to HDMI is
+allowed by the DT graph and `sun4i_a10_tcon_set_mux()`, but it disables TCON0 channel 0, i.e. the panel's signals.
 
 ## 2. Hotplug detection
 
@@ -211,11 +218,12 @@ On a debounced hotplug, `reprobe()` → `choose_output()` → `pick_mode()` → 
    `user_data` and is ignored.
 3. **One atomic commit** with `DRM_MODE_ATOMIC_ALLOW_MODESET`, validated with `TEST_ONLY` first. It writes the
    *complete* state:
-   - every connector: `CRTC_ID` = the chosen CRTC for the target, 0 for all others (the LCD connector goes off, so
-     drm_panel disables the panel and the PWM backlight);
+   - every connector: `CRTC_ID` = the chosen CRTC for the target, 0 for all others (without `panel_keep_scanning` the
+     LCD connector goes off, so drm_panel disables the panel and the PWM backlight; **with it, the panel connector
+     stays on CRTC 0**, §8.5);
    - every CRTC: `ACTIVE` = 1 and `MODE_ID` = the new mode blob for the chosen one, `ACTIVE` = 0 and `MODE_ID` = 0 for
-     the others;
-   - every other plane: `FB_ID` = 0, `CRTC_ID` = 0;
+     the others (**except the kept panel's CRTC: `ACTIVE` = 1, its own mode**);
+   - every other plane: `FB_ID` = 0, `CRTC_ID` = 0 (the kept panel's primary plane: the black frame);
    - the game plane: `FB_ID`, `CRTC_ID`, `SRC_*` (game size, 16.16), `CRTC_*` (the scaled rect for the new screen).
    So the new output shows the current game frame, already scaled for its size, on its first frame. There is no black
    intermediate commit.
@@ -375,7 +383,8 @@ forced (`no_hw_scale`, `rsos-kmstest --no-scale`):
 | `display_get_stats()`, `display_now_ms()` | flips, dropped frames, switches, last flip time |
 | `display_present_fb(&fb, timeout)` | zero-copy: an external framebuffer (GBM BO) on the game plane, scaled and letterboxed like the surface (section 8.1) |
 | `display_suspend()` / `display_resume()` | DRM master hand-off to the game process without closing the fd (section 8.2) |
-| `display_set_active(bool)`, `display_is_active()` | screen off/on (CRTC `ACTIVE`) for the menu's idle screen-off, keeping the configuration (section 8.3) |
+| `display_set_active(bool)`, `display_is_active()` | screen off/on for the menu's idle screen-off, keeping the configuration: CRTC `ACTIVE`, or backlight off + black frame on a panel kept scanning (sections 8.3, 8.5) |
+| `display_set_panel_picture(xrgb, w, h, bg)` | the picture a panel kept scanning shows behind HDMI, backlight off: the boot logo (section 8.5) |
 | `display_set_overlay(argb, w, h, corner, margin)`, `display_hide_overlay()`, `display_overlay_visible()`, `display_overlay_rect()` | a small ARGB8888 picture on its own overlay plane in a screen corner, unscaled (the in-game battery indicator, section 8.4) |
 
 The layer is single-threaded: call everything from the thread that owns the display.
@@ -445,20 +454,25 @@ display_resume()    drmSetMaster(); drain the uevents queued meanwhile; probe co
   `display_handle_events()` only records that a hotplug happened. Nothing touches the hardware.
 - `display_resume()` returns `-EBUSY`/`-EINVAL` from `drmSetMaster()` if the child still holds master: call it after
   `waitpid()`.
-- When the child exits with its FB on the primary plane, the kernel disables that plane **and the CRTC**
-  (`atomic_remove_fb()` in `drm_framebuffer.c`). So the resume commit is a real modeset (panel power-up included). It
-  still skips the device open, enumeration and EDID reads of a full `display_init()`. TODO(hw): measure both
-  (`rsos-kmstest --suspend-test` logs the times).
+- When the child exits with its FB on the primary plane, the kernel disables that plane (`atomic_remove_fb()` in
+  `drm_framebuffer.c`), and the CRTC too only if the driver refuses the plane-only commit (sun4i accepts a CRTC
+  without planes, so the panel keeps scanning the backend background, §8.5). The resume commit re-commits everything
+  anyway. It still skips the device open, enumeration and EDID reads of a full `display_init()`. TODO(hw): measure
+  both (`rsos-kmstest --suspend-test` logs the times).
 - `display_init()`/`display_shutdown()` around the child keep working exactly as before. The hand-off is only the
-  faster variant.
+  faster variant. With `panel_keep_scanning`, `display_resume()` lights the panel again (alone first when the output
+  is HDMI) and writes the backlight again (§8.5).
 
 ### 8.3 Screen off/on (`display_set_active`)
 
-- Off: waits for the in-flight flip, then one blocking commit with `ACTIVE` = 0 on the current CRTC
-  (`ALLOW_MODESET`). The mode blob, the connector routing and the planes stay in the atomic state. The encoder disable
-  goes through drm_panel (`sun4i_rgb.c`), which unprepares the panel and turns off its PWM backlight. On HDMI the
-  signal stops: **close the HDMI PCM before** (the host's sleep path already closes ALSA first). The audio hook is
-  not called here.
+- Off **on the panel with `panel_keep_scanning`** (the RetroStone2, §8.5): the backlight goes off (`bl_power` = 4),
+  then a full commit puts the black frame on the game plane and takes the overlay down; the CRTC stays `ACTIVE`, the
+  panel keeps its signals. `ACTIVE` = 0 is never committed on its CRTC.
+- Off on HDMI, or on a panel without the quirk: waits for the in-flight flip, then one blocking commit with `ACTIVE`
+  = 0 on the current CRTC (`ALLOW_MODESET`). The mode blob, the connector routing and the planes stay in the atomic
+  state. On a panel, the encoder disable goes through drm_panel (`sun4i_rgb.c`), which unprepares the panel and turns
+  off its PWM backlight. On HDMI the signal stops: **close the HDMI PCM before** (the host's sleep path already closes
+  ALSA first). The audio hook is not called here. A panel kept scanning behind HDMI has its own CRTC: untouched.
 - While off: presents are not flipped. The newest frame is kept (QUEUED, newest wins), and `display_begin_frame()`
   recycles it instead of blocking. `display_present_fb()` returns `-EAGAIN`. A hotplug is only recorded.
   Switches, `ACTIVE` in every modeset commit and resumes all respect the off state.
@@ -512,10 +526,42 @@ bool display_overlay_rect(int W, int H, int w, int h, enum display_corner c, int
   display never pays for the overlay.
 - Log: `overlay: plane N, WxH at X,Y` whenever it is placed somewhere new.
 
+### 8.5 Panel safety: never stop the signals of a powered panel (2026-09-28)
+
+**Why.** A TFT panel must not stay powered with its input signals stopped: without the pixel clock, syncs and data,
+the source drivers and the liquid crystal sit at a DC bias, which damages them (panel datasheets: remove VCC within a
+short time after the signals stop). The RetroStone2 panel's VCC is the **always-on 3.3 V rail** (no power GPIO,
+`power-supply = <&reg_vcc3v3>` in the DTS), so drm_panel's disable only turns the PWM backlight off: the old screen
+off (`ACTIVE` = 0: TCON0 stops the pixel clock, syncs and data) left the panel powered and undriven. On the owner's
+unit the idle screen off (power.c `idle_off_s`, 300 s) did that for over an hour; afterwards the panel showed
+permanent vertical lines and flicker, even under another OS. HDMI on TCON0 channel 1 had the same effect (channel 0
+off for the whole HDMI session), and so could a game child's exit or the frontend's exit before `poweroff -f`.
+
+**Rule.** On a board whose built-in panel cannot be powered off (board.ini `display_quirks = panel-keep-scanning`,
+`display_config.panel_keep_scanning`; docs/porting.md), the panel's CRTC is never turned off while the system runs:
+
+| Path | What happens now |
+|---|---|
+| Idle screen off, sleep, charge-mode screen off (menu: power module -> `scr_set_active(false)`; game: `RSOS_SIG_SLEEP` -> host `display_set_active(false)`) | backlight off (`bl_power` = 4, as drm_panel did), a black frame on the game plane, overlay off, **CRTC still ACTIVE**. Screen on: the newest frame, overlay, `bl_power` = 0. Presents are not flipped while off (no rendering cost) |
+| HDMI plugged (switch, not mirror) | HDMI on **CRTC 1 (TCON1)**; the panel keeps CRTC 0 with its mode, scanning the RetroStone boot logo (`display_set_panel_picture()`: the menu, the splash process and the game process hand it the decoded `splash.rle`; black until then), backlight off. The owner's choice: the logo shows if the backlight is ever lit. Unplug: the game plane moves back to CRTC 0 (no panel modeset unless its mode changed), backlight on |
+| Boot or resume with HDMI | the panel is lit alone first (black), then HDMI in its own commit: the two CRTCs are never modeset together (the panel's pll-video is only rate-protected once TCON0 channel 0 runs: `clk_rate_exclusive_get()` in `sun4i_tcon_channel_set_status()`, and the HDMI clocks could otherwise re-rate it) |
+| Game hand-off (`display_suspend`/`resume`) | the menu's framebuffers stay on screen until the child's first commit; the child (same board.ini) keeps the panel scanning too; its exit removes only its planes (`atomic_remove_fb()` tries a plane-only commit first, which sun4i accepts: the CRTC stays on the backend background); `display_resume()` lights the panel again (alone first on HDMI) and resets the backlight |
+| Display closed (frontend exit, re-open, `rcK` before `poweroff -f`) | `display_shutdown()` takes every plane down in a non-modeset commit, every CRTC stays ACTIVE (backend background): the panel scans until the rails are cut. Logged `display closed: planes off, the panel keeps scanning` |
+| A modeset of the panel itself (60 Hz trial, first light) | TCON0 is re-programmed: a few ms without signals, like any modeset |
+
+If the panel cannot be lit for HDMI (the black frame or its commit refused), the HDMI switch is refused and the
+panel stays the output. A board whose HDMI could only use the panel's CRTC stays on the panel (logged). Without the
+quirk (RetroStone1: its TFT is driven by the AMT630A's own controller; Pi, Orange Pi) nothing changes.
+
+Remaining windows, all short: power-on to the splash's first modeset (U-Boot does not drive the LCD, the kernel
+brings the display up), and each modeset of the panel. Tested against a KMS mock (`tests/test_display_kms.c`, `make
+check`): screen off never commits `ACTIVE` = 0 on the panel CRTC, shows black and sets `bl_power` 4; HDMI runs on CRTC
+50 with CRTC 49 scanning; boot on HDMI, hand-off and close keep it scanning; no joint modeset.
+
 ## 9. Kernel-side notes (for the kernel work)
 
-- **fe0 is shared by both backends** (`sun4i_backend_find_frontend()`). The display layer avoids CRTC 1, but a kernel fix
-  (pair fe*N* with be*N*) would make HDMI on TCON1 safe.
+- **fe0 is shared by both backends** (`sun4i_backend_find_frontend()`). Its output port (`FRM_CTRL.OUT_PORT_SEL`,
+  BE0 at reset) is set to the backend that uses it by kernel patch 0006, which HDMI on TCON1 (§8.5) needs.
 - **Frontend runtime PM**: `sun4i_frontend_init()` (`pm_runtime_get_sync`) runs on every frontend plane update, and
   `exit` only runs on teardown, so the usage count only grows (`sun4i_layer.c:95-96`, `:74-80`). This is harmless for
   us (the frontend stays powered).
@@ -558,10 +604,11 @@ log.
 **Hotplug**
 - [ ] `rsos-kmstest --monitor`, then plug/unplug HDMI: one `change@.../drm/card0 ... HOTPLUG=1 CONNECTOR=<id>` per
       edge, within ~500 ms, no storms.
-- [ ] `rsos-kmstest`, then plug HDMI: the log shows `hotplug uevent`, `AUDIO release`, `switching to HDMI-A-1 "<TV>"`,
-      `OUTPUT hotplug`, `LATENCY ... ms`, `AUDIO acquire`. The LCD **and backlight** go off
-      (`cat /sys/class/backlight/*/actual_brightness`, and look at the panel). The TV shows 1280x720, image 960x720
-      centered, FPS 60.
+- [ ] `rsos-kmstest`, then plug HDMI: the log shows `hotplug uevent`, `AUDIO release`, `switching to HDMI-A-1 "<TV>"
+      ... on crtc 50 (index 1)`, `panel backlight off`, `OUTPUT hotplug`, `LATENCY ... ms`, `AUDIO acquire`. The
+      backlight goes off (`cat /sys/class/backlight/*/bl_power` = 4) while the panel keeps scanning black (§8.5:
+      `/sys/kernel/debug/dri/0/state` shows crtc-0 `active=1` with Unknown-1). The TV shows 1280x720, image 960x720
+      centered, FPS 60, **the scaled image visible** (fe0 -> be1, kernel patch 0006).
 - [ ] Unplug: back to the LCD, backlight on, pattern full-screen, FPS back to the panel rate.
 - [ ] Repeat 20 plug/unplug cycles, including fast half-insertions: exactly one switch per final state, no stuck output,
       and no `WARN` in `dmesg` (e.g. `sun4i_backend_atomic_begin` LOADCTL timeout).
@@ -569,9 +616,11 @@ log.
 - [ ] Record the latency numbers (min/avg/max over 10 plugs).
 
 **HDMI variants**
-- [ ] `--hdmi-crtc 1` (HDMI on TCON1/be1 with the frontend): record whether the scaled plane shows correctly, is
-      black, or shows garbage (fe0-sharing issue). If it is not correct, keep the default (CRTC 0).
-- [ ] Default (HDMI on TCON0 channel 1): confirm it works on the real board.
+- [ ] Default on the RetroStone2 (HDMI on TCON1/be1 with fe0, panel kept scanning on TCON0): record whether the scaled
+      plane shows correctly, is black, or shows garbage (then patch 0006's output port is wrong: report it; the panel
+      is safe either way). Try `--format rgb565 --hdmi 640x480` too (backend x2, no frontend).
+- [ ] Panel kept scanning while on HDMI for 10 min: no lines or flicker on the panel afterwards; its colours right
+      when HDMI is unplugged (pll-video0 untouched by HDMI: `cat /sys/kernel/debug/clk/clk_summary | grep -i video`).
 - [ ] `--hdmi 640x480`: the TV goes to 480p, `HW RGB565 ... 640x480` with `--format rgb565`.
 - [ ] `--mode 1920x1080`: 1080p works (expect frontend x4.5 for 320x240); check `dropped` stays 0.
 - [ ] No-EDID case (a DVI adapter without DDC, or DDC lines lifted): `[built-in mode, no EDID]` 720p60, then two
@@ -586,9 +635,10 @@ log.
       frames, then the parent comes back. Log `RESUME ok: suspend .. ms, child .. ms (exit 0), resume .. ms`. Record
       the resume time (compare with a `display_shutdown()`+`display_init()` cycle). Plug or unplug HDMI while the child
       runs: after resume the parent is on the right output (`output changed during the game`).
-- [ ] `--active-test`: every 600 frames the screen goes off for 2 s. The panel **and backlight** go dark
-      (`actual_brightness` / visually), the picture comes back with the newest frame, and `dmesg` is clean. Also on
-      HDMI (the TV loses signal, then resyncs), and plug HDMI during the 2 s: the switch happens when the screen comes
+- [ ] `--active-test`: every 600 frames the screen goes off for 2 s. The backlight goes dark (`bl_power` 4), the
+      panel keeps scanning black (§8.5: log `screen off (Unknown-1: backlight off, black frame, still scanning)`),
+      the picture comes back with the newest frame, and `dmesg` is clean. Also on HDMI (the TV loses signal, then
+      resyncs; the panel stays black and dark), and plug HDMI during the 2 s: the switch happens when the screen comes
       back.
 - [ ] Current draw with the screen off versus `bl_power` = 4 only (power.md): record it.
 

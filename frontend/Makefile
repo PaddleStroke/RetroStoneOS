@@ -57,6 +57,11 @@ KMSTEST      = $(BUILDDIR)/rsos-kmstest
 SELFTEST_OBJS = $(BUILDDIR)/tests/display_selftest.o $(BUILDDIR)/uevent.o
 SELFTEST      = $(BUILDDIR)/rsos-display-selftest
 
+# The display layer against a KMS mock (host only: libdrm replaced by mocks,
+# display-design.md 8.5 panel safety).
+KMS_TEST_OBJS = $(BUILDDIR)/tests/test_display_kms.o $(BUILDDIR)/uevent.o
+KMS_TEST      = $(BUILDDIR)/test-display-kms
+
 # ------------------------------------------------------- module fragments
 # The fragments' "host" objects are simply "this compiler" (power.md §11).
 HOST_CC = $(CC)
@@ -236,6 +241,9 @@ $(KMSTEST): $(KMSTEST_OBJS) $(LIB)
 $(SELFTEST): $(SELFTEST_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(DRM_LIBS)
 
+$(KMS_TEST): $(KMS_TEST_OBJS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(DRM_LIBS)
+
 uipreview: $(UIPREVIEW)
 
 # ------------------------------------------------------------------ checks
@@ -243,8 +251,9 @@ uipreview: $(UIPREVIEW)
 check: check-display check-host check-power check-transfer check-ui check-loader check-splash check-board \
 	check-i18n check-frontend check-update check-b2
 
-check-display: $(SELFTEST)
+check-display: $(SELFTEST) $(KMS_TEST)
 	$(SELFTEST)
+	$(KMS_TEST)
 
 check-host: $(HOST_TEST) $(HOST_TESTCORE) $(HOST_LAUNCH_TEST) $(RSOS_RUN) $(HOST_GLPROBE_TEST)
 	$(HOST_TEST)
@@ -632,6 +641,23 @@ check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
 	$(FE_RUN) --script "wait:300 a wait:500 a wait:1500 expect:list term"
 	grep -q 'auto state written at exit' $(FE_LOG) && grep -q 'auto state saved (exit)' $(FE_GAME_LOG)
 	test -s $(FE_STATE)
+	@# the test game runs 120 frames of 20 ms: the power-off (1 s after the start) comes before its end
+	@echo "check-frontend: 5f. idle power-off during a game: the notice in the game, then the auto state and resume.ini (reason idle) before init is signalled"
+	rm -f $(FE_LOG) $(FE_GAME_LOG) $(FE_RESUME) $(FE_STATE) $(FE_CHECK_DIR)/run/rsos/shutdown-signal
+	RSOS_TESTCORE=slow $(FE_RUN) --script "wait:300 a wait:500 a game:wait:100 game:idlepoweroff:1"
+	grep -q 'idle power-off: notice (10 s)' $(FE_LOG)
+	grep -q 'toast: Powering off in 10 s' $(FE_GAME_LOG)
+	grep -q 'auto state saved (power-off)' $(FE_GAME_LOG)
+	grep -q 'resume: recorded Smoke Test' $(FE_LOG) && grep -q '^reason = idle$$' $(FE_RESUME)
+	test $$(grep -n 'resume: recorded' $(FE_LOG) | cut -d: -f1) -lt $$(grep -n 'powering off (idle)' $(FE_LOG) | cut -d: -f1)
+	test -s $(FE_STATE) && test -s $(FE_CHECK_DIR)/run/rsos/shutdown-signal
+	grep -q 'power-off requested: exiting' $(FE_LOG)
+	rm -f $(FE_RESUME)
+	@echo "check-frontend: 5g. idle power-off in the menu: the 10 s notice, then the power-off"
+	rm -f $(FE_LOG) $(FE_GAME_LOG)
+	$(FE_RUN) --script "wait:600 idlepoweroff:3 wait:6000"
+	grep -q 'ui: toast (warning): Powering off in 10 s' $(FE_LOG)
+	grep -q 'powering off (idle)' $(FE_LOG) && grep -q 'power-off requested: exiting' $(FE_LOG)
 	@echo "check-frontend: 6. LCD refresh 60 Hz: applied live, kept, the game child runs with it; the next boot too"
 	rm -f $(FE_LOG) $(FE_GAME_LOG)
 	$(FE_RUN) --script "wait:300 start a down expect:menu:Display|LCD_refresh_rate right wait:500 \
@@ -726,5 +752,5 @@ clean:
 # the batch 2 checks (check-b2), after every variable they use
 include batch2.mk
 
--include $(LIB_OBJS:.o=.d) $(KMSTEST_OBJS:.o=.d) $(SELFTEST_OBJS:.o=.d) $(BUILDDIR)/main.d \
+-include $(LIB_OBJS:.o=.d) $(KMSTEST_OBJS:.o=.d) $(SELFTEST_OBJS:.o=.d) $(KMS_TEST_OBJS:.o=.d) $(BUILDDIR)/main.d \
 	$(BUILDDIR)/tests/test_loader.d $(BUILDDIR)/tests/test_board.d $(BUILDDIR)/tests/test_i18n.d

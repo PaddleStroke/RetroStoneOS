@@ -498,7 +498,7 @@ START: settings (from anywhere). Menus: up/down, left/right change values, A sel
 | System information | version, battery (%, charging, time left), power source and voltage, storage, display and UI size, games/systems, input devices, CPU temperature |
 | System update | (only when `/usr/bin/rsos-update` is there; right after System information, as the main menu has no "System" section) Installed version, Check for updates ("Checking...", "Up to date", "0.2.0 available"; without a network address only the SD card and USB drives are searched, then "Turn WiFi on to check online?" [TURN WIFI ON] [CANCEL], and the check runs once WiFi has an address), Install RetroStoneOS x.y, Check every day (WiFi); "Updates: flash the new image to the SD card" on boards without A/B. The update found: its notes (Markdown cleaned, scrollable, up/down, L/R page) with A = update / B = later; unsigned (development builds): a warning first; a battery under 30 % without charger: refused. Progress: Downloading (MB of MB), Checking the update, Installing (%), Checking the installation, Finishing; B = stop (not in the last step). Then "RetroStoneOS x.y is installed. Restart now to use it?" [RESTART NOW] [LATER], restarting by itself after 30 s. docs/updates.md |
 | Date & time | now, time zone (61 zones from the power module), set year/month/day/hour/minute |
-| Power | Restart, Power off (confirmation), Dim the screen after, Screen off after, Battery gauge (no sleep entries: the power key powers off, power.md §5-6) |
+| Power | Restart, Power off (confirmation), Dim the screen after, Screen off after, Power off after (Never / 5 / 10 / 15 / 30 / 60 min, default 5: the automatic power-off, a 10 s notice first, never during a copy, a share client or an update; power.md §7.1), Battery gauge (no sleep entries: the power key powers off, power.md §5-6) |
 | Language | every language in its own name (Français, 日本語...), the one in use ticked; applied at once (§17). The item is last (one press of UP from the top: the menu wraps) and reads "Langue (Language)" in any language but English, so it can always be found |
 
 Board-dependent items (`ui_config`, from the board profile, docs/porting.md; the defaults are the RetroStone2's):
@@ -549,7 +549,7 @@ Unknown keys, comments and order are preserved; a save re-reads the file and onl
 | `last_system` | system name | UI (carousel position at start) |
 | `core.<system>` | core id ("" = default) | UI (launch) |
 | `wifi`, `eth`, `bt` | 0/1 | written by rsos-net, read by the UI |
-| `idle_dim_min`, `idle_off_min`, `battery_gauge`, `timezone` | see power.md §15 | power module (`power_set_setting`, at start and when changed) |
+| `idle_dim_min`, `idle_off_min`, `idle_poweroff_min`, `battery_gauge`, `timezone` | see power.md §15 | power module (`power_set_setting`, at start and when changed) |
 | `sleep_timeout_min`, `sleep_wake` | no longer shown (no sleep mode); still forwarded at start if present | power module |
 | `usb_import_prompt` (1: the USB dialog; 0: a toast), `webshare_bg` (0), `webshare_idle_min` (30), `hostname` (retrostone), `smb` (0: the Windows file share started with the network transfer, rom-transfer.md §3.3) | see rom-transfer.md §4.2 | UI / transfer module |
 | `update_auto` | 0/1 (1): the daily update check when WiFi is connected (3 min after start at the earliest, never during a game; a toast once per new version) | UI (update_ui.c) |

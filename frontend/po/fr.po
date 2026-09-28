@@ -2871,3 +2871,24 @@ msgstr "La batterie est trop faible (moins de %d %%) : charge-la ou branche le
 
 msgid "The update failed: nothing was changed."
 msgstr "La mise à jour a échoué : rien n’a été modifié."
+
+#. TRANSLATORS: Settings > Power: turn the console off by itself after
+#. this long without a button pressed (never while copying or updating)
+msgid "Power off after"
+msgstr "Éteindre la console après"
+
+msgid "15 min"
+msgstr "15 min"
+
+msgid "60 min"
+msgstr "60 min"
+
+#. TRANSLATORS: shown 10 s before the automatic power-off (no input
+#. for the time set in Settings > Power); any button cancels it
+msgid "Powering off in 10 s — press any button to cancel"
+msgstr "Extinction dans 10 s — appuie sur un bouton pour annuler"
+
+#. TRANSLATORS: the automatic power-off (no input for a while)
+#. was stopped because the game's state could not be saved
+msgid "Automatic power-off cancelled: the game could not be saved."
+msgstr "Extinction automatique annulée : le jeu n’a pas pu être sauvegardé."

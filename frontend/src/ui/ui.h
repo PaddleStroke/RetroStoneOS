@@ -336,10 +336,14 @@ void ui_render(struct ui *ui, struct gfx_surface *s);
  *                          UI_PWR_REBOOT ("Restarting...") for a reboot
  *   on_thermal(hot)     -> UI_PWR_HOT / UI_PWR_COOL
  *   on_screen(ON)       -> UI_PWR_STATUS (redraw)
+ *   on_idle_poweroff    -> UI_PWR_IDLE_WARN ("Powering off in 10 s ..." for
+ *                          10 s) / UI_PWR_IDLE_CANCEL (taken down; also after
+ *                          an idle power-off that was cancelled in a game)
  */
 enum ui_power_event {
 	UI_PWR_STATUS = 0, UI_PWR_LOW, UI_PWR_VERY_LOW, UI_PWR_OK, UI_PWR_CRITICAL,
 	UI_PWR_SHUTDOWN, UI_PWR_HOT, UI_PWR_COOL, UI_PWR_REBOOT,
+	UI_PWR_IDLE_WARN, UI_PWR_IDLE_CANCEL,
 };
 void ui_power_event(struct ui *ui, enum ui_power_event ev);
 /* Toasts for other modules (host warnings, ...): a short message at the
@@ -403,6 +407,8 @@ void ui_set_charge_mode(struct ui *ui, bool on);
 /* True once the carousel is up: at once from the carousel snapshot
  * (<cache>/systems.idx) on a normal boot, after every list on the first. */
 bool ui_is_loaded(const struct ui *ui);
+/* An OS update is being downloaded or installed (no idle power-off). */
+bool ui_update_busy(const struct ui *ui);
 /* True once every game list has been loaded/validated (the background
  * loader is done and the carousel matches a full load). */
 bool ui_lists_complete(const struct ui *ui);

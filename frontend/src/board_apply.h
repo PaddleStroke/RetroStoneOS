@@ -40,6 +40,8 @@ static inline void board_apply_display(const struct board_profile *b, struct dis
 		     b->tv_norm == BOARD_TV_AUTO ? DISPLAY_TV_AUTO : DISPLAY_TV_NTSC;
 	c->tv_overscan = b->tv_overscan;
 	c->a20_clock_log = (b->display_quirks & BOARD_QUIRK_SUN4I_TCON0_CLOCK) != 0;
+	c->panel_keep_scanning = (b->display_quirks & BOARD_QUIRK_PANEL_KEEP_SCANNING) != 0;
+	c->backlight_name = board_name_or_auto(b->backlight);
 }
 
 static inline void board_apply_power(const struct board_profile *b, struct power_config *c)

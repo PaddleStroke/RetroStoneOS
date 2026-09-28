@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: RetroStoneOS <noreply@8bcraft.com>
+Date: Mon, 28 Sep 2026 12:00:00 +0200
+Subject: [PATCH] drm/sun4i: frontend: route the scaled picture to the backend
+ that uses it
+
+The A10/A20 display frontend (DEFE) has one output, sent to backend 0 or
+backend 1 by the OUT_PORT_SEL field of its frame control register (bits
+9:8, 0 = BE0, 1 = BE1; bit 11 OUT_CTRL = 0 keeps the output enabled). The
+field is documented by the Allwinner BSP (de_fe.h __scal_frm_ctrl_reg_t,
+DE_SCAL_Output_Select(): "0: be0, 1: be1, 2: me, 3: writeback"). Mainline
+never writes it, so it keeps its reset value, BE0.
+
+sun4i_backend_find_frontend() returns the first frontend on the backend's
+input port, which is fe0 for both backends in sun7i-a20.dtsi. So a plane
+that goes through the frontend on the second backend (CRTC 1, TCON1: HDMI
+while the RGB panel keeps TCON0) had fe0 scaling into BE0 and nothing on
+BE1. The backend side needs no change: a layer's video channel select
+(ATTCTL_REG0 bit 4 in the BSP) resets to 0, i.e. fe0, which is what
+find_frontend() picked.
+
+Set the output port to the backend's id every time a frontend plane is
+updated, right after the frontend is resumed (a runtime resume resets the
+block). On the first backend this writes the reset value again: nothing
+changes for the tested single-pipeline case (LCD, or HDMI on TCON0).
+
+RetroStoneOS needs it because the RetroStone2 panel has no power switch:
+its signals must keep running (TCON0) while HDMI shows the picture, so
+HDMI runs on TCON1 (docs/display-design.md, "Panel safety").
+TODO(hw): the game plane scaled on HDMI via CRTC 1.
+---
+diff --git a/drivers/gpu/drm/sun4i/sun4i_frontend.c b/drivers/gpu/drm/sun4i/sun4i_frontend.c
+--- a/drivers/gpu/drm/sun4i/sun4i_frontend.c
++++ b/drivers/gpu/drm/sun4i/sun4i_frontend.c
+@@ -546,6 +546,21 @@
+ }
+ EXPORT_SYMBOL(sun4i_frontend_enable);
+ 
++/*
++ * The DEFE output port: which backend receives the scaled picture (FRM_CTRL
++ * bits 9:8, 0 = BE0, 1 = BE1; bit 11 = 0: output enabled). Nothing else
++ * sets it and it resets to BE0, so a frontend plane on the second backend
++ * (sun4i_backend_find_frontend() hands fe0 to both) showed nothing.
++ */
++void sun4i_frontend_set_output(struct sun4i_frontend *frontend, int backend_id)
++{
++	regmap_update_bits(frontend->regs, SUN4I_FRONTEND_FRM_CTRL_REG,
++			   SUN4I_FRONTEND_FRM_CTRL_OUT_CTRL |
++			   SUN4I_FRONTEND_FRM_CTRL_OUT_PORT_SEL_MASK,
++			   SUN4I_FRONTEND_FRM_CTRL_OUT_PORT_SEL(backend_id & 0x3));
++}
++EXPORT_SYMBOL(sun4i_frontend_set_output);
++
+ static const struct regmap_config sun4i_frontend_regmap_config = {
+ 	.reg_bits	= 32,
+ 	.val_bits	= 32,
+diff --git a/drivers/gpu/drm/sun4i/sun4i_frontend.h b/drivers/gpu/drm/sun4i/sun4i_frontend.h
+--- a/drivers/gpu/drm/sun4i/sun4i_frontend.h
++++ b/drivers/gpu/drm/sun4i/sun4i_frontend.h
+@@ -16,6 +16,9 @@
+ #define SUN4I_FRONTEND_FRM_CTRL_REG		0x004
+ #define SUN4I_FRONTEND_FRM_CTRL_COEF_ACCESS_CTRL	BIT(23)
+ #define SUN4I_FRONTEND_FRM_CTRL_FRM_START		BIT(16)
++#define SUN4I_FRONTEND_FRM_CTRL_OUT_CTRL		BIT(11)
++#define SUN4I_FRONTEND_FRM_CTRL_OUT_PORT_SEL_MASK	GENMASK(9, 8)
++#define SUN4I_FRONTEND_FRM_CTRL_OUT_PORT_SEL(x)		((x) << 8)
+ #define SUN4I_FRONTEND_FRM_CTRL_COEF_RDY		BIT(1)
+ #define SUN4I_FRONTEND_FRM_CTRL_REG_RDY			BIT(0)
+ 
+@@ -139,6 +142,7 @@
+ int sun4i_frontend_init(struct sun4i_frontend *frontend);
+ void sun4i_frontend_exit(struct sun4i_frontend *frontend);
+ int sun4i_frontend_enable(struct sun4i_frontend *frontend);
++void sun4i_frontend_set_output(struct sun4i_frontend *frontend, int backend_id);
+ 
+ void sun4i_frontend_update_buffer(struct sun4i_frontend *frontend,
+ 				  struct drm_plane *plane);
+diff --git a/drivers/gpu/drm/sun4i/sun4i_layer.c b/drivers/gpu/drm/sun4i/sun4i_layer.c
+--- a/drivers/gpu/drm/sun4i/sun4i_layer.c
++++ b/drivers/gpu/drm/sun4i/sun4i_layer.c
+@@ -94,6 +94,7 @@
+ 
+ 	if (layer_state->uses_frontend) {
+ 		sun4i_frontend_init(frontend);
++		sun4i_frontend_set_output(frontend, backend->engine.id);
+ 		sun4i_frontend_update_coord(frontend, plane);
+ 		sun4i_frontend_update_buffer(frontend, plane);
+ 		sun4i_frontend_update_formats(frontend, plane,

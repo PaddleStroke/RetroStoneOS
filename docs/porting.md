@@ -122,7 +122,7 @@ switching, a power key only if an input device is a power button, and HDMI outpu
 | `audio_hdmi_pcm` | ALSA PCM type for the HDMI card: `plughw`, or `hdmi` (the card's IEC958 set-up in alsa-lib) | `plughw` | `plughw` | `hdmi` (vc4-hdmi takes IEC958 subframes only) |
 | `cpu_governor_menu`, `cpu_governor_game` | cpufreq governors in the menu and while a game runs | `schedutil`, `performance` | the same | the same |
 | `storage_overlays` | opt-in device tree overlays offered in Settings > Storage (known: `emmc`, `sata`) | none | `emmc sata` | none |
-| `display_quirks` | `sun4i-tcon0-clock`: log the A20 TCON0 pixel clock model when the panel is retimed | none | `sun4i-tcon0-clock` | none |
+| `display_quirks` | `sun4i-tcon0-clock`: log the A20 TCON0 pixel clock model when the panel is retimed. `panel-keep-scanning`: **set it when the built-in panel cannot be powered off** (its VCC on an always-on rail, no power GPIO): a TFT must never stay powered with its signals stopped, so the panel's CRTC is never turned off while the system runs (screen off = backlight `bl_power` off + a black frame, HDMI on another CRTC while the panel scans black; display-design.md §8.5). Not for a panel behind its own controller (the RetroStone1's AMT630A) or a panel with a power switch | none | `sun4i-tcon0-clock panel-keep-scanning` | none |
 
 `frontend/tests/test_board.c` (in `make check`) loads the RetroStone2's `board.ini` and checks that it gives exactly
 the constants the code used before the profile existed, and that the power module does the same things with and
@@ -245,8 +245,9 @@ What to expect, and what nobody has checked on a Pi yet:
 
 | Part | Where | For another board |
 |---|---|---|
-| Kernel patches 0001-0005: sun4i HDMI hotplug polling, sun4i HDMI audio, the sun4i backend 2x/4x integer scaler, the exFAT read-ahead plug, the A20 CCU initcall | `board/retrostone2/patches/linux/` (docs/kernel-patches.md) | Not needed: the frontend probes what the display accepts and falls back to its CPU scaler. The exFAT patch is generic but optional. |
+| Kernel patches 0001-0006: sun4i HDMI hotplug polling, sun4i HDMI audio, the sun4i backend 2x/4x integer scaler, the exFAT read-ahead plug, the A20 CCU initcall, the frontend output port (HDMI on TCON1 while the panel keeps TCON0) | `board/retrostone2/patches/linux/` (docs/kernel-patches.md) | Not needed: the frontend probes what the display accepts and falls back to its CPU scaler. The exFAT patch is generic but optional. |
 | LCD retiming to 60 Hz (the 78.571 Hz panel), the A20 TCON0 clock model in the logs | frontend display layer, `internal_refresh_options`, `display_quirks` | Only if the board's panel has a similar choice. |
+| Panel safety: the panel keeps scanning (black frame, backlight off) whenever it is not the picture | frontend display layer, `display_quirks = panel-keep-scanning` | **Required** for any board whose built-in panel cannot be powered off (display-design.md §8.5). |
 | AXP209: charge-mode boot reason, power key timings, V_OFF, shutdown time stamps (`axpstamp`) | `rsos-bootreason` (`boot_reason = axp209`), `power_key_device`/`pek_startup_ms`, `battery_voff_mv`, `board/retrostone2/tools/` | Leave the keys out. |
 | U-Boot A/B boot (`boot.cmd`, the redundant environment, `fw_env.config`, the watchdog started by U-Boot), bootstage time stamps and the ARM counter tool `cntvct` for the boot time line; tests `tests/boot-ab-qemu-test.sh` (QEMU cubieboard) and `tests/data-partition-test.sh` | `board/retrostone2/` | Only with U-Boot. (The data partition test is generic: it only uses the RetroStone2 image.) |
 | The eMMC/SATA overlays of the "Pro" variant | `storage_overlays`, `board/retrostone2/dts/overlays/` | Leave out. |

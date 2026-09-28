@@ -84,7 +84,8 @@ static void test_retrostone2_values(const struct board_profile *b)
 	      "governors %s/%s", b->cpu_governor_menu, b->cpu_governor_game);
 	CHECK(board_has_storage_overlay(b, "emmc") && board_has_storage_overlay(b, "sata") &&
 	      !board_has_storage_overlay(b, "sat"), "storage overlays %s", b->storage_overlays);
-	CHECK(b->display_quirks == BOARD_QUIRK_SUN4I_TCON0_CLOCK, "quirks 0x%x", b->display_quirks);
+	CHECK(b->display_quirks == (BOARD_QUIRK_SUN4I_TCON0_CLOCK | BOARD_QUIRK_PANEL_KEEP_SCANNING), "quirks 0x%x",
+	      b->display_quirks);
 
 	/* input: the profile gives the defaults (= the old constants) */
 	input_config_defaults(&idef);
@@ -120,6 +121,8 @@ static void test_retrostone2_values(const struct board_profile *b)
 	CHECK((dc.internal_types & (1u << T_UNKNOWN)) && (dc.internal_types & (1u << T_DPI)) &&
 	      !(dc.internal_types & (1u << T_HDMIA)), "display: Unknown + DPI");
 	CHECK(dc.a20_clock_log == ddef.a20_clock_log, "display: A20 clock log");
+	CHECK(dc.panel_keep_scanning && ddef.panel_keep_scanning, "display: the panel keeps scanning (no power switch)");
+	CHECK(dc.backlight_name == NULL && ddef.backlight_name == NULL, "display: backlight auto");
 	CHECK(dc.tv_norm == ddef.tv_norm && dc.tv_overscan == ddef.tv_overscan && !(dc.internal_types & (1u << T_COMPOSITE)),
 	      "display: no composite screen, TV settings at their defaults");
 
@@ -341,6 +344,13 @@ static void test_generic(void)
 	board_apply_ui(&b, &uc);
 	CHECK(uc.has_internal_display && !uc.lcd_refresh_choice && streq(uc.storage_overlays, ""),
 	      "ui: no LCD refresh choice, no overlays");
+	{
+		struct display_config dc;
+
+		display_config_defaults(&dc);
+		board_apply_display(&b, &dc);
+		CHECK(!b.display_quirks && !dc.panel_keep_scanning, "display: no quirk, the panel CRTC may stop");
+	}
 }
 
 /* ------------------------------------------------------ 4. parser */
@@ -388,6 +398,10 @@ static void test_parser(void)
 	CHECK(b.tv_norm == BOARD_TV_AUTO && b.tv_overscan == 0, "tv_norm auto, overscan floor");
 	board_parse(&b, "tv_norm = secam\n");
 	CHECK(b.tv_norm == BOARD_TV_NTSC, "unknown tv_norm: NTSC");
+	board_parse(&b, "display_quirks = panel-keep-scanning, bogus\n");
+	CHECK(b.display_quirks == BOARD_QUIRK_PANEL_KEEP_SCANNING, "quirk list: 0x%x", b.display_quirks);
+	board_parse(&b, "display_quirks =\n");
+	CHECK(!b.display_quirks, "no quirks");
 	{
 		struct display_config dc;
 
@@ -427,6 +441,7 @@ static void test_other(const char *path)
 		board_apply_display(&b, &dc);
 		CHECK(dc.internal_mode == DISPLAY_INTERNAL_LIST && dc.internal_types == (1u << T_COMPOSITE) &&
 		      dc.tv_norm == DISPLAY_TV_NTSC, "RetroStone1: display config");
+		CHECK(!dc.panel_keep_scanning, "RetroStone1: no panel-keep-scanning (the AMT630A drives the TFT)");
 		ui_config_defaults(&uc);
 		board_apply_ui(&b, &uc);
 		CHECK(!uc.has_internal_display && !uc.lcd_refresh_choice,

@@ -211,6 +211,23 @@ struct display_config {
 	/* Log the A20 TCON0 pixel clock model when the panel is retimed (board
 	 * quirk sun4i-tcon0-clock). Default on. */
 	bool a20_clock_log;
+	/*
+	 * Panel safety (board quirk panel-keep-scanning; display-design.md
+	 * §8.5): the built-in panel cannot be powered off (the RetroStone2's
+	 * VCC is the always-on 3.3 V rail), and a TFT must never stay powered
+	 * with its drive signals stopped. When set, the internal panel's CRTC
+	 * is never turned off while the display is open: screen off is the
+	 * backlight off (bl_power) plus a black frame, the CRTC still ACTIVE;
+	 * another output (HDMI) runs on another CRTC while the panel keeps
+	 * scanning a black frame with its backlight off. Default on (the
+	 * RetroStone2 value); board profiles without the quirk turn it off.
+	 */
+	bool panel_keep_scanning;
+	/* The panel's backlight for the above: backlight_dir (NULL =
+	 * "/sys/class/backlight"), backlight_name (NULL = the first entry,
+	 * "" = none: then only the black frame). */
+	const char *backlight_dir;
+	const char *backlight_name;
 
 	/* Scaling. */
 	enum display_scale_mode scale;
@@ -401,15 +418,29 @@ int display_suspend(void);
 int display_resume(void);
 
 /*
- * Screen off/on for sleep and idle, keeping the configuration: the CRTC
- * ACTIVE property in one blocking atomic commit. Off: drm_panel disables
- * the LCD panel and its PWM backlight (or the HDMI encoder stops: close
- * the HDMI PCM first). On: full re-commit with the newest frame. While
- * off, presents are kept (newest frame wins, nothing is flipped) and a
- * hotplug is only re-evaluated when the screen comes back on.
+ * Screen off/on for sleep and idle, keeping the configuration. Off on
+ * HDMI (or on a panel without panel_keep_scanning): the CRTC ACTIVE
+ * property in one blocking atomic commit (the HDMI encoder stops: close
+ * the HDMI PCM first). Off on a panel with panel_keep_scanning: the
+ * backlight goes off (bl_power) and a black frame replaces the picture,
+ * the CRTC stays ACTIVE and scanning (a powered TFT must keep its drive
+ * signals). On: full re-commit with the newest frame (and the backlight
+ * back on). While off, presents are kept (newest frame wins, nothing is
+ * flipped) and a hotplug is only re-evaluated when the screen comes back on.
  */
 int display_set_active(bool active);
 bool display_is_active(void);
+
+/*
+ * Panel safety (panel_keep_scanning, display-design.md §8.5): the picture
+ * the built-in panel scans while another output (HDMI) shows the picture,
+ * its backlight off: xrgb (w x h XRGB8888, rows of w pixels, copied)
+ * centred on the panel, the rest filled with bg; the RetroStone boot logo.
+ * Without it (or NULL) the panel scans black. Applied at once if the panel
+ * is behind HDMI now. Screen off always shows black. Returns 0 (also when
+ * the board has no panel kept scanning: nothing to do), -EINVAL, -ENOMEM.
+ */
+int display_set_panel_picture(const uint32_t *xrgb, int w, int h, uint32_t bg);
 
 /*
  * A small ARGB8888 picture (the in-game battery indicator) on its own KMS

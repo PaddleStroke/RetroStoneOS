@@ -171,6 +171,7 @@ static struct rec {
 	bool call_poweroff;      /* on_shutdown_request calls power_poweroff() */
 	int poweroff;
 	bool poweroff_reboot;
+	int idle_warn, idle_cancel, idle_secs;
 } R;
 
 static void cb_status(const struct power_status *st, void *u) { (void)st; (void)u; R.status++; }
@@ -194,6 +195,16 @@ static void cb_log(int level, const char *msg, void *u)
 	(void)u;
 	if (getenv("POWER_TEST_VERBOSE"))
 		printf("    log%d %s\n", level, msg);
+}
+static void cb_idle(enum power_idle_event ev, int s, void *u)
+{
+	(void)u;
+	if (ev == POWER_IDLE_WARN) {
+		R.idle_warn++;
+		R.idle_secs = s;
+	} else {
+		R.idle_cancel++;
+	}
 }
 static int hook_poweroff(bool reboot, void *u) { (void)u; R.poweroff++; R.poweroff_reboot = reboot; return 0; }
 
@@ -228,6 +239,10 @@ static void init_power(void)
 	c.cb.on_thermal = cb_thermal;
 	c.cb.on_charge_exit = cb_charge_exit;
 	c.cb.log = cb_log;
+	c.cb.on_idle_poweroff = cb_idle;
+	/* the idle power-off is off in the older tests (their clocks run for
+	 * hours with nobody pressing anything): test_idle_poweroff() turns it on */
+	c.idle_poweroff_s = 0;
 	ret = power_init(&c);
 	CHECK(ret == 0, "power_init %d", ret);
 }
@@ -624,6 +639,191 @@ static void test_idle(void)
 	advance(61000, 1000);
 	CHECK(power_get_status()->screen == POWER_SCREEN_OFF, "custom off time");
 	power_exit();
+}
+
+/* Idle power-off: dim -> screen off -> power off (docs/power.md). */
+static void test_idle_poweroff(void)
+{
+	/* 1. screen off 5 min, power off 10 min: the notice at 9:50, then off */
+	make_tree();
+	fake_now = 1000000;
+	init_power();
+	CHECK(power_set_setting("idle_poweroff_min", "10") == 0, "setting");
+	advance(300000, 5000);
+	CHECK(power_get_status()->screen == POWER_SCREEN_OFF && R.idle_warn == 0, "screen off at 5 min");
+	advance(289000, 1000);
+	CHECK(R.idle_warn == 0 && R.shutdown == 0, "no notice at 9:49");
+	advance(1000, 1000);
+	CHECK(R.idle_warn == 1 && R.idle_secs == 10, "notice at 9:50 (%d, %d s)", R.idle_warn, R.idle_secs);
+	CHECK(power_get_status()->screen == POWER_SCREEN_ON && R.last_screen == POWER_SCREEN_ON &&
+	      rlong(BL "/bl_power") == 0, "the screen is lit for the notice");
+	advance(9000, 1000);
+	CHECK(R.shutdown == 0 && power_get_status()->screen == POWER_SCREEN_ON, "still on at 9:59, screen kept on");
+	advance(1000, 1000);
+	CHECK(R.shutdown == 1 && R.last_why == POWER_REASON_IDLE && R.poweroff == 1, "powered off at 10 min");
+	CHECK(!strcmp(power_reason_name(POWER_REASON_IDLE), "idle"), "reason name");
+	power_exit();
+
+	/* 2. equal timers: straight to the power-off, no screen-off stage */
+	make_tree();
+	init_power();
+	power_set_setting("idle_off_min", "5");
+	power_set_setting("idle_poweroff_min", "5");
+	advance(289000, 1000);
+	CHECK(power_get_status()->screen == POWER_SCREEN_DIM, "dimmed at 2 min, not off");
+	advance(1000, 1000);
+	CHECK(R.idle_warn == 1 && power_get_status()->screen == POWER_SCREEN_ON, "notice at 4:50");
+	advance(10000, 1000);
+	CHECK(R.shutdown == 1 && R.last_why == POWER_REASON_IDLE, "powered off at 5 min");
+	CHECK(R.screen >= 1 && R.last_screen == POWER_SCREEN_ON, "never a screen-off stage");
+	power_exit();
+
+	/* 3. power-off shorter than screen-off: the power-off wins */
+	make_tree();
+	init_power();
+	power_set_setting("idle_off_min", "10");
+	power_set_setting("idle_poweroff_min", "5");
+	advance(300000, 1000);
+	CHECK(R.shutdown == 1 && power_get_status()->screen != POWER_SCREEN_OFF, "off at 5 min, screen never off");
+	power_exit();
+
+	/* 4. any input cancels the notice (swallowed) and restarts the countdown */
+	make_tree();
+	init_power();
+	power_set_setting("idle_poweroff_min", "5");
+	advance(290000, 1000);
+	CHECK(R.idle_warn == 1, "notice");
+	CHECK(power_on_input() == true, "the cancelling press is swallowed");
+	CHECK(R.idle_cancel == 1, "cancelled");
+	advance(30000, 1000);
+	CHECK(R.shutdown == 0, "no power-off after a cancel");
+	fake_now += 200;
+	CHECK(power_on_input() == false, "the next press passes");
+	advance(289000, 1000);
+	CHECK(R.idle_warn == 1 && R.shutdown == 0, "the countdown started over");
+	advance(1000, 1000);
+	CHECK(R.idle_warn == 2, "notice again 4:50 after the last input");
+	power_inject_key(BTN_SOUTH, 1);          /* a built-in key */
+	power_inject_key(BTN_SOUTH, 0);
+	CHECK(R.idle_cancel == 2 && power_on_input() == true, "built-in key cancels (swallowed)");
+	advance(290000, 1000);
+	CHECK(R.idle_warn == 3, "notice a third time");
+	power_inject_key(KEY_POWER, 1);          /* the power key too, and its release does not power off */
+	advance(200, 100);
+	power_inject_key(KEY_POWER, 0);
+	CHECK(R.idle_cancel == 3 && R.shutdown == 0 && power_get_mode() == POWER_MODE_NORMAL, "power key cancels");
+	/* in a game: no dim/off stage, but the power-off counts; game input cancels */
+	power_set_game_running(true);
+	advance(290000, 1000);
+	CHECK(R.idle_warn == 4 && power_get_status()->screen == POWER_SCREEN_ON, "in a game: notice, never dimmed");
+	power_notify_activity();                  /* the game reported input */
+	CHECK(R.idle_cancel == 4, "game input cancels");
+	advance(20000, 1000);
+	CHECK(R.shutdown == 0, "no power-off");
+	advance(280000, 1000);
+	CHECK(R.shutdown == 1 && R.last_why == POWER_REASON_IDLE, "idle game: powered off (save path)");
+	power_exit();
+
+	/* 5. busy: never while a long job runs; the countdown starts over after it */
+	make_tree();
+	init_power();
+	power_set_setting("idle_off_min", "2");
+	power_set_setting("idle_poweroff_min", "5");
+	power_set_busy(true, "usb-import");
+	advance(3600000, 10000);
+	CHECK(R.idle_warn == 0 && R.shutdown == 0, "no power-off during an hour-long copy");
+	CHECK(power_get_status()->screen == POWER_SCREEN_OFF, "the screen still goes off");
+	power_set_busy(false, NULL);
+	advance(289000, 1000);
+	CHECK(R.idle_warn == 0, "countdown restarted at the end of the job");
+	advance(1000, 1000);
+	CHECK(R.idle_warn == 1, "notice 4:50 after the job");
+	power_set_busy(true, "smb-client");     /* a job starts during the notice */
+	CHECK(R.idle_cancel == 1, "a job cancels the notice");
+	advance(60000, 1000);
+	CHECK(R.shutdown == 0, "held");
+	power_set_busy(false, NULL);
+	advance(300000, 1000);
+	CHECK(R.shutdown == 1, "then off 5 min after the job");
+	power_exit();
+
+	/* 6. an idle power-off that cannot save is cancelled, never forced */
+	make_tree();
+	init_power();
+	R.call_poweroff = false;                  /* the frontend saves first */
+	power_set_setting("idle_poweroff_min", "5");
+	advance(300000, 1000);
+	CHECK(R.shutdown == 1 && power_get_mode() == POWER_MODE_SHUTTING_DOWN, "shutting down");
+	CHECK(power_cancel_shutdown() == 0 && power_get_mode() == POWER_MODE_NORMAL, "cancelled by the frontend");
+	CHECK(power_cancel_shutdown() == -EINVAL, "nothing to cancel");
+	advance(300000, 1000);
+	CHECK(R.shutdown == 2 && power_get_mode() == POWER_MODE_SHUTTING_DOWN, "tried again 5 min later");
+	advance(20000, 1000);                     /* the grace time runs out: no forced power-off */
+	CHECK(R.poweroff == 0 && power_get_mode() == POWER_MODE_NORMAL, "not completed: cancelled, stays on");
+	power_request_shutdown(POWER_REASON_USER);
+	CHECK(power_cancel_shutdown() == -EINVAL, "a user power-off is never cancelled");
+	power_exit();
+
+	/* 7. never in charge mode; settings */
+	make_tree();
+	wfile("run/bootreason", "charger\n");
+	wfile(AC "/online", "1\n");
+	set_batt(3800, 700, "Charging\n", 40);
+	init_power();
+	power_set_setting("idle_poweroff_min", "5");
+	advance(3600000, 30000);
+	CHECK(power_get_mode() == POWER_MODE_CHARGE && R.idle_warn == 0 && R.shutdown == 0, "charge mode: never");
+	CHECK(power_set_setting("idle_poweroff_min", "241") == -EINVAL, "range");
+	CHECK(power_set_setting("idle_poweroff_min", "0") == 0 && power_set_setting("idle_poweroff_s", "30") == 0,
+	      "keys");
+	power_exit();
+
+	/* 8. analog sticks (in a game, as the menu process reads them): a real
+	 * move resets the timer, the jitter of a drifting stick never does */
+	{
+		int16_t ref = 0;
+		int moves = 0;
+
+		CHECK(!power_axis_activity(0, &ref), "centre");
+		for (int i = 0; i < 2000; i++)          /* +-3000 noise around a 2000 drift */
+			moves += power_axis_activity((int16_t)(2000 + noise(3000)), &ref);
+		CHECK(moves == 0, "jitter counted %d times", moves);
+		CHECK(power_axis_activity(-16000, &ref) && ref == -16000, "a 20 %% move counts");
+		CHECK(!power_axis_activity(-15000, &ref), "small change after it: no");
+		CHECK(power_axis_activity(-20000, &ref), "held past half deflection: counts");
+		CHECK(power_axis_activity(32767, &ref) && power_axis_activity(32767, &ref), "held right: counts");
+		ref = 0;
+		CHECK(!power_axis_activity(13000, &ref) && power_axis_activity(13200, &ref), "the 20 %% threshold");
+
+		/* the timer: a player steering once a minute keeps the unit on for
+		 * an hour; a drifting stick alone lets it power off at 5 min */
+		make_tree();
+		init_power();
+		power_set_setting("idle_poweroff_min", "5");
+		power_set_game_running(true);
+		ref = 0;
+		for (int m = 0; m < 60; m++) {
+			for (int s = 0; s < 60; s++) {
+				int16_t v = (int16_t)((s == 0 ? (m % 2 ? 28000 : -28000) : 0) + noise(2000));
+
+				if (power_axis_activity(v, &ref))
+					power_notify_activity();
+				advance(1000, 1000);
+			}
+		}
+		CHECK(R.shutdown == 0 && R.idle_warn == 0, "steering with the stick: on after an hour (%d, %d)",
+		      R.shutdown, R.idle_warn);
+		ref = 0;
+		for (int s = 0; s < 400 && !R.shutdown; s++) {
+			if (power_axis_activity((int16_t)(2500 + noise(3000)), &ref))
+				power_notify_activity();
+			advance(1000, 1000);
+		}
+		CHECK(R.idle_warn == 1 && R.shutdown == 1 && R.last_why == POWER_REASON_IDLE,
+		      "a drifting stick alone: off at 5 min (%d, %d)", R.idle_warn, R.shutdown);
+		power_exit();
+	}
+	printf("idle power-off: order, equal timers, notice and cancel, busy, charge mode, sticks\n");
 }
 
 static void test_sleep(void)
@@ -1098,6 +1298,7 @@ int main(void)
 	test_warning_hysteresis();
 	test_init_policy();
 	test_idle();
+	test_idle_poweroff();
 	test_sleep();
 	test_power_key();
 	test_powersave_fallback();

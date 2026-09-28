@@ -144,12 +144,15 @@ speaker-test -D hw:0 -c 2 -t sine -l 1     # speaker: a sine tone, left then rig
 rsos-kmstest --monitor      # then plug/unplug HDMI several times: one hotplug event each, within ~0.5 s
 rsos-kmstest                # with the pattern running, plug HDMI in: the picture moves to the TV and the LCD goes dark
 ```
-- [ ] Plug in: the picture is on the TV within ~1 s, and the LCD and backlight are off.
+- [ ] Plug in: the picture is on the TV within ~1 s (the scaled pattern visible, not black: HDMI now runs on TCON1,
+  kernel patch 0006), and the LCD backlight is off. The LCD keeps scanning black behind it (panel safety, below).
 - [ ] Unplug: back on the LCD.
 - [ ] 20 plug/unplug cycles with no hang. Booting with HDMI already plugged in also works.
 - [ ] HDMI audio: `aplay -l` shows `sun4i-hdmi`, and `speaker-test -D hw:sun4i-hdmi -c 2 -t sine -l 1` plays on the TV
   (experimental patch 0002).
-- [ ] If the picture fails on HDMI: `rsos-kmstest --hdmi-crtc 1`, and `--hdmi 640x480`.
+- [ ] If the picture fails on HDMI (black game image, the TV has a signal): send `frontend.log` and try
+  `rsos-kmstest --hdmi 640x480 --format rgb565` (backend x2, no frontend). Never work around it with
+  `--hdmi-crtc 0`: that stops the LCD's signals (it is ignored anyway).
 
 ## 6. Power
 ```sh
@@ -180,6 +183,26 @@ Power key and screen-off (image `retrostoneos-dev-20260926c` and later; there is
       button: the screen comes back and that press does nothing. Then press **another button: the menu must react**
       (it did not before). Same after the dim only. A power-key press while the screen is off only turns it on; a
       press while it is dimmed powers off. To test quickly: Settings > Power > "Screen off after" 2 min.
+- [ ] **Idle power-off** (power.md §7.1; Settings > Power > "Power off after", default 5 min, the same as "Screen off
+      after"). In the menu, touch nothing: with the defaults the screen dims at 2 min, then at 4:50 **"Powering off in
+      10 s — press any button to cancel"** shows and at 5:00 the unit powers off (frontend.log: `idle power-off: notice`,
+      `powering off (idle)`). Again, and press a button during the notice: it goes away, that press does nothing else,
+      and the next power-off comes 5 min later. Set "Screen off after" 2 min and "Power off after" 10 min: dim, screen
+      off, then the screen lights up with the notice at 9:50. In a game (with a USB pad on HDMI too), steer with the analog stick only for 10 min (N64 or PS1): no
+      notice. Then stop playing for 5 min: the notice on the game's screen, then "Powering off..."; at the next boot "Resume <game>?" (resume.ini
+      `reason = idle`). While a USB import or export runs, or a PC copies over the SMB share, or an update downloads:
+      no notice at all (`idle power-off held: usb-import` / `smb-client` / `os-update`), and the countdown starts again
+      when it ends. Never in charge mode.
+- [ ] **Panel safety: the LCD keeps scanning while "off"** (image `retrostoneos-dev-20260928-lcdsafe` and later;
+      display-design.md §8.5). A powered TFT must never be left without its signals: the old screen off stopped them
+      for over an hour and damaged a panel. With "Screen off after" 2 min, let the screen go off, then on the UART:
+      `grep -A3 "crtc-0" /sys/kernel/debug/dri/0/state` shows `active=1` (mount debugfs first:
+      `mount -t debugfs none /sys/kernel/debug`), `cat /sys/class/backlight/*/bl_power` gives `4`, and frontend.log has
+      `screen off (Unknown-1: backlight off, black frame, still scanning)` (never a plain `screen off (Unknown-1) in N
+      ms`, the old ACTIVE = 0 path). The same with HDMI plugged in (`crtc-0` stays `active=1`, HDMI on `crtc-1`),
+      during sleep (short power-key press in the menu and in a game), and just before power-off
+      (`display closed: planes off, the panel keeps scanning` at the end of frontend.log). Leave the unit in screen
+      off for 30 min: no lines, flicker or ghost image when it comes back.
 - [ ] **In-game battery** (Settings > Display > "Battery in games" on, the default): a small pill with a battery icon
       and the same % as the menu, top-right, over any game (NES, SNES, PS1, N64). Plug the charger in: a yellow bolt
       appears within ~10-20 s. Try "Battery position" bottom-left, and "off". It hides while the Select+X menu is

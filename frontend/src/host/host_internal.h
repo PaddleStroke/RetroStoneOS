@@ -132,6 +132,7 @@ struct host {
 	volatile sig_atomic_t flush_sig;
 	volatile sig_atomic_t poweroff_sig;  /* RSOS_SIG_POWEROFF */
 	volatile sig_atomic_t sleep_sig;     /* 1 = sleep requested, 2 = wake */
+	volatile sig_atomic_t idle_sig;      /* 1 = idle power-off notice, 2 = cancelled */
 	bool quit;
 	int exit_code;
 	bool poweroff;
@@ -216,6 +217,8 @@ void osd_toast(const char *msg, int ms);
 bool osd_active(void);
 void osd_draw(void *px, int pitch, int w, int h, uint32_t fmt);
 void osd_clear(void);
+/* Takes the toast with this text down (if it is up). */
+void osd_untoast(const char *msg);
 
 /* host.c: fast-forward (0 = off, else runs per displayed frame), play time
  * pauses (in-game menu, switcher), per-game settings to the menu UI. */
