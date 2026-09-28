@@ -435,6 +435,16 @@ check-splash: $(MKSPLASH) $(SPLASH) $(FRONTEND)
 	$(FRONTEND) --splash --headless --res $(abspath third_party) --splash-file $(SPLASH) \
 		--message "Preparing the SD card..." --shot $(SPLASH_CHECK_DIR)/first-boot.png
 	test -s $(SPLASH_CHECK_DIR)/first-boot.png
+	@# SIGTERM ends it within a second (data-partition stops it on the way to
+	@# the menu, and gives up on it after a few seconds)
+	$(FRONTEND) --splash --headless --res $(abspath third_party) --splash-file $(SPLASH) \
+		--message "Preparing the SD card..." > $(SPLASH_CHECK_DIR)/term.log 2>&1 & pid=$$!; \
+	i=0; while ! grep -q 'logo shown' $(SPLASH_CHECK_DIR)/term.log && [ $$i -lt 50 ]; do sleep 0.1; i=$$((i + 1)); done; \
+	kill $$pid; (sleep 1; kill -9 $$pid 2> /dev/null) & w=$$!; wait $$pid; rc=$$?; kill $$w 2> /dev/null; \
+	[ $$rc -eq 0 ] || { echo "check-splash: not ended 1 s after SIGTERM (status $$rc)"; exit 1; }; \
+	grep -q 'splash: signal 15, closing the display' $(SPLASH_CHECK_DIR)/term.log && \
+		grep -q 'splash: display closed' $(SPLASH_CHECK_DIR)/term.log
+	@echo "check-splash: SIGTERM ends the splash at once"
 
 # The real rsos-frontend main loop, headless: an in-memory surface, a fake
 # /sys, /dev and /data under FE_CHECK_DIR, scripted buttons (each one also

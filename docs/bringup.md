@@ -37,6 +37,30 @@ number, and `boot<N>/` holds:
 After a freeze: hold power 6 s, put the card in the PC, and zip the `rsos/logs` folder for analysis.
 (Create an empty file `rsos/logs/disabled` to turn the logger off.)
 
+**The first boot** (the data partition conversion) runs before the logger can write anything. Since image
+`20260928-firstboot` it keeps its own trace: each step goes to the UART (`rsos-data: ...`), to the kernel log and to
+a raw spot on the card (3 MiB, outside every partition), and the next boot that reaches the menu appends it to
+`rsos/logs/firstboot.txt`; the splash's own log is `boot<N>/splash.log`. The splash can no longer hold the boot, and
+a first boot with no progress at all for 3 minutes lets the hardware watchdog reset the board (docs/build.md,
+"First boot").
+
+### A first boot that stays black: UART capture
+1. Wire the UART (section 0) and log the whole session to a file (PuTTY: Session > Logging > "All session output").
+2. Flash the image. Note whether you copy files to the RETROSTONE drive before the first boot, and how many GB:
+   those are backed up and restored during the first boot, which then takes minutes, with the splash on screen.
+3. Full kernel log (optional but best): power on while pressing Enter repeatedly in the terminal until U-Boot's `=>`
+   prompt appears, then type `setenv rsos_extraargs loglevel=7`, `saveenv`, `boot`. Without it the `rsos-data:`
+   lines and the kernel's warnings still print.
+4. Power on and wait **5 minutes** without touching anything (the kernel reports a task blocked for 120 s, and a
+   first boot stuck for 3 minutes resets the board by itself). Then save the log.
+5. What to look for, in order: the last `rsos-data:` line (the step it stopped at); `the splash (pid N) still there
+   ... SIGKILL` / `does not go away`, followed by the splash's kernel stack; `no progress for ... the board resets`;
+   `INFO: task ... blocked for more than 120 seconds` with its stack; `flip_done timed out`, `hw_done or flip_done
+   timed out`, `Unable to handle kernel`, `Internal error`, `Kernel panic`; and whether the SPL lines and
+   `Starting kernel` appear at all. Nothing after the SPL lines means a hang before Linux.
+6. After the next boot that reaches the menu: `rsos/logs/firstboot.txt` and `rsos/logs/boot<N>/splash.log`.
+   Remove the extra kernel output afterwards: `fw_setenv rsos_extraargs` on the UART shell.
+
 **If the screen stays black but the UART works**, it's the display or panel timing: go straight to section 2.
 **If nothing appears on the UART**, check the wiring (TX/RX swapped?) and the card flash.
 

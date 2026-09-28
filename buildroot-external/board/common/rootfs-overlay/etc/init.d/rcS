@@ -40,7 +40,7 @@ read -r CMDLINE < /proc/cmdline
 # (/usr/libexec/rsos/board.sh: builtins only, no fork)
 [ -r /usr/libexec/rsos/board.sh ] && . /usr/libexec/rsos/board.sh
 # for data-partition (it then skips reading the board files again)
-export RSOS_DISK RSOS_BOARD_DATA_PARTITION
+export RSOS_DISK RSOS_BOARD_DATA_PARTITION RSOS_BOARD_FIRSTBOOT_TRACE_KIB
 iost; IO_START=$IO
 
 # --- Prefetch (boot round 3): the frontend and the libraries it maps (and

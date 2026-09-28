@@ -10,6 +10,10 @@
 # is up, 10 s later (the boot time line), then every 10 minutes up to 60
 # minutes; rsos/logs/verbose on the card restores the development cadence.
 # Disable by creating rsos/logs/disabled on the card.
+# Also, once per boot: data-partition's first-boot trace (a first boot that
+# hung or lost power before the menu leaves its steps on the card, see
+# data-partition) goes to rsos/logs/firstboot.txt, and the splash's log
+# (/run/rsos/splash.log) to boot<N>/splash.log.
 # Started in the background by rcS; it waits for the menu to be on screen
 # (/run/rsos/menu-up, at most 20 s) before touching the SD card, so its
 # writes and syncs stay out of the boot.
@@ -311,6 +315,46 @@ cp "$RUN/bootlog.txt" "$BN/bootlog.txt" 2> /dev/null
 B=$BN
 note "writing to $B"
 
+# The first-boot trace (data-partition, its long paths: conversion, resume,
+# check): the record in the board's raw area (board.ini firstboot_trace_kib)
+# is a boot that never reached the menu (hung, power cut), or this boot's
+# own steps; without a raw area, this boot's /run copy. Appended to
+# rsos/logs/firstboot.txt, then the raw record is cleared once the copy is on
+# the card. (data-partition writes there only after checking that the area
+# lies outside every partition: finding its magic there proves it.)
+FBK=${RSOS_BOOTLOG_TRACE_KIB-$RSOS_BOARD_FIRSTBOOT_TRACE_KIB}
+firstboot_trace() {
+	fb_raw=
+	case "$FBK" in
+	"" | *[!0-9]*) ;;
+	*)
+		[ $((FBK % 64)) -eq 0 ] && [ -b "$RSOS_DISK" ] &&
+			fb_raw=$(dd if="$RSOS_DISK" bs=64k skip=$((FBK / 64)) count=1 2> /dev/null | tr -d '\000')
+		;;
+	esac
+	case "$fb_raw" in
+	RSOSFB01*)
+		{
+			echo "--- collected by boot$n (uptime $(cut -d' ' -f1 /proc/uptime) s; clock: $(date))"
+			printf '%s\n' "$fb_raw"
+		} >> "$D/firstboot.txt"
+		sync
+		dd if=/dev/zero of="$RSOS_DISK" bs=64k seek=$((FBK / 64)) count=1 conv=fsync 2> /dev/null
+		note "first-boot trace collected from $RSOS_DISK at $FBK KiB and cleared"
+		;;
+	*)
+		if [ -s "$RUN/firstboot.trace" ]; then
+			{
+				echo "--- collected by boot$n (this boot; clock: $(date))"
+				cat "$RUN/firstboot.trace"
+			} >> "$D/firstboot.txt"
+			note "first-boot trace of this boot collected"
+		fi
+		;;
+	esac
+}
+firstboot_trace
+
 # The previous shutdown's last steps (after rcK wrote shutdown.txt: sync,
 # unmount /data, poweroff -f) were kept in the AXP209's data registers
 # (/usr/libexec/rsos/axpstamp, which clears them). Append them to that
@@ -387,6 +431,7 @@ while [ "$elapsed" -lt "$DURATION" ]; do
 	copy /run/rsos/frontend.log frontend.log
 	copy /run/rsos/game.log game.log
 	copy /run/rsos/rcS.times rcS.times
+	copy /run/rsos/splash.log splash.log
 	# Once, on the second pass (2 s after the menu came up: the frontend
 	# has logged "menu up" by then)
 	if [ "$i" = 1 ]; then

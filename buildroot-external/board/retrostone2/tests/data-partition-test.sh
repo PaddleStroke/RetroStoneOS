@@ -18,7 +18,8 @@ OUT=$HOME/rsos/output
 W=$HOME/rsos/dptest
 rm -rf "$W"; mkdir -p "$W/bin" "$W/data" "$W/run"
 # BusyBox applets first in PATH; host tools for what BusyBox lacks.
-for a in sh find tar dd head du cut wc grep sed tr mount umount sync cat mkdir rm mv sleep printf echo ls md5sum sort; do
+for a in sh find tar dd head tail du cut wc grep sed tr mount umount sync cat mkdir rm mv sleep usleep printf echo ls \
+	md5sum sort; do
 	ln -sf /bin/busybox "$W/bin/$a"
 done
 for t in mkfs.exfat fsck.exfat; do
@@ -49,10 +50,15 @@ reflash() {
 	dd if="$OUT/images/sdcard.img" of="$LOOP" conv=notrunc bs=1M status=none
 	sync; partx -u "$LOOP"
 }
+# Every run: the first-boot trace in the image's raw gap at 3 MiB (as the
+# RetroStone2 board.ini), the kernel log and the watchdog as plain files
+# (never the host's /dev/watchdog or /dev/kmsg).
 run_dp() { # [env...]; output in $W/out.txt (and on stdout)
-	rm -f "$W/run"/*
+	rm -f "$W/run"/* "$W/wd" "$W/kmsg"
+	: > "$W/wd"
 	env -i PATH="$TPATH" RSOS_DATA_DISK="$LOOP" RSOS_DATA_MNT="$W/data" RSOS_RUN="$W/run" \
-		RSOS_SHARE="$OUT/target/usr/share/rsos" "$@" \
+		RSOS_SHARE="$OUT/target/usr/share/rsos" RSOS_TRACE_KIB=3072 RSOS_KMSG="$W/kmsg" \
+		RSOS_WATCHDOG="$W/wd" "$@" \
 		unshare -m --propagation private /bin/busybox sh -c "/bin/busybox sh $SCRIPT; rc=\$?; ls -a $W/data > $W/ls.txt; grep ' $W/data ' /proc/mounts > $W/mnt.txt; (cd $W/data && find . -type f | sort | while read f; do md5sum \"\$f\"; done) > $W/sums.txt; exit \$rc" \
 		> "$W/out.txt" 2>&1
 	local rc=$?
@@ -65,6 +71,9 @@ psize_mib() { echo $(( $(cat /sys/class/block/${LOOP##*/}p1/size) / 2048 )); }
 fstype() { blkid -p -o value -s TYPE "${LOOP}p1"; }
 mounted_fs() { cut -d' ' -f3 "$W/mnt.txt"; }
 marker() { dd if=$LOOP bs=1M skip=$(( $(cat /sys/class/block/${LOOP##*/}/size) / 2048 - 1 )) count=1 status=none | head -c 64 | tr -d '\0'; }
+# the first-boot trace in the raw gap (64 KiB at 3 MiB)
+rawtrace() { dd if="$LOOP" bs=64k skip=48 count=1 status=none | tr -d '\0'; }
+traced() { rawtrace | grep -q "$1"; }
 has() { grep -q "$(md5sum < "$1" | cut -d' ' -f1)  $2" "$W/sums.txt"; }
 said() { grep -q "$1" "$W/out.txt"; }
 cleanup() { losetup -d "$LOOP" 2>/dev/null; }
@@ -116,6 +125,12 @@ check "layout (roms, README)" layout
 check "marker cleared" "[ -z \"\$(marker)\" ]"
 check "new MBR disk id ($id0 -> $(sfdisk --disk-id "$LOOP"))" "[ \"\$(sfdisk --disk-id $LOOP)\" != $id0 ]"
 check "rootfs entries unchanged" "[ \"\$(sfdisk -d $LOOP | grep -E 'p[23] :' | sed 's#.*: ##')\" = \"\$ROOT_ENTRIES\" ]"
+check "first-boot trace on the card (3 MiB): every step, the exit" \
+	"rawtrace | head -n 1 | grep -q '^RSOSFB01 ' && traced 'start: first boot' && traced 'partition table written' && traced 'exFAT created' && traced 'done (exit status 0)'"
+check "trace in the kernel log too" "grep -q '^<5>rsos-data: partition table written' $W/kmsg"
+check "watchdog serviced, then closed with the magic V" "grep -q '^\.*V\$' $W/wd"
+check "rootfs A untouched by the trace (starts at 4 MiB)" "cmp -s -n 1048576 -i 4194304 $OUT/images/sdcard.img $LOOP"
+check "U-Boot and its environment untouched (8 KiB .. 3 MiB)" "cmp -s -n $((3 * 1048576 - 8192)) -i 8192 $OUT/images/sdcard.img $LOOP"
 cleanup
 
 echo "== B: seed with user files, big card =="
@@ -169,8 +184,10 @@ cleanup
 echo "== E: normal boot after A (already exFAT, full size) =="
 make_card $BIG
 run_dp >/dev/null
+rawtrace > "$W/trace-before"
 start=$(date +%s%N); run_dp; rc=$?; end=$(date +%s%N)
 check "exit 0 in $(( (end - start) / 1000000 )) ms, no fsck" "[ $rc -eq 0 ] && ! said checking"
+check "no trace, no watchdog on a normal boot" "[ ! -e $W/run/firstboot.trace ] && [ ! -s $W/wd ] && rawtrace | cmp -s - $W/trace-before"
 cleanup
 
 echo "== F: power cut after the format and a damaged backup =="
@@ -298,6 +315,67 @@ check "exit 0, FAT32 kept, files intact" "[ $rc -eq 0 ] && [ \"\$(mounted_fs)\" 
 check "entry grown, type 0c" "[ \"\$(ptype)\" = c ] && [ $(psize_mib) -gt $GROWN ]"
 run_dp RSOS_TEST_FAIL=backup; rc=$?
 check "second boot: no new backup attempt" "[ $rc -eq 0 ] && ! said 'backing up' && seed_ok"
+cleanup
+
+# --- The splash can never hold the boot (a stub stands in for
+# rsos-frontend --splash; RSOS_SPLASH_STOP_S=1 keeps the test short).
+cat > "$W/splash-ok" << 'EOF'
+#!/bin/busybox sh
+echo "stub splash: pid $$ $*"
+s=
+trap 'kill $s; echo "stub splash: SIGTERM, exiting"; exit 0' TERM
+while :; do sleep 1 & s=$!; wait $s; done
+EOF
+cat > "$W/splash-deaf" << 'EOF'
+#!/bin/busybox sh
+# ignores SIGTERM, as a splash stuck mid-commit would (no child left behind
+# by the SIGKILL: the ignored SIGTERM goes through the exec)
+echo "stub splash (deaf): pid $$"
+trap '' TERM
+exec sleep 1000
+EOF
+chmod +x "$W/splash-ok" "$W/splash-deaf"
+
+echo "== S1: a splash that stops on SIGTERM: its log goes to the trace =="
+make_card $BIG
+seed_files
+run_dp RSOS_SPLASH="$W/splash-ok" RSOS_SPLASH_STOP_S=1; rc=$?
+check "exit 0, converted, files kept" "[ $rc -eq 0 ] && full_exfat && seed_ok"
+check "splash started once and stopped" "traced 'splash started' && traced 'splash stopped' && [ \$(rawtrace | grep -c 'splash started') -eq 1 ]"
+check "its log in the trace" "traced 'splash| stub splash: SIGTERM, exiting'"
+check "no stub left" "! pgrep -f '$W/splash-ok' > /dev/null"
+cleanup
+
+echo "== S2: a splash that ignores SIGTERM: SIGKILL after 1 s, the boot goes on =="
+make_card $BIG
+seed_files
+start=$(date +%s)
+run_dp RSOS_SPLASH="$W/splash-deaf" RSOS_SPLASH_STOP_S=1; rc=$?
+secs=$(( $(date +%s) - start ))
+check "exit 0 in $secs s, converted, files kept" "[ $rc -eq 0 ] && [ $secs -lt 60 ] && full_exfat && seed_ok"
+check "SIGKILL said and traced" "said 'SIGTERM (.*): SIGKILL' && traced 'still there 1 s after SIGTERM'"
+check "no stub left" "! pgrep -f '$W/splash-deaf' > /dev/null"
+run_dp RSOS_SPLASH="$W/splash-deaf" RSOS_SPLASH_STOP_S=1; rc=$?
+check "next boot: normal, no splash" "[ $rc -eq 0 ] && ! said 'splash'"
+cleanup
+
+echo "== S3: a step that stalls (no I/O, no step): the watchdog is no longer serviced =="
+make_card $BIG
+run_dp RSOS_SPLASH="$W/splash-ok" RSOS_SPLASH_STOP_S=1 RSOS_TEST_HANG=before_sfdisk:8 \
+	RSOS_WD_STALL_S=3 RSOS_WD_PERIOD_S=1; rc=$?
+check "stall said and traced, where it stood" "said 'no progress for' && traced 'no progress for' && traced 'test: stopping 8 s at before_sfdisk'"
+check "the watchdog got no service during the stall (<= 7 of ~10 periods)" "[ \$(tr -cd . < $W/wd | wc -c) -le 7 ]"
+check "then finished (the test's step returns): exit 0, converted" "[ $rc -eq 0 ] && full_exfat && layout"
+cleanup
+
+echo "== S4: a first boot that never reached the menu: its trace is kept by the next one =="
+make_card $BIG
+run_dp RSOS_TEST_ABORT=before_sfdisk > /dev/null
+check "aborted boot traced up to its end" "traced 'conversion marker written' && traced 'done (exit status 99)'"
+run_dp; rc=$?
+check "next boot: exit 0, converted" "[ $rc -eq 0 ] && full_exfat"
+check "both boots in the record, the old one first" \
+	"traced '(the previous record' && [ \$(rawtrace | grep -c '^=== boot') -eq 2 ] && rawtrace | grep -n 'exit status' | head -n 1 | grep -q 'status 99'"
 cleanup
 
 echo "PASS=$pass FAIL=$fail"

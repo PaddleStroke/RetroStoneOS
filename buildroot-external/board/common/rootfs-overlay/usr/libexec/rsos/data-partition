@@ -42,13 +42,29 @@
 # it formatted again, empty, with a message and /run/rsos/data-reformatted.
 # A FAT32 volume that fails to mount is never formatted (no fsck.fat here).
 #
+# The long paths (conversion, resume, check, repair; never a normal boot):
+#   - the splash (rsos-frontend --splash) is cosmetic and can never hold the
+#     boot: it is stopped with SIGTERM, then SIGKILL, and given up after a
+#     few seconds if it is stuck in the kernel;
+#   - every step is traced: the console (UART), the kernel log, and a raw
+#     64 KiB area outside every partition (board.ini firstboot_trace_kib;
+#     RetroStone2: 3 MiB), so that a boot that hangs or loses power leaves
+#     its last step on the card; the next boot that reaches the menu
+#     (bootlog) appends it to RETROSTONE/rsos/logs/firstboot.txt;
+#   - the hardware watchdog is serviced only while the boot makes progress
+#     (SD card I/O or a new step): after 180 s without any, the board resets
+#     (the conversion is power-cut safe).
+#
 # The disk and the MBR entry come from the board (/usr/libexec/rsos/board.sh:
 # board.ini data_disk, default the disk of root= on the kernel command line,
 # and data_partition, default 1).
 # RSOS_DATA_DISK / RSOS_DATA_PART_NR / RSOS_DATA_MNT / RSOS_SHARE / RSOS_RUN
 # override them (tests); RSOS_TEST_ABORT=before_sfdisk|after_sfdisk|
-# after_format|after_restore simulates a power cut (exit 99) and
-# RSOS_TEST_FAIL=backup a failing backup.
+# after_format|after_restore simulates a power cut (exit 99),
+# RSOS_TEST_FAIL=backup a failing backup and RSOS_TEST_HANG=<step>:<seconds>
+# (before_sfdisk, after_format) a step that stops for that long. RSOS_SPLASH,
+# RSOS_SPLASH_STOP_S, RSOS_TRACE_KIB, RSOS_KMSG, RSOS_WATCHDOG,
+# RSOS_WD_STALL_S and RSOS_WD_PERIOD_S: see below.
 
 # (rcS exports RSOS_DISK and RSOS_BOARD_DATA_PARTITION: no need to read the
 # board files again on the way to the menu)
@@ -76,6 +92,7 @@ FALLBACK_SYSTEMS="arcade gb gba gbc gamegear mastersystem megadrive n64 neogeo n
 
 msg() {
 	echo "rsos-data: $*"
+	trace_line "$*"
 }
 
 # Test hooks (see the header)
@@ -83,27 +100,268 @@ test_abort() {
 	[ "$RSOS_TEST_ABORT" = "$1" ] && exit 99
 	return 0
 }
+test_hang() {
+	case "$RSOS_TEST_HANG" in
+	"$1":*)
+		msg "test: stopping ${RSOS_TEST_HANG#*:} s at $1"
+		sleep "${RSOS_TEST_HANG#*:}"
+		;;
+	esac
+	return 0
+}
+
+# --- First-boot trace (the long paths only; see the header). Each step is a
+# line "<uptime> <text>" in $TRACE, a kernel log line (dmesg; on the UART
+# with loglevel >= 6: msg() prints it there anyway) and a synced copy of
+# $TRACE in the board's raw area: firstboot_trace_kib (RSOS_TRACE_KIB), its
+# offset from the start of the disk in KiB, a multiple of 64. It is used only
+# if the 64 KiB there are inside the disk and outside every partition
+# (checked against the kernel's partition table first), so neither the
+# conversion marker nor the backup at the far end of the card, nor any
+# filesystem, is ever touched. The record starts with $TRACE_MAGIC; a record
+# no boot has collected yet (a boot that never reached the menu) is kept
+# (its last 16 KiB) above this boot's lines. bootlog collects it.
+TRACE=$RUN/firstboot.trace
+TRACE_MAGIC=RSOSFB01
+TRACE_KIB=${RSOS_TRACE_KIB-$RSOS_BOARD_FIRSTBOOT_TRACE_KIB}
+KMSG=${RSOS_KMSG:-/dev/kmsg}
+TRACE_ON=
+TRACE_BLK=
+TRACE_N=0
+
+# TRACE_BLK = the raw area in 64 KiB blocks, if it is usable.
+trace_area() {
+	TRACE_BLK=
+	case "$TRACE_KIB" in
+	"" | *[!0-9]*) return 1 ;;
+	esac
+	[ "$TRACE_KIB" -ge 64 ] && [ $((TRACE_KIB % 64)) -eq 0 ] || return 1
+	_ta_s=$((TRACE_KIB * 2))
+	_ta_e=$((_ta_s + 128))
+	_ta_t=$(total_sectors) || return 1
+	[ "$_ta_e" -le "$_ta_t" ] || return 1
+	for _ta_p in "/sys/class/block/$DISK_NAME/$DISK_NAME"*/start; do
+		[ -r "$_ta_p" ] || continue
+		read -r _ta_ps < "$_ta_p" || return 1
+		read -r _ta_pz < "${_ta_p%/start}/size" || return 1
+		[ "$_ta_e" -le "$_ta_ps" ] || [ "$_ta_s" -ge $((_ta_ps + _ta_pz)) ] || return 1
+	done
+	TRACE_BLK=$((TRACE_KIB / 64))
+}
+
+trace_raw() {
+	[ -n "$TRACE_BLK" ] || return 0
+	dd if="$TRACE" of="$DISK" bs=64k seek="$TRACE_BLK" count=1 conv=sync,fsync 2> /dev/null
+}
+
+trace_start() { # <why>
+	[ -z "$TRACE_ON" ] || return 0
+	TRACE_ON=1
+	mkdir -p "$RUN" 2> /dev/null
+	trace_area
+	_ts_id=
+	_ts_v=
+	{
+		read -r _ts_id < /proc/sys/kernel/random/boot_id
+		read -r _ts_v < /etc/rsos-version
+	} 2> /dev/null
+	{
+		echo "$TRACE_MAGIC RetroStoneOS first-boot trace (data-partition)"
+		if [ -n "$TRACE_BLK" ]; then
+			dd if="$DISK" bs=64k skip="$TRACE_BLK" count=1 2> /dev/null | tr -d '\000' > "$TRACE.prev"
+			_ts_m=
+			{ read -r _ts_m _ < "$TRACE.prev"; } 2> /dev/null
+			if [ "$_ts_m" = "$TRACE_MAGIC" ]; then
+				echo "(the previous record, never collected: its last 16 KiB)"
+				sed 1d "$TRACE.prev" | tail -c 16384
+			fi
+			rm -f "$TRACE.prev"
+		fi
+		echo "=== boot ${_ts_id:-?} (${_ts_v:-version ?}) on $DISK, trace area ${TRACE_BLK:+at $TRACE_KIB KiB}${TRACE_BLK:-none}: $1"
+	} > "$TRACE"
+	trace_line "start: $1"
+}
+
+trace_line() {
+	[ -n "$TRACE_ON" ] && [ "$TRACE_N" -lt 300 ] || return 0
+	TRACE_N=$((TRACE_N + 1))
+	_tl_up="?"
+	{ read -r _tl_up _ < /proc/uptime; } 2> /dev/null
+	echo "$_tl_up $*" >> "$TRACE"
+	echo "$TRACE_N" > "$TRACE.n"
+	{ echo "<5>rsos-data: $*" >> "$KMSG"; } 2> /dev/null
+	trace_raw
+}
+
+# --- Hardware watchdog (the long paths only). U-Boot starts the A20
+# watchdog (16 s) and the kernel services it until a program opens
+# /dev/watchdog (the menu): a first boot stuck in user space would hang for
+# good. Here a background keeper opens it and services it while the boot
+# makes progress, i.e. the SD card's I/O counters move (tar, cksum, mkfs,
+# fsck: all the time) or a step is traced. After WD_STALL seconds without
+# either it stops (once: the board resets 16 s later, the trace says where
+# it stood). At the end the keeper closes it with the magic 'V' (the
+# watchdog stops; the menu opens it again right after). No device, nothing.
+WD=${RSOS_WATCHDOG-/dev/watchdog}
+WD_STALL=${RSOS_WD_STALL_S:-180}
+WD_PERIOD=${RSOS_WD_PERIOD_S:-4}
+WD_PID=
+wd_keeper() {
+	_wk_sleep=
+	# (its sleep goes too: nothing of this script outlives it)
+	trap '{ printf V >&3; } 2> /dev/null; [ -z "$_wk_sleep" ] || kill "$_wk_sleep" 2> /dev/null; exit 0' TERM
+	exec 3> "$WD" || exit 0
+	_wk_last=
+	_wk_idle=0
+	_wk_off=
+	while :; do
+		_wk_io=
+		_wk_n=
+		{
+			read -r _wk_io < "/sys/class/block/$DISK_NAME/stat"
+			read -r _wk_n < "$TRACE.n"
+		} 2> /dev/null
+		if [ "$_wk_io|$_wk_n" != "$_wk_last" ]; then
+			_wk_last="$_wk_io|$_wk_n"
+			_wk_idle=0
+		else
+			_wk_idle=$((_wk_idle + WD_PERIOD))
+		fi
+		if [ -n "$_wk_off" ]; then
+			:
+		elif [ "$_wk_idle" -lt "$WD_STALL" ]; then
+			printf . >&3
+		else
+			_wk_off=1
+			msg "no progress for $_wk_idle s (no SD card I/O, no new step): the watchdog is no longer serviced, the board resets"
+		fi
+		sleep "$WD_PERIOD" &
+		_wk_sleep=$!
+		wait "$_wk_sleep"
+		_wk_sleep=
+	done
+}
+wd_start() {
+	[ -z "$WD_PID" ] && [ -n "$WD" ] && [ -w "$WD" ] || return 0
+	wd_keeper < /dev/null &
+	WD_PID=$!
+}
+# shellcheck disable=SC2317 # (called from on_exit, the EXIT trap)
+wd_stop() {
+	[ -n "$WD_PID" ] || return 0
+	stop_child "$WD_PID" "the watchdog keeper" > /dev/null
+	WD_PID=
+}
+
+# The start of a long path: the trace and the watchdog keeper.
+longpath() { # <why>
+	trace_start "$1"
+	wd_start
+}
+
+# --- Child processes that must not hold the boot.
+STOP_S=${RSOS_SPLASH_STOP_S:-3}
+# Running or stuck; not gone, nor a zombie (an exited child not reaped yet,
+# which "kill -0" would still find).
+proc_alive() { # <pid>
+	_pa=
+	{ read -r _pa < "/proc/$1/stat"; } 2> /dev/null || return 1
+	_pa=${_pa##*) }
+	case "$_pa" in
+	Z* | X* | x*) return 1 ;;
+	esac
+	return 0
+}
+proc_state() { # <pid>: "state D, in <kernel function>"
+	_ps=
+	_pw=
+	{
+		read -r _ps < "/proc/$1/stat"
+		read -r _pw < "/proc/$1/wchan"
+	} 2> /dev/null
+	_ps=${_ps##*) }
+	echo "state ${_ps%% *}, in ${_pw:-?}"
+}
+proc_stack() { # <pid>: its kernel stack in the trace and on the console
+	[ -r "/proc/$1/stack" ] || return 0
+	sed 's/^/rsos-data:     /' "/proc/$1/stack" 2> /dev/null
+	[ -n "$TRACE_ON" ] || return 0
+	sed 's/^/    /' "/proc/$1/stack" >> "$TRACE" 2> /dev/null
+	trace_raw
+}
+wait_gone() { # <pid> <tenths of a second>
+	_wg=0
+	while proc_alive "$1"; do
+		[ "$_wg" -lt "$2" ] || return 1
+		usleep 100000 2> /dev/null || sleep 1
+		_wg=$((_wg + 1))
+	done
+	return 0
+}
+# SIGTERM, up to STOP_S seconds, then SIGKILL, up to 2 s more. Never blocks
+# for good: a process stuck in the kernel (state D) is left behind, with its
+# kernel stack in the trace (returns 1).
+stop_child() { # <pid> <what>
+	kill "$1" 2> /dev/null
+	if ! wait_gone "$1" $((STOP_S * 10)); then
+		msg "$2 (pid $1) still there ${STOP_S} s after SIGTERM ($(proc_state "$1")): SIGKILL"
+		proc_stack "$1"
+		kill -9 "$1" 2> /dev/null
+		if ! wait_gone "$1" 20; then
+			msg "$2 (pid $1) does not go away ($(proc_state "$1")): going on without it"
+			proc_stack "$1"
+			return 1
+		fi
+	fi
+	wait "$1" 2> /dev/null   # gone: returns at once (reaps it)
+	return 0
+}
 
 # "Preparing the SD card" screen: the boot logo and a message from
 # `rsos-frontend --splash`, only around the long first-boot steps and the
 # check of a dirty volume (never on a normal boot). It holds DRM master until
-# it is stopped; the menu starts after this script, once it has exited.
+# it is stopped; the menu starts after this script, once it has exited. Its
+# log is $RUN/splash.log (each run's lines go to the trace when it stops).
 # RSOS_SPLASH overrides it (tests).
 SPLASH_BIN=${RSOS_SPLASH:-/usr/bin/rsos-frontend}
+SPLASH_LOG=$RUN/splash.log
 SPLASH_PID=
+SPLASH_STUCK=
+SPLASH_FROM=1
 splash_start() { # [message]
-	[ -z "$SPLASH_PID" ] && [ -x "$SPLASH_BIN" ] || return 0
+	longpath "splash"
+	[ -z "$SPLASH_PID" ] && [ -z "$SPLASH_STUCK" ] && [ -x "$SPLASH_BIN" ] || return 0
+	SPLASH_FROM=1
+	[ -s "$SPLASH_LOG" ] && SPLASH_FROM=$(($(wc -l < "$SPLASH_LOG") + 1))
 	"$SPLASH_BIN" --splash --message "${1:-Preparing the SD card, please wait...}" \
-		< /dev/null > /dev/null 2>&1 &
+		< /dev/null >> "$SPLASH_LOG" 2>&1 &
 	SPLASH_PID=$!
+	trace_line "splash started (pid $SPLASH_PID)"
 }
 splash_stop() {
 	[ -n "$SPLASH_PID" ] || return 0
-	kill "$SPLASH_PID" 2> /dev/null
-	wait "$SPLASH_PID" 2> /dev/null
+	if stop_child "$SPLASH_PID" "the splash"; then
+		trace_line "splash stopped"
+	else
+		# (never another one: it would not get the display)
+		SPLASH_STUCK=1
+	fi
+	if [ -n "$TRACE_ON" ] && [ -s "$SPLASH_LOG" ]; then
+		sed -n "${SPLASH_FROM},\$s/^/    splash| /p" "$SPLASH_LOG" >> "$TRACE" 2> /dev/null
+		trace_raw
+	fi
 	SPLASH_PID=
 }
-trap splash_stop EXIT
+
+# shellcheck disable=SC2317 # (the EXIT trap)
+on_exit() {
+	_oe=$?
+	splash_stop
+	[ -z "$TRACE_ON" ] || msg "done (exit status $_oe)"
+	wd_stop
+	exit "$_oe"
+}
+trap on_exit EXIT
 
 note() { # <file in /run/rsos> <text>: for the UI
 	mkdir -p "$RUN" 2> /dev/null && echo "$2" > "$RUN/$1"
@@ -151,6 +409,7 @@ mount_data() {
 	if mount_exfat; then
 		FSTYPE=exfat
 		if exfat_dirty; then
+			longpath "exFAT volume not unmounted cleanly"
 			msg "$PART was not unmounted cleanly (power cut or forced power-off)"
 			umount "$MNT"
 			fsck_data -p
@@ -304,16 +563,20 @@ finish_conversion() { # <backup offset MiB> <backup size MiB> <crc>
 		return 1
 	fi
 	format_fs || { msg "cannot format $PART"; return 1; }
+	msg "exFAT created"
 	test_abort after_format
+	test_hang after_format
 	mount_data || { msg "cannot mount the new exFAT on $PART"; return 1; }
 	_done=1
 	if [ "$2" -gt 0 ]; then
 		restore_backup "$1" "$2" "$3" || _done=
+		[ -n "$_done" ] && msg "files restored"
 	fi
 	make_layout
 	sync
+	msg "folder layout written and synced"
 	test_abort after_restore
-	[ -n "$_done" ] && clear_marker
+	[ -n "$_done" ] && clear_marker && msg "conversion marker cleared"
 	splash_stop
 	return 0
 }
@@ -354,12 +617,15 @@ convert() { # <with backup: 0|1>
 			return 1
 		fi
 		sum=$(dd if="$DISK" bs=1M skip="$bk_off" count="$bk_mib" 2> /dev/null | cksum | cut -d' ' -f1)
+		msg "backup verified ($n files, $bk_mib MiB at MiB $bk_off)"
 	fi
 	splash_start
 	id=$(new_id)
 	[ -n "$id" ] || return 1
 	write_marker "$MAGIC $id $bk_off $bk_mib $sum" || return 1
+	msg "conversion marker written ($MAGIC $id $bk_off $bk_mib $sum)"
 	test_abort before_sfdisk
+	test_hang before_sfdisk
 	is_mounted && umount "$MNT"
 	msg "growing the data partition to the end of the card"
 	if ! grow_mbr "$id"; then
@@ -368,6 +634,7 @@ convert() { # <with backup: 0|1>
 		msg "could not rewrite the partition table"
 		return 3
 	fi
+	msg "partition table written (disk id $id)"
 	test_abort after_sfdisk
 	finish_conversion "$bk_off" "$bk_mib" "$sum" || return 3
 	return 0
@@ -403,6 +670,7 @@ set -f
 set -- $(read_marker)
 set +f
 if [ "$1" = "$MAGIC" ]; then
+	longpath "conversion marker found ($*)"
 	if [ $# -eq 5 ] && [ "$2" = "$(disk_id)" ] && ! needs_growing; then
 		msg "finishing an interrupted first-boot conversion"
 		if ! finish_conversion "$3" "$4" "$5"; then
@@ -432,6 +700,7 @@ if [ ! -b "$PART" ]; then
 fi
 
 if ! is_mounted && ! mount_data; then
+	longpath "cannot mount $PART"
 	msg "cannot mount $PART on $MNT"
 	if [ -n "$RESUMING" ] || ! repair_or_reformat; then
 		msg "/data is not available"
@@ -452,6 +721,8 @@ if [ "$FSTYPE" = vfat ] && ! needs_growing; then
 	fi
 fi
 if [ -n "$unfinished" ] || needs_growing; then
+	longpath "first boot ($FSTYPE seed on $PART)"
+	msg "the data partition: $(sectors "${DISK_NAME}${PSEP}${PART_NR}" size) sectors from sector $(sectors "${DISK_NAME}${PSEP}${PART_NR}" start); the card: $(total_sectors) sectors"
 	if is_empty; then
 		msg "first boot: growing the data partition to the end of the card"
 		convert 0
@@ -487,5 +758,6 @@ fi
 # overwrites files). Its marker is checked here first so that a normal boot
 # does not start a shell for nothing.
 [ -e "$MNT/rsos/homebrew-seeded" ] ||
-	{ [ -x /usr/bin/rsos-seed-homebrew ] && /usr/bin/rsos-seed-homebrew "$MNT"; }
+	{ [ -x /usr/bin/rsos-seed-homebrew ] && trace_line "copying the homebrew games" &&
+		/usr/bin/rsos-seed-homebrew "$MNT"; }
 exit 0

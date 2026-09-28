@@ -474,11 +474,22 @@ static void log_finish(void)
 }
 
 /* ---------------------------------------------------------------- signals */
+/*
+ * rsos-frontend --splash: a cosmetic screen that must never hold up the boot
+ * (data-partition stops it before it goes on). Once asked to quit, it has
+ * SPLASH_EXIT_S seconds to close the display; then SIGALRM (default action)
+ * ends it wherever it is, and the kernel releases the display.
+ */
+#define SPLASH_EXIT_S 2
+static volatile sig_atomic_t g_splash_mode;
+
 static void on_signal(int sig)
 {
 	uint64_t one = 1;
 	int e = errno;
 
+	if (g_splash_mode && !M.quit)
+		alarm(SPLASH_EXIT_S);   /* async-signal-safe */
 	M.quit = sig;
 	if (M.sigfd >= 0 && write(M.sigfd, &one, sizeof(one)) < 0) {
 		/* the flag is enough; poll() also returns EINTR */
@@ -2600,31 +2611,50 @@ static void splash_language(void)
 	(void)g_splash_messages;
 }
 
+/*
+ * Its log (stderr) is /run/rsos/splash.log on the device (data-partition
+ * copies its end to the first-boot trace): one line per step, so a splash
+ * that never shows the logo or never exits says where it stopped.
+ */
 static int splash_main(const char *message)
 {
 	struct splash sp;
 	int r, tries = 0;
+	bool shown = false;
+	int64_t t0 = now_ms(), t;
 
+	/* First: SIGTERM must end it from the start (SPLASH_EXIT_S). */
+	g_splash_mode = 1;
+	signals_setup();
+	mlog("splash: pid %d started", (int)getpid());
 	splash_language();
 	if (message)
 		message = _(message);
-	signals_setup();
 	r = splash_load(splash_path(), &sp);
 	if (r < 0)
 		mlog("splash: %s: %s (message only)", splash_path(), strerror(-r));
 	board_init(P(BOARD_INI_DEFAULT));
 	display_config_defaults(&M.dcfg);
 	board_apply_display(board_get(), &M.dcfg);
-	M.dcfg.backlight_dir = P("/sys/class/backlight");   /* panel_keep_scanning: bl_power */
+	/*
+	 * No backlight writes from the splash (backlight_name "" = none): the
+	 * panel's own enable (drm_panel) lights it with the first modeset, and
+	 * nothing here turns the screen off. The menu takes over bl_power
+	 * (panel safety, display-design.md 8.5); the panel keeps scanning all
+	 * the same (panel_keep_scanning stays on).
+	 */
+	M.dcfg.backlight_name = "";
 	M.dcfg.on_output = on_output;
 	/* The DRM driver may still be probing this early in rcS. */
 	while (!M.quit && scr_init() < 0 && ++tries < 30)
 		usleep(100000);
 	if (!M.display_ok) {
-		mlog("splash: no display");
+		mlog("splash: no display after %d tries (%lld ms)%s", tries, (long long)(now_ms() - t0),
+		     M.quit ? ", asked to quit" : "");
 		splash_free(&sp);
 		return M.quit ? 0 : 1;
 	}
+	mlog("splash: display up in %lld ms (%s %s)", (long long)(now_ms() - t0), M.out.name, M.out.mode_name);
 	panel_picture();
 	M.output_dirty = true;
 	while (!M.quit) {
@@ -2633,10 +2663,15 @@ static int splash_main(const char *message)
 
 		if (M.output_dirty) {
 			M.output_dirty = false;
-			if (splash_present(&sp, message) < 0)
+			if (splash_present(&sp, message) < 0) {
 				M.output_dirty = true;   /* try again */
-			else if (M.headless && M.shot_file)
-				break;
+			} else {
+				if (!shown)
+					mlog("splash: logo shown %lld ms after start", (long long)(now_ms() - t0));
+				shown = true;
+				if (M.headless && M.shot_file)
+					break;
+			}
 		}
 		if (M.sigfd >= 0) {
 			pfd[nfd].fd = M.sigfd;
@@ -2651,11 +2686,15 @@ static int splash_main(const char *message)
 		if (!M.headless)
 			display_handle_events();   /* a hotplug calls on_output(): redraw */
 	}
+	if (M.quit)
+		mlog("splash: signal %d, closing the display%s", (int)M.quit, shown ? "" : " (the logo was never shown)");
 	if (M.headless && M.shot_file && M.hl_fb)
 		r = write_png(M.shot_file, M.hl_fb, M.hl_fb_w, M.hl_fb_h, M.hl_fb_w);
 	else
 		r = 0;
+	t = now_ms();
 	scr_shutdown();
+	mlog("splash: display closed in %lld ms, exiting", (long long)(now_ms() - t));
 	splash_free(&sp);
 	return r ? 1 : 0;
 }

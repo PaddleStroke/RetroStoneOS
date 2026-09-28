@@ -88,6 +88,9 @@ static struct {
 	drmModeConnection hdmi_status;
 	/* what the commits did */
 	int commits, tests, active0_on_panel, panel_broken, joint_modesets;
+	int blocking;             /* real commits without DRM_MODE_ATOMIC_NONBLOCK */
+	uint32_t last_flags;
+	bool no_vblank;           /* flips never complete (no vblank interrupt) */
 	bool panel_was_lit, keep;
 	int last_touch_mask;      /* CRTCs (bit 0 = 49, 1 = 50) touched by the last commit */
 	int modeset_mask_seq[16]; /* CRTCs modeset by each real commit (first 16) */
@@ -196,6 +199,9 @@ int mock_drmModeAtomicCommit(int fd, drmModeAtomicReqPtr r, uint32_t flags, void
 	}
 	if ((flags & DRM_MODE_ATOMIC_NONBLOCK) && K.flip_pending)
 		return -EBUSY;
+	K.last_flags = flags;
+	if (!(flags & DRM_MODE_ATOMIC_NONBLOCK))
+		K.blocking++;
 	for (i = 0; i < r->n; i++) {
 		if (r->e[i].obj == CRTC0 && r->e[i].prop == P_ACTIVE && r->e[i].v == 0)
 			K.active0_on_panel++;
@@ -296,7 +302,7 @@ int mock_drmDropMaster(int fd)
 
 int mock_drmHandleEvent(int fd, drmEventContextPtr ev)
 {
-	if (!K.flip_pending)
+	if (!K.flip_pending || K.no_vblank)
 		return 0;
 	K.flip_pending = false;
 	K.seq++;
@@ -416,9 +422,14 @@ static void complete_flip(void)
 	mock_drmHandleEvent(D.fd, &ev);
 }
 
-/* display_init() on the mock: the objects enumerate() would have found,
- * the probe, the first output. */
-static int mock_open(bool keep, bool hdmi)
+/*
+ * display_init() on the mock: the objects enumerate() would have found,
+ * the probe, the first output. A new process on the same kernel
+ * (same_kernel): the KMS state the previous one left (CRTCs, planes, blobs,
+ * framebuffer ids) is kept, only the counters restart. bl_name: the
+ * backlight setting (NULL = the first entry; "" = none, as the splash).
+ */
+static int mock_open_process(bool keep, bool hdmi, bool same_kernel, const char *bl_name)
 {
 	struct display_switch_timing tm = { 0 };
 	static const uint32_t pprops[] = { P_FB, P_PCRTC, P_SX, P_SY, P_SW, P_SH, P_CX, P_CY, P_CW, P_CH };
@@ -426,12 +437,18 @@ static int mock_open(bool keep, bool hdmi)
 	char bldir[256];
 
 	snprintf(bldir, sizeof(bldir), "%s", K.bldir);
-	memset(&K, 0, sizeof(K));
-	snprintf(K.bldir, sizeof(K.bldir), "%s", bldir);
+	if (same_kernel) {
+		K.commits = K.tests = K.active0_on_panel = K.panel_broken = K.joint_modesets = K.blocking = 0;
+		K.flip_pending = false;   /* the previous process's events died with its fd */
+		K.no_vblank = false;
+	} else {
+		memset(&K, 0, sizeof(K));
+		snprintf(K.bldir, sizeof(K.bldir), "%s", bldir);
+		K.next_fb = 700;
+		bl_reset();
+	}
 	K.keep = keep;
-	K.next_fb = 700;
 	K.hdmi_status = hdmi ? DRM_MODE_CONNECTED : DRM_MODE_DISCONNECTED;
-	bl_reset();
 
 	fd = memfd_create("kms-mock", 0);
 	if (fd < 0 || ftruncate(fd, 256 << 20) < 0)
@@ -447,6 +464,7 @@ static int mock_open(bool keep, bool hdmi)
 	display_config_defaults(&D.cfg);
 	D.cfg.panel_keep_scanning = keep;
 	D.cfg.backlight_dir = K.bldir;
+	D.cfg.backlight_name = bl_name;
 	D.cfg.log = quiet;
 	D.cfg.log_level = DISPLAY_LOG_DEBUG;
 	D.cfg.internal_mode = DISPLAY_INTERNAL_LIST;
@@ -487,6 +505,11 @@ static int mock_open(bool keep, bool hdmi)
 		return -ENODEV;
 	tm.t_probe = display_now_ms();
 	return do_switch(want, DISPLAY_EVENT_INIT, &tm);
+}
+
+static int mock_open(bool keep, bool hdmi)
+{
+	return mock_open_process(keep, hdmi, false, NULL);
 }
 
 /* A hotplug of HDMI, as reprobe() does it after the debounce. */
@@ -762,6 +785,82 @@ static void test_panel_picture(void)
 	display_shutdown();
 }
 
+static void bl_write(const char *v)
+{
+	char p[400];
+	FILE *f;
+
+	snprintf(p, sizeof(p), "%s/panel-bl/bl_power", K.bldir);
+	f = fopen(p, "w");
+	if (f) {
+		fprintf(f, "%s\n", v);
+		fclose(f);
+	}
+}
+
+/*
+ * 9. The first boot (data-partition): the splash process twice (start,
+ * SIGTERM -> display_shutdown()), then the menu process, on one kernel. The
+ * splash writes no backlight; closing never blocks on a vblank (even with a
+ * flip that never completed); the panel scans from the first modeset on and
+ * never gets ACTIVE = 0; each process lights it with its first commit.
+ */
+static void test_first_boot_sequence(void)
+{
+	printf("9. first boot: splash, stop, splash, stop, menu (one kernel)\n");
+	for (int hdmi = 0; hdmi < 2; hdmi++) {
+		for (int run = 0; run < 2; run++) {
+			int blocking_before;
+
+			if (hdmi == 0 && run == 0) {
+				CHECK(mock_open_process(true, false, false, "") == 0, "splash 1: open (fresh kernel)");
+				bl_write("7");   /* sentinel: nothing may write it */
+			} else {
+				CHECK(mock_open_process(true, hdmi, true, "") == 0, "splash %d: open (hdmi %d)", run + 1, hdmi);
+			}
+			CHECK(panel_scanning() && K.panel_broken == 0, "splash %d: panel scanning", run + 1);
+			CHECK(display_set_game_surface(640, 480, DRM_FORMAT_XRGB8888, 0) != NULL, "splash surface");
+			CHECK(display_begin_frame(100) >= 0 && display_present() == 0, "splash %d: logo presented", run + 1);
+			if (run == 1) {
+				/* no vblank: the flip never completes, closing must not
+				 * wait for it (drain_flip gives up after FLIP_DRAIN_MS) */
+				K.no_vblank = true;
+				CHECK(K.flip_pending, "run 2: its flip is still pending");
+			} else {
+				complete_flip();
+			}
+			blocking_before = K.blocking;
+			{
+				int64_t t0 = display_now_ms();
+
+				display_shutdown();
+				CHECK(display_now_ms() - t0 < 1000, "splash %d: closed in %lld ms", run + 1,
+				      (long long)(display_now_ms() - t0));
+			}
+			K.no_vblank = false;
+			K.flip_pending = false;   /* the kernel finishes it after the fd is gone */
+			CHECK(!strcmp(bl_power(), "7"), "splash: backlight untouched (%s)", bl_power());
+			CHECK(K.blocking == blocking_before, "splash %d: closing made %d blocking commit(s)", run + 1,
+			      K.blocking - blocking_before);
+			CHECK(kget(CRTC0, P_ACTIVE) == 1 && kget(LCD_CONN, P_CONN_CRTC) == CRTC0 && K.active0_on_panel == 0,
+			      "splash %d closed: the panel keeps scanning", run + 1);
+			CHECK(kget(PLANE0, P_FB) == 0 && kget(PLANE0 + 4, P_FB) == 0, "splash %d closed: no plane left",
+			      run + 1);
+		}
+		/* the menu (init respawns rsos-frontend once rcS is done) */
+		CHECK(mock_open_process(true, hdmi, true, NULL) == 0, "menu: open after the splash (hdmi %d)", hdmi);
+		CHECK(K.commits > 0 && panel_scanning() && K.panel_broken == 0 && K.active0_on_panel == 0 &&
+		      K.joint_modesets == 0, "menu: first commit on the panel left by the splash");
+		CHECK(!strcmp(bl_power(), hdmi ? "4" : "0"), "menu: owns the backlight (%s)", bl_power());
+		CHECK(display_set_game_surface(640, 480, DRM_FORMAT_XRGB8888, 0) != NULL, "menu surface");
+		CHECK(display_begin_frame(100) >= 0 && display_present() == 0, "menu: first frame");
+		complete_flip();
+		CHECK(game_plane_fb(hdmi) != 0, "menu frame on screen");
+		display_shutdown();
+		bl_write("7");
+	}
+}
+
 int main(void)
 {
 	const char *tmp = getenv("TMPDIR");
@@ -779,6 +878,7 @@ int main(void)
 	test_no_quirk();
 	test_single_crtc();
 	test_panel_picture();
+	test_first_boot_sequence();
 	{
 		char cmd[400];
 

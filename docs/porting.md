@@ -134,6 +134,7 @@ without it on a fake sysfs tree. It also parses every other `board/*/rootfs-over
 |---|---|---|---|---|---|
 | `data_disk` | rcS (I/O timings, read-ahead), data-partition, bootlog | the system disk: `/dev/...`, or `auto` = the disk of `root=/dev/...` on the kernel command line (`/dev/mmcblk0` if there is none, e.g. `root=PARTUUID=`) | `auto` | `/dev/mmcblk0` | `auto` |
 | `data_partition` | data-partition | MBR entry number of the data partition (physically last on the disk) | `1` | `1` | `4` |
+| `firstboot_trace_kib` | data-partition, bootlog | offset in KiB (a multiple of 64) of a 64 KiB raw area outside every partition where the first boot's steps are kept across a hang or a power cut (docs/build.md "First boot"); used only if no partition overlaps it | none | `3072` | none |
 | `boot_reason` | rcS | `axp209`: run `rsos-bootreason` (charge mode detection) | none | `axp209` | none |
 | `wifi_module` | rsos-net | WiFi driver module | `brcmfmac` | `brcmfmac` | `brcmfmac` |
 | `wifi_sdio_host`, `wifi_sdio_driver` | rsos-net | SDIO host device (and its platform driver) that is unbound to power the WiFi chip down | none (only the module is loaded/unloaded) | `1c12000.mmc`, `sunxi-mmc` | none |

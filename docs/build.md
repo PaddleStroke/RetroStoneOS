@@ -237,6 +237,32 @@ Then, if `roms/` is missing, it creates the layout, and it runs
 once (it keeps its own marker and never overwrites a file). On a normal boot
 the script costs two small reads (the marker and the exFAT flags) and the mount.
 
+**A first boot never hangs on its splash, and always leaves a trace** (image
+`20260928-firstboot`; the 20260928 images could stay black for good on their
+first boot). Only on the long paths (conversion, resume, check, repair):
+
+- the splash (`rsos-frontend --splash`, log `/run/rsos/splash.log`) is stopped
+  with SIGTERM; after 3 s SIGKILL; after 2 s more the script goes on without it
+  (a process stuck in the kernel), with its state and kernel stack in the
+  trace. The splash itself exits within 2 s of SIGTERM (`alarm()`), its
+  closing commit is non-blocking, and it never writes the backlight;
+- each step is printed on the console (UART) as `rsos-data: ...`, written to
+  the kernel log (`<5>rsos-data: ...`) and to `/run/rsos/firstboot.trace`,
+  and a synced copy of that goes to a 64 KiB raw area outside every partition
+  (board.ini `firstboot_trace_kib`: 3072 on the RetroStone2 and RetroStone1,
+  i.e. 3 MiB, in the reserved gap between the U-Boot environment and rootfs
+  A; checked against the partition table before use, so the marker and the
+  backup at the end of the card are never touched). A record that no boot
+  collected (a boot that hung or lost power) is kept above the next one. The
+  next boot that reaches the menu appends it to
+  `RETROSTONE/rsos/logs/firstboot.txt` (bootlog) and clears the area;
+- the hardware watchdog (started by U-Boot, serviced by the kernel until a
+  program opens it) is serviced by a background keeper while the boot makes
+  progress (SD card I/O counters or a new step); after 180 s without either it
+  stops servicing it and the board resets 16 s later (the conversion is
+  power-cut safe). The keeper closes it with the magic `V` at the end, and
+  the menu opens it again as before.
+
 The `roms/<system>` folder list is generated at build time by `post-build.sh`
 into `/usr/share/rsos/rom-folders`: every system in the `systems =` line of the
 `[core]` section of `/usr/share/rsos/cores/*.ini`, plus `atari2600` and
@@ -251,7 +277,12 @@ after the restore, each followed by a reboot, the review's scenarios G (cut
 after sfdisk under an old image, also with files added afterwards) and H
 (stale marker after a re-flash), a damaged backup, a failed backup, a card too
 small, an unmountable exFAT without a marker, a dirty volume, and a normal boot
-(about 30 ms). All 57 checks pass.
+(about 30 ms); the trace (every step on the card at 3 MiB, the kernel log, the
+watchdog closed with `V`, rootfs A, U-Boot and its environment untouched,
+nothing on a normal boot), a stub splash that stops on SIGTERM (its log in the
+trace), one that ignores it (SIGKILL, the boot goes on), a stalled step (the
+watchdog is no longer serviced) and a first boot that never finished (its
+trace kept by the next one).
 
 ## Boot flow
 

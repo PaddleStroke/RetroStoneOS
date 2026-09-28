@@ -2142,6 +2142,13 @@ static int lcd_bg_prepare(void)
  * its CRTC (atomic_remove_fb() when the plane-only commit is refused);
  * after this commit nothing of ours is on screen, so the panel keeps its
  * signals until the power is cut (rcK: poweroff -f) or the next display_init().
+ * Non-blocking: closing never waits for a vblank (the boot splash is closed
+ * on the way to the menu); the kernel applies it at the next one, and holds
+ * the framebuffers it replaces until then. If the kernel is still busy with
+ * a flip that never completed (-EBUSY: no vblank), nothing more is tried:
+ * the framebuffers' removal at close takes the planes down the same way
+ * (plane-only first, which sun4i accepts), and a blocking commit would only
+ * wait for the kernel's 10 s flip timeout.
  */
 static void lcd_release_planes(void)
 {
@@ -2152,9 +2159,12 @@ static void lcd_release_planes(void)
 		return;
 	for (i = 0; i < D.nplane; i++)
 		ret |= add_plane(r, &D.planes[i], 0, 0, 0, 0, NULL);
-	ret = ret ? -EINVAL : drmModeAtomicCommit(D.fd, r, 0, NULL);
+	ret = ret ? -EINVAL : drmModeAtomicCommit(D.fd, r, DRM_MODE_ATOMIC_NONBLOCK, NULL);
 	drmModeAtomicFree(r);
-	if (ret)
+	if (ret == -EBUSY)
+		dlog(DISPLAY_LOG_WARN, "panel: a flip is still pending (no vblank?): planes left to the kernel's "
+		     "removal at close");
+	else if (ret)
 		dlog(DISPLAY_LOG_WARN, "panel: planes not cleared before closing (%s): the kernel may stop the "
 		     "panel's signals", strerror(-ret));
 	else
