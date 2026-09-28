@@ -55,8 +55,11 @@ for p in "$@"; do
 			signify-openbsd" ;;
 	cross)
 		MULTIARCH=1
+		# (the target C library headers are only Recommends of the cross
+		# compilers, which --no-install-recommends leaves out)
 		PKGS="$PKGS build-essential pkg-config gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
 			binutils-arm-linux-gnueabihf binutils-aarch64-linux-gnu
+			libc6-dev-armhf-cross libc6-dev-arm64-cross
 			libdrm-dev:armhf libasound2-dev:armhf libdrm-dev:arm64 libasound2-dev:arm64
 			libzstd-dev:armhf libmbedtls-dev:armhf libzstd-dev:arm64 libmbedtls-dev:arm64" ;;
 	buildroot)

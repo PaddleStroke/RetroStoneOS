@@ -33,7 +33,10 @@ jobs:
       matrix:
         target: [check, check-asan]
     env:
-      BUILDDIR: ${{ github.workspace }}/../frontend-build
+      # short: the headless USB test mounts under $BUILDDIR/frontend-check/media,
+      # and the frontend limits a mount base to 57 characters (not
+      # /home/runner/work/RetroStoneOS/RetroStoneOS/../frontend-build/...)
+      BUILDDIR: /tmp/rsos-frontend-build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

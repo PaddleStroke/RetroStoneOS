@@ -27,7 +27,8 @@ env_init() {
 	cat "$W/copy.img" "$W/copy.img" > "$W/env.img"
 	rm -f "$W/run"/*
 }
-get() { "$H/fw_printenv" -c "$W/fw_env.config" -n "$1" 2> /dev/null; }
+# -l: the lock file in $W, not in /run (where only root may create it)
+get() { "$H/fw_printenv" -c "$W/fw_env.config" -l "$W" -n "$1" 2> /dev/null; }
 bo() { # <cmdline> [args]
 	c=$1; shift
 	echo "$c" > "$W/cmdline"
@@ -35,10 +36,10 @@ bo() { # <cmdline> [args]
 		RSOS_TEST_PATH=$W/bin RSOS_BOOT_OK_DELAY=${DELAY:-1} \
 		sh "$T" "$@" 2> "$W/err.txt"
 }
-# The host fw_printenv/fw_setenv on the file (-c; fw_setenv is the same
-# binary called by that name)
+# The host fw_printenv/fw_setenv on the file (-c, and -l for the lock file;
+# fw_setenv is the same binary called by that name)
 for t in fw_printenv fw_setenv; do
-	printf '#!/bin/bash\nexec -a %s %s/fw_printenv -c %s/fw_env.config "$@"\n' "$t" "$H" "$W" > "$W/bin/$t"
+	printf '#!/bin/bash\nexec -a %s %s/fw_printenv -c %s/fw_env.config -l %s "$@"\n' "$t" "$H" "$W" "$W" > "$W/bin/$t"
 	chmod +x "$W/bin/$t"
 done
 

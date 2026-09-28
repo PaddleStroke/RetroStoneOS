@@ -44,6 +44,7 @@ fi
 }
 BUILDDIR=${RSOS_CI_WORK:-$HOME/rsos-ci}/frontend-$TRIPLE
 rm -rf "$BUILDDIR"
+mkdir -p "$BUILDDIR"
 LOG=$BUILDDIR.log
 echo "cross build for $TRIPLE with $("$CC" --version | head -n 1), BUILDDIR=$BUILDDIR"
 rc=0

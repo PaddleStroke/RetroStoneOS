@@ -409,6 +409,10 @@ FE_WAKE_SCRIPT = wait:1500 shot:$(FE_CHECK_DIR)/idle-before.png idleoff:2 wait:2
 	a wait:300 shot:$(FE_CHECK_DIR)/idle-woke.png start wait:300 shot:$(FE_CHECK_DIR)/idle-next.png \
 	b wait:300 pek wait:500
 check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
+	@# the USB checks mount under $(FE_CHECK_DIR)/media: transfer_usb_init
+	@# refuses a mount base of 58 characters or more (usb.c, mount_base[58])
+	@test $$(printf '%s' '$(FE_CHECK_DIR)/media' | wc -c) -le 57 || \
+		{ echo "check-frontend: BUILDDIR is too long for the USB checks: $(FE_CHECK_DIR)/media is over 57 characters"; exit 1; }
 	rm -rf $(FE_CHECK_DIR)
 	mkdir -p $(FE_CHECK_DIR)/data/roms/nes $(FE_CHECK_DIR)/data/rsos $(FE_CHECK_DIR)/data/bios \
 		$(FE_CHECK_DIR)/usr/share/rsos/cores $(FE_CHECK_DIR)/dev/input $(FE_CHECK_DIR)/run/rsos \
