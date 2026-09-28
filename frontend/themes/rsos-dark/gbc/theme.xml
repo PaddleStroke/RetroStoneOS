@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: gbc sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>b0418a</accent>
+		<icon>carbon/gbc</icon>
+		<tagline>Nintendo · 1998</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

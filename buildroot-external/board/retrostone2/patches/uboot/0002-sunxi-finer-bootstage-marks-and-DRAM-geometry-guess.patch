@@ -1,0 +1,231 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: RetroStoneOS <noreply@8bcraft.com>
+Date: Sun, 27 Sep 2026 12:00:00 +0200
+Subject: [PATCH] sunxi: finer bootstage marks (SPL and U-Boot proper), DRAM
+ geometry guess on sun7i
+
+Boot time work (RetroStoneOS docs/build.md, "Boot time"). With
+SPL_BOOTSTAGE and BOOTSTAGE_STASH the SPL's marks reach U-Boot proper and,
+through BOOTSTAGE_FDT, Linux; the timestamps are the ARM counter's (0001).
+
+SPL: board_init_f() has no malloc yet (SPL_STACK_R), so bootstage only
+starts in board_init_r() (its "SPL" mark is taken there, after the DRAM
+init). The steps of board_init_f() keep their timestamps in .data and are
+recorded from spl_perform_board_fixups(), before the stash: "spl: start"
+(the boot ROM handed over), "spl: pmic" (AXP209 set up), "spl: dram" (DRAM
+controller initialised and sized), "spl: cpu clock" (PLL1 at full speed).
+"spl: mmc init" marks the card initialisation; "end phase" then marks the
+end of the U-Boot read.
+
+U-Boot proper: "board_f done" (pre-relocation init finished, before the
+reservations and the relocation), "mmc probed" and "env loaded" (the card
+init and the redundant environment read happen in between).
+
+DRAM (sun7i): the autodetection initialised the controller twice on 4 Gbit
+chips (density 8192 first, then the density the size check computed). Try
+io_width 16 / bus_width 32 / density 4096 first and keep it when the size
+check agrees; other boards fall back to the full autodetection.
+---
+diff -uprN a/arch/arm/include/asm/arch-sunxi/spl.h b/arch/arm/include/asm/arch-sunxi/spl.h
+--- a/arch/arm/include/asm/arch-sunxi/spl.h	2026-09-27 11:33:05.337481507 +0200
++++ b/arch/arm/include/asm/arch-sunxi/spl.h	2026-09-27 11:33:05.345391850 +0200
+@@ -31,4 +31,19 @@
+ uint32_t sunxi_get_boot_device(void);
+ uint32_t sunxi_get_spl_size(void);
+ 
++/* SPL bootstage marks taken before bootstage is set up (see board.c) */
++enum {
++	SUNXI_SPL_MARK_START,		/* board_init_f(): the boot ROM is done */
++	SUNXI_SPL_MARK_PMIC,		/* AXP set up */
++	SUNXI_SPL_MARK_DRAM,		/* DRAM controller initialised, sized */
++	SUNXI_SPL_MARK_CPU_CLOCK,	/* PLL1 at full speed */
++	SUNXI_SPL_MARK_COUNT
++};
++
++#if defined(CONFIG_XPL_BUILD) && CONFIG_IS_ENABLED(BOOTSTAGE)
++void sunxi_spl_mark(int mark);
++#else
++static inline void sunxi_spl_mark(int mark) {}
++#endif
++
+ #endif
+diff -uprN a/arch/arm/mach-sunxi/board.c b/arch/arm/mach-sunxi/board.c
+--- a/arch/arm/mach-sunxi/board.c	2026-09-27 11:33:05.340748565 +0200
++++ b/arch/arm/mach-sunxi/board.c	2026-09-27 11:33:05.346173965 +0200
+@@ -9,6 +9,7 @@
+  * Some init for sunxi platform.
+  */
+ 
++#include <bootstage.h>
+ #include <cpu_func.h>
+ #include <init.h>
+ #include <log.h>
+@@ -469,8 +470,46 @@ u32 spl_mmc_boot_mode(struct mmc *mmc, c
+ 	return result;
+ }
+ 
++#if CONFIG_IS_ENABLED(BOOTSTAGE)
++/*
++ * board_init_f() runs before the SPL has a malloc arena (SPL_STACK_R), so
++ * bootstage, set up by spl_init() through malloc, does not record anything
++ * yet. Keep the timestamps of its steps here (in .data: BSS is cleared before
++ * board_init_r()) and add them as records once the next image is loaded,
++ * before bootstage is stashed for U-Boot proper.
++ */
++static ulong sunxi_spl_times[SUNXI_SPL_MARK_COUNT] __section(".data");
++
++static const char *const sunxi_spl_mark_names[SUNXI_SPL_MARK_COUNT] = {
++	[SUNXI_SPL_MARK_START]		= "spl: start",
++	[SUNXI_SPL_MARK_PMIC]		= "spl: pmic",
++	[SUNXI_SPL_MARK_DRAM]		= "spl: dram",
++	[SUNXI_SPL_MARK_CPU_CLOCK]	= "spl: cpu clock",
++};
++
++void sunxi_spl_mark(int mark)
++{
++	if (mark >= 0 && mark < SUNXI_SPL_MARK_COUNT)
++		sunxi_spl_times[mark] = timer_get_boot_us();
++}
++
++void spl_perform_board_fixups(struct spl_image_info *spl_image)
++{
++	int i;
++
++	for (i = 0; i < SUNXI_SPL_MARK_COUNT; i++) {
++		if (!sunxi_spl_times[i])
++			continue;
++		bootstage_add_record(0, sunxi_spl_mark_names[i],
++				     BOOTSTAGEF_ALLOC, sunxi_spl_times[i]);
++		sunxi_spl_times[i] = 0;
++	}
++}
++#endif
++
+ void board_init_f(ulong dummy)
+ {
++	sunxi_spl_mark(SUNXI_SPL_MARK_START);
+ 	sunxi_sram_init();
+ 
+ 	/* Enable non-secure access to some peripherals */
+diff -uprN a/arch/arm/mach-sunxi/dram_sun4i.c b/arch/arm/mach-sunxi/dram_sun4i.c
+--- a/arch/arm/mach-sunxi/dram_sun4i.c	2026-09-27 11:33:05.345248029 +0200
++++ b/arch/arm/mach-sunxi/dram_sun4i.c	2026-09-27 11:33:05.348730112 +0200
+@@ -702,6 +702,23 @@ unsigned long dramc_init(struct dram_par
+ 	if (para->io_width && para->bus_width && para->density)
+ 		return dramc_init_helper(para);
+ 
++#ifdef CONFIG_MACH_SUN7I
++	/*
++	 * The autodetection below always initialises the controller twice on
++	 * a board with 4 Gbit chips (e.g. 1 GiB on a 32-bit bus): first with
++	 * density 8192, then again with the density the size check found.
++	 * Try that final geometry first, and keep it if the size check agrees;
++	 * any other board falls through to the full autodetection.
++	 */
++	para->io_width  = 16;
++	para->bus_width = 32;
++	para->density = 4096;
++	dram_size = dramc_init_helper(para);
++	if (dram_size &&
++	    (dram_size >> 17) * para->io_width / para->bus_width == para->density)
++		return dram_size;
++#endif
++
+ 	/* try to autodetect the DRAM bus width and density */
+ 	para->io_width  = 16;
+ 	para->bus_width = 32;
+diff -uprN a/board/sunxi/board.c b/board/sunxi/board.c
+--- a/board/sunxi/board.c	2026-09-27 11:33:05.342260211 +0200
++++ b/board/sunxi/board.c	2026-09-27 11:33:05.346867021 +0200
+@@ -652,11 +652,13 @@ void sunxi_board_init(void)
+ 	power_failed |= axp_set_sw(IS_ENABLED(CONFIG_AXP_SW_ON));
+ #endif
+ #endif	/* CONFIG_AXPxxx_POWER */
++	sunxi_spl_mark(SUNXI_SPL_MARK_PMIC);
+ 	printf("DRAM:");
+ 	gd->ram_size = sunxi_dram_init();
+ 	printf(" %d MiB\n", (int)(gd->ram_size >> 20));
+ 	if (!gd->ram_size)
+ 		hang();
++	sunxi_spl_mark(SUNXI_SPL_MARK_DRAM);
+ 
+ 	sunxi_spl_store_dram_size(gd->ram_size);
+ 
+@@ -668,6 +670,7 @@ void sunxi_board_init(void)
+ 		clock_set_pll1(get_board_sys_clk());
+ 	else
+ 		printf("Failed to set core voltage! Can't set CPU frequency\n");
++	sunxi_spl_mark(SUNXI_SPL_MARK_CPU_CLOCK);
+ }
+ #endif /* CONFIG_XPL_BUILD */
+ 
+diff -uprN a/common/board_f.c b/common/board_f.c
+--- a/common/board_f.c	2026-09-27 11:33:05.344973579 +0200
++++ b/common/board_f.c	2026-09-27 11:33:05.347829972 +0200
+@@ -876,6 +876,18 @@ static int initf_upl(void)
+ 	return 0;
+ }
+ 
++/*
++ * Bootstage mark at the end of the pre-relocation init, before the memory
++ * reservations and the relocation (whose time then shows up until the
++ * "board_init_r" mark, which is taken with the caches on).
++ */
++static int initf_mark_done(void)
++{
++	bootstage_mark_name(BOOTSTAGE_ID_ALLOC, "board_f done");
++
++	return 0;
++}
++
+ static void initcall_run_f(void)
+ {
+ 	/*
+@@ -944,6 +956,7 @@ static void initcall_run_f(void)
+ #endif
+ 	INITCALL(announce_dram_init);
+ 	INITCALL(dram_init);		/* configure available RAM banks */
++	INITCALL(initf_mark_done);
+ #if CONFIG_IS_ENABLED(POST)
+ 	INITCALL(post_init_f);
+ #endif
+diff -uprN a/common/board_r.c b/common/board_r.c
+--- a/common/board_r.c	2026-09-27 11:33:05.345116016 +0200
++++ b/common/board_r.c	2026-09-27 11:33:05.348640955 +0200
+@@ -412,6 +412,7 @@ static int initr_mmc(void)
+ {
+ 	puts("MMC:   ");
+ 	mmc_initialize(gd->bd);
++	bootstage_mark_name(BOOTSTAGE_ID_ALLOC, "mmc probed");
+ 	return 0;
+ }
+ #endif
+@@ -451,6 +452,7 @@ static int initr_env(void)
+ 		env_relocate();
+ 	else
+ 		env_set_default(NULL, 0);
++	bootstage_mark_name(BOOTSTAGE_ID_ALLOC, "env loaded");
+ 
+ 	env_import_fdt();
+ 
+diff -uprN a/common/spl/spl_mmc.c b/common/spl/spl_mmc.c
+--- a/common/spl/spl_mmc.c	2026-09-27 11:33:05.344023123 +0200
++++ b/common/spl/spl_mmc.c	2026-09-27 11:33:05.347321964 +0200
+@@ -5,6 +5,7 @@
+  *
+  * Aneesh V <aneesh@ti.com>
+  */
++#include <bootstage.h>
+ #include <dm.h>
+ #include <log.h>
+ #include <part.h>
+@@ -392,6 +393,7 @@ int spl_mmc_load(struct spl_image_info *
+ 			printf("spl: mmc init failed with error: %d\n", ret);
+ 			return ret;
+ 		}
++		bootstage_mark_name(BOOTSTAGE_ID_ALLOC, "spl: mmc init");
+ 	}
+ 
+ 	boot_mode = spl_mmc_boot_mode(mmc, bootdev->boot_device);
+-- 
+2.43.0

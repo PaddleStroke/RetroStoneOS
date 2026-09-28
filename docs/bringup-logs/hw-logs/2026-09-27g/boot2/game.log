@@ -1,0 +1,41 @@
+
+=== [   15.623] launch: /usr/lib/libretro/gambatte_libretro.so /data/roms/gb/Into the Blue.gb system gb
+[    15.638] host I: game process: core gambatte, system gb, content /data/roms/gb/Into the Blue.gb
+[    15.810] host I: core: Gambatte v0.5.0 (need_fullpath 0, extensions gb|gbc|dmg)
+[    15.811] host I: core options: 0 package, 0 shipped, 0 system, 0 game overrides
+[  15.816] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[  15.816] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[  15.817] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[  15.817] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[    15.817] host I: input: launched by builtin (player 1 under the auto policy)
+[    15.817] host I: input: input layer, player 1 auto, C/Z buttons no
+[    15.817] host I: lcd refresh: the panel's own mode (78.6 Hz)
+[    15.821] host I: display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[    15.827] host I: display: plane 33: none
+[    15.827] host I: display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[    15.827] host I: output: Unknown-1 640x480@78.571 (reason 0)
+[    15.833] host I: core declared 17 options
+[    15.833] host I: core performance level: 4
+[    15.842] host I: content in memory: 131072 bytes
+[    15.842] host I: [gambatte] [Gambatte] Rumble environment supported.
+[    15.844] host I: pixel format RGB565
+[    15.844] host I: [gambatte] [Gambatte] MBC1 ROM loaded.
+[    15.844] host I: [gambatte] [Gambatte] rambanks: 0
+[    15.844] host I: [gambatte] [Gambatte] rombanks: 8
+[    15.849] host I: [gambatte] [Gambatte] Got internal game name: INTO THE BLUE.
+[    15.849] host I: retro_load_game: 7 ms
+[    15.849] host I: AV: 160x144 (max 160x144, aspect 1.111), 59.7275 fps, 32768.0 Hz
+[    15.851] host W: display: hw-scaled path rejected on Unknown-1/crtc 0: Invalid argument
+[    15.865] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[    15.865] host I: game surface 160x144 RGB565, hardware scaled
+[    15.878] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[    16.608] host I: audio: plughw:0,0 open, 48000 Hz, buffer 3072 frames (64.0 ms), period 768 (16.0 ms)
+[    16.612] host I: pacing: audio clock (core 59.7275 fps 32768.0 Hz, display 78.571 Hz, ratio 1.464844)
+[    16.613] host I: cpu: governor performance, 960 MHz (policy 720-960 MHz)
+[    16.618] host I: display: overlay: plane 37, 72x20 at 564,4
+[    18.627] host I: display: refresh measured on Unknown-1: 78.572 Hz (158 vblanks in 2.010 s; mode 78.571 Hz)
+[    19.974] host I: toast: Powering off...
+[    20.123] host I: state /data/states/gb/Into the Blue.state.auto (26861 bytes)
+[    20.123] host I: auto state saved (power-off): 27 KB in 143 ms
+[    20.123] host I: 202 frames, 202 presented, 1 skipped, 0 dupes
+[    20.124] host I: power-off: saves on the card, exiting without the teardown

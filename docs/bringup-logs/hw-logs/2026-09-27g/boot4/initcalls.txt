@@ -1,0 +1,104 @@
+initcall_debug boot: console=ttyS0,115200 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait ro quiet panic=10 consoleblank=0 driver_async_probe=dw-apb-uart,musb-sunxi,sun4i-ts,axp20x-i2c initcall_debug log_buf_len=1M rsos.slot=a 
+
+Sum of all initcalls: 275.3 ms
+
+Slowest initcalls (usecs):
+31000 of_platform_default_populate_init+0x0/0xcc
+22563 deferred_probe_initcall+0x0/0xac
+21434 lima_platform_driver_init+0x0/0x10
+19219 cacheinfo_sysfs_init+0x0/0x40
+14009 clk_debug_init+0x0/0x10c
+12331 sun4i_codec_driver_init+0x0/0x10
+11084 sun7i_dwmac_driver_init+0x0/0x1000 [dwmac_sunxi]
+8027 param_sysfs_builtin_init+0x0/0x1d0
+7933 sun5i_timer_driver_init+0x0/0x10
+7821 panel_simple_init+0x0/0x1c
+7114 gpio_keys_polled_driver_init+0x0/0x10
+6829 sun4i_dma_driver_init+0x0/0x10
+6351 slab_late_init+0x0/0x12c
+6255 sun4i_a10_pinctrl_driver_init+0x0/0x10
+4245 inet_init+0x0/0x2b4
+4127 sunxi_sid_driver_init+0x0/0x10
+3748 uhid_misc_init+0x0/0xc
+3603 sun4i_drv_platform_driver_init+0x0/0x28
+3281 dt_cpufreq_platdrv_init+0x0/0x10
+3135 mv64xxx_i2c_driver_init+0x0/0x10
+2977 serial8250_init+0x0/0xec
+2793 gpio_keys_init+0x0/0x10
+2715 sun4i_tcon_platform_driver_init+0x0/0x10
+2569 sunxi_rtc_driver_init+0x0/0x10
+2141 sun4i_usb_phy_driver_init+0x0/0x10
+2115 sunxi_sram_driver_init+0x0/0x18
+2016 sunxi_wdt_driver_init+0x0/0x10
+2000 cma_init_reserved_areas+0x0/0x28c
+1803 chr_dev_init+0x0/0xa8
+1683 loop_init+0x0/0xdc
+1616 iio_hwmon_driver_init+0x0/0x10
+1284 sun4i_pwm_driver_init+0x0/0x10
+1273 sun4i_backend_platform_driver_init+0x0/0x10
+1128 snd_soc_init+0x0/0xac
+1000 usb_phy_generic_init+0x0/0x10
+1000 sun4i_a10_ccu_init+0x0/0x10
+1000 regulator_fixed_voltage_init+0x0/0x10
+1000 register_cpu_capacity_sysctl+0x0/0x40
+1000 oom_init+0x0/0x54
+1000 netlink_proto_init+0x0/0x110
+
+Slowest driver probes (usecs; "returned -517" = deferred, retried later):
+85425 1c1c400.usb returned 0
+83267 1c14400.usb returned 0
+58706 1c28800.serial returned 0
+54119 0-0034 returned 0
+44023 1c1c000.usb returned 0
+37906 1c28000.serial returned 0
+36723 1c12000.mmc returned 0
+31534 1c50000.ethernet returned 0
+26382 1c14000.usb returned 0
+21095 1c40000.gpu returned 0
+18787 axp20x-regulator returned 0
+15664 1c0c000.lcd-controller returned 0
+15005 1c13000.usb returned 0
+13756 musb-hdrc.1.auto returned 0
+12145 1c0f000.mmc returned 0
+11838 axp20x-ac-power-supply returned 0
+11503 1c22c00.codec returned 0
+7514 1c60000.hstimer returned 0
+7106 mmc0:59b4 returned 0
+6920 axp20x-battery-power-supply returned 0
+6779 stmmac-0:01 returned 0
+6482 1c02000.dma-controller returned 0
+6235 axp20x-gpio returned 0
+6071 axp20x-pek returned 0
+5793 1c20800.pinctrl returned 0
+3491 gpio-keys-shoulder returned 0
+3296 1c23800.eeprom returned 0
+3084 cpufreq-dt returned 517
+2698 gpio-keys-brightness returned 0
+2605 cpufreq-dt returned 0
+2523 1c2ac00.i2c returned 0
+2490 usb5 returned 0
+2482 display-engine returned 0
+2350 gpio-keys returned 0
+2237 axp20x-adc returned 0
+2147 1c20d00.rtc returned 0
+1720 usb1 returned 0
+1646 5-0:1.0 returned 0
+1568 usb3 returned 0
+1404 1c20c90.watchdog returned 0
+
+Deferred probes (returned -517):
+      1 analog-stick returned -517
+      1 pmic-temp returned -517
+
+Milestones on the way to /sbin/init (kernel time, s):
+[    0.105112] sun4i-pinctrl 1c20800.pinctrl: initialized sunXi PIO driver
+[    0.203977] axp20x-i2c 0-0034: AXP20x variant AXP209 found
+[    0.226267] sunxi-mmc 1c0f000.mmc: initialized, max. request size: 16384 KB
+[    0.257582] axp20x-i2c 0-0034: AXP20X driver loaded
+[    0.285101] mmc0: new high speed SDHC card at address 59b4
+[    0.297779] [drm] Initialized sun4i-drm 1.0.0 for display-engine on minor 1
+[    0.304839] initcall deferred_probe_initcall+0x0/0xac returned 0 after 22563 usecs
+[    0.308896] clk: Disabling unused clocks
+[    0.309113] initcall clk_disable_unused+0x0/0x10c returned 0 after 216 usecs
+[    0.320108] EXT4-fs (mmcblk0p2): mounted filesystem 34fdd6c3-8e7b-489d-b52c-d9863d4c1d1a ro without journal. Quota mode: disabled.
+[    0.322962] Run /sbin/init as init process

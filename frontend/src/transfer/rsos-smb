@@ -1,0 +1,113 @@
+#!/bin/sh
+# rsos-smb: the Windows file share \\RETROSTONE (in-kernel ksmbd + ksmbd-tools,
+# docs/rom-transfer.md §3.3). Started by the menu only while the network
+# transfer runs with Settings > Network > Windows file share on; never at boot.
+#
+#   rsos-smb start PIN [NAME]   the share of /data as \\NAME\RetroStone (NAME:
+#                               the console name, default RETROSTONE), user
+#                               "retrostone" with the web share's PIN as its
+#                               password, SMB signing required, no guest
+#   rsos-smb stop               stop it and forget the configuration
+#   rsos-smb status             prints "on" or "off"
+#
+# Everything lives in /run/ksmbd (tmpfs, the root is read-only): a new
+# password at every start, nothing left after a reboot. Prints "on" / "off" on
+# success, one English line on stderr and exit 1 on failure (the menu shows
+# it). Tests: RSOS_SMB_RUN (the run folder), RSOS_SMB_SHARE (the shared
+# folder), RSOS_SMB_PATH (where the commands are) and RSOS_SMB_SYSMOD (the
+# module's sysfs folder) override the defaults (tests/smb-test.sh).
+
+RUN=${RSOS_SMB_RUN:-/run/ksmbd}
+SHARE=${RSOS_SMB_SHARE:-/data}
+PATH=${RSOS_SMB_PATH:-/usr/bin:/usr/sbin:/bin:/sbin}
+SYSMOD=${RSOS_SMB_SYSMOD:-/sys/module/ksmbd}
+export PATH
+CONF=$RUN/ksmbd.conf
+PWDDB=$RUN/ksmbdpwd.db
+USER_NAME=retrostone
+
+fail() {
+	echo "$*" >&2
+	exit 1
+}
+
+running() {
+	[ -e "$SYSMOD" ] && [ -e "$CONF" ] && pidof ksmbd.mountd > /dev/null 2>&1
+}
+
+do_stop() {
+	# ksmbd.control -s stops ksmbd.mountd and the kernel server
+	ksmbd.control -s > /dev/null 2>&1
+	i=0
+	while pidof ksmbd.mountd > /dev/null 2>&1 && [ $i -lt 20 ]; do
+		usleep 100000 2> /dev/null || sleep 1
+		i=$((i + 1))
+	done
+	modprobe -r ksmbd > /dev/null 2>&1
+	rm -rf "$RUN"
+}
+
+case "$1" in
+start)
+	PIN=$2
+	NAME=$(echo "${3:-retrostone}" | tr 'a-z' 'A-Z' | tr -cd 'A-Z0-9-' | cut -c1-15)
+	[ -n "$NAME" ] || NAME=RETROSTONE
+	case "$PIN" in
+	"" | *[!0-9A-Za-z]*) fail "rsos-smb: no PIN" ;;
+	esac
+	[ ${#PIN} -ge 4 ] || fail "rsos-smb: the PIN is too short"
+	[ -d "$SHARE" ] || fail "rsos-smb: $SHARE is not mounted"
+	command -v ksmbd.mountd > /dev/null 2>&1 || fail "ksmbd-tools are not installed"
+	if running; then
+		do_stop
+	fi
+	mkdir -p "$RUN" && chmod 700 "$RUN" || fail "rsos-smb: cannot create $RUN"
+	# Windows 11 24H2 refuses guest sessions and wants signing: a user, the
+	# PIN as its password, signing mandatory. exFAT has no extended
+	# attributes: no DOS attributes stored. The files belong to root.
+	cat > "$CONF" <<EOF || fail "rsos-smb: cannot write $CONF"
+; RetroStoneOS: the Windows file share (rsos-smb), made at every start
+[global]
+	netbios name = $NAME
+	server string = RetroStone
+	server min protocol = SMB2_10
+	server signing = mandatory
+	map to guest = never
+	restrict anonymous = 2
+[RetroStone]
+	comment = RetroStone games, BIOS, saves
+	path = $SHARE
+	read only = no
+	browseable = yes
+	guest ok = no
+	valid users = $USER_NAME
+	force user = root
+	force group = root
+	store dos attributes = no
+	veto files = /.Trashes/.fseventsd/.Spotlight-V100/System Volume Information/\$RECYCLE.BIN/
+EOF
+	rm -f "$PWDDB"
+	ksmbd.adduser -C "$CONF" -P "$PWDDB" -a -p "$PIN" "$USER_NAME" > /dev/null 2>&1 ||
+		{ rm -rf "$RUN"; fail "rsos-smb: cannot add the user"; }
+	modprobe ksmbd > /dev/null 2>&1 || { rm -rf "$RUN"; fail "the ksmbd kernel module is missing"; }
+	ksmbd.mountd -C "$CONF" -P "$PWDDB" > /dev/null 2>&1 ||
+		{ modprobe -r ksmbd > /dev/null 2>&1; rm -rf "$RUN"; fail "ksmbd.mountd did not start"; }
+	# the daemon leaves at once when the kernel server does not answer
+	usleep 500000 > /dev/null 2>&1 || sleep 1
+	pidof ksmbd.mountd > /dev/null 2>&1 ||
+		{ modprobe -r ksmbd > /dev/null 2>&1; rm -rf "$RUN"; fail "ksmbd.mountd stopped at once"; }
+	echo on
+	;;
+stop)
+	do_stop
+	echo off
+	;;
+status)
+	if running; then echo on; else echo off; fi
+	;;
+*)
+	echo "usage: rsos-smb start PIN [NAME] | stop | status" >&2
+	exit 2
+	;;
+esac
+exit 0

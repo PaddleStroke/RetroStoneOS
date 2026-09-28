@@ -1,0 +1,4 @@
+boot started (clock may be approximate): Sat Sep 26 10:49:23 UTC 2026
+cmdline: console=ttyS0,115200 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait ro panic=10 consoleblank=0 rsos.slot=a 
+bootreason: key
+u-boot env: rsos_ok=1 rsos_p=2 rsos_part_a=2 rsos_part_b=3 rsos_slot=a rsos_tries=0 

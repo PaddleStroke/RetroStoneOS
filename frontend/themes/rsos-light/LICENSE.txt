@@ -1,0 +1,51 @@
+RetroStoneOS "rsos-dark" / "rsos-light" EmulationStation themes
+=================================================================
+
+These themes combine two parts under two licences.
+
+1. Console art: _art/carbon/*.svg
+---------------------------------
+The per-system console and controller drawings (and the three collection
+folder icons) come from the "carbon" EmulationStation theme:
+
+  Theme "carbon" by Rookervik, based on "simple" by Nils Bonenberger
+  https://github.com/RetroPie/es-theme-carbon (commit b09973e, 2020-05-20),
+  files <system>/art/controller.svg.
+  The same vectors are the "controller & system vector art" that the gbz35
+  theme (by rxbrad) credits to Carbon.
+
+Licence: Creative Commons Attribution-NonCommercial-ShareAlike (CC BY-NC-SA),
+as stated in Carbon's readme.txt, copied unmodified as
+_art/carbon/CARBON-README.txt (its summary line says "2.0"; the legal text it
+includes is the 4.0 International licence:
+https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+Changes made for RetroStoneOS (each file also says so in a comment):
+  - every filled shape also gets an outline stroke of its own colour, 4 units
+    wide (2 for the collection icons), so the thin lines stay visible when the
+    art is drawn ~250 px wide;
+  - editor metadata (Illustrator/Inkscape) removed;
+  - the files are named after Carbon's system folders (snes.svg, sg-1000.svg...);
+  - zxspectrum.svg: the "sinclair" wordmark of the original drawing is removed,
+    and the hidden reference layer (an embedded JPEG) of scummvm.svg is dropped.
+The theme draws them tinted with each system's accent colour.
+
+These adapted files are distributed under the same CC BY-NC-SA licence:
+you may share and adapt them if you credit Rookervik (Carbon) and Nils
+Bonenberger (simple), indicate changes, do not use them for commercial
+purposes, and share adaptations under the same licence. RetroStoneOS is free
+and open source with public builds, and the console is sold without
+firmware: these themes ship only in the free firmware image.
+
+Console shapes are depictions of third-party products (Nintendo, Sega, Sony,
+NEC, SNK, Atari, Bandai, Coleco, MSX, Commodore, Amstrad, Sinclair, IBM
+PC...); no logos or trademarks are drawn.
+
+2. Everything else
+------------------
+theme.xml, the system folders' theme.xml files and the other files in _art
+(background, pattern, generic icons including icon-pico8.svg and
+icon-pokemini.svg, stars, panels) are original work for
+RetroStoneOS, under the RetroStoneOS project licence (the licence of the
+frontend source; see the repository root). The fonts come from the
+frontend (":/fonts", Roboto Condensed, Apache License 2.0).

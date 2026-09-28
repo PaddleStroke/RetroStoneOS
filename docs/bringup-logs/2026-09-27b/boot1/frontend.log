@@ -1,0 +1,64 @@
+[    4.033] frontend: starting (pid 204)
+[     4.044] display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[     4.048] display: plane 33: none
+[     4.049] display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[     4.087] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[     4.099] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[    4.099] frontend: output init: Unknown-1 640x480@78.571 Hz, UI 640x480
+[    4.107] frontend: splash: 11114 bytes, 640x480, shown 79 ms after start (read 494 us, decode + present 7409 us)
+[   4.109] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   4.111] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[   4.112] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   4.113] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   4.124] ui I: ui: warm-up: 6 folders, 6 reads, 768 KiB, 10405 us
+[   4.144] ui I: ui: created in 31214 us, theme rsos-dark (io 0 reads, 0 KiB)
+[   4.144] ui I: ui: logical size 640x480
+[   4.146] ui I: ui: no carousel snapshot: loading 30 systems
+[    4.176] frontend: frame 0: 29458 us (wait for a buffer 320, render 23303, present 5835)
+[    4.176] frontend: first frame 148 ms after start (ui_create 31214 us)
+[   4.276] ui I: games: /data/roms/nes/gamelist.xml: 2 entries matched
+[   4.285] ui I: games: /data/roms/gb/gamelist.xml: 5 entries matched
+[   4.287] ui I: games: /data/roms/gbc/gamelist.xml: 1 entries matched
+[   4.296] ui I: games: /data/roms/megadrive/gamelist.xml: 3 entries matched
+[power] PEK force-off 6000 ms, power-on hold 1000 ms
+[power] battery 72 % 3852 mV discharging, charger off, boot key
+[    4.315] frontend: power: mode normal, battery 72 %
+[   4.316] ui I: games: nes: scanned 2 games in 3844 us (folder 102, cache read 35, readdir 258 x1, gamelist 531, cache write 2777)
+[   4.317] ui I: games: fds: scanned 0 games in 1545 us (folder 33, cache read 47, readdir 725 x1, gamelist 237, cache write 473)
+[   4.317] ui I: games: snes: scanned 0 games in 588 us (folder 46, cache read 43, readdir 75 x1, gamelist 41, cache write 362)
+[   4.317] ui I: games: n64: scanned 0 games in 1283 us (folder 35, cache read 37, readdir 660 x1, gamelist 86, cache write 437)
+[   4.317] ui I: games: gb: scanned 5 games in 3550 us (folder 50, cache read 59, readdir 880 x1, gamelist 1716, cache write 749)
+[   4.317] ui I: games: gbc: scanned 1 games in 2232 us (folder 34, cache read 71, readdir 938 x1, gamelist 494, cache write 626)
+[   4.317] ui I: games: gba: scanned 0 games in 2913 us (folder 34, cache read 60, readdir 882 x1, gamelist 110, cache write 520)
+[   4.317] ui I: games: sg1000: scanned 0 games in 1723 us (folder 88, cache read 129, readdir 805 x1, gamelist 89, cache write 568)
+[   4.317] ui I: games: mastersystem: scanned 0 games in 1516 us (folder 60, cache read 73, readdir 723 x1, gamelist 89, cache write 534)
+[   4.318] ui I: games: megadrive: scanned 3 games in 3094 us (folder 55, cache read 68, readdir 1527 x1, gamelist 582, cache write 771)
+[   4.318] ui I: games: segacd: scanned 0 games in 1453 us (folder 43, cache read 103, readdir 754 x1, gamelist 71, cache write 454)
+[   4.318] ui I: games: sega32x: scanned 0 games in 696 us (folder 42, cache read 66, readdir 148 x1, gamelist 49, cache write 369)
+[   4.318] ui I: games: pico: scanned 0 games in 1284 us (folder 34, cache read 48, readdir 61 x1, gamelist 607, cache write 507)
+[   4.318] ui I: games: gamegear: scanned 0 games in 1726 us (folder 49, cache read 67, readdir 744 x1, gamelist 80, cache write 752)
+[   4.318] ui I: games: psx: scanned 0 games in 750 us (folder 56, cache read 75, readdir 91 x1, gamelist 48, cache write 448)
+[   4.318] ui I: games: pcengine: scanned 0 games in 875 us (folder 58, cache read 92, readdir 110 x1, gamelist 70, cache write 515)
+[   4.318] ui I: games: pcenginecd: scanned 0 games in 1057 us (folder 65, cache read 105, readdir 212 x1, gamelist 79, cache write 565)
+[   4.318] ui I: games: ngp: scanned 0 games in 815 us (folder 50, cache read 75, readdir 94 x1, gamelist 51, cache write 516)
+[   4.318] ui I: games: ngpc: scanned 0 games in 975 us (folder 56, cache read 79, readdir 186 x1, gamelist 74, cache write 553)
+[   4.319] ui I: games: wonderswan: scanned 0 games in 884 us (folder 59, cache read 82, readdir 93 x1, gamelist 52, cache write 571)
+[   4.319] ui I: games: wonderswancolor: scanned 0 games in 1023 us (folder 56, cache read 79, readdir 179 x1, gamelist 76, cache write 604)
+[   4.319] ui I: games: atari2600: scanned 0 games in 1832 us (folder 45, cache read 75, readdir 903 x1, gamelist 119, cache write 659)
+[   4.319] ui I: games: atari7800: scanned 0 games in 1743 us (folder 57, cache read 91, readdir 692 x1, gamelist 107, cache write 763)
+[   4.319] ui I: games: atarilynx: scanned 0 games in 1708 us (folder 59, cache read 93, readdir 810 x1, gamelist 85, cache write 634)
+[   4.319] ui I: games: coleco: scanned 0 games in 1617 us (folder 43, cache read 80, readdir 738 x1, gamelist 90, cache write 633)
+[    4.324] frontend: frame 1: 5068 us (wait for a buffer 6, render 1684, present 3378)
+[   4.329] ui I: games: msx: scanned 0 games in 1646 us (folder 53, cache read 153, readdir 757 x1, gamelist 78, cache write 570)
+[   4.329] ui I: games: arcade: scanned 0 games in 1384 us (folder 47, cache read 105, readdir 618 x1, gamelist 70, cache write 519)
+[   4.329] ui I: games: fbneo: scanned 0 games in 2148 us (folder 42, cache read 87, readdir 1248 x1, gamelist 94, cache write 649)
+[   4.329] ui I: games: neogeo: scanned 0 games in 2247 us (folder 128, cache read 195, readdir 337 x1, gamelist 181, cache write 1316)
+[   4.329] ui I: games: neocd: scanned 0 games in 1808 us (folder 116, cache read 166, readdir 760 x1, gamelist 102, cache write 621)
+[   4.335] ui I: ui: menu style bg fa1b1e23 dim 99000000 text ffeceef1 selector ff3d7bd9
+[   4.335] ui I: ui: game lists complete: 30 systems checked, 4 with games, 11 games, in 183 ms (worker 178 ms; warm-up 36 folders, 10 reads, 4608 KiB, 127 ms); carousel built, 0 lists replaced; io 7 reads, 2400 KiB; digest 72dcf2dab7b6217e
+[   4.335] ui I: ui: game list time by step: folder 1695 us, cache read 2538 us, validation stat 0 us, decode 0 us, readdir 17008 us, gamelist.xml 6158 us, cache write 20035 us; slowest nes 3844 us
+[   4.336] ui I: ui: carousel snapshot saved (4 entries)
+[   5.016] ui I: ui: first frame in 678342 us (theme parsing 13308 us, images: 5 decoded in 549056 us, 0 from the cache in 0 us, 0 shared; backdrops: 0 from the cache, 1 composited, 626240 us; io 0 reads, 0 KiB)
+[    5.020] frontend: frame 2: 682321 us (wait for a buffer 99, render 678798, present 3424)
+[    5.020] frontend: menu up 992 ms after start: running /usr/bin/rsos-boot-ok
+[    5.026] frontend: game lists complete 998 ms after start

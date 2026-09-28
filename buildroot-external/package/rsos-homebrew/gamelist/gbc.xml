@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<gameList>
+	<game>
+		<path>./ucity.gbc</path>
+		<name>µCity</name>
+		<desc>An open-source city builder: zone residential, commercial and industrial areas, build roads, power and services, balance the budget and survive disasters. Includes scenarios and a random map generator.</desc>
+		<releasedate>20180131T000000</releasedate>
+		<developer>Antonio Niño Díaz</developer>
+		<genre>Simulation</genre>
+		<players>1</players>
+	</game>
+</gameList>

@@ -1,0 +1,19 @@
+config BR2_PACKAGE_LIBRETRO_BEETLE_SUPERGRAFX
+	bool "libretro-beetle-supergrafx"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Beetle SuperGrafx (Mednafen "pce_fast" with SuperGrafx
+	  support): PC Engine SuperGrafx (.sgx), and also PC Engine
+	  HuCards and CD games, built as a libretro core.
+
+	  Installs /usr/lib/libretro/mednafen_supergrafx_libretro.so
+	  and /usr/share/rsos/cores/mednafen_supergrafx.ini. ROM
+	  folder: supergrafx.
+
+	  https://github.com/libretro/beetle-supergrafx-libretro
+
+comment "libretro-beetle-supergrafx needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

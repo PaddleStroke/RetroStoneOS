@@ -1,0 +1,2374 @@
+# Simplified Chinese translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "无法打开zip文件（%s）"
+
+msgid "No playable file in this zip"
+msgstr "这个zip里没有可以玩的文件"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "zip里的文件太大了（%llu MB）"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "无法从zip中取出%s（%s）"
+
+msgid "Game file not found"
+msgstr "找不到游戏文件"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "不支持7z压缩包：请改用.zip，或先解压"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "无法读取游戏文件（%s）"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "这个主机"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s：%s不是正确的BIOS文件"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%s或%s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "%1$s需要%3$s里的%2$s"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "正在关机…"
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "玩家1的手柄已断开：已暂停"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "玩家1：%s"
+
+msgid "Saving..."
+msgstr "正在保存…"
+
+msgid "This game cannot save a state now"
+msgstr "现在无法即时存档"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "即时存档失败：%s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "已读取存档位%d"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "存档位%d是空的"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "无法读取存档位%d"
+
+#, c-format
+msgid "State slot %d"
+msgstr "即时存档：存档位%d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "即时存档：存档位%d（空）"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "已重置"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "已连接：%s"
+
+msgid "Battery empty: game saved"
+msgstr "电量耗尽：游戏已保存"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "电量不足（%d%%）"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "%d种设置，约%d分钟"
+
+msgid "No benchmark for this system"
+msgstr "这个主机没有性能测试"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "性能测试：现在无法即时存档"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "性能测试：无法写入%s"
+
+msgid "No result to use"
+msgstr "没有可用的结果"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "未知的配置：%s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "无法保存：%s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "已为这个游戏保存“%s”（下次启动生效）"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "已保存“%s”：下次启动使用%s"
+
+msgid "The emulator stopped responding"
+msgstr "模拟器没有响应"
+
+msgid "Cannot load the emulator core"
+msgstr "无法加载模拟器核心"
+
+msgid "Benchmark: bad plan"
+msgstr "性能测试：计划有误"
+
+msgid "Cannot start the save thread"
+msgstr "无法启动存档线程"
+
+msgid "Cannot open the display"
+msgstr "无法打开显示屏"
+
+msgid "This core needs a game file"
+msgstr "这个核心需要游戏文件"
+
+msgid "The emulator could not load this game"
+msgstr "模拟器无法加载这个游戏"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "已从上次进度继续"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "GPU初始化失败（framebuffer 0x%x）"
+
+msgid "This build cannot run GLES games"
+msgstr "此版本无法运行GLES游戏"
+
+msgid "No GPU found (lima)"
+msgstr "找不到GPU（lima）"
+
+msgid "The game was stopped"
+msgstr "游戏被停止了"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "模拟器崩溃了（%s）。几秒前为止的游戏存档都还在。"
+
+msgid "Could not start the game"
+msgstr "无法启动游戏"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "模拟器没有响应。几秒前为止的游戏存档都还在。"
+
+msgid "Cannot start the game process"
+msgstr "无法启动游戏进程"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "模拟器出错（代码%d）"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "整数倍"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "拉伸"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "保持比例"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "开"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "关"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "（本游戏）"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "（全部）"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "（测试）"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "崩溃"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "卡死"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "已停止"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "失败"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "继续游戏"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "存档位%d"
+
+msgid "Save state"
+msgstr "即时存档"
+
+msgid "Load state"
+msgstr "读取即时存档"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "光盘"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "重置"
+
+msgid "Core options"
+msgstr "核心选项"
+
+msgid "Scaling"
+msgstr "画面缩放"
+
+msgid "Show FPS"
+msgstr "显示FPS"
+
+msgid "Fast-forward"
+msgstr "快进"
+
+msgid "Benchmark this game"
+msgstr "测试这个游戏的性能"
+
+msgid "Controls"
+msgstr "手柄"
+
+msgid "Exit game"
+msgstr "退出游戏"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "为这个游戏保存"
+
+msgid "Save for all games (this core)"
+msgstr "为所有游戏保存（此核心）"
+
+msgid "Reset to defaults"
+msgstr "恢复默认设置"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "玩家%d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s（摇杆）"
+
+msgid "D-pad as left stick (P1)"
+msgstr "十字键当作左摇杆（1P）"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "上"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "下"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "左"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "右"
+
+msgid "Left stick"
+msgstr "左摇杆"
+
+msgid "Right stick"
+msgstr "右摇杆"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "测试"
+
+msgid "Each run"
+msgstr "每次"
+
+msgid "from now, no input"
+msgstr "从现在开始，无操作"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "停止"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs（SD卡）"
+
+msgid "Results"
+msgstr "结果"
+
+msgid "Start benchmark"
+msgstr "开始测试"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "不排名"
+
+msgid "blank?"
+msgstr "空白？"
+
+msgid "Use this for this game"
+msgstr "这个游戏使用此设置"
+
+msgid "Resume game"
+msgstr "继续游戏"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "性能测试"
+
+msgid "Benchmark results"
+msgstr "性能测试结果"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "空"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "（本游戏）仅这个游戏，（全部）所有游戏，*退出时保存"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A：确定  B：继续游戏  </>：更改"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A：确定  B：返回  </>：更改"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "正在存到存档位%d…"
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "存档位%d是空的"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "已放入光盘%d"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "无法换成光盘%d"
+
+msgid "Could not save the options"
+msgstr "无法保存选项"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "已为%s保存"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "已为%s的所有游戏保存"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "已恢复默认（退出时保存）"
+
+msgid "Options saved for this game"
+msgstr "已为这个游戏保存选项"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "表格：%s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "游戏存档失败：%s（正在重试）"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "游戏已保存"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "进度未能保存：%s"
+
+msgid "Auto state saved"
+msgstr "已保存进度"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "存档位%d即时存档失败：%s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "已即时存档到存档位%d"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "存档文件无法读取：已停止存档"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr "."
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr ","
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "GB"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "MB"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "KB"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%Y-%m-%d"
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%Y-%m-%d %H:%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "屏幕不支持这个刷新率"
+
+msgid "No emulator is installed for this game."
+msgstr "没有安装这个游戏的模拟器。"
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "这个游戏无法启动（缺少BIOS？）。"
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "无法启动游戏进程（%s）。"
+
+msgid "The game could not be started."
+msgstr "游戏无法启动。"
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "无法恢复数据分区。可能需要重新复制游戏和存档。"
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "数据分区无法读取，已重新格式化。"
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "数据分区有错误：存档可能会失败。请备份存档。"
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "上次更新无法启动，已恢复为之前的版本。"
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "意外断电后已检查SD卡"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "正在准备SD卡，请稍候…"
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "正在检查SD卡，请稍候…"
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "收藏"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "最近玩过"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "这个文件夹里已经没有游戏了"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "选择"
+
+msgid "change"
+msgstr "更改"
+
+msgid "select"
+msgstr "确定"
+
+msgid "back"
+msgstr "返回"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "确定"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "输入"
+
+msgid "delete"
+msgstr "删除"
+
+msgid "space"
+msgstr "空格"
+
+msgid "shift"
+msgstr "大小写"
+
+msgid "ok"
+msgstr "确定"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "取消"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "大小写"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "空格"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "删除"
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "自动"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "保持比例"
+
+msgid "Integer"
+msgstr "整数倍"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "自动"
+
+msgid "Basic"
+msgstr "简洁"
+
+msgid "Detailed"
+msgstr "详细"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "右上"
+
+msgid "Top left"
+msgstr "左上"
+
+msgid "Bottom right"
+msgstr "右下"
+
+msgid "Bottom left"
+msgstr "左下"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Hz（旧设置）"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "自动（启动游戏的手柄）"
+
+msgid "Built-in"
+msgstr "内置"
+
+msgid "External"
+msgstr "外接"
+
+msgid "Could not save the settings"
+msgstr "无法保存设置"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "电视"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "LCD刷新率：60 Hz"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "LCD刷新率：已恢复为78 Hz"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "保留"
+
+msgid "REVERT"
+msgstr "还原"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"屏幕刷新率现在是60 Hz。\n"
+"保留这个设置吗？%d秒后还原"
+
+msgid "Display"
+msgstr "显示"
+
+msgid "Brightness"
+msgstr "亮度"
+
+msgid "LCD refresh rate"
+msgstr "LCD刷新率"
+
+msgid "HDMI resolution"
+msgstr "HDMI分辨率"
+
+msgid "Game scaling"
+msgstr "游戏画面缩放"
+
+msgid "Game list style"
+msgstr "游戏列表样式"
+
+msgid "Battery in games"
+msgstr "游戏中显示电量"
+
+msgid "Battery position"
+msgstr "电量显示位置"
+
+msgid "Button test"
+msgstr "按键测试"
+
+msgid "no stick"
+msgstr "无摇杆"
+
+msgid "Hold SELECT + START to exit"
+msgstr "按住SELECT + START退出"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "请按十字键的“上”"
+
+msgid "Press D-pad DOWN"
+msgstr "请按十字键的“下”"
+
+msgid "Press D-pad LEFT"
+msgstr "请按十字键的“左”"
+
+msgid "Press D-pad RIGHT"
+msgstr "请按十字键的“右”"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "请按“右边”的按键（A）"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "请按“下边”的按键（B）"
+
+msgid "Press the TOP face button (X)"
+msgstr "请按“上边”的按键（X）"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "请按“左边”的按键（Y）"
+
+msgid "Press L1"
+msgstr "请按L1"
+
+msgid "Press R1"
+msgstr "请按R1"
+
+msgid "Press L2"
+msgstr "请按L2"
+
+msgid "Press R2"
+msgstr "请按R2"
+
+msgid "Press SELECT"
+msgstr "请按SELECT"
+
+msgid "Press START"
+msgstr "请按START"
+
+msgid "Press the left stick (L3)"
+msgstr "请按下左摇杆（L3）"
+
+msgid "Press the right stick (R3)"
+msgstr "请按下右摇杆（R3）"
+
+msgid "Push the left stick RIGHT"
+msgstr "请把左摇杆推向“右”"
+
+msgid "Push the left stick DOWN"
+msgstr "请把左摇杆推向“下”"
+
+msgid "Push the right stick RIGHT"
+msgstr "请把右摇杆推向“右”"
+
+msgid "Push the right stick DOWN"
+msgstr "请把右摇杆推向“下”"
+
+msgid "Configure controller"
+msgstr "设置手柄"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "第%d步（共%d步）"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "没有这个按键？等%d秒就会跳过"
+
+msgid "Controller saved"
+msgstr "手柄设置已保存"
+
+msgid "The mapping could not be saved."
+msgstr "无法保存按键设置。"
+
+msgid "Configure a controller"
+msgstr "设置一个手柄"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "自定义"
+
+msgid "known pad"
+msgstr "已知手柄"
+
+msgid "standard"
+msgstr "标准"
+
+msgid "keyboard"
+msgstr "键盘"
+
+msgid "not configured"
+msgstr "未设置"
+
+msgid "No external controller detected"
+msgstr "没有检测到外接手柄"
+
+msgid "built-in"
+msgstr "内置"
+
+msgid "Player 1"
+msgstr "玩家1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "已加装C/Z按键"
+
+msgid "Players"
+msgstr "玩家"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10分钟"
+
+msgid "30 min"
+msgstr "30分钟"
+
+msgid "1 hour"
+msgstr "1小时"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "从不"
+
+msgid "please wait..."
+msgstr "请稍候…"
+
+msgid "not set"
+msgstr "未设置"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "运行中"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi：正在关闭，请稍候…"
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "以太网：正在关闭，请稍候…"
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "蓝牙：正在关闭，请稍候…"
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi：正在开启，请稍候…"
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "以太网：正在开启，请稍候…"
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "蓝牙：正在开启，请稍候…"
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "无法运行%s"
+
+msgid "Could not save the WiFi settings"
+msgstr "无法保存Wi-Fi设置"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "Wi-Fi密码至少要有8个字符。"
+
+msgid "Set the network name first."
+msgstr "请先设置网络名称。"
+
+msgid "WiFi password saved"
+msgstr "Wi-Fi密码已保存"
+
+msgid "WiFi network name"
+msgstr "Wi-Fi网络名称"
+
+msgid "WiFi password"
+msgstr "Wi-Fi密码"
+
+msgid "Console name"
+msgstr "主机名称"
+
+msgid "Use letters, digits and dashes."
+msgstr "请只使用字母、数字和短横线（-）。"
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "主机名称：%s（下次传输时生效）"
+
+msgid "Network"
+msgstr "网络"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Wi-Fi网络"
+
+msgid "Transfer games from a computer or phone"
+msgstr "从电脑或手机传输游戏"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "网络传输"
+
+msgid "Stop when idle for"
+msgstr "闲置多久后停止"
+
+msgid "Keep receiving in the background"
+msgstr "在后台继续接收"
+
+msgid "WiFi off"
+msgstr "Wi-Fi已关闭"
+
+msgid "Ethernet off"
+msgstr "以太网已关闭"
+
+msgid "Bluetooth off"
+msgstr "蓝牙已关闭"
+
+msgid "WiFi on"
+msgstr "Wi-Fi已开启"
+
+msgid "Ethernet on"
+msgstr "以太网已开启"
+
+msgid "Bluetooth on"
+msgstr "蓝牙已开启"
+
+msgid "failed"
+msgstr "失败"
+
+msgid "Theme"
+msgstr "主题"
+
+msgid "No theme found"
+msgstr "找不到主题"
+
+msgid "Game lists refreshed"
+msgstr "游戏列表已刷新"
+
+msgid "Game lists"
+msgstr "游戏列表"
+
+msgid "Favorites first"
+msgstr "收藏的游戏排在前面"
+
+msgid "Favorites & last played pages"
+msgstr "“收藏”和“最近玩过”页面"
+
+msgid "Refresh game lists"
+msgstr "刷新游戏列表"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "每次询问"
+
+msgid "Always resume"
+msgstr "总是继续"
+
+msgid "Always start fresh"
+msgstr "总是从头开始"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "游戏"
+
+msgid "Resume games"
+msgstr "继续上次的游戏"
+
+msgid "Auto-save on exit"
+msgstr "退出时自动保存进度"
+
+msgid "On launch"
+msgstr "启动游戏时"
+
+msgid "Powering off in a game always saves it"
+msgstr "游戏中关机时总会自动保存"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "无法更新/boot/rsos.env。"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "立即重启"
+
+msgid "LATER"
+msgstr "稍后"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "需要重启：更改将在下次启动时生效。"
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "可用%s，共%s"
+
+msgid "Storage"
+msgstr "存储"
+
+msgid "Game storage"
+msgstr "游戏存储位置"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "U盘"
+
+msgid "Import games"
+msgstr "导入游戏"
+
+msgid "Export games"
+msgstr "导出游戏"
+
+msgid "Back up saves"
+msgstr "备份存档"
+
+msgid "Eject USB drive"
+msgstr "弹出U盘"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "插入U盘时询问"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "高级：关闭可加快启动，需要重启"
+
+msgid "Internal eMMC"
+msgstr "内置eMMC"
+
+msgid "M.2 SATA drive"
+msgstr "M.2 SATA硬盘"
+
+msgid "no battery"
+msgstr "无电池"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%d%%，%d小时%02d分后充满"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%d%%，约%d小时%02d分"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%d%%，充电中"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%d%%，已充满"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%d%%"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "充电器，%s V"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "电池，%s V"
+
+msgid "charger connected"
+msgstr "已连接充电器"
+
+msgid "battery"
+msgstr "电池"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C（过热）"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "未挂载"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s，UI %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "%d种主机"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "%d个游戏（%s）"
+
+msgid "System information"
+msgstr "系统信息"
+
+msgid "Version"
+msgstr "版本"
+
+msgid "Battery"
+msgstr "电池"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "电源"
+
+msgid "Input devices"
+msgstr "输入设备"
+
+msgid "CPU temperature"
+msgstr "CPU温度"
+
+msgid "1 min"
+msgstr "1分钟"
+
+msgid "2 min"
+msgstr "2分钟"
+
+msgid "5 min"
+msgstr "5分钟"
+
+msgid "Voltage"
+msgstr "电压"
+
+msgid "AXP fuel gauge"
+msgstr "AXP电量计"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "是"
+
+msgid "NO"
+msgstr "否"
+
+msgid "Restart the console?"
+msgstr "要重启主机吗？"
+
+msgid "Power off the console?"
+msgstr "要关闭主机吗？"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "电源"
+
+msgid "Restart"
+msgstr "重启"
+
+msgid "Power off"
+msgstr "关机"
+
+msgid "Battery saving"
+msgstr "省电"
+
+msgid "Dim the screen after"
+msgstr "屏幕变暗时间"
+
+msgid "Screen off after"
+msgstr "屏幕关闭时间"
+
+msgid "Battery gauge"
+msgstr "电量测量方式"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "时区：%s"
+
+msgid "Time zone"
+msgstr "时区"
+
+msgid "That date is not valid."
+msgstr "这个日期无效。"
+
+msgid "The clock could not be set."
+msgstr "无法设置时钟。"
+
+msgid "Date and time set"
+msgstr "日期和时间已设置"
+
+msgid "Setting the clock needs the power module"
+msgstr "设置时钟需要电源模块"
+
+msgid "Date & time"
+msgstr "日期和时间"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "现在"
+
+msgid "Set the clock"
+msgstr "设置时钟"
+
+msgid "Year"
+msgstr "年"
+
+msgid "Month"
+msgstr "月"
+
+msgid "Day"
+msgstr "日"
+
+msgid "Hour"
+msgstr "时"
+
+msgid "Minute"
+msgstr "分"
+
+msgid "Set date and time"
+msgstr "设置日期和时间"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "语言"
+
+msgid "Settings"
+msgstr "设置"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "没有安装%s"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "请选择语言"
+
+msgid "This game is not in the list any more"
+msgstr "这个游戏已经不在列表中了"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "收藏"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "主机默认"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s（实验性）"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "默认（%s）"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "无"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "这个游戏的核心"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "所有%s游戏的核心"
+
+msgid "Core"
+msgstr "核心"
+
+msgid "none installed"
+msgstr "未安装"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "开始游戏"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "文件"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr "红白机"
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr "FC磁碟机"
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr "超级任天堂"
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr ""
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr ""
+
+msgctxt "system"
+msgid "32X"
+msgstr ""
+
+msgctxt "system"
+msgid "Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr ""
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr "街机"
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr ""
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr "红白机 / FC"
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr "街机（MAME 2003-Plus）"
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr "街机（FinalBurn Neo）"
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "SD卡已满"
+
+msgid "The USB drive was removed"
+msgstr "U盘被拔出了"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "读取错误：U盘被拔出了吗？"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "U盘已满"
+
+msgid "The USB drive is read-only"
+msgstr "U盘是只读的"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "写入错误：U盘被拔出了吗？"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "长时间闲置"
+
+msgid "BIOS files"
+msgstr "BIOS文件"
+
+msgid "Themes"
+msgstr "主题"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "U盘正忙"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "U盘已弹出，可以拔下了"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "弹出"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "U盘根目录"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s（备份）"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "全部%d个游戏库"
+
+msgid "Another copy is already running."
+msgstr "已有其他复制正在进行。"
+
+msgid "The copy could not start."
+msgstr "无法开始复制。"
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "U盘上的游戏库"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "%d个游戏"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s，%s，%s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "%d个文件，%s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "全部（%d个游戏库）"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "%d个游戏，%s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "弹出"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "正在U盘上查找游戏…"
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "正在与主机比较…"
+
+msgid "This drive could not be read."
+msgstr "无法读取这个U盘。"
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "来源"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "U盘上的游戏"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "%d个新游戏（共%d个），%s，含存档"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "%d个新游戏（共%d个），%s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d个，已在主机上，含存档"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d个，已在主机上"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "不支持：%s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%d个文件"
+
+msgid "Nothing new on this drive"
+msgstr "这个U盘上没有新内容"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "复制内容"
+
+msgid "Saves & save states"
+msgstr "游戏存档和即时存档"
+
+msgid "Screenshots"
+msgstr "截图"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "主机上已有"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "%d个文件，跳过"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "与主机上的不同"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d个（含存档）：稍后会询问你"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d个：稍后会询问你"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "要复制"
+
+msgid "Not enough space"
+msgstr "空间不足"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "最多%s，可用%s"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "开始复制"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "从%s导入"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "这个U盘正忙（正在扫描或复制）。"
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "无法写入U盘（是否开启了写保护？）。"
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "正在与U盘比较…"
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "U盘上的文件夹"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s（新建）"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "主机上的游戏"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "同时复制BIOS文件"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "游戏"
+
+msgid "All games"
+msgstr "所有游戏"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "最近玩过：%s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "同时复制设置（核心选项、按键映射）"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "U盘上已有"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "%d个文件，%s（可用%s）"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "无需复制：U盘已是最新"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "%d个文件超过4 GB：FAT32无法存放"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "跳过"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "导出"
+
+msgid "Back up"
+msgstr "备份"
+
+msgid "The USB drive is not there any more."
+msgstr "U盘已经不在了。"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "导出游戏到%s"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "备份存档到%s"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "日期未知"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "跳过"
+
+msgid "REPLACE"
+msgstr "替换"
+
+msgid "SKIP ALL"
+msgstr "全部跳过"
+
+msgid "REPLACE ALL"
+msgstr "全部替换"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "主机上已有这个设置文件，但内容不同："
+
+msgid "This save is already on the console, but different:"
+msgstr "主机上已有这个存档，但内容不同："
+
+msgid "This game is already on the console, but different:"
+msgstr "主机上已有这个游戏，但内容不同："
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "主机上已有这个BIOS文件，但内容不同："
+
+msgid "This file is already on the console, but different:"
+msgstr "主机上已有这个文件，但内容不同："
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"U盘：%s，%s\n"
+"主机：%s，%s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "存档很宝贵：如果替换，主机上原来的存档会保留为%s.bak。"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "正在从%s复制"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "正在导出游戏到%s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "正在备份存档到%s"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s / %s  -  %d / %d个文件"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s MB/s，大约还剩%d分钟"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s MB/s"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "%d个已存在"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "已取消复制。"
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "复制已停止：%s。"
+
+msgid "error"
+msgstr "错误"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "已导入%d，已存在%d，跳过%d，替换%d。"
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "部分文件失败了。"
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "已取消。"
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "已停止：%s。未完成的文件已删除。"
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "已复制%d个文件（%s），已存在%d个。"
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "%d个超过4 GB的文件已跳过（FAT32）。"
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "%d个失败。"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "停止"
+
+msgid "CONTINUE"
+msgstr "继续"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "要停止复制吗？已复制的文件会保留。"
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "要停止吗？已复制的文件会留在U盘上。"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "导入游戏"
+
+msgid "EXPORT GAMES"
+msgstr "导出游戏"
+
+msgid "BACK UP SAVES"
+msgstr "备份存档"
+
+msgid "NOTHING"
+msgstr "什么都不做"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "U盘%s已连接：可在“设置 > 存储”中使用"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "U盘%s已连接"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "U盘“%s”已连接（%s，%s）。要做什么？"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "U盘已拔出：复制已停止"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "U盘已拔出"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "U盘：不支持这种格式（请用FAT32或exFAT）"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "无法读取U盘"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "从U盘导入游戏"
+
+msgid "Export games to"
+msgstr "导出游戏到U盘"
+
+msgid "Back up saves to"
+msgstr "备份存档到U盘"
+
+msgid "USB transfers are not available in this build."
+msgstr "此版本不支持USB传输。"
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "请插入U盘（FAT32、exFAT或NTFS）。"
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "没有U盘"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "有U盘正忙"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "网络已关闭：网页传输已停止"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "停止"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "请在浏览器中打开这个地址："
+
+msgid "(no network address)"
+msgstr "（无网络地址）"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "或%s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "PIN错误：锁定%d秒"
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "正在接收%s（%d%%）"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "已停止：%s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "已停止"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "正在等待文件…"
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "已收到%d个文件"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "请只在家庭网络中使用。知道PIN的人都可以添加文件。"
+
+msgid "KEEP RECEIVING"
+msgstr "继续接收"
+
+msgid "Keep receiving files in the background?"
+msgstr "要在后台继续接收文件吗？"
+
+msgid "Network transfer is not available in this build."
+msgstr "此版本不支持网络传输。"
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "请先开启Wi-Fi或以太网（无网络地址）。"
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "无法开始传输（错误%d）。"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "继续"
+
+msgid "START FRESH"
+msgstr "从头开始"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "要继续玩%s吗？"
+
+msgid "No emulator is installed for this system."
+msgstr "没有安装这个主机的模拟器。"
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "正在复制文件。请等待复制完成，或者取消复制。"
+
+msgid "Resume where you left off?"
+msgstr "要从上次的地方继续吗？"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "设置"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "手柄已连接：%s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "手柄已断开：%s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "新手柄：%s（设置 > 手柄）"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "新手柄：%s。要在“设置 > 手柄”中设置吗？"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "正在读取%s游戏"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "正在准备主机…"
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "电量不足（%d%%）"
+
+msgid "Battery empty, saving..."
+msgstr "电量耗尽，正在保存…"
+
+msgid "Restarting..."
+msgstr "正在重启…"
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "温度过高，正在降速"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "正在充电"
+
+msgid "Fully charged"
+msgstr "已充满"
+
+msgid "Charger unplugged"
+msgstr "充电器已拔出"
+
+msgid "Not charging"
+msgstr "未在充电"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%d%%"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "%d小时%02d分钟后充满"
+
+msgid "Press the power button to start"
+msgstr "按电源键开机"
+
+msgid "Battery very low: plug in the charger"
+msgstr "电量极低：请连接充电器"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "评分："
+
+msgid "Released: "
+msgstr "发行日期："
+
+msgid "Developer: "
+msgstr "开发商："
+
+msgid "Publisher: "
+msgstr "发行商："
+
+msgid "Genre: "
+msgstr "类型："
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "玩家人数："
+
+msgid "Last played: "
+msgstr "上次游玩："
+
+msgid "Times played: "
+msgstr "游玩次数："
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "年份"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "类型"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "人数"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "评分"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "你收藏的游戏"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "最近玩过的游戏"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "主机上的所有游戏"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "家用电脑 · 1983年"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "街机 · MAME 2003-Plus"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "街机 · FinalBurn Neo"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "未知"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "没有游戏"
+
+msgid "launch"
+msgstr "开始"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "选项"
+
+msgid "favorite"
+msgstr "收藏"
+
+msgid "menu"
+msgstr "菜单"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "已加入收藏"
+
+msgid "Removed from favorites"
+msgstr "已取消收藏"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "共%d个游戏"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "收藏%d个"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s，%s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "没有找到游戏。请把ROM复制到/data/roms/<system>/"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "从未玩过"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "未知"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "%d秒前"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d分钟前"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d小时前"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d天前"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%Y-%m-%d"

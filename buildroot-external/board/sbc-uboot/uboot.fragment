@@ -1,0 +1,48 @@
+# RetroStoneOS U-Boot options shared by the U-Boot single-board computers
+# (the Orange Pi ports, docs/boards.md), merged on top of the board's U-Boot
+# defconfig, before the board's own fragment (which sets the environment
+# offsets and the watchdog). A lighter version of the RetroStone2's
+# board/retrostone2/uboot.fragment: the same A/B boot, none of its
+# boot-time work.
+
+# Boot immediately. A key on the UART during the (zero) delay still stops
+# autoboot.
+CONFIG_BOOTDELAY=0
+
+# Load our boot script directly instead of scanning boot devices: slot b's
+# /boot/boot.scr first when rsos_slot=b, then slot a's (partition 2), then
+# slot b's (partition 3), then the standard boot scan as the last resort.
+# The script itself decides which slot to boot and does not return (it
+# boots, resets to the other slot or powers off). The SD card is "mmc 0" on
+# every board that uses this fragment (sunxi: mmc0; Orange Pi 5: the
+# mmc0 = &sdmmc alias).
+CONFIG_USE_BOOTCOMMAND=y
+CONFIG_BOOTCOMMAND="if test \"${rsos_slot}\" = b; then load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; fi; load mmc 0:2 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; bootflow scan -lb"
+
+# Device tree overlays (applied by boot.scr, listed in rsos_overlays)
+CONFIG_OF_LIBFDT_OVERLAY=y
+
+# Environment = A/B boot state, stored raw on the SD card outside any
+# partition, in two redundant 64 KiB copies (the offsets are in the board's
+# fragment and its /etc/fw_env.config). A power cut during
+# saveenv/fw_setenv always leaves one valid copy.
+# CONFIG_ENV_IS_NOWHERE is not set
+# CONFIG_ENV_IS_IN_FAT is not set
+# CONFIG_ENV_IS_IN_EXT4 is not set
+# CONFIG_ENV_IS_IN_SPI_FLASH is not set
+CONFIG_ENV_IS_IN_MMC=y
+CONFIG_ENV_REDUNDANT=y
+CONFIG_ENV_SIZE=0x10000
+CONFIG_ENV_MMC_DEVICE_INDEX=0
+CONFIG_ENV_MMC_EMMC_HW_PARTITION=0
+CONFIG_CMD_SAVEENV=y
+CONFIG_CMD_SETEXPR=y
+# boot.scr: "test -e mmc 0:<part> /boot/<kernel>" before falling back to
+# the other slot
+CONFIG_CMD_FS_GENERIC=y
+
+# No EFI loader (it would also build mkeficapsule, which needs a
+# PKCS#11-enabled gnutls that host-gnutls does not provide)
+# CONFIG_EFI_LOADER is not set
+# CONFIG_CMD_BOOTEFI is not set
+# CONFIG_TOOLS_MKEFICAPSULE is not set

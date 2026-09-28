@@ -1,0 +1,9 @@
+0.58 rcS start
+0.60 sysfs + governor
+0.64 mounts
+0.65 bootreason
+0.74 data-partition
+0.75 clock
+0.75 rcS done
+1.23 bg: menu up (waited 0 s)
+1.65 bg: mixer

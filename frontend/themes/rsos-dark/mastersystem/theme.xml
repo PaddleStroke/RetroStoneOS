@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: mastersystem sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>d14b3d</accent>
+		<icon>carbon/mastersystem</icon>
+		<tagline>Sega · 1985</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

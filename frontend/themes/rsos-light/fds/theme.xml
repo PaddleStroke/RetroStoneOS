@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: fds sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>d35400</accent>
+		<icon>carbon/fds</icon>
+		<tagline>Nintendo · 1986</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

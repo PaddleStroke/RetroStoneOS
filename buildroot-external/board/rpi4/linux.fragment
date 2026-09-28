@@ -1,0 +1,30 @@
+# Raspberry Pi 4 kernel options, merged on top of bcm2711_defconfig and
+# board/common/linux-rsos.fragment. Community-tested reference port.
+#
+# bcm2711_defconfig builds most drivers as modules; with no udev nothing
+# would load them, so what the menu needs is built in.
+
+# --- Display (vc4 KMS, HDMI) and GPU (V3D), HDMI audio through ASoC
+CONFIG_DRM_VC4=y
+CONFIG_DRM_V3D=y
+CONFIG_SND_SOC=y
+
+# --- CPU frequency (firmware clock driver)
+CONFIG_ARM_RASPBERRYPI_CPUFREQ=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y
+
+# --- Watchdog (the frontend pets /dev/watchdog)
+CONFIG_BCM2835_WDT=y
+
+# --- Power key: a GPIO button overlay (gpio-shutdown, gpio-key) registers a
+# gpio-keys device reporting KEY_POWER; it must be built in (no udev)
+CONFIG_KEYBOARD_GPIO=y
+
+# --- Ethernet built in (rsos-net only brings eth0 up and down)
+CONFIG_BCMGENET=y
+
+# --- WiFi / Bluetooth stay modules (rsos-net loads them)
+CONFIG_BRCMFMAC=m
+CONFIG_BT=m
+CONFIG_BT_HCIUART=m
+CONFIG_BT_HCIUART_BCM=y

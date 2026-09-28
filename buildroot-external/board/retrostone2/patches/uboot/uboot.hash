@@ -1,0 +1,6 @@
+# U-Boot v2026.07 (BR2_TARGET_UBOOT_CUSTOM_VERSION): Buildroot's
+# boot/uboot/uboot.hash only lists 2026.01 (it is still read for the licence
+# file). Found through BR2_GLOBAL_PATCH_DIR (<dir>/uboot/uboot.hash).
+# Tarball from ftp.denx.de (sha256 of the copy Buildroot downloaded for the first builds;
+# cross-check with the .sig next to it when bumping the version).
+sha256  78e8bfc382fe388f9b55aa1daf8c563522a037779b5d4c349d1415e381f1243e  u-boot-2026.07.tar.bz2

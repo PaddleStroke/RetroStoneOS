@@ -1,0 +1,2406 @@
+# Turkish translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "Zip dosyası açılamıyor (%s)"
+
+msgid "No playable file in this zip"
+msgstr "Bu zip içinde oynanabilir dosya yok"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "Bu zip içindeki dosya çok büyük (%llu MB)"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "Zip içinden çıkarılamıyor: %s (%s)"
+
+msgid "Game file not found"
+msgstr "Oyun dosyası bulunamadı"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "7z arşivleri burada desteklenmiyor: .zip kullan ya da arşivi aç"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "Oyun dosyası okunamıyor (%s)"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "Bu sistem"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s: %s beklenen BIOS dosyası değil"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%s veya %s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "%s için %s gerekli, konum: %s"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "Kapatılıyor..."
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "Oyuncu 1 kolu çıkarıldı: oyun duraklatıldı"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "Oyuncu 1: %s"
+
+msgid "Saving..."
+msgstr "Kaydediliyor..."
+
+msgid "This game cannot save a state now"
+msgstr "Bu oyun şu an durum kaydedemiyor"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "Durum KAYDEDİLMEDİ: %s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "Durum yüklendi, yuva %d"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "Yuva %d içinde durum yok"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "Yuva %d durumu yüklenemiyor"
+
+#, c-format
+msgid "State slot %d"
+msgstr "Durum yuvası %d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "Durum yuvası %d (boş)"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "Sıfırlandı"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "Bağlandı: %s"
+
+msgid "Battery empty: game saved"
+msgstr "Pil bitti: oyun kaydedildi"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "Pil zayıf (%%%d)"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "%d ayar, yaklaşık %d dk"
+msgstr[1] "%d ayar, yaklaşık %d dk"
+
+msgid "No benchmark for this system"
+msgstr "Bu sistem için performans testi yok"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "Test: bu oyun şu an durum kaydedemiyor"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "Test: %s yazılamıyor"
+
+msgid "No result to use"
+msgstr "Kullanılacak sonuç yok"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "Bilinmeyen yapılandırma: %s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "Kaydedilemedi: %s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "\"%s\" bu oyun için kaydedildi (sonraki açılışta geçerli)"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "\"%s\" kaydedildi: sonra %s kullanılacak"
+
+msgid "The emulator stopped responding"
+msgstr "Emülatör yanıt vermiyor"
+
+msgid "Cannot load the emulator core"
+msgstr "Emülatör çekirdeği yüklenemiyor"
+
+msgid "Benchmark: bad plan"
+msgstr "Test: hatalı plan"
+
+msgid "Cannot start the save thread"
+msgstr "Kayıt işlemi başlatılamıyor"
+
+msgid "Cannot open the display"
+msgstr "Ekran açılamıyor"
+
+msgid "This core needs a game file"
+msgstr "Bu çekirdek bir oyun dosyası gerektirir"
+
+msgid "The emulator could not load this game"
+msgstr "Emülatör bu oyunu yükleyemedi"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "Kaldığın yerden devam"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "GPU başlatılamadı (framebuffer 0x%x)"
+
+msgid "This build cannot run GLES games"
+msgstr "Bu sürüm GLES oyunlarını çalıştıramaz"
+
+msgid "No GPU found (lima)"
+msgstr "GPU bulunamadı (lima)"
+
+msgid "The game was stopped"
+msgstr "Oyun durduruldu"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "Emülatör çöktü (%s). Birkaç saniye öncesine kadarki oyun kayıtları korundu."
+
+msgid "Could not start the game"
+msgstr "Oyun başlatılamadı"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "Emülatör yanıt vermedi. Birkaç saniye öncesine kadarki oyun kayıtları korundu."
+
+msgid "Cannot start the game process"
+msgstr "Oyun işlemi başlatılamıyor"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "Emülatör hata verdi (kod %d)"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "Tam kat"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "Uzatılmış"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "En-boy oranı"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "Açık"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "Kapalı"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "(oyun)"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "(tümü)"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "(test)"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "çöktü"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "dondu"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "durduruldu"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "başarısız"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "Devam et"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "Yuva %d"
+
+msgid "Save state"
+msgstr "Durumu kaydet"
+
+msgid "Load state"
+msgstr "Durumu yükle"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "Disk"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "Sıfırla"
+
+msgid "Core options"
+msgstr "Çekirdek seçenekleri"
+
+msgid "Scaling"
+msgstr "Ölçekleme"
+
+msgid "Show FPS"
+msgstr "FPS göster"
+
+msgid "Fast-forward"
+msgstr "Hızlı ileri"
+
+msgid "Benchmark this game"
+msgstr "Bu oyunu test et"
+
+msgid "Controls"
+msgstr "Kontroller"
+
+msgid "Exit game"
+msgstr "Oyundan çık"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "Bu oyun için kaydet"
+
+msgid "Save for all games (this core)"
+msgstr "Bu çekirdek için kaydet"
+
+msgid "Reset to defaults"
+msgstr "Varsayılana dön"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "Oyuncu %d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s (analog)"
+
+msgid "D-pad as left stick (P1)"
+msgstr "Yön tuşları sol analog gibi (O1)"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "Yukarı"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "Aşağı"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "Sol"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "Sağ"
+
+msgid "Left stick"
+msgstr "Sol analog"
+
+msgid "Right stick"
+msgstr "Sağ analog"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "Denemeler"
+
+msgid "Each run"
+msgstr "Her deneme"
+
+msgid "from now, no input"
+msgstr "şu andan, tuşa basmadan"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "Durdurma"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs (SD kart)"
+
+msgid "Results"
+msgstr "Sonuçlar"
+
+msgid "Start benchmark"
+msgstr "Testi başlat"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "sıralanmadı"
+
+msgid "blank?"
+msgstr "boş ekran?"
+
+msgid "Use this for this game"
+msgstr "Bu oyun için bunu kullan"
+
+msgid "Resume game"
+msgstr "Oyuna dön"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "Performans testi"
+
+msgid "Benchmark results"
+msgstr "Test sonuçları"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "Boş"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "(oyun) bu oyun için, (tümü) tüm oyunlar için, * çıkarken kaydedilir"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A: onayla  B: oyuna dön  </>: değiştir"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A: onayla  B: geri  </>: değiştir"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "Yuva %d kaydediliyor..."
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "Yuva %d boş"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "Disk %d takıldı"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "Disk değiştirilemiyor: %d"
+
+msgid "Could not save the options"
+msgstr "Seçenekler kaydedilemedi"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "Kaydedildi: %s"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "%s çekirdeği için kaydedildi"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "Varsayılanlar geri geldi (çıkarken kaydedilir)"
+
+msgid "Options saved for this game"
+msgstr "Seçenekler bu oyun için kaydedildi"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "Tablo: %s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "Oyun kaydı başarısız: %s (yeniden deneniyor)"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "Oyun kaydedildi"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "Otomatik durum KAYDEDİLMEDİ: %s"
+
+msgid "Auto state saved"
+msgstr "Otomatik durum kaydedildi"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "Durum %d KAYDEDİLMEDİ: %s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "Durum kaydedildi, yuva %d"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "Kayıt dosyası okunamıyor: kayıt kapalı"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr ","
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr "."
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "GB"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "MB"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "KB"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%d.%m.%Y"
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%d.%m.%Y %H:%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "Ekran bu yenileme hızını kabul etmedi"
+
+msgid "No emulator is installed for this game."
+msgstr "Bu oyun için yüklü emülatör yok."
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "Bu oyun başlatılamıyor (BIOS eksik mi?)."
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "Oyun işlemi başlatılamıyor (%s)."
+
+msgid "The game could not be started."
+msgstr "Oyun başlatılamadı."
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "Veri bölümü onarılamadı. Oyunlarını ve kayıtlarını yeniden kopyalaman gerekebilir."
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "Veri bölümü okunamadığı için yeniden biçimlendirildi."
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "Veri bölümünde hatalar var: kayıt başarısız olabilir. Kayıtlarını yedekle."
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "Son güncelleme başlamadı; önceki sürüm geri yüklendi."
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "Beklenmedik güç kesintisinden sonra SD kart kontrol edildi"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "SD kart hazırlanıyor, lütfen bekle..."
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "SD kart kontrol ediliyor, lütfen bekle..."
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "Favoriler"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "Son oynananlar"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "Bu klasörde artık oyun yok"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "seç"
+
+msgid "change"
+msgstr "değiştir"
+
+msgid "select"
+msgstr "onayla"
+
+msgid "back"
+msgstr "geri"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "TAMAM"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "yaz"
+
+msgid "delete"
+msgstr "sil"
+
+msgid "space"
+msgstr "boşluk"
+
+msgid "shift"
+msgstr "shift"
+
+msgid "ok"
+msgstr "tamam"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "iptal"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "SHIFT"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "BOŞLUK"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "SİL"
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "Otomatik"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "En-boy oranı"
+
+msgid "Integer"
+msgstr "Tam kat"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "Otomatik"
+
+msgid "Basic"
+msgstr "Basit"
+
+msgid "Detailed"
+msgstr "Ayrıntılı"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "Sağ üst"
+
+msgid "Top left"
+msgstr "Sol üst"
+
+msgid "Bottom right"
+msgstr "Sağ alt"
+
+msgid "Bottom left"
+msgstr "Sol alt"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Hz (eski)"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "Otomatik (oyunu açan kol)"
+
+msgid "Built-in"
+msgstr "Dahili"
+
+msgid "External"
+msgstr "Harici"
+
+msgid "Could not save the settings"
+msgstr "Ayarlar kaydedilemedi"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "TV"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "LCD yenileme hızı: 60 Hz"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "LCD yenileme hızı: yeniden 78 Hz"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "KORU"
+
+msgid "REVERT"
+msgstr "GERİ AL"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"Ekran artık 60 Hz ile yenileniyor.\n"
+"Bu ayar kalsın mı? %d sn sonra geri alınacak"
+
+msgid "Display"
+msgstr "Ekran"
+
+msgid "Brightness"
+msgstr "Parlaklık"
+
+msgid "LCD refresh rate"
+msgstr "LCD yenileme hızı"
+
+msgid "HDMI resolution"
+msgstr "HDMI çözünürlüğü"
+
+msgid "Game scaling"
+msgstr "Oyun ölçekleme"
+
+msgid "Game list style"
+msgstr "Oyun listesi görünümü"
+
+msgid "Battery in games"
+msgstr "Oyunda pil göstergesi"
+
+msgid "Battery position"
+msgstr "Pil konumu"
+
+msgid "Button test"
+msgstr "Tuş testi"
+
+msgid "no stick"
+msgstr "analog yok"
+
+msgid "Hold SELECT + START to exit"
+msgstr "Çıkmak için SELECT + START basılı tut"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "YUKARI yön tuşuna bas"
+
+msgid "Press D-pad DOWN"
+msgstr "AŞAĞI yön tuşuna bas"
+
+msgid "Press D-pad LEFT"
+msgstr "SOL yön tuşuna bas"
+
+msgid "Press D-pad RIGHT"
+msgstr "SAĞ yön tuşuna bas"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "SAĞDAKİ tuşa bas (A)"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "ALTTAKİ tuşa bas (B)"
+
+msgid "Press the TOP face button (X)"
+msgstr "ÜSTTEKİ tuşa bas (X)"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "SOLDAKİ tuşa bas (Y)"
+
+msgid "Press L1"
+msgstr "L1 tuşuna bas"
+
+msgid "Press R1"
+msgstr "R1 tuşuna bas"
+
+msgid "Press L2"
+msgstr "L2 tuşuna bas"
+
+msgid "Press R2"
+msgstr "R2 tuşuna bas"
+
+msgid "Press SELECT"
+msgstr "SELECT tuşuna bas"
+
+msgid "Press START"
+msgstr "START tuşuna bas"
+
+msgid "Press the left stick (L3)"
+msgstr "Sol analog çubuğa bastır (L3)"
+
+msgid "Press the right stick (R3)"
+msgstr "Sağ analog çubuğa bastır (R3)"
+
+msgid "Push the left stick RIGHT"
+msgstr "Sol analog çubuğu SAĞA it"
+
+msgid "Push the left stick DOWN"
+msgstr "Sol analog çubuğu AŞAĞI it"
+
+msgid "Push the right stick RIGHT"
+msgstr "Sağ analog çubuğu SAĞA it"
+
+msgid "Push the right stick DOWN"
+msgstr "Sağ analog çubuğu AŞAĞI it"
+
+msgid "Configure controller"
+msgstr "Kol ayarı"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "Adım %d / %d"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "Bu kolda yok mu? Atlamak için %d sn bekle"
+
+msgid "Controller saved"
+msgstr "Kol kaydedildi"
+
+msgid "The mapping could not be saved."
+msgstr "Tuş ataması kaydedilemedi."
+
+msgid "Configure a controller"
+msgstr "Kol ayarla"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "özel"
+
+msgid "known pad"
+msgstr "tanınan kol"
+
+msgid "standard"
+msgstr "standart"
+
+msgid "keyboard"
+msgstr "klavye"
+
+msgid "not configured"
+msgstr "ayarlanmadı"
+
+msgid "No external controller detected"
+msgstr "Harici kol bulunamadı"
+
+msgid "built-in"
+msgstr "dahili"
+
+msgid "Player 1"
+msgstr "Oyuncu 1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "Ek C/Z tuşları takılı"
+
+msgid "Players"
+msgstr "Oyuncular"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10 dk"
+
+msgid "30 min"
+msgstr "30 dk"
+
+msgid "1 hour"
+msgstr "1 saat"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "Asla"
+
+msgid "please wait..."
+msgstr "lütfen bekle..."
+
+msgid "not set"
+msgstr "ayarlanmadı"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "çalışıyor"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi: kapatılıyor, lütfen bekle..."
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "Ethernet: kapatılıyor, lütfen bekle..."
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "Bluetooth: kapatılıyor, lütfen bekle..."
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi: açılıyor, lütfen bekle..."
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "Ethernet: açılıyor, lütfen bekle..."
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "Bluetooth: açılıyor, lütfen bekle..."
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "Çalıştırılamıyor: %s"
+
+msgid "Could not save the WiFi settings"
+msgstr "Wi-Fi ayarları kaydedilemedi"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "Wi-Fi şifresi en az 8 karakter olmalı."
+
+msgid "Set the network name first."
+msgstr "Önce ağ adını ayarla."
+
+msgid "WiFi password saved"
+msgstr "Wi-Fi şifresi kaydedildi"
+
+msgid "WiFi network name"
+msgstr "Wi-Fi ağ adı"
+
+msgid "WiFi password"
+msgstr "Wi-Fi şifresi"
+
+msgid "Console name"
+msgstr "Konsol adı"
+
+msgid "Use letters, digits and dashes."
+msgstr "Harf, rakam ve tire kullan."
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "Konsol adı: %s (sonraki aktarımda)"
+
+msgid "Network"
+msgstr "Ağ"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Wi-Fi ağı"
+
+msgid "Transfer games from a computer or phone"
+msgstr "Bilgisayardan veya telefondan oyun aktar"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "Ağ üzerinden aktarım"
+
+msgid "Stop when idle for"
+msgstr "Boşta kalınca durdur"
+
+msgid "Keep receiving in the background"
+msgstr "Arka planda almaya devam et"
+
+msgid "WiFi off"
+msgstr "Wi-Fi kapalı"
+
+msgid "Ethernet off"
+msgstr "Ethernet kapalı"
+
+msgid "Bluetooth off"
+msgstr "Bluetooth kapalı"
+
+msgid "WiFi on"
+msgstr "Wi-Fi açık"
+
+msgid "Ethernet on"
+msgstr "Ethernet açık"
+
+msgid "Bluetooth on"
+msgstr "Bluetooth açık"
+
+msgid "failed"
+msgstr "başarısız"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "No theme found"
+msgstr "Tema bulunamadı"
+
+msgid "Game lists refreshed"
+msgstr "Oyun listeleri yenilendi"
+
+msgid "Game lists"
+msgstr "Oyun listeleri"
+
+msgid "Favorites first"
+msgstr "Önce favoriler"
+
+msgid "Favorites & last played pages"
+msgstr "Favoriler/Son oynananlar sayfaları"
+
+msgid "Refresh game lists"
+msgstr "Oyun listelerini yenile"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "Sor"
+
+msgid "Always resume"
+msgstr "Hep devam et"
+
+msgid "Always start fresh"
+msgstr "Hep baştan başla"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "Oyunlar"
+
+msgid "Resume games"
+msgstr "Oyunlara devam"
+
+msgid "Auto-save on exit"
+msgstr "Çıkarken durumu kaydet"
+
+msgid "On launch"
+msgstr "Açılışta"
+
+msgid "Powering off in a game always saves it"
+msgstr "Oyunda kapatınca oyun hep kaydedilir"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "/boot/rsos.env güncellenemedi."
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "YENİDEN BAŞLAT"
+
+msgid "LATER"
+msgstr "SONRA"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "Yeniden başlatma gerekli: değişiklik sonraki açılışta geçerli olur."
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "Boş: %s / %s"
+
+msgid "Storage"
+msgstr "Depolama"
+
+msgid "Game storage"
+msgstr "Oyun depolama"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "USB bellek"
+
+msgid "Import games"
+msgstr "Oyunları içe aktar"
+
+msgid "Export games"
+msgstr "Oyunları dışa aktar"
+
+msgid "Back up saves"
+msgstr "Kayıtları yedekle"
+
+msgid "Eject USB drive"
+msgstr "USB belleği çıkar"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "USB bellek takılınca sor"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "Gelişmiş: hızlı açılış için kapat (yeniden başlat)"
+
+msgid "Internal eMMC"
+msgstr "Dahili eMMC"
+
+msgid "M.2 SATA drive"
+msgstr "M.2 SATA sürücü"
+
+msgid "no battery"
+msgstr "pil yok"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%%%d, dolmasına %d sa %02d dk"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%%%d, yaklaşık %d sa %02d dk"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%%%d, şarj oluyor"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%%%d, dolu"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%%%d"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "şarj cihazı, %s V"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "pil, %s V"
+
+msgid "charger connected"
+msgstr "şarj cihazı takılı"
+
+msgid "battery"
+msgstr "pil"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C (sıcak)"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "bağlı değil"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s, arayüz %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "%d sistem"
+msgstr[1] "%d sistem"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "%d oyun, %s"
+msgstr[1] "%d oyun, %s"
+
+msgid "System information"
+msgstr "Sistem bilgisi"
+
+msgid "Version"
+msgstr "Sürüm"
+
+msgid "Battery"
+msgstr "Pil"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "Güç"
+
+msgid "Input devices"
+msgstr "Giriş aygıtları"
+
+msgid "CPU temperature"
+msgstr "CPU sıcaklığı"
+
+msgid "1 min"
+msgstr "1 dk"
+
+msgid "2 min"
+msgstr "2 dk"
+
+msgid "5 min"
+msgstr "5 dk"
+
+msgid "Voltage"
+msgstr "Voltaj"
+
+msgid "AXP fuel gauge"
+msgstr "AXP pil ölçer"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "EVET"
+
+msgid "NO"
+msgstr "HAYIR"
+
+msgid "Restart the console?"
+msgstr "Konsol yeniden başlatılsın mı?"
+
+msgid "Power off the console?"
+msgstr "Konsol kapatılsın mı?"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "Güç"
+
+msgid "Restart"
+msgstr "Yeniden başlat"
+
+msgid "Power off"
+msgstr "Kapat"
+
+msgid "Battery saving"
+msgstr "Pil tasarrufu"
+
+msgid "Dim the screen after"
+msgstr "Ekranı karartma süresi"
+
+msgid "Screen off after"
+msgstr "Ekranı kapatma süresi"
+
+msgid "Battery gauge"
+msgstr "Pil ölçümü"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "Saat dilimi: %s"
+
+msgid "Time zone"
+msgstr "Saat dilimi"
+
+msgid "That date is not valid."
+msgstr "Bu tarih geçerli değil."
+
+msgid "The clock could not be set."
+msgstr "Saat ayarlanamadı."
+
+msgid "Date and time set"
+msgstr "Tarih ve saat ayarlandı"
+
+msgid "Setting the clock needs the power module"
+msgstr "Saati ayarlamak için güç modülü gerekli"
+
+msgid "Date & time"
+msgstr "Tarih ve saat"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "Şimdi"
+
+msgid "Set the clock"
+msgstr "Saati ayarla"
+
+msgid "Year"
+msgstr "Yıl"
+
+msgid "Month"
+msgstr "Ay"
+
+msgid "Day"
+msgstr "Gün"
+
+msgid "Hour"
+msgstr "Saat"
+
+msgid "Minute"
+msgstr "Dakika"
+
+msgid "Set date and time"
+msgstr "Tarih ve saati ayarla"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "Dil"
+
+msgid "Settings"
+msgstr "Ayarlar"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "%s yüklü değil"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "Dilini seç"
+
+msgid "This game is not in the list any more"
+msgstr "Bu oyun artık listede yok"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "Favori"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "Sistem varsayılanı"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s (deneysel)"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "Varsayılan (%s)"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "yok"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "Bu oyunun çekirdeği"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "Tüm %s oyunlarının çekirdeği"
+
+msgid "Core"
+msgstr "Çekirdek"
+
+msgid "none installed"
+msgstr "hiçbiri yüklü değil"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "Oyna"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "Dosya"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr ""
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr ""
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr ""
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr ""
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr ""
+
+msgctxt "system"
+msgid "32X"
+msgstr ""
+
+msgctxt "system"
+msgid "Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr ""
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr ""
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr ""
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr ""
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "SD kart dolu"
+
+msgid "The USB drive was removed"
+msgstr "USB bellek çıkarıldı"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "Okuma hatası: USB bellek çıkarıldı mı?"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "USB bellek dolu"
+
+msgid "The USB drive is read-only"
+msgstr "USB bellek salt okunur"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "Yazma hatası: USB bellek çıkarıldı mı?"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "boşta"
+
+msgid "BIOS files"
+msgstr "BIOS dosyaları"
+
+msgid "Themes"
+msgstr "Temalar"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "USB bellek meşgul"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "USB bellek hazır: artık çıkarabilirsin"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "ÇIKAR"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "Ana klasör"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s (yedek)"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "%d kütüphane"
+msgstr[1] "tüm kütüphaneler (%d)"
+
+msgid "Another copy is already running."
+msgstr "Başka bir kopyalama zaten sürüyor."
+
+msgid "The copy could not start."
+msgstr "Kopyalama başlatılamadı."
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "Bellekteki oyun kütüphaneleri"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "%d oyun"
+msgstr[1] "%d oyun"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s, %s, %s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "%d dosya, %s"
+msgstr[1] "%d dosya, %s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "Tümü (%d kütüphane)"
+msgstr[1] "Tümü (%d kütüphane)"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "%d oyun, %s"
+msgstr[1] "%d oyun, %s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "Çıkar"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "Bellekte oyun aranıyor..."
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "Konsolla karşılaştırılıyor..."
+
+msgid "This drive could not be read."
+msgstr "Bu bellek okunamadı."
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "Kaynak"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "Bellekteki oyunlar"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "%d/%d yeni, %s, kayıtlar"
+msgstr[1] "%d/%d yeni, %s, kayıtlar"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "%d/%d yeni, %s"
+msgstr[1] "%d/%d yeni, %s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d, zaten var, kayıtlar"
+msgstr[1] "%d, zaten var, kayıtlar"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d, zaten var"
+msgstr[1] "%d, zaten var"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "Desteklenmiyor: %s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%d dosya"
+msgstr[1] "%d dosya"
+
+msgid "Nothing new on this drive"
+msgstr "Bu bellekte yeni bir şey yok"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "Kopyala"
+
+msgid "Saves & save states"
+msgstr "Kayıtlar ve durumlar"
+
+msgid "Screenshots"
+msgstr "Ekran görüntüleri"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "Konsolda zaten var"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "%d dosya, atlandı"
+msgstr[1] "%d dosya, atlandı"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "Konsoldakinden farklı"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d (kayıtlar da): sana sorulacak"
+msgstr[1] "%d (kayıtlar da): sana sorulacak"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d: sana sorulacak"
+msgstr[1] "%d: sana sorulacak"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "Kopyalanacak"
+
+msgid "Not enough space"
+msgstr "Yer yetersiz"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "en fazla %s, boş: %s"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "Kopyala"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "İçe aktar: %s"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "Bu bellek meşgul (tarama ya da kopyalama sürüyor)."
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "USB belleğe yazılamıyor (yazma korumalı mı?)."
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "Bellekle karşılaştırılıyor..."
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "Bellekteki klasör"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s (yeni)"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "Konsoldaki oyunlar"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "BIOS dosyaları da"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "Oyunlar"
+
+msgid "All games"
+msgstr "Tüm oyunlar"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "Son oynanan: %s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "Ayarlar da (çekirdek, tuşlar)"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "Bellekte zaten var"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "%d dosya, %s (boş: %s)"
+msgstr[1] "%d dosya, %s (boş: %s)"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "Kopyalanacak bir şey yok: bellek güncel"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "%d dosya 4 GB üstü: FAT32 bunu saklayamaz"
+msgstr[1] "%d dosya 4 GB üstü: FAT32 bunları saklayamaz"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "atlandı"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "Dışa aktar"
+
+msgid "Back up"
+msgstr "Yedekle"
+
+msgid "The USB drive is not there any more."
+msgstr "USB bellek artık takılı değil."
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "Oyunları dışa aktar: %s"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "Kayıtları yedekle: %s"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "bilinmeyen tarih"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "ATLA"
+
+msgid "REPLACE"
+msgstr "DEĞİŞTİR"
+
+msgid "SKIP ALL"
+msgstr "HEPSİNİ ATLA"
+
+msgid "REPLACE ALL"
+msgstr "HEPSİNİ DEĞİŞTİR"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "Bu ayar dosyası konsolda zaten var ama farklı:"
+
+msgid "This save is already on the console, but different:"
+msgstr "Bu kayıt konsolda zaten var ama farklı:"
+
+msgid "This game is already on the console, but different:"
+msgstr "Bu oyun konsolda zaten var ama farklı:"
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "Bu BIOS dosyası konsolda zaten var ama farklı:"
+
+msgid "This file is already on the console, but different:"
+msgstr "Bu dosya konsolda zaten var ama farklı:"
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"USB bellek: %s, %s\n"
+"Konsol: %s, %s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "Kayıtlar değerlidir: değiştirirsen konsoldaki kopya %s.bak adıyla saklanır."
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "Kopyalanıyor: %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "Oyunlar dışa aktarılıyor: %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "Kayıtlar yedekleniyor: %s"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s / %s  -  %d / %d dosya"
+msgstr[1] "%s / %s  -  %d / %d dosya"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s MB/s, yaklaşık %d dk kaldı"
+msgstr[1] "%s MB/s, yaklaşık %d dk kaldı"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s MB/s"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "%d dosya zaten vardı"
+msgstr[1] "%d dosya zaten vardı"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "Kopyalama iptal edildi."
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "Kopyalama durdu: %s."
+
+msgid "error"
+msgstr "hata"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "İçe aktarılan: %d, zaten vardı: %d, atlanan: %d, değiştirilen: %d."
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "Bazı dosyalar kopyalanamadı."
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "İptal edildi."
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "Durdu: %s. Yarım kalan dosya silindi."
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "%d dosya kopyalandı (%s), zaten vardı: %d."
+msgstr[1] "%d dosya kopyalandı (%s), zaten vardı: %d."
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "4 GB üstü %d dosya atlandı (FAT32)."
+msgstr[1] "4 GB üstü %d dosya atlandı (FAT32)."
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "%d dosya kopyalanamadı."
+msgstr[1] "%d dosya kopyalanamadı."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "DURDUR"
+
+msgid "CONTINUE"
+msgstr "DEVAM"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "Kopyalama durdurulsun mu? Kopyalanan dosyalar kalır."
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "Durdurulsun mu? Kopyalanan dosyalar bellekte kalır."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "İÇE AKTAR"
+
+msgid "EXPORT GAMES"
+msgstr "DIŞA AKTAR"
+
+msgid "BACK UP SAVES"
+msgstr "YEDEKLE"
+
+msgid "NOTHING"
+msgstr "HİÇBİRİ"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "USB bellek %s takıldı: kullanmak için Ayarlar > Depolama"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "USB bellek %s takıldı"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "USB bellek \"%s\" takıldı (%s, %s). Ne yapmak istersin?"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "USB bellek çıkarıldı: kopyalama durdu"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "USB bellek çıkarıldı"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "USB bellek: biçim desteklenmiyor (FAT32 ya da exFAT kullan)"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "USB bellek okunamadı"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "Oyunları içe aktar"
+
+msgid "Export games to"
+msgstr "Oyunları dışa aktar"
+
+msgid "Back up saves to"
+msgstr "Kayıtları yedekle"
+
+msgid "USB transfers are not available in this build."
+msgstr "USB aktarımı bu sürümde yok."
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "Bir USB bellek tak (FAT32, exFAT veya NTFS)."
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "USB bellek yok"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "Bir USB bellek meşgul"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "Ağ kapalı: web aktarımı durdu"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "durdur"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "Bu adresi bir tarayıcıda aç:"
+
+msgid "(no network address)"
+msgstr "(ağ adresi yok)"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "veya %s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "Yanlış PIN: %d sn kilitli"
+msgstr[1] "Yanlış PIN: %d sn kilitli"
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "Alınıyor: %s (%%%d)"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "Durdu: %s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "Durduruldu"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "Dosyalar bekleniyor..."
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "%d dosya alındı"
+msgstr[1] "%d dosya alındı"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "Sadece ev ağında kullan. PIN'i bilen herkes dosya ekleyebilir."
+
+msgid "KEEP RECEIVING"
+msgstr "ALMAYA DEVAM"
+
+msgid "Keep receiving files in the background?"
+msgstr "Dosyalar arka planda alınmaya devam etsin mi?"
+
+msgid "Network transfer is not available in this build."
+msgstr "Ağ aktarımı bu sürümde yok."
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "Önce Wi-Fi ya da Ethernet'i aç (ağ adresi yok)."
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "Aktarım başlatılamadı (hata %d)."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "DEVAM ET"
+
+msgid "START FRESH"
+msgstr "BAŞTAN BAŞLA"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "%s: kaldığın yerden devam?"
+
+msgid "No emulator is installed for this system."
+msgstr "Bu sistem için yüklü emülatör yok."
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "Dosyalar kopyalanıyor. Kopyalamanın bitmesini bekle ya da iptal et."
+
+msgid "Resume where you left off?"
+msgstr "Kaldığın yerden devam etmek ister misin?"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "AYARLAR"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "Kol bağlandı: %s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "Kol çıkarıldı: %s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "Yeni kol: %s (Ayarlar > Kontroller)"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "Yeni kol: %s. Ayarlar > Kontroller içinde ayarlansın mı?"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "Oyunlar okunuyor: %s"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "Konsolun hazırlanıyor..."
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "Pil zayıf (%%%d)"
+
+msgid "Battery empty, saving..."
+msgstr "Pil bitti, kaydediliyor..."
+
+msgid "Restarting..."
+msgstr "Yeniden başlatılıyor..."
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "Isındı, yavaşlatılıyor"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "Şarj oluyor"
+
+msgid "Fully charged"
+msgstr "Tam dolu"
+
+msgid "Charger unplugged"
+msgstr "Şarj cihazı çıkarıldı"
+
+msgid "Not charging"
+msgstr "Şarj olmuyor"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%%%d"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "Dolmasına %d sa %02d dk"
+
+msgid "Press the power button to start"
+msgstr "Açmak için güç tuşuna bas"
+
+msgid "Battery very low: plug in the charger"
+msgstr "Pil çok zayıf: şarj cihazını tak"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "Puan: "
+
+msgid "Released: "
+msgstr "Çıkış: "
+
+msgid "Developer: "
+msgstr "Geliştirici: "
+
+msgid "Publisher: "
+msgstr "Yayıncı: "
+
+msgid "Genre: "
+msgstr "Tür: "
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "Oyuncu: "
+
+msgid "Last played: "
+msgstr "Son oynama: "
+
+msgid "Times played: "
+msgstr "Oynanma: "
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "Yıl"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "Tür"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "Oyuncu"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "Puan"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "Favori oyunların"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "Son oynananlar"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "Konsoldaki tüm oyunlar"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "Ev bilgisayarı · 1983"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "Arcade · MAME 2003-Plus"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "Arcade · FinalBurn Neo"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "bilinmiyor"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "oyun yok"
+
+msgid "launch"
+msgstr "oyna"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "seçenekler"
+
+msgid "favorite"
+msgstr "favori"
+
+msgid "menu"
+msgstr "menü"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "Favorilere eklendi"
+
+msgid "Removed from favorites"
+msgstr "Favorilerden çıkarıldı"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "%d oyun var"
+msgstr[1] "%d oyun var"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "%d favori"
+msgstr[1] "%d favori"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s, %s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "Oyun bulunamadı. ROM'ları /data/roms/<system>/ klasörüne kopyala"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "hiç"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "bilinmiyor"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "%d saniye önce"
+msgstr[1] "%d saniye önce"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d dakika önce"
+msgstr[1] "%d dakika önce"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d saat önce"
+msgstr[1] "%d saat önce"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d gün önce"
+msgstr[1] "%d gün önce"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%d.%m.%Y"

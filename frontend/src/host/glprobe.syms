@@ -1,0 +1,11 @@
+/* The GL entry points the game process exports so that a core linked
+ * against libGLESv2 calls the timed wrappers of src/host/glprobe.c first
+ * (linked with -Wl,--dynamic-list=src/host/glprobe.syms). */
+{
+	glCompileShader;
+	glLinkProgram;
+	glDrawArrays;
+	glDrawElements;
+	glTexImage2D;
+	glTexSubImage2D;
+};

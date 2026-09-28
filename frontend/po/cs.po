@@ -1,0 +1,2438 @@
+# Czech translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "Nelze otevřít soubor zip (%s)"
+
+msgid "No playable file in this zip"
+msgstr "V tomto zipu není žádná hra"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "Soubor v tomto zipu je moc velký (%llu MB)"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "Nelze rozbalit %s ze zipu (%s)"
+
+msgid "Game file not found"
+msgstr "Soubor hry nebyl nalezen"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "Archivy 7z tu nejsou podporované: použij .zip nebo archiv rozbal"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "Nelze přečíst soubor hry (%s)"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "Tento systém"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s: %s není správný soubor BIOS"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%s nebo %s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "%s potřebuje %s v %s"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "Vypínání..."
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "Ovladač hráče 1 odpojen: pauza"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "Hráč 1: %s"
+
+msgid "Saving..."
+msgstr "Ukládání..."
+
+msgid "This game cannot save a state now"
+msgstr "Tato hra teď nemůže uložit stav"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "Stav NEBYL uložen: %s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "Stav načten, pozice %d"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "Na pozici %d není žádný stav"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "Nelze načíst stav z pozice %d"
+
+#, c-format
+msgid "State slot %d"
+msgstr "Pozice stavu %d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "Pozice stavu %d (prázdná)"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "Reset"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "Připojeno: %s"
+
+msgid "Battery empty: game saved"
+msgstr "Baterie vybitá: hra uložena"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "Slabá baterie (%d %%)"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "%d nastavení, asi %d min"
+msgstr[1] "%d nastavení, asi %d min"
+msgstr[2] "%d nastavení, asi %d min"
+
+msgid "No benchmark for this system"
+msgstr "Pro tento systém není test výkonu"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "Test: tato hra teď nemůže uložit stav"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "Test: nelze zapsat %s"
+
+msgid "No result to use"
+msgstr "Žádný výsledek k použití"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "Neznámá konfigurace %s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "Nelze uložit: %s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "Uloženo „%s“ pro tuto hru (platí od dalšího spuštění)"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "Uloženo „%s“: příští spuštění použije %s"
+
+msgid "The emulator stopped responding"
+msgstr "Emulátor přestal odpovídat"
+
+msgid "Cannot load the emulator core"
+msgstr "Nelze načíst jádro emulátoru"
+
+msgid "Benchmark: bad plan"
+msgstr "Test: chybný plán"
+
+msgid "Cannot start the save thread"
+msgstr "Nelze spustit vlákno ukládání"
+
+msgid "Cannot open the display"
+msgstr "Nelze otevřít displej"
+
+msgid "This core needs a game file"
+msgstr "Toto jádro potřebuje soubor hry"
+
+msgid "The emulator could not load this game"
+msgstr "Emulátor nemohl načíst tuto hru"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "Hra pokračuje"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "Spuštění GPU selhalo (framebuffer 0x%x)"
+
+msgid "This build cannot run GLES games"
+msgstr "Tato verze nespustí hry GLES"
+
+msgid "No GPU found (lima)"
+msgstr "GPU nebylo nalezeno (lima)"
+
+msgid "The game was stopped"
+msgstr "Hra byla zastavena"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "Emulátor spadl (%s). Uložené hry zůstaly zachovány, kromě posledních pár sekund."
+
+msgid "Could not start the game"
+msgstr "Hru se nepodařilo spustit"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "Emulátor přestal odpovídat. Uložené hry zůstaly zachovány, kromě posledních pár sekund."
+
+msgid "Cannot start the game process"
+msgstr "Nelze spustit proces hry"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "Emulátor selhal (kód %d)"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "Celé násobky"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "Roztažené"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "Poměr stran"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "Zapnuto"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "Vypnuto"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "(hra)"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "(jádro)"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "(test)"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "spadl"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "zamrzl"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "zastaven"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "selhal"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "Pokračovat"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "Pozice %d"
+
+msgid "Save state"
+msgstr "Uložit stav"
+
+msgid "Load state"
+msgstr "Načíst stav"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "Disk"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "Reset"
+
+msgid "Core options"
+msgstr "Možnosti jádra"
+
+msgid "Scaling"
+msgstr "Škálování"
+
+msgid "Show FPS"
+msgstr "Zobrazit FPS"
+
+msgid "Fast-forward"
+msgstr "Zrychlení"
+
+msgid "Benchmark this game"
+msgstr "Test výkonu hry"
+
+msgid "Controls"
+msgstr "Ovládání"
+
+msgid "Exit game"
+msgstr "Ukončit hru"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "Uložit pro tuto hru"
+
+msgid "Save for all games (this core)"
+msgstr "Uložit pro celé jádro"
+
+msgid "Reset to defaults"
+msgstr "Obnovit výchozí"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "Hráč %d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s (páčka)"
+
+msgid "D-pad as left stick (P1)"
+msgstr "Křížek jako levá páčka (H1)"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "Nahoru"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "Dolů"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "Doleva"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "Doprava"
+
+msgid "Left stick"
+msgstr "Levá páčka"
+
+msgid "Right stick"
+msgstr "Pravá páčka"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "Běhy"
+
+msgid "Each run"
+msgstr "Každý běh"
+
+msgid "from now, no input"
+msgstr "od teď, bez ovládání"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "Zastavení"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs (SD karta)"
+
+msgid "Results"
+msgstr "Výsledky"
+
+msgid "Start benchmark"
+msgstr "Spustit test"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "bez pořadí"
+
+msgid "blank?"
+msgstr "prázdný obraz?"
+
+msgid "Use this for this game"
+msgstr "Použít pro tuto hru"
+
+msgid "Resume game"
+msgstr "Pokračovat ve hře"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "Test výkonu"
+
+msgid "Benchmark results"
+msgstr "Výsledky testu"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "Prázdná"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "(hra) pro tuto hru, (jádro) pro všechny hry, * uloží se při odchodu"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A: potvrdit  B: pokračovat  </>: změnit"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A: potvrdit  B: zpět  </>: změnit"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "Ukládám pozici %d..."
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "Pozice %d je prázdná"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "Vložen disk %d"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "Nelze přepnout na disk %d"
+
+msgid "Could not save the options"
+msgstr "Možnosti se nepodařilo uložit"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "Uloženo pro: %s"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "Uloženo pro jádro %s"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "Výchozí obnoveny (uloží se při odchodu)"
+
+msgid "Options saved for this game"
+msgstr "Možnosti uloženy pro tuto hru"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "Tabulka: %s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "Uložení hry selhalo: %s (zkouším znovu)"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "Hra uložena"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "Automatický stav NEBYL uložen: %s"
+
+msgid "Auto state saved"
+msgstr "Automatický stav uložen"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "Stav %d NEBYL uložen: %s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "Stav uložen, pozice %d"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "Soubor s uložením nelze přečíst: ukládání vypnuto"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr ","
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr " "
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "GB"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "MB"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "KB"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%d.%m.%Y"
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%d.%m.%Y %H:%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "Obrazovka tuto obnovovací frekvenci odmítla"
+
+msgid "No emulator is installed for this game."
+msgstr "Pro tuto hru není nainstalovaný žádný emulátor."
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "Tuto hru nelze spustit (chybí BIOS?)."
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "Nelze spustit proces hry (%s)."
+
+msgid "The game could not be started."
+msgstr "Hru se nepodařilo spustit."
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "Datový oddíl se nepodařilo obnovit. Možná bude potřeba znovu zkopírovat hry a uložené hry."
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "Datový oddíl byl nečitelný, a tak byl znovu naformátován."
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "Datový oddíl má chyby: ukládání může selhat. Zazálohuj si uložené hry."
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "Poslední aktualizace se nespustila; byla obnovena předchozí verze."
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "SD karta byla zkontrolována po nečekaném výpadku napájení"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "Připravuji SD kartu, počkej..."
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "Kontroluji SD kartu, počkej..."
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "Oblíbené"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "Naposledy hrané"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "V této složce už nejsou žádné hry"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "vybrat"
+
+msgid "change"
+msgstr "změnit"
+
+msgid "select"
+msgstr "potvrdit"
+
+msgid "back"
+msgstr "zpět"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "psát"
+
+msgid "delete"
+msgstr "smazat"
+
+msgid "space"
+msgstr "mezera"
+
+msgid "shift"
+msgstr "shift"
+
+msgid "ok"
+msgstr "ok"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "zrušit"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "SHIFT"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "MEZERA"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "SMAŽ"
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "Auto"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "Poměr stran"
+
+msgid "Integer"
+msgstr "Celé násobky"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "Automaticky"
+
+msgid "Basic"
+msgstr "Jednoduchý"
+
+msgid "Detailed"
+msgstr "Podrobný"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "Vpravo nahoře"
+
+msgid "Top left"
+msgstr "Vlevo nahoře"
+
+msgid "Bottom right"
+msgstr "Vpravo dole"
+
+msgid "Bottom left"
+msgstr "Vlevo dole"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Hz (původní)"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "Auto (kdo spustí hru)"
+
+msgid "Built-in"
+msgstr "Vestavěný"
+
+msgid "External"
+msgstr "Externí"
+
+msgid "Could not save the settings"
+msgstr "Nastavení se nepodařilo uložit"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "TV"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "Frekvence LCD: 60 Hz"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "Frekvence LCD: zpět na 78 Hz"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "PONECHAT"
+
+msgid "REVERT"
+msgstr "VRÁTIT"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"Obrazovka se teď obnovuje na 60 Hz.\n"
+"Ponechat toto nastavení? Návrat za %d s"
+
+msgid "Display"
+msgstr "Obrazovka"
+
+msgid "Brightness"
+msgstr "Jas"
+
+msgid "LCD refresh rate"
+msgstr "Obnovovací frekvence LCD"
+
+msgid "HDMI resolution"
+msgstr "Rozlišení HDMI"
+
+msgid "Game scaling"
+msgstr "Škálování her"
+
+msgid "Game list style"
+msgstr "Styl seznamu her"
+
+msgid "Battery in games"
+msgstr "Baterie ve hrách"
+
+msgid "Battery position"
+msgstr "Umístění baterie"
+
+msgid "Button test"
+msgstr "Test tlačítek"
+
+msgid "no stick"
+msgstr "bez páčky"
+
+msgid "Hold SELECT + START to exit"
+msgstr "Pro odchod podrž SELECT + START"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "Stiskni křížek NAHORU"
+
+msgid "Press D-pad DOWN"
+msgstr "Stiskni křížek DOLŮ"
+
+msgid "Press D-pad LEFT"
+msgstr "Stiskni křížek DOLEVA"
+
+msgid "Press D-pad RIGHT"
+msgstr "Stiskni křížek DOPRAVA"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "Stiskni PRAVÉ tlačítko (A)"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "Stiskni DOLNÍ tlačítko (B)"
+
+msgid "Press the TOP face button (X)"
+msgstr "Stiskni HORNÍ tlačítko (X)"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "Stiskni LEVÉ tlačítko (Y)"
+
+msgid "Press L1"
+msgstr "Stiskni L1"
+
+msgid "Press R1"
+msgstr "Stiskni R1"
+
+msgid "Press L2"
+msgstr "Stiskni L2"
+
+msgid "Press R2"
+msgstr "Stiskni R2"
+
+msgid "Press SELECT"
+msgstr "Stiskni SELECT"
+
+msgid "Press START"
+msgstr "Stiskni START"
+
+msgid "Press the left stick (L3)"
+msgstr "Zmáčkni levou páčku (L3)"
+
+msgid "Press the right stick (R3)"
+msgstr "Zmáčkni pravou páčku (R3)"
+
+msgid "Push the left stick RIGHT"
+msgstr "Posuň levou páčku DOPRAVA"
+
+msgid "Push the left stick DOWN"
+msgstr "Posuň levou páčku DOLŮ"
+
+msgid "Push the right stick RIGHT"
+msgstr "Posuň pravou páčku DOPRAVA"
+
+msgid "Push the right stick DOWN"
+msgstr "Posuň pravou páčku DOLŮ"
+
+msgid "Configure controller"
+msgstr "Nastavení ovladače"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "Krok %d z %d"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "Ovladač to nemá? Počkej %d s a přeskočí se to"
+
+msgid "Controller saved"
+msgstr "Ovladač uložen"
+
+msgid "The mapping could not be saved."
+msgstr "Rozložení tlačítek se nepodařilo uložit."
+
+msgid "Configure a controller"
+msgstr "Nastavit ovladač"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "vlastní"
+
+msgid "known pad"
+msgstr "známý ovladač"
+
+msgid "standard"
+msgstr "standardní"
+
+msgid "keyboard"
+msgstr "klávesnice"
+
+msgid "not configured"
+msgstr "nenastaveno"
+
+msgid "No external controller detected"
+msgstr "Nebyl nalezen žádný externí ovladač"
+
+msgid "built-in"
+msgstr "vestavěný"
+
+msgid "Player 1"
+msgstr "Hráč 1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "Přidaná tlačítka C/Z"
+
+msgid "Players"
+msgstr "Hráči"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10 min"
+
+msgid "30 min"
+msgstr "30 min"
+
+msgid "1 hour"
+msgstr "1 hodina"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "Nikdy"
+
+msgid "please wait..."
+msgstr "počkej..."
+
+msgid "not set"
+msgstr "nenastaveno"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "běží"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi: vypínání, počkej..."
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "Ethernet: vypínání, počkej..."
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "Bluetooth: vypínání, počkej..."
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi: zapínání, počkej..."
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "Ethernet: zapínání, počkej..."
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "Bluetooth: zapínání, počkej..."
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "Nelze spustit %s"
+
+msgid "Could not save the WiFi settings"
+msgstr "Nastavení Wi-Fi se nepodařilo uložit"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "Heslo k Wi-Fi musí mít aspoň 8 znaků."
+
+msgid "Set the network name first."
+msgstr "Nejdřív nastav název sítě."
+
+msgid "WiFi password saved"
+msgstr "Heslo k Wi-Fi uloženo"
+
+msgid "WiFi network name"
+msgstr "Název sítě Wi-Fi"
+
+msgid "WiFi password"
+msgstr "Heslo k Wi-Fi"
+
+msgid "Console name"
+msgstr "Název konzole"
+
+msgid "Use letters, digits and dashes."
+msgstr "Použij písmena, číslice a pomlčky."
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "Název konzole: %s (při dalším přenosu)"
+
+msgid "Network"
+msgstr "Síť"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Síť Wi-Fi"
+
+msgid "Transfer games from a computer or phone"
+msgstr "Přenos her z počítače nebo telefonu"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "Přenos přes síť"
+
+msgid "Stop when idle for"
+msgstr "Zastavit po nečinnosti"
+
+msgid "Keep receiving in the background"
+msgstr "Přijímat dál na pozadí"
+
+msgid "WiFi off"
+msgstr "Wi-Fi vypnuto"
+
+msgid "Ethernet off"
+msgstr "Ethernet vypnut"
+
+msgid "Bluetooth off"
+msgstr "Bluetooth vypnut"
+
+msgid "WiFi on"
+msgstr "Wi-Fi zapnuto"
+
+msgid "Ethernet on"
+msgstr "Ethernet zapnut"
+
+msgid "Bluetooth on"
+msgstr "Bluetooth zapnut"
+
+msgid "failed"
+msgstr "chyba"
+
+msgid "Theme"
+msgstr "Motiv"
+
+msgid "No theme found"
+msgstr "Nebyl nalezen žádný motiv"
+
+msgid "Game lists refreshed"
+msgstr "Seznamy her obnoveny"
+
+msgid "Game lists"
+msgstr "Seznamy her"
+
+msgid "Favorites first"
+msgstr "Oblíbené jako první"
+
+msgid "Favorites & last played pages"
+msgstr "Stránky Oblíbené a Naposledy hrané"
+
+msgid "Refresh game lists"
+msgstr "Obnovit seznamy her"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "Zeptat se"
+
+msgid "Always resume"
+msgstr "Vždy pokračovat"
+
+msgid "Always start fresh"
+msgstr "Vždy začít znovu"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "Hry"
+
+msgid "Resume games"
+msgstr "Pokračování her"
+
+msgid "Auto-save on exit"
+msgstr "Uložit stav při odchodu"
+
+msgid "On launch"
+msgstr "Při spuštění"
+
+msgid "Powering off in a game always saves it"
+msgstr "Vypnutí během hry ji vždy uloží"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "Nepodařilo se upravit /boot/rsos.env."
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "RESTARTOVAT"
+
+msgid "LATER"
+msgstr "POZDĚJI"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "Je potřeba restart: změna se projeví při dalším spuštění."
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "Volno: %s z %s"
+
+msgid "Storage"
+msgstr "Úložiště"
+
+msgid "Game storage"
+msgstr "Úložiště her"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "Flash disk"
+
+msgid "Import games"
+msgstr "Importovat hry"
+
+msgid "Export games"
+msgstr "Exportovat hry"
+
+msgid "Back up saves"
+msgstr "Zálohovat uložené hry"
+
+msgid "Eject USB drive"
+msgstr "Vysunout flash disk"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "Zeptat se po připojení flash disku"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "Pokročilé: vypni pro rychlý start, nutný restart"
+
+msgid "Internal eMMC"
+msgstr "Interní eMMC"
+
+msgid "M.2 SATA drive"
+msgstr "Disk M.2 SATA"
+
+msgid "no battery"
+msgstr "bez baterie"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%d %%, plná za %d h %02d"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%d %%, asi %d h %02d"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%d %%, nabíjí se"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%d %%, plná"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%d %%"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "nabíječka, %s V"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "baterie, %s V"
+
+msgid "charger connected"
+msgstr "nabíječka připojena"
+
+msgid "battery"
+msgstr "baterie"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C (horká)"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "nepřipojeno"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s, menu %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "%d systém"
+msgstr[1] "%d systémy"
+msgstr[2] "%d systémů"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "%d hra, %s"
+msgstr[1] "%d hry, %s"
+msgstr[2] "%d her, %s"
+
+msgid "System information"
+msgstr "Informace o systému"
+
+msgid "Version"
+msgstr "Verze"
+
+msgid "Battery"
+msgstr "Baterie"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "Napájení"
+
+msgid "Input devices"
+msgstr "Vstupní zařízení"
+
+msgid "CPU temperature"
+msgstr "Teplota CPU"
+
+msgid "1 min"
+msgstr "1 min"
+
+msgid "2 min"
+msgstr "2 min"
+
+msgid "5 min"
+msgstr "5 min"
+
+msgid "Voltage"
+msgstr "Napětí"
+
+msgid "AXP fuel gauge"
+msgstr "Měřič AXP"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "ANO"
+
+msgid "NO"
+msgstr "NE"
+
+msgid "Restart the console?"
+msgstr "Restartovat konzoli?"
+
+msgid "Power off the console?"
+msgstr "Vypnout konzoli?"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "Napájení"
+
+msgid "Restart"
+msgstr "Restartovat"
+
+msgid "Power off"
+msgstr "Vypnout"
+
+msgid "Battery saving"
+msgstr "Úspora baterie"
+
+msgid "Dim the screen after"
+msgstr "Ztlumit obrazovku po"
+
+msgid "Screen off after"
+msgstr "Vypnout obrazovku po"
+
+msgid "Battery gauge"
+msgstr "Měření baterie"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "Časové pásmo: %s"
+
+msgid "Time zone"
+msgstr "Časové pásmo"
+
+msgid "That date is not valid."
+msgstr "Toto datum není platné."
+
+msgid "The clock could not be set."
+msgstr "Hodiny se nepodařilo nastavit."
+
+msgid "Date and time set"
+msgstr "Datum a čas nastaveny"
+
+msgid "Setting the clock needs the power module"
+msgstr "Nastavení hodin vyžaduje napájecí modul"
+
+msgid "Date & time"
+msgstr "Datum a čas"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "Teď"
+
+msgid "Set the clock"
+msgstr "Nastavit hodiny"
+
+msgid "Year"
+msgstr "Rok"
+
+msgid "Month"
+msgstr "Měsíc"
+
+msgid "Day"
+msgstr "Den"
+
+msgid "Hour"
+msgstr "Hodina"
+
+msgid "Minute"
+msgstr "Minuta"
+
+msgid "Set date and time"
+msgstr "Nastavit datum a čas"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "Jazyk"
+
+msgid "Settings"
+msgstr "Nastavení"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "Není nainstalováno: %s"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "Vyber si jazyk"
+
+msgid "This game is not in the list any more"
+msgstr "Tato hra už v seznamu není"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "Oblíbená"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "Výchozí pro systém"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s (experimentální)"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "Výchozí (%s)"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "žádné"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "Jádro pro tuto hru"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "Jádro pro všechny hry %s"
+
+msgid "Core"
+msgstr "Jádro"
+
+msgid "none installed"
+msgstr "žádné nainstalované"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "Hrát"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "Soubor"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr ""
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr ""
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr ""
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr ""
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr ""
+
+msgctxt "system"
+msgid "32X"
+msgstr ""
+
+msgctxt "system"
+msgid "Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr ""
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr ""
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr ""
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr ""
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "SD karta je plná"
+
+msgid "The USB drive was removed"
+msgstr "Flash disk byl odpojen"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "Chyba čtení: byl flash disk odpojen?"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "Flash disk je plný"
+
+msgid "The USB drive is read-only"
+msgstr "Flash disk je jen pro čtení"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "Chyba zápisu: byl flash disk odpojen?"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "nečinnost"
+
+msgid "BIOS files"
+msgstr "Soubory BIOS"
+
+msgid "Themes"
+msgstr "Motivy"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "Flash disk je zaneprázdněný"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "Flash disk vysunut: můžeš ho odpojit"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "VYSUNOUT"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "Hlavní složka"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s (záloha)"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "%d knihovna"
+msgstr[1] "všechny %d knihovny"
+msgstr[2] "všech %d knihoven"
+
+msgid "Another copy is already running."
+msgstr "Už běží jiné kopírování."
+
+msgid "The copy could not start."
+msgstr "Kopírování se nepodařilo spustit."
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "Knihovny her na disku"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "%d hra"
+msgstr[1] "%d hry"
+msgstr[2] "%d her"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s, %s, %s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "%d soubor, %s"
+msgstr[1] "%d soubory, %s"
+msgstr[2] "%d souborů, %s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "Vše (%d knihovna)"
+msgstr[1] "Vše (%d knihovny)"
+msgstr[2] "Vše (%d knihoven)"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "%d hra, %s"
+msgstr[1] "%d hry, %s"
+msgstr[2] "%d her, %s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "Vysunout"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "Hledám hry na disku..."
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "Porovnávám s konzolí..."
+
+msgid "This drive could not be read."
+msgstr "Tento disk nelze přečíst."
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "Odkud"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "Hry na disku"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "%d nová z %d, %s, uložení"
+msgstr[1] "%d nové z %d, %s, uložení"
+msgstr[2] "%d nových z %d, %s, uložení"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "%d nová z %d, %s"
+msgstr[1] "%d nové z %d, %s"
+msgstr[2] "%d nových z %d, %s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d, už v konzoli, uložení"
+msgstr[1] "%d, už v konzoli, uložení"
+msgstr[2] "%d, už v konzoli, uložení"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d, už v konzoli"
+msgstr[1] "%d, už v konzoli"
+msgstr[2] "%d, už v konzoli"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "Nepodporováno: %s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%d soubor"
+msgstr[1] "%d soubory"
+msgstr[2] "%d souborů"
+
+msgid "Nothing new on this drive"
+msgstr "Na tomto disku není nic nového"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "Kopírovat"
+
+msgid "Saves & save states"
+msgstr "Uložené hry a stavy"
+
+msgid "Screenshots"
+msgstr "Snímky obrazovky"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "Už v konzoli"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "%d soubor, přeskočen"
+msgstr[1] "%d soubory, přeskočeny"
+msgstr[2] "%d souborů, přeskočeno"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "V konzoli jiné"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d (i uložení): zeptám se"
+msgstr[1] "%d (i uložení): zeptám se"
+msgstr[2] "%d (i uložení): zeptám se"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d: zeptám se"
+msgstr[1] "%d: zeptám se"
+msgstr[2] "%d: zeptám se"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "Ke zkopírování"
+
+msgid "Not enough space"
+msgstr "Málo místa"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "až %s, volno %s"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "Kopírovat"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "Import z: %s"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "Tento disk je zaneprázdněný (probíhá hledání nebo kopírování)."
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "Na flash disk nelze zapisovat (není chráněný proti zápisu?)."
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "Porovnávám s diskem..."
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "Složka na disku"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s (nová)"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "Hry v konzoli"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "I soubory BIOS"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "Hry"
+
+msgid "All games"
+msgstr "Všechny hry"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "Naposledy hraná: %s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "I nastavení (jádro, tlačítka)"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "Už na disku"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "%d soubor, %s (volno %s)"
+msgstr[1] "%d soubory, %s (volno %s)"
+msgstr[2] "%d souborů, %s (volno %s)"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "Není co kopírovat: disk je aktuální"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "%d soubor přes 4 GB: FAT32 ho neuloží"
+msgstr[1] "%d soubory přes 4 GB: FAT32 je neuloží"
+msgstr[2] "%d souborů přes 4 GB: FAT32 je neuloží"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "přeskočeno"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "Exportovat"
+
+msgid "Back up"
+msgstr "Zálohovat"
+
+msgid "The USB drive is not there any more."
+msgstr "Flash disk už není připojený."
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "Export her na: %s"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "Záloha uložení na: %s"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "neznámé datum"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "VYNECHAT"
+
+msgid "REPLACE"
+msgstr "NAHRADIT"
+
+msgid "SKIP ALL"
+msgstr "VYNECHAT VŠE"
+
+msgid "REPLACE ALL"
+msgstr "NAHRADIT VŠE"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "Tento soubor nastavení už v konzoli je, ale jiný:"
+
+msgid "This save is already on the console, but different:"
+msgstr "Toto uložení už v konzoli je, ale jiné:"
+
+msgid "This game is already on the console, but different:"
+msgstr "Tato hra už v konzoli je, ale jiná:"
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "Tento soubor BIOS už v konzoli je, ale jiný:"
+
+msgid "This file is already on the console, but different:"
+msgstr "Tento soubor už v konzoli je, ale jiný:"
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"Flash disk: %s, %s\n"
+"Konzole: %s, %s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "Uložené hry jsou cenné: když toto uložení nahradíš, kopie z konzole zůstane jako %s.bak."
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "Kopíruji z: %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "Exportuji hry na: %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "Zálohuji uložení na: %s"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s z %s  -  %d z %d souboru"
+msgstr[1] "%s z %s  -  %d z %d souborů"
+msgstr[2] "%s z %s  -  %d z %d souborů"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s MB/s, zbývá asi %d min"
+msgstr[1] "%s MB/s, zbývá asi %d min"
+msgstr[2] "%s MB/s, zbývá asi %d min"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s MB/s"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "%d soubor už tam byl"
+msgstr[1] "%d soubory už tam byly"
+msgstr[2] "%d souborů už tam bylo"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "Kopírování zrušeno."
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "Kopírování se zastavilo: %s."
+
+msgid "error"
+msgstr "chyba"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "Importováno: %d, už tam bylo: %d, přeskočeno: %d, nahrazeno: %d."
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "Některé soubory se nepodařilo zkopírovat."
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "Zrušeno."
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "Zastaveno: %s. Nedokončený soubor byl smazán."
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "Zkopírován %d soubor (%s), už tam bylo: %d."
+msgstr[1] "Zkopírovány %d soubory (%s), už tam bylo: %d."
+msgstr[2] "Zkopírováno %d souborů (%s), už tam bylo: %d."
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "%d soubor přes 4 GB přeskočen (FAT32)."
+msgstr[1] "%d soubory přes 4 GB přeskočeny (FAT32)."
+msgstr[2] "%d souborů přes 4 GB přeskočeno (FAT32)."
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "%d soubor selhal."
+msgstr[1] "%d soubory selhaly."
+msgstr[2] "%d souborů selhalo."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "ZASTAVIT"
+
+msgid "CONTINUE"
+msgstr "POKRAČOVAT"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "Zastavit kopírování? Zkopírované soubory zůstanou."
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "Zastavit? Zkopírované soubory zůstanou na disku."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "IMPORT HER"
+
+msgid "EXPORT GAMES"
+msgstr "EXPORT HER"
+
+msgid "BACK UP SAVES"
+msgstr "ZÁLOHA ULOŽENÍ"
+
+msgid "NOTHING"
+msgstr "NIC"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "Flash disk %s připojen: použij Nastavení > Úložiště"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "Flash disk %s připojen"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "Flash disk „%s“ připojen (%s, %s). Co chceš udělat?"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "Flash disk odpojen: kopírování se zastavilo"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "Flash disk odpojen"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "Flash disk: formát není podporován (použij FAT32 nebo exFAT)"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "Flash disk nelze přečíst"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "Importovat hry z"
+
+msgid "Export games to"
+msgstr "Exportovat hry na"
+
+msgid "Back up saves to"
+msgstr "Zálohovat uložení na"
+
+msgid "USB transfers are not available in this build."
+msgstr "Přenosy přes USB nejsou v této verzi dostupné."
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "Připoj flash disk (FAT32, exFAT nebo NTFS)."
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "Žádný flash disk"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "Flash disk je zaneprázdněný"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "Síť vypnuta: přenos zastaven"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "zastavit"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "Otevři tuto adresu v prohlížeči:"
+
+msgid "(no network address)"
+msgstr "(žádná síťová adresa)"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "nebo %s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "Špatný PIN: zamčeno na %d s"
+msgstr[1] "Špatný PIN: zamčeno na %d s"
+msgstr[2] "Špatný PIN: zamčeno na %d s"
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "Přijímám %s (%d %%)"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "Zastaveno: %s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "Zastaveno"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "Čekám na soubory..."
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "Přijat %d soubor"
+msgstr[1] "Přijaty %d soubory"
+msgstr[2] "Přijato %d souborů"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "Jen v domácí síti. Kdo zná PIN, může přidat soubory."
+
+msgid "KEEP RECEIVING"
+msgstr "PŘIJÍMAT DÁL"
+
+msgid "Keep receiving files in the background?"
+msgstr "Přijímat soubory dál na pozadí?"
+
+msgid "Network transfer is not available in this build."
+msgstr "Přenos přes síť není v této verzi dostupný."
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "Nejdřív zapni Wi-Fi nebo Ethernet (žádná síťová adresa)."
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "Přenos se nepodařilo spustit (chyba %d)."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "POKRAČOVAT"
+
+msgid "START FRESH"
+msgstr "ZNOVU"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "Pokračovat ve hře %s?"
+
+msgid "No emulator is installed for this system."
+msgstr "Pro tento systém není nainstalovaný žádný emulátor."
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "Kopírují se soubory. Počkej, až kopírování skončí, nebo ho zruš."
+
+msgid "Resume where you left off?"
+msgstr "Pokračovat tam, kde hra skončila?"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "NASTAVENÍ"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "Ovladač připojen: %s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "Ovladač odpojen: %s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "Nový ovladač: %s (Nastavení > Ovládání)"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "Nový ovladač: %s. Nastavit ho v Nastavení > Ovládání?"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "Načítám hry: %s"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "Připravuji konzoli..."
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "Slabá baterie (%d %%)"
+
+msgid "Battery empty, saving..."
+msgstr "Baterie vybitá, ukládám..."
+
+msgid "Restarting..."
+msgstr "Restartuji..."
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "Horko, zpomaluji"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "Nabíjení"
+
+msgid "Fully charged"
+msgstr "Plně nabito"
+
+msgid "Charger unplugged"
+msgstr "Nabíječka odpojena"
+
+msgid "Not charging"
+msgstr "Nenabíjí se"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%d %%"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "Plná za %d h %02d min"
+
+msgid "Press the power button to start"
+msgstr "Zapni konzoli vypínačem"
+
+msgid "Battery very low: plug in the charger"
+msgstr "Baterie skoro vybitá: připoj nabíječku"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "Hodnocení: "
+
+msgid "Released: "
+msgstr "Vydáno: "
+
+msgid "Developer: "
+msgstr "Vývojář: "
+
+msgid "Publisher: "
+msgstr "Vydavatel: "
+
+msgid "Genre: "
+msgstr "Žánr: "
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "Hráči: "
+
+msgid "Last played: "
+msgstr "Naposledy: "
+
+msgid "Times played: "
+msgstr "Spuštěno: "
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "Rok"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "Žánr"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "Hráči"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "Skóre"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "Tvoje oblíbené hry"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "Naposledy hrané"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "Všechny hry v konzoli"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "Domácí počítač · 1983"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "Arcade · MAME 2003-Plus"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "Arcade · FinalBurn Neo"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "neznámé"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "žádné hry"
+
+msgid "launch"
+msgstr "hrát"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "možnosti"
+
+msgid "favorite"
+msgstr "oblíbená"
+
+msgid "menu"
+msgstr "menu"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "Přidáno do oblíbených"
+
+msgid "Removed from favorites"
+msgstr "Odebráno z oblíbených"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "%d hra k dispozici"
+msgstr[1] "%d hry k dispozici"
+msgstr[2] "%d her k dispozici"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "%d oblíbená"
+msgstr[1] "%d oblíbené"
+msgstr[2] "%d oblíbených"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s, %s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "Žádné hry nenalezeny. Zkopíruj ROMky do /data/roms/<system>/"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "nikdy"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "neznámé"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "před %d sekundou"
+msgstr[1] "před %d sekundami"
+msgstr[2] "před %d sekundami"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "před %d minutou"
+msgstr[1] "před %d minutami"
+msgstr[2] "před %d minutami"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "před %d hodinou"
+msgstr[1] "před %d hodinami"
+msgstr[2] "před %d hodinami"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "před %d dnem"
+msgstr[1] "před %d dny"
+msgstr[2] "před %d dny"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%d.%m.%Y"

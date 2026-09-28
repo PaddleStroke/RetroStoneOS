@@ -1,0 +1,491 @@
+#!/bin/sh
+# Mount the user data partition (label RETROSTONE) on /data.
+# Called by /etc/init.d/rcS on every boot. See docs/build.md ("First boot")
+# and docs/rom-transfer.md (1.3, 1.4 C2).
+#
+# The SD image ships a 128 MiB FAT32 "seed" (type 0x0c) with the folder
+# layout and README.txt, physically last on the card, so the card shows a
+# ready RETROSTONE drive on a PC right after flashing. The first boot turns it
+# into an exFAT filesystem (type 0x07) filling the rest of the card.
+#
+# The conversion, and why a power cut at any point is safe:
+#   1. seed with user files only (PC junk like "System Volume Information"
+#      does not count): tar them to the raw free space at the far end of the
+#      card and verify the copy (file count, CRC);
+#   2. write a marker in the last MiB of the card:
+#        RSOSCV02 <id> <backup MiB offset> <backup MiB size> <backup CRC>
+#      (size 0: no backup, the seed was empty), where <id> is a new random
+#      MBR disk identifier;
+#   3. ONE write of the MBR: the new disk identifier, and the data entry
+#      grown to the end of the card with type 0x07;
+#   4. mkfs.exfat, mount, restore the backup, recreate the layout, sync;
+#   5. clear the marker.
+# On every boot the marker is read first. It is acted on only if its <id> is
+# the card's current MBR disk identifier and the entry already reaches the end
+# of the card, i.e. step 3 happened on this card since it was last flashed:
+# steps 4-5 are then redone from the start (format again, restore the verified
+# backup again), which is idempotent. Any other marker is stale (a power cut
+# before step 3: the seed is untouched; or the card was re-flashed, which
+# rewrites the MBR) and is discarded, and the normal first boot runs again
+# from the (new) seed.
+#   - card too small for the backup, or the backup step fails: keep the FAT32
+#     seed and grow its entry (type 0x0c) so this is not retried on every boot.
+#   - an entry of type 0x07 that still holds the FAT32 seed (a power cut
+#     between the MBR write and mkfs.exfat under images older than
+#     2026-09-27, which wrote no marker for an empty seed) is converted again.
+#
+# Every boot: an exFAT volume whose VolumeDirty flag is set (the last session
+# ended without unmounting it: power cut, forced power-off, freeze) is checked
+# with "fsck.exfat -p" before use (result in /run/rsos/data-fsck). A volume
+# that cannot be mounted is checked (fsck.exfat -p, then -y); only when that
+# fails too, or when the partition holds no recognizable filesystem at all, is
+# it formatted again, empty, with a message and /run/rsos/data-reformatted.
+# A FAT32 volume that fails to mount is never formatted (no fsck.fat here).
+#
+# The disk and the MBR entry come from the board (/usr/libexec/rsos/board.sh:
+# board.ini data_disk, default the disk of root= on the kernel command line,
+# and data_partition, default 1).
+# RSOS_DATA_DISK / RSOS_DATA_PART_NR / RSOS_DATA_MNT / RSOS_SHARE / RSOS_RUN
+# override them (tests); RSOS_TEST_ABORT=before_sfdisk|after_sfdisk|
+# after_format|after_restore simulates a power cut (exit 99) and
+# RSOS_TEST_FAIL=backup a failing backup.
+
+# (rcS exports RSOS_DISK and RSOS_BOARD_DATA_PARTITION: no need to read the
+# board files again on the way to the menu)
+[ -n "$RSOS_DISK" ] || { [ -r /usr/libexec/rsos/board.sh ] && . /usr/libexec/rsos/board.sh; }
+DISK=${RSOS_DATA_DISK:-${RSOS_DISK:-/dev/mmcblk0}}
+MNT=${RSOS_DATA_MNT:-/data}
+SHARE=${RSOS_SHARE:-/usr/share/rsos}
+RUN=${RSOS_RUN:-/run/rsos}
+DISK_NAME=${DISK##*/}
+PART_NR=${RSOS_DATA_PART_NR:-${RSOS_BOARD_DATA_PARTITION:-1}}
+# mmcblk0p1, loop0p1, nvme0n1p1; sda1
+case "$DISK_NAME" in
+*[0-9]) PSEP=p ;;
+*) PSEP= ;;
+esac
+PART=${DISK}${PSEP}${PART_NR}
+LABEL=RETROSTONE
+MAGIC=RSOSCV02
+
+# roms/<system> folders: generated at build time by post-build.sh from the
+# "systems" of /usr/share/rsos/cores/*.ini.
+FOLDER_LIST=$SHARE/rom-folders
+README=$SHARE/data-README.txt
+FALLBACK_SYSTEMS="arcade gb gba gbc gamegear mastersystem megadrive n64 neogeo nes psx snes"
+
+msg() {
+	echo "rsos-data: $*"
+}
+
+# Test hooks (see the header)
+test_abort() {
+	[ "$RSOS_TEST_ABORT" = "$1" ] && exit 99
+	return 0
+}
+
+# "Preparing the SD card" screen: the boot logo and a message from
+# `rsos-frontend --splash`, only around the long first-boot steps and the
+# check of a dirty volume (never on a normal boot). It holds DRM master until
+# it is stopped; the menu starts after this script, once it has exited.
+# RSOS_SPLASH overrides it (tests).
+SPLASH_BIN=${RSOS_SPLASH:-/usr/bin/rsos-frontend}
+SPLASH_PID=
+splash_start() { # [message]
+	[ -z "$SPLASH_PID" ] && [ -x "$SPLASH_BIN" ] || return 0
+	"$SPLASH_BIN" --splash --message "${1:-Preparing the SD card, please wait...}" \
+		< /dev/null > /dev/null 2>&1 &
+	SPLASH_PID=$!
+}
+splash_stop() {
+	[ -n "$SPLASH_PID" ] || return 0
+	kill "$SPLASH_PID" 2> /dev/null
+	wait "$SPLASH_PID" 2> /dev/null
+	SPLASH_PID=
+}
+trap splash_stop EXIT
+
+note() { # <file in /run/rsos> <text>: for the UI
+	mkdir -p "$RUN" 2> /dev/null && echo "$2" > "$RUN/$1"
+}
+
+make_layout() {
+	systems=$(cat "$FOLDER_LIST" 2> /dev/null)
+	[ -n "$systems" ] || systems=$FALLBACK_SYSTEMS
+	for s in $systems; do
+		mkdir -p "$MNT/roms/$s"
+	done
+	mkdir -p "$MNT/bios" "$MNT/saves" "$MNT/states" "$MNT/screenshots" "$MNT/themes"
+	[ -f "$MNT/README.txt" ] || { [ -f "$README" ] && sed 's/$/\r/' "$README" > "$MNT/README.txt"; }
+	return 0
+}
+
+mount_exfat() {
+	mount -t exfat -o noatime "$PART" "$MNT" 2> /dev/null
+}
+
+# exFAT VolumeFlags, boot sector offset 106: bit 1 VolumeDirty (set by Linux
+# on the first write, cleared only at unmount), bit 2 MediaFailure. Read on
+# every boot with one dd: the shell drops the NUL byte of a clean volume, so
+# any output means "check it". (On the mounted volume: the block device and
+# the filesystem share the page cache, and mounting does not set the flag.)
+exfat_dirty() {
+	[ -n "$(dd if="$PART" bs=1 skip=106 count=1 2> /dev/null)" ]
+}
+
+# fsck.exfat, with the splash; the exit status goes to /run/rsos/data-fsck
+# ("<mode> <status>"; fsck status: 0 clean, 1 errors corrected, 4 errors
+# left, 8 operational error).
+fsck_data() { # -p|-y
+	splash_start "Checking the SD card, please wait..."
+	msg "checking $PART (fsck.exfat $1)"
+	fsck.exfat "$1" "$PART" > /dev/null 2>&1
+	_rc=$?
+	note data-fsck "$1 $_rc"
+	msg "fsck.exfat $1 finished with status $_rc"
+	return $_rc
+}
+
+mount_data() {
+	FSTYPE=
+	if mount_exfat; then
+		FSTYPE=exfat
+		if exfat_dirty; then
+			msg "$PART was not unmounted cleanly (power cut or forced power-off)"
+			umount "$MNT"
+			fsck_data -p
+			mount_exfat || { FSTYPE=; return 1; }
+		fi
+		return 0
+	fi
+	mount -t vfat -o noatime,utf8,shortname=mixed "$PART" "$MNT" 2> /dev/null && FSTYPE=vfat && return 0
+	return 1
+}
+
+# The helpers below run on every boot: they use shell builtins (read) rather
+# than cat/grep, since every fork+exec of a BusyBox applet costs a few ms on
+# the A20 before the menu can start.
+is_mounted() {
+	while read -r _dev _dir _rest; do
+		[ "$_dir" = "$MNT" ] && return 0
+	done < /proc/mounts
+	return 1
+}
+
+sectors() { # <sysfs block name> <attribute>
+	read -r _v < "/sys/class/block/$1/$2" && echo "$_v"
+}
+
+# True when the data entry does not reach the end of the card yet (> 4 MiB
+# left), as the kernel sees it.
+needs_growing() {
+	_ng_start=$(sectors "${DISK_NAME}${PSEP}${PART_NR}" start) || return 1
+	_ng_size=$(sectors "${DISK_NAME}${PSEP}${PART_NR}" size) || return 1
+	_ng_total=$(sectors "$DISK_NAME" size) || return 1
+	[ $((_ng_start + _ng_size + 8192)) -lt "$_ng_total" ]
+}
+
+# Regular files that are not PC junk nor our README (case-insensitive, any
+# depth). Same list as tr_is_junk() in frontend/src/transfer/tr_util.c.
+user_files() {
+	find "$MNT" \( -iname 'System Volume Information' -o -iname '$RECYCLE.BIN' \
+		-o -iname 'RECYCLER' -o -iname '.Spotlight-V100' -o -iname '.fseventsd' \
+		-o -iname '.Trashes' -o -iname '.TemporaryItems' \) -prune \
+		-o -type f ! -iname '._*' ! -iname '.DS_Store' ! -iname 'Thumbs.db' \
+		! -iname 'desktop.ini' ! -iname 'IndexerVolumeGuid' \
+		! -iname 'WPSettings.dat' ! -ipath "$MNT/README.txt" -print 2> /dev/null
+}
+
+is_empty() {
+	[ -z "$(user_files | head -n 1)" ]
+}
+
+# --- The marker lives in the last whole MiB of the card.
+total_sectors() {
+	sectors "$DISK_NAME" size
+}
+
+marker_mib() {
+	echo $(($(total_sectors) / 2048 - 1))
+}
+
+read_marker() {
+	# The first 64 bytes of the last MiB only: this runs on every boot.
+	# (The shell drops the NUL bytes.)
+	dd if="$DISK" bs=64 skip=$(($(marker_mib) * 2048 * 8)) count=1 2> /dev/null
+}
+
+write_marker() { # <text>
+	printf '%s\n' "$*" | dd of="$DISK" bs=1M seek="$(marker_mib)" conv=sync,fsync 2> /dev/null
+}
+
+clear_marker() {
+	dd if=/dev/zero of="$DISK" bs=1M seek="$(marker_mib)" count=1 conv=fsync 2> /dev/null
+}
+
+# --- The MBR disk identifier ("0x1234abcd") binds a marker to one partition
+# table write on this card: re-flashing the card rewrites the MBR.
+disk_id() {
+	sfdisk --disk-id "$DISK" 2> /dev/null
+}
+
+new_id() {
+	_cur=$(disk_id)
+	while :; do
+		read -r _u < /proc/sys/kernel/random/uuid
+		_id=0x${_u%%-*}
+		[ "$_id" != "$_cur" ] && [ "$_id" != 0x00000000 ] && break
+	done
+	echo "$_id"
+}
+
+# One MBR write: disk identifier <id>, the data entry grown to the end of the
+# card with type 0x07; the other entries are written back unchanged (sfdisk
+# dump -> edit -> sfdisk). Then the kernel's view of the entry is updated
+# (the table cannot be re-read while a root filesystem is mounted).
+grow_mbr() { # <id>
+	_dump=$(sfdisk --dump "$DISK" 2> /dev/null) || return 1
+	case "$_dump" in
+	*"label: dos"*"$PART :"*) ;;
+	*) msg "unexpected partition table on $DISK"; return 1 ;;
+	esac
+	printf '%s\n' "$_dump" | sed -e '/^label-id:/d' -e "/^label: dos\$/a label-id: $1" \
+		-e "\\|^$PART :|s/size= *[0-9]*, *//" \
+		-e "\\|^$PART :|s/type= *[0-9a-fA-F]*/type=7/" |
+		sfdisk --quiet --no-reread --wipe never --wipe-partitions never "$DISK" > /dev/null 2>&1 ||
+		return 1
+	# Never format unless the MBR now carries the marker's identifier: a
+	# power cut after this point must find the two equal.
+	[ "$(disk_id)" = "$1" ] || { msg "the new disk identifier was not written"; return 1; }
+	partx --update --nr "$PART_NR" "$DISK"
+}
+
+# Keep the FAT32 seed, but grow its entry (type 0x0c) so that the conversion
+# is not tried again on every boot. TODO: the frontend's "Storage > Expand
+# data partition".
+keep_fat32() {
+	echo ',+,c' | sfdisk --quiet --no-reread -N "$PART_NR" "$DISK" > /dev/null 2>&1
+}
+
+# A new, full-size exFAT on the (already grown) entry.
+format_fs() {
+	msg "formatting $PART as exFAT ($LABEL)"
+	mkfs.exfat -L "$LABEL" "$PART" > /dev/null 2>&1
+}
+
+# Verified backup -> the new exFAT on $MNT.
+restore_backup() { # <offset MiB> <size MiB> <crc>
+	s=$(dd if="$DISK" bs=1M skip="$1" count="$2" 2> /dev/null | cksum | cut -d' ' -f1)
+	if [ "$s" = "$3" ]; then
+		msg "restoring the files copied before the first boot"
+		dd if="$DISK" bs=1M skip="$1" count="$2" 2> /dev/null | tar -C "$MNT" -xf - && return 0
+		msg "the restore stopped with an error; the backup is left at the end of the card at MiB $1 ($2 MiB)"
+	else
+		msg "backup damaged, left at the end of the card at MiB $1 ($2 MiB)"
+	fi
+	# Leave the data where it is for a manual rescue, but stop retrying (and
+	# re-reading it) on every boot: the marker becomes RSOSBKBAD.
+	sync
+	write_marker "RSOSBKBAD $1 $2 $3"
+	note data-restore-failed "$1 $2"
+	return 1
+}
+
+# Steps 4-5 (see the header), on the entry that the MBR already makes
+# full-size exFAT. Idempotent: redone from the start after a power cut.
+finish_conversion() { # <backup offset MiB> <backup size MiB> <crc>
+	splash_start
+	is_mounted && umount "$MNT"
+	if needs_growing; then
+		# The kernel still sees the old size (partx failed): formatting
+		# now would make a small filesystem. The next boot reads the new
+		# table and finishes the job.
+		msg "the new partition size is not active yet, finishing at the next boot"
+		return 1
+	fi
+	format_fs || { msg "cannot format $PART"; return 1; }
+	test_abort after_format
+	mount_data || { msg "cannot mount the new exFAT on $PART"; return 1; }
+	_done=1
+	if [ "$2" -gt 0 ]; then
+		restore_backup "$1" "$2" "$3" || _done=
+	fi
+	make_layout
+	sync
+	test_abort after_restore
+	[ -n "$_done" ] && clear_marker
+	splash_stop
+	return 0
+}
+
+# Steps 1-5 on the seed mounted on $MNT (FAT32; with backup: 1 when it holds
+# user files), or on a partition to format that is not mounted (0).
+# Returns 0 (done), 1 (nothing changed: backup failed), 2 (card too small,
+# nothing changed), 3 (stopped after the MBR write: the marker makes the next
+# boot finish it).
+convert() { # <with backup: 0|1>
+	bk_off=0
+	bk_mib=0
+	sum=0
+	if [ "$1" = 1 ]; then
+		total=$(total_sectors)
+		start=$(sectors "${DISK_NAME}${PSEP}${PART_NR}" start)
+		hdr_mib=$(marker_mib)
+		used_mib=$(($(du -sk "$MNT" | cut -f1) / 1024 + 1))
+		nfiles=$(find "$MNT" -type f | wc -l)
+		bk_mib=$((used_mib + nfiles / 1024 + 8))     # tar: 512 B header + padding per file
+		new_mib=$(((total - start) / 2048))
+		restore_mib=$((used_mib + nfiles / 8 + 64))  # <= 128 KiB exFAT cluster slack per file
+		if [ $((restore_mib + bk_mib + 2)) -ge "$new_mib" ]; then
+			msg "card too small to convert safely, keeping the FAT32 data partition"
+			return 2
+		fi
+		bk_off=$((hdr_mib - bk_mib))
+		splash_start
+		msg "backing up $nfiles files ($used_mib MiB) before formatting, please wait"
+		if [ "$RSOS_TEST_FAIL" = backup ]; then
+			msg "backup failed (test)"
+			return 1
+		fi
+		tar -C "$MNT" -cf - . | dd of="$DISK" bs=1M seek="$bk_off" conv=fsync 2> /dev/null || return 1
+		n=$(dd if="$DISK" bs=1M skip="$bk_off" count="$bk_mib" 2> /dev/null | tar -tf - | grep -vc '/$')
+		if [ "$n" -ne "$nfiles" ]; then
+			msg "backup check failed ($n of $nfiles files)"
+			return 1
+		fi
+		sum=$(dd if="$DISK" bs=1M skip="$bk_off" count="$bk_mib" 2> /dev/null | cksum | cut -d' ' -f1)
+	fi
+	splash_start
+	id=$(new_id)
+	[ -n "$id" ] || return 1
+	write_marker "$MAGIC $id $bk_off $bk_mib $sum" || return 1
+	test_abort before_sfdisk
+	is_mounted && umount "$MNT"
+	msg "growing the data partition to the end of the card"
+	if ! grow_mbr "$id"; then
+		# Written or not, the marker decides at the next boot (stale if
+		# the MBR was not written).
+		msg "could not rewrite the partition table"
+		return 3
+	fi
+	test_abort after_sfdisk
+	finish_conversion "$bk_off" "$bk_mib" "$sum" || return 3
+	return 0
+}
+
+# A partition that does not mount: check it, and as the very last resort
+# format it (empty) rather than leave the device without /data.
+repair_or_reformat() {
+	_sig=$(dd if="$PART" bs=1 skip=3 count=5 2> /dev/null)
+	_sig32=$(dd if="$PART" bs=1 skip=82 count=5 2> /dev/null)
+	if [ "$_sig" = EXFAT ]; then
+		fsck_data -p
+		mount_data && return 0
+		fsck_data -y
+		mount_data && return 0
+		# fsck says it is fine but it still does not mount: the problem is
+		# not the filesystem; never format it then.
+		fsck.exfat -n "$PART" > /dev/null 2>&1 && return 1
+	elif [ "$_sig32" = FAT32 ]; then
+		# No fsck.fat in the image: keep it for a PC to repair.
+		return 1
+	fi
+	[ -d "$MNT" ] || return 1
+	msg "$PART cannot be mounted or repaired: formatting it as an empty exFAT (its data is lost)"
+	note data-reformatted "$PART"
+	convert 0
+	[ $? -eq 0 ]
+}
+
+# --- 1. An unfinished conversion comes first.
+RESUMING=
+set -f
+set -- $(read_marker)
+set +f
+if [ "$1" = "$MAGIC" ]; then
+	if [ $# -eq 5 ] && [ "$2" = "$(disk_id)" ] && ! needs_growing; then
+		msg "finishing an interrupted first-boot conversion"
+		if ! finish_conversion "$3" "$4" "$5"; then
+			# Keep the marker (it may point to a backup): no repair or
+			# reformat below; the next boot tries again.
+			msg "could not finish it, trying again at the next boot"
+			RESUMING=1
+		fi
+		splash_stop
+	else
+		msg "discarding a stale conversion marker (power cut before the partition table was changed, or the card was re-flashed)"
+		clear_marker
+	fi
+fi
+
+# (A partition table re-read, e.g. by a host's udev after a write to the
+# whole disk, removes and re-creates the node: give it up to 2 s.)
+_i=0
+while [ ! -b "$PART" ] && [ $_i -lt 20 ]; do
+	usleep 100000 2> /dev/null || sleep 1
+	_i=$((_i + 1))
+done
+if [ ! -b "$PART" ]; then
+	msg "$PART not found, /data is not available"
+	note data-error "no $PART"
+	exit 1
+fi
+
+if ! is_mounted && ! mount_data; then
+	msg "cannot mount $PART on $MNT"
+	if [ -n "$RESUMING" ] || ! repair_or_reformat; then
+		msg "/data is not available"
+		note data-error "cannot mount $PART"
+		exit 1
+	fi
+fi
+
+# --- 2. First boot: fill the card. Also an entry of type 0x07 that still
+# holds the FAT32 seed (an unfinished conversion of an older image).
+unfinished=
+if [ "$FSTYPE" = vfat ] && ! needs_growing; then
+	# (sfdisk prints the type with padding)
+	set -- $(sfdisk --part-type "$DISK" "$PART_NR" 2> /dev/null)
+	if [ "$1" = 7 ]; then
+		msg "the exFAT entry still holds the FAT32 seed: finishing the conversion"
+		unfinished=1
+	fi
+fi
+if [ -n "$unfinished" ] || needs_growing; then
+	if is_empty; then
+		msg "first boot: growing the data partition to the end of the card"
+		convert 0
+	else
+		convert 1
+	fi
+	rc=$?
+	splash_stop
+	case $rc in
+	1 | 2)
+		# Nothing changed: keep the seed, and do not retry at every boot.
+		[ $rc -eq 1 ] && msg "backup failed, keeping the FAT32 data partition"
+		is_mounted || mount_data || exit 1
+		keep_fat32
+		;;
+	3)
+		is_mounted || mount_data || {
+			note data-error "conversion unfinished"
+			exit 1
+		}
+		;;
+	esac
+fi
+
+if [ ! -d "$MNT/roms" ]; then
+	msg "creating the folder layout"
+	make_layout
+	sync
+fi
+
+# Bundled homebrew games: copied once (the tool keeps its own marker,
+# /data/rsos/homebrew-seeded, and returns at once afterwards; it never
+# overwrites files). Its marker is checked here first so that a normal boot
+# does not start a shell for nothing.
+[ -e "$MNT/rsos/homebrew-seeded" ] ||
+	{ [ -x /usr/bin/rsos-seed-homebrew ] && /usr/bin/rsos-seed-homebrew "$MNT"; }
+exit 0

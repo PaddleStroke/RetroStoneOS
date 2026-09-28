@@ -1,0 +1,2374 @@
+# Japanese translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "zipファイルを開けません（%s）"
+
+msgid "No playable file in this zip"
+msgstr "このzipには遊べるファイルがありません"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "zipの中のファイルが大きすぎます（%llu MB）"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "zipから%sを取り出せません（%s）"
+
+msgid "Game file not found"
+msgstr "ゲームのファイルが見つかりません"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "7zファイルは使えません。.zipにするか、解凍してください"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "ゲームのファイルを読みこめません（%s）"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "このゲーム機"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s：%sは正しいBIOSではありません"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%sか%s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "%1$sには%3$sの%2$sが必要です"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "電源を切っています…"
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "プレイヤー1のコントローラーが外れました：一時停止"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "プレイヤー1：%s"
+
+msgid "Saving..."
+msgstr "セーブ中…"
+
+msgid "This game cannot save a state now"
+msgstr "今はどこでもセーブできません"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "どこでもセーブできませんでした：%s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "スロット%dをロードしました"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "スロット%dにはデータがありません"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "スロット%dをロードできません"
+
+#, c-format
+msgid "State slot %d"
+msgstr "どこでもセーブ：スロット%d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "どこでもセーブ：スロット%d（データなし）"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "リセットしました"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "接続しました：%s"
+
+msgid "Battery empty: game saved"
+msgstr "バッテリー切れ：ゲームをセーブしました"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "バッテリー残りわずか（%d%%）"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "設定%d個、約%d分"
+
+msgid "No benchmark for this system"
+msgstr "このゲーム機にはベンチマークがありません"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "ベンチマーク：今はどこでもセーブできません"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "ベンチマーク：%sに書きこめません"
+
+msgid "No result to use"
+msgstr "使える結果がありません"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "不明な設定：%s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "保存できませんでした：%s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "このゲームに「%s」を保存しました（次から使われます）"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "「%s」を保存しました：次からは%sを使います"
+
+msgid "The emulator stopped responding"
+msgstr "エミュレーターが反応しなくなりました"
+
+msgid "Cannot load the emulator core"
+msgstr "エミュレーターのコアを読みこめません"
+
+msgid "Benchmark: bad plan"
+msgstr "ベンチマーク：計画が正しくありません"
+
+msgid "Cannot start the save thread"
+msgstr "セーブの処理を始められません"
+
+msgid "Cannot open the display"
+msgstr "画面を開けません"
+
+msgid "This core needs a game file"
+msgstr "このコアにはゲームのファイルが必要です"
+
+msgid "The emulator could not load this game"
+msgstr "エミュレーターがこのゲームを読みこめませんでした"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "つづきから始めました"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "GPUの初期化に失敗しました（framebuffer 0x%x）"
+
+msgid "This build cannot run GLES games"
+msgstr "このビルドではGLESのゲームは動きません"
+
+msgid "No GPU found (lima)"
+msgstr "GPUが見つかりません（lima）"
+
+msgid "The game was stopped"
+msgstr "ゲームが止められました"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "エミュレーターが止まってしまいました（%s）。数秒前までのセーブデータは残っています。"
+
+msgid "Could not start the game"
+msgstr "ゲームを始められませんでした"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "エミュレーターが反応しなくなりました。数秒前までのセーブデータは残っています。"
+
+msgid "Cannot start the game process"
+msgstr "ゲームのプロセスを始められません"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "エミュレーターのエラー（コード%d）"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "整数倍"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "引きのばし"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "元の比率"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "オン"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "オフ"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "（ゲーム）"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "（すべて）"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "（ベンチ）"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "クラッシュ"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "フリーズ"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "中止"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "失敗"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "ゲームにもどる"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "スロット%d"
+
+msgid "Save state"
+msgstr "どこでもセーブ"
+
+msgid "Load state"
+msgstr "どこでもロード"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "ディスク"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "リセット"
+
+msgid "Core options"
+msgstr "コアの設定"
+
+msgid "Scaling"
+msgstr "画面サイズ"
+
+msgid "Show FPS"
+msgstr "FPSを表示"
+
+msgid "Fast-forward"
+msgstr "早送り"
+
+msgid "Benchmark this game"
+msgstr "このゲームでベンチマーク"
+
+msgid "Controls"
+msgstr "コントローラー"
+
+msgid "Exit game"
+msgstr "ゲームをやめる"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "このゲーム用に保存"
+
+msgid "Save for all games (this core)"
+msgstr "すべてのゲーム用に保存（このコア）"
+
+msgid "Reset to defaults"
+msgstr "はじめの設定にもどす"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "プレイヤー%d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s（スティック）"
+
+msgid "D-pad as left stick (P1)"
+msgstr "十字ボタンを左スティックに（1P）"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "上"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "下"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "左"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "右"
+
+msgid "Left stick"
+msgstr "左スティック"
+
+msgid "Right stick"
+msgstr "右スティック"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "テスト"
+
+msgid "Each run"
+msgstr "1回ごと"
+
+msgid "from now, no input"
+msgstr "今から、操作なし"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "中止"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs（SDカード）"
+
+msgid "Results"
+msgstr "結果"
+
+msgid "Start benchmark"
+msgstr "ベンチマーク開始"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "順位なし"
+
+msgid "blank?"
+msgstr "空白？"
+
+msgid "Use this for this game"
+msgstr "このゲームでこれを使う"
+
+msgid "Resume game"
+msgstr "ゲームにもどる"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "ベンチマーク"
+
+msgid "Benchmark results"
+msgstr "ベンチマークの結果"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "データなし"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "（ゲーム）このゲーム用、（すべて）全ゲーム用、*やめるときに保存"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A：けってい  B：ゲームにもどる  </>：かえる"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A：けってい  B：もどる  </>：かえる"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "スロット%dにセーブ中…"
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "スロット%dはデータなし"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "ディスク%dを入れました"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "ディスク%dに入れかえられません"
+
+msgid "Could not save the options"
+msgstr "設定を保存できませんでした"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "%s用に保存しました"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "%sのすべてのゲーム用に保存しました"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "はじめの設定にもどしました（やめるときに保存）"
+
+msgid "Options saved for this game"
+msgstr "このゲーム用に設定を保存しました"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "表：%s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "セーブに失敗：%s（もう一度ためしています）"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "セーブしました"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "つづきをセーブできませんでした：%s"
+
+msgid "Auto state saved"
+msgstr "つづきをセーブしました"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "スロット%dにセーブできませんでした：%s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "スロット%dにセーブしました"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "セーブデータが読めないので、セーブしません"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr "."
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr ","
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "GB"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "MB"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "KB"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%Y/%m/%d"
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%Y/%m/%d %H:%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "画面がこのリフレッシュレートに対応していません"
+
+msgid "No emulator is installed for this game."
+msgstr "このゲーム用のエミュレーターが入っていません。"
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "このゲームを始められません（BIOSがない？）。"
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "ゲームのプロセスを始められません（%s）。"
+
+msgid "The game could not be started."
+msgstr "ゲームを始められませんでした。"
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "データ領域をもとにもどせませんでした。ゲームとセーブデータを、もう一度コピーする必要があるかもしれません。"
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "データ領域が読めなかったので、初期化しました。"
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "データ領域にエラーがあります。セーブに失敗するかもしれません。セーブデータをバックアップしてください。"
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "前回のアップデートが起動しなかったので、前のバージョンにもどしました。"
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "電源が急に切れたので、SDカードをチェックしました"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "SDカードを準備しています。しばらくお待ちください…"
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "SDカードをチェックしています。しばらくお待ちください…"
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "お気に入り"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "さいきん遊んだ"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "このフォルダーには、もうゲームがありません"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "えらぶ"
+
+msgid "change"
+msgstr "かえる"
+
+msgid "select"
+msgstr "けってい"
+
+msgid "back"
+msgstr "もどる"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "入力"
+
+msgid "delete"
+msgstr "けす"
+
+msgid "space"
+msgstr "スペース"
+
+msgid "shift"
+msgstr "シフト"
+
+msgid "ok"
+msgstr "OK"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "やめる"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "シフト"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "スペース"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "けす"
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "自動"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "元の比率"
+
+msgid "Integer"
+msgstr "整数倍"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "自動"
+
+msgid "Basic"
+msgstr "シンプル"
+
+msgid "Detailed"
+msgstr "くわしく"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "右上"
+
+msgid "Top left"
+msgstr "左上"
+
+msgid "Bottom right"
+msgstr "右下"
+
+msgid "Bottom left"
+msgstr "左下"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Hz（前の設定）"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "自動（ゲームを始めたコントローラー）"
+
+msgid "Built-in"
+msgstr "本体"
+
+msgid "External"
+msgstr "外部"
+
+msgid "Could not save the settings"
+msgstr "設定を保存できませんでした"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "テレビ"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "LCDのリフレッシュレート：60 Hz"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "LCDのリフレッシュレート：78 Hzにもどしました"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "このまま"
+
+msgid "REVERT"
+msgstr "もとにもどす"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"画面のリフレッシュレートを60 Hzにしました。\n"
+"この設定にしますか？%d秒後にもとにもどります"
+
+msgid "Display"
+msgstr "画面"
+
+msgid "Brightness"
+msgstr "明るさ"
+
+msgid "LCD refresh rate"
+msgstr "LCDのリフレッシュレート"
+
+msgid "HDMI resolution"
+msgstr "HDMIの解像度"
+
+msgid "Game scaling"
+msgstr "ゲームの画面サイズ"
+
+msgid "Game list style"
+msgstr "ゲームリストの表示"
+
+msgid "Battery in games"
+msgstr "ゲーム中のバッテリー表示"
+
+msgid "Battery position"
+msgstr "バッテリー表示の位置"
+
+msgid "Button test"
+msgstr "ボタンテスト"
+
+msgid "no stick"
+msgstr "スティックなし"
+
+msgid "Hold SELECT + START to exit"
+msgstr "SELECT + STARTを長押しで終わる"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "十字ボタンの「上」を押してください"
+
+msgid "Press D-pad DOWN"
+msgstr "十字ボタンの「下」を押してください"
+
+msgid "Press D-pad LEFT"
+msgstr "十字ボタンの「左」を押してください"
+
+msgid "Press D-pad RIGHT"
+msgstr "十字ボタンの「右」を押してください"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "「右」のボタン（A）を押してください"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "「下」のボタン（B）を押してください"
+
+msgid "Press the TOP face button (X)"
+msgstr "「上」のボタン（X）を押してください"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "「左」のボタン（Y）を押してください"
+
+msgid "Press L1"
+msgstr "L1を押してください"
+
+msgid "Press R1"
+msgstr "R1を押してください"
+
+msgid "Press L2"
+msgstr "L2を押してください"
+
+msgid "Press R2"
+msgstr "R2を押してください"
+
+msgid "Press SELECT"
+msgstr "SELECTを押してください"
+
+msgid "Press START"
+msgstr "STARTを押してください"
+
+msgid "Press the left stick (L3)"
+msgstr "左スティックを押しこんでください（L3）"
+
+msgid "Press the right stick (R3)"
+msgstr "右スティックを押しこんでください（R3）"
+
+msgid "Push the left stick RIGHT"
+msgstr "左スティックを「右」にたおしてください"
+
+msgid "Push the left stick DOWN"
+msgstr "左スティックを「下」にたおしてください"
+
+msgid "Push the right stick RIGHT"
+msgstr "右スティックを「右」にたおしてください"
+
+msgid "Push the right stick DOWN"
+msgstr "右スティックを「下」にたおしてください"
+
+msgid "Configure controller"
+msgstr "コントローラーの設定"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "ステップ %d/%d"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "このボタンがない？%d秒待つと、とばします"
+
+msgid "Controller saved"
+msgstr "コントローラーの設定を保存しました"
+
+msgid "The mapping could not be saved."
+msgstr "ボタンの設定を保存できませんでした。"
+
+msgid "Configure a controller"
+msgstr "コントローラーを設定する"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "カスタム"
+
+msgid "known pad"
+msgstr "対応コントローラー"
+
+msgid "standard"
+msgstr "標準"
+
+msgid "keyboard"
+msgstr "キーボード"
+
+msgid "not configured"
+msgstr "未設定"
+
+msgid "No external controller detected"
+msgstr "外部コントローラーが見つかりません"
+
+msgid "built-in"
+msgstr "本体"
+
+msgid "Player 1"
+msgstr "プレイヤー1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "C/Zボタンを追加している"
+
+msgid "Players"
+msgstr "プレイヤー"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10分"
+
+msgid "30 min"
+msgstr "30分"
+
+msgid "1 hour"
+msgstr "1時間"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "しない"
+
+msgid "please wait..."
+msgstr "お待ちください…"
+
+msgid "not set"
+msgstr "未設定"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "動作中"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi：オフにしています。お待ちください…"
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "有線LAN：オフにしています。お待ちください…"
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "Bluetooth：オフにしています。お待ちください…"
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi：オンにしています。お待ちください…"
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "有線LAN：オンにしています。お待ちください…"
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "Bluetooth：オンにしています。お待ちください…"
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "%sを実行できません"
+
+msgid "Could not save the WiFi settings"
+msgstr "Wi-Fiの設定を保存できませんでした"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "Wi-Fiのパスワードは8文字以上です。"
+
+msgid "Set the network name first."
+msgstr "先にネットワーク名を設定してください。"
+
+msgid "WiFi password saved"
+msgstr "Wi-Fiのパスワードを保存しました"
+
+msgid "WiFi network name"
+msgstr "Wi-Fiのネットワーク名"
+
+msgid "WiFi password"
+msgstr "Wi-Fiのパスワード"
+
+msgid "Console name"
+msgstr "本体の名前"
+
+msgid "Use letters, digits and dashes."
+msgstr "英字、数字、ハイフン（-）だけ使えます。"
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "本体の名前：%s（次の転送から）"
+
+msgid "Network"
+msgstr "ネットワーク"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Wi-Fiネットワーク"
+
+msgid "Transfer games from a computer or phone"
+msgstr "パソコンやスマホからゲームを送る"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "ネットワークで転送"
+
+msgid "Stop when idle for"
+msgstr "使わないときに止めるまで"
+
+msgid "Keep receiving in the background"
+msgstr "バックグラウンドで受信をつづける"
+
+msgid "WiFi off"
+msgstr "Wi-Fiオフ"
+
+msgid "Ethernet off"
+msgstr "有線LANオフ"
+
+msgid "Bluetooth off"
+msgstr "Bluetoothオフ"
+
+msgid "WiFi on"
+msgstr "Wi-Fiオン"
+
+msgid "Ethernet on"
+msgstr "有線LANオン"
+
+msgid "Bluetooth on"
+msgstr "Bluetoothオン"
+
+msgid "failed"
+msgstr "失敗"
+
+msgid "Theme"
+msgstr "テーマ"
+
+msgid "No theme found"
+msgstr "テーマが見つかりません"
+
+msgid "Game lists refreshed"
+msgstr "ゲームリストを更新しました"
+
+msgid "Game lists"
+msgstr "ゲームリスト"
+
+msgid "Favorites first"
+msgstr "お気に入りを先に表示"
+
+msgid "Favorites & last played pages"
+msgstr "「お気に入り」と「さいきん遊んだ」"
+
+msgid "Refresh game lists"
+msgstr "ゲームリストを更新"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "毎回聞く"
+
+msgid "Always resume"
+msgstr "いつもつづきから"
+
+msgid "Always start fresh"
+msgstr "いつもはじめから"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "ゲーム"
+
+msgid "Resume games"
+msgstr "つづきから遊ぶ"
+
+msgid "Auto-save on exit"
+msgstr "やめるときにつづきをセーブ"
+
+msgid "On launch"
+msgstr "ゲームを始めるとき"
+
+msgid "Powering off in a game always saves it"
+msgstr "ゲーム中に電源を切っても、かならずセーブされます"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "/boot/rsos.envを更新できませんでした。"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "今すぐ再起動"
+
+msgid "LATER"
+msgstr "あとで"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "再起動が必要です。次に起動したときに変わります。"
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "空き %s（全体 %s）"
+
+msgid "Storage"
+msgstr "ストレージ"
+
+msgid "Game storage"
+msgstr "ゲームの保存場所"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "USBメモリ"
+
+msgid "Import games"
+msgstr "ゲームを取りこむ"
+
+msgid "Export games"
+msgstr "ゲームを書き出す"
+
+msgid "Back up saves"
+msgstr "セーブデータをバックアップ"
+
+msgid "Eject USB drive"
+msgstr "USBメモリを取り出す"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "USBメモリをさしたときに聞く"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "上級者向け：オフで起動が速くなります（再起動が必要）"
+
+msgid "Internal eMMC"
+msgstr "内蔵eMMC"
+
+msgid "M.2 SATA drive"
+msgstr "M.2 SATAドライブ"
+
+msgid "no battery"
+msgstr "バッテリーなし"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%d%%、あと%d時間%02d分で満タン"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%d%%、約%d時間%02d分"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%d%%、充電中"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%d%%、満タン"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%d%%"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "充電器、%s V"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "バッテリー、%s V"
+
+msgid "charger connected"
+msgstr "充電器につないでいます"
+
+msgid "battery"
+msgstr "バッテリー"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C（熱い）"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "使用できません"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s、UI %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "%d機種"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "ゲーム%d本（%s）"
+
+msgid "System information"
+msgstr "本体の情報"
+
+msgid "Version"
+msgstr "バージョン"
+
+msgid "Battery"
+msgstr "バッテリー"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "電源"
+
+msgid "Input devices"
+msgstr "入力デバイス"
+
+msgid "CPU temperature"
+msgstr "CPUの温度"
+
+msgid "1 min"
+msgstr "1分"
+
+msgid "2 min"
+msgstr "2分"
+
+msgid "5 min"
+msgstr "5分"
+
+msgid "Voltage"
+msgstr "電圧"
+
+msgid "AXP fuel gauge"
+msgstr "AXP残量計"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "はい"
+
+msgid "NO"
+msgstr "いいえ"
+
+msgid "Restart the console?"
+msgstr "本体を再起動しますか？"
+
+msgid "Power off the console?"
+msgstr "本体の電源を切りますか？"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "電源"
+
+msgid "Restart"
+msgstr "再起動"
+
+msgid "Power off"
+msgstr "電源を切る"
+
+msgid "Battery saving"
+msgstr "バッテリーの節約"
+
+msgid "Dim the screen after"
+msgstr "画面を暗くするまで"
+
+msgid "Screen off after"
+msgstr "画面を消すまで"
+
+msgid "Battery gauge"
+msgstr "バッテリー残量の測り方"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "タイムゾーン：%s"
+
+msgid "Time zone"
+msgstr "タイムゾーン"
+
+msgid "That date is not valid."
+msgstr "その日付は正しくありません。"
+
+msgid "The clock could not be set."
+msgstr "時計を合わせられませんでした。"
+
+msgid "Date and time set"
+msgstr "日付と時刻を合わせました"
+
+msgid "Setting the clock needs the power module"
+msgstr "時計を合わせるには電源モジュールが必要です"
+
+msgid "Date & time"
+msgstr "日付と時刻"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "いま"
+
+msgid "Set the clock"
+msgstr "時計を合わせる"
+
+msgid "Year"
+msgstr "年"
+
+msgid "Month"
+msgstr "月"
+
+msgid "Day"
+msgstr "日"
+
+msgid "Hour"
+msgstr "時"
+
+msgid "Minute"
+msgstr "分"
+
+msgid "Set date and time"
+msgstr "日付と時刻を設定"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "言語"
+
+msgid "Settings"
+msgstr "設定"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "%sが入っていません"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "言語をえらんでください"
+
+msgid "This game is not in the list any more"
+msgstr "このゲームは、もうリストにありません"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "お気に入り"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "ゲーム機の標準"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s（試験版）"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "標準（%s）"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "なし"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "このゲームのコア"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "%sのすべてのゲームのコア"
+
+msgid "Core"
+msgstr "コア"
+
+msgid "none installed"
+msgstr "入っていません"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "ゲームを始める"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "ファイル"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr "ファミリーコンピュータ"
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr "ディスクシステム"
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr "スーパーファミコン"
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr "ゲームボーイ"
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr "ゲームボーイカラー"
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr "ゲームボーイアドバンス"
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr "メガドライブ"
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr "メガCD"
+
+msgctxt "system"
+msgid "32X"
+msgstr "スーパー32X"
+
+msgctxt "system"
+msgid "Pico"
+msgstr "キッズコンピュータ ピコ"
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr "ゲームギア"
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr "PCエンジン"
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr "PCエンジン CD-ROM²"
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr "ネオジオポケット"
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr "ネオジオポケットカラー"
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr "ワンダースワン"
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr "ワンダースワンカラー"
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr "アーケード"
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr "ネオジオ"
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr "ネオジオCD"
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr "ファミリーコンピュータ"
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr "メガドライブ"
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr "メガCD"
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr "キッズコンピュータ ピコ"
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr "アーケード（MAME 2003-Plus）"
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr "アーケード（FinalBurn Neo）"
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "SDカードがいっぱい"
+
+msgid "The USB drive was removed"
+msgstr "USBメモリがぬかれた"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "読みこみエラー。USBメモリがぬかれた？"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "USBメモリがいっぱい"
+
+msgid "The USB drive is read-only"
+msgstr "USBメモリに書きこめない"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "書きこみエラー。USBメモリがぬかれた？"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "しばらく受信がなかった"
+
+msgid "BIOS files"
+msgstr "BIOSファイル"
+
+msgid "Themes"
+msgstr "テーマ"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "USBメモリは使用中です"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "USBメモリをぬいても大丈夫です"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "取り出す"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "いちばん上のフォルダー"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s（バックアップ）"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "%d個のライブラリすべて"
+
+msgid "Another copy is already running."
+msgstr "ほかのコピーをしているところです。"
+
+msgid "The copy could not start."
+msgstr "コピーを始められませんでした。"
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "USBメモリのライブラリ"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "ゲーム%d本"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s、%s、%s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "%dファイル、%s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "すべて（%d個のライブラリ）"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "ゲーム%d本、%s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "取り出す"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "USBメモリのゲームをさがしています…"
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "本体とくらべています…"
+
+msgid "This drive could not be read."
+msgstr "このUSBメモリを読みこめませんでした。"
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "コピー元"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "USBメモリのゲーム"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "新しい%d本（全%d本）、%s、セーブデータあり"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "新しい%d本（全%d本）、%s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d本、すでにあり、セーブデータあり"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d本、すでにあり"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "未対応：%s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%dファイル"
+
+msgid "Nothing new on this drive"
+msgstr "このUSBメモリに新しいものはありません"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "コピーするもの"
+
+msgid "Saves & save states"
+msgstr "セーブデータとどこでもセーブ"
+
+msgid "Screenshots"
+msgstr "スクリーンショット"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "本体にすでにある"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "%dファイル、スキップ"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "本体のものとちがう"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d（セーブデータも）：あとで聞きます"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d：あとで聞きます"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "コピーする量"
+
+msgid "Not enough space"
+msgstr "空きが足りません"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "最大%s、空き%s"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "コピーする"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "%sから取りこむ"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "このUSBメモリは使用中です（読みこみかコピーをしています）。"
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "USBメモリに書きこめません（書きこみ禁止になっていませんか？）。"
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "USBメモリとくらべています…"
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "USBメモリのフォルダー"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s（新しく作る）"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "本体のゲーム"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "BIOSファイルも"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "ゲーム"
+
+msgid "All games"
+msgstr "すべてのゲーム"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "さいきん遊んだ：%s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "設定も（コアの設定、ボタン配置）"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "USBメモリにすでにある"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "%dファイル、%s（空き%s）"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "コピーするものはありません。USBメモリは最新です"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "4 GBをこえるファイル%d個：FAT32には入りません"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "スキップ"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "書き出す"
+
+msgid "Back up"
+msgstr "バックアップする"
+
+msgid "The USB drive is not there any more."
+msgstr "USBメモリが見つかりません。"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "%sにゲームを書き出す"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "%sにセーブデータをバックアップ"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "日付不明"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "スキップ"
+
+msgid "REPLACE"
+msgstr "上書き"
+
+msgid "SKIP ALL"
+msgstr "全部スキップ"
+
+msgid "REPLACE ALL"
+msgstr "全部上書き"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "この設定ファイルは本体にありますが、中身がちがいます："
+
+msgid "This save is already on the console, but different:"
+msgstr "このセーブデータは本体にありますが、中身がちがいます："
+
+msgid "This game is already on the console, but different:"
+msgstr "このゲームは本体にありますが、中身がちがいます："
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "このBIOSファイルは本体にありますが、中身がちがいます："
+
+msgid "This file is already on the console, but different:"
+msgstr "このファイルは本体にありますが、中身がちがいます："
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"USBメモリ：%s、%s\n"
+"本体：%s、%s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "セーブデータは大切！上書きしても、本体のデータは%s.bakとして残ります。"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "%sからコピー中"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "%sにゲームを書き出し中"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "%sにセーブデータをバックアップ中"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s / %s  -  %d / %dファイル"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s MB/s、残り約%d分"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s MB/s"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "すでにある：%d"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "コピーを中止しました。"
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "コピーが止まりました：%s。"
+
+msgid "error"
+msgstr "エラー"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "取りこみ%d、すでにあり%d、スキップ%d、上書き%d。"
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "いくつかのファイルは失敗しました。"
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "中止しました。"
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "中止しました：%s。途中までのファイルは消しました。"
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "%dファイルをコピー（%s）、すでにあり%d。"
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "4 GBをこえるファイル%d個はスキップ（FAT32）。"
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "%d個が失敗。"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "やめる"
+
+msgid "CONTINUE"
+msgstr "つづける"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "コピーをやめますか？コピーずみのファイルは残ります。"
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "やめますか？コピーずみのファイルはUSBメモリに残ります。"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "ゲームを取りこむ"
+
+msgid "EXPORT GAMES"
+msgstr "ゲームを書き出す"
+
+msgid "BACK UP SAVES"
+msgstr "セーブをバックアップ"
+
+msgid "NOTHING"
+msgstr "なにもしない"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "USBメモリ%sをつなぎました：「設定 > ストレージ」で使えます"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "USBメモリ%sをつなぎました"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "USBメモリ「%s」をつなぎました（%s、%s）。どうしますか？"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "USBメモリがぬかれたので、コピーが止まりました"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "USBメモリがぬかれました"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "USBメモリ：この形式は使えません（FAT32かexFATにしてください）"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "USBメモリを読みこめませんでした"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "ゲームの取りこみ元"
+
+msgid "Export games to"
+msgstr "ゲームの書き出し先"
+
+msgid "Back up saves to"
+msgstr "セーブデータのバックアップ先"
+
+msgid "USB transfers are not available in this build."
+msgstr "このビルドではUSBの転送は使えません。"
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "USBメモリをさしてください（FAT32、exFAT、NTFS）。"
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "USBメモリがありません"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "USBメモリを使用中です"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "ネットワークがオフなので、転送を止めました"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "とめる"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "ブラウザでこのアドレスを開いてください："
+
+msgid "(no network address)"
+msgstr "（ネットワークアドレスなし）"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "または %s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "PINがちがいます：%d秒ロック中"
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "%sを受信中（%d%%）"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "停止中：%s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "停止中"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "ファイルを待っています…"
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "%dファイルを受信しました"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "家のネットワークだけで使ってください。PINを知っている人は、だれでもファイルを追加できます。"
+
+msgid "KEEP RECEIVING"
+msgstr "受信をつづける"
+
+msgid "Keep receiving files in the background?"
+msgstr "バックグラウンドでファイルの受信をつづけますか？"
+
+msgid "Network transfer is not available in this build."
+msgstr "このビルドではネットワーク転送は使えません。"
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "先にWi-Fiか有線LANをオンにしてください（ネットワークアドレスなし）。"
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "転送を始められませんでした（エラー%d）。"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "つづきから"
+
+msgid "START FRESH"
+msgstr "はじめから"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "%sをつづきから遊びますか？"
+
+msgid "No emulator is installed for this system."
+msgstr "このゲーム機用のエミュレーターが入っていません。"
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "ファイルをコピーしています。コピーが終わるまで待つか、中止してください。"
+
+msgid "Resume where you left off?"
+msgstr "前回のつづきから遊びますか？"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "設定"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "コントローラーをつなぎました：%s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "コントローラーが外れました：%s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "新しいコントローラー：%s（設定 > コントローラー）"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "新しいコントローラー：%s。「設定 > コントローラー」で設定しますか？"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "%sのゲームを読みこみ中"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "本体を準備しています…"
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "バッテリー残りわずか（%d%%）"
+
+msgid "Battery empty, saving..."
+msgstr "バッテリー切れ。セーブ中…"
+
+msgid "Restarting..."
+msgstr "再起動しています…"
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "本体が熱いので、速度を落としています"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "充電中"
+
+msgid "Fully charged"
+msgstr "充電完了"
+
+msgid "Charger unplugged"
+msgstr "充電器が外れました"
+
+msgid "Not charging"
+msgstr "充電していません"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%d%%"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "満タンまで%d時間%02d分"
+
+msgid "Press the power button to start"
+msgstr "電源ボタンを押すと起動します"
+
+msgid "Battery very low: plug in the charger"
+msgstr "バッテリーがほとんどありません。充電器をつないでください"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "評価："
+
+msgid "Released: "
+msgstr "発売日："
+
+msgid "Developer: "
+msgstr "開発："
+
+msgid "Publisher: "
+msgstr "発売元："
+
+msgid "Genre: "
+msgstr "ジャンル："
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "プレイ人数："
+
+msgid "Last played: "
+msgstr "最後に遊んだ日："
+
+msgid "Times played: "
+msgstr "遊んだ回数："
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "発売年"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "ジャンル"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "人数"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "評価"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "お気に入りのゲーム"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "さいきん遊んだゲーム"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "本体のすべてのゲーム"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "パソコン · 1983年"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "アーケード · MAME 2003-Plus"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "アーケード · FinalBurn Neo"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "不明"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "ゲームがありません"
+
+msgid "launch"
+msgstr "あそぶ"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "オプション"
+
+msgid "favorite"
+msgstr "お気に入り"
+
+msgid "menu"
+msgstr "メニュー"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "お気に入りに追加しました"
+
+msgid "Removed from favorites"
+msgstr "お気に入りから外しました"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "ゲーム%d本"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "お気に入り%d本"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s、%s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "ゲームが見つかりません。ROMを/data/roms/<system>/にコピーしてください"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "未プレイ"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "不明"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "%d秒前"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d分前"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d時間前"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d日前"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%Y/%m/%d"

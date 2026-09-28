@@ -1,0 +1,16 @@
+config BR2_PACKAGE_LIBRETRO_PROSYSTEM
+	bool "libretro-prosystem"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  ProSystem: Atari 7800 emulator, built as a libretro core
+	  (GPL-2.0+). The 7800 BIOS is optional.
+
+	  Installs /usr/lib/libretro/prosystem_libretro.so and
+	  /usr/share/rsos/cores/prosystem.ini.
+
+	  https://github.com/libretro/prosystem-libretro
+
+comment "libretro-prosystem needs a toolchain w/ dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_STATIC_LIBS

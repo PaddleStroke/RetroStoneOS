@@ -1,0 +1,22 @@
+config BR2_PACKAGE_LIBRETRO_BEETLE_SUPAFAUST
+	bool "libretro-beetle-supafaust (experimental)"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS_NPTL # PPU thread, pthread_setaffinity_np()
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Beetle Supafaust: Mednafen's snes_faust SNES emulator with its
+	  PPU rendered on a second thread, built as a libretro core
+	  (GPL-2.0+). Experimental licence-clean alternative to the
+	  snes9x cores: needs both A20 cores, and SuperFX/SA-1/CX4
+	  games are expected below full speed.
+
+	  Installs /usr/lib/libretro/mednafen_supafaust_libretro.so and
+	  /usr/share/rsos/cores/mednafen_supafaust.ini.
+
+	  https://github.com/libretro/supafaust
+
+comment "libretro-beetle-supafaust needs a toolchain w/ C++, NPTL, dynamic library"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || !BR2_TOOLCHAIN_HAS_THREADS_NPTL || \
+		BR2_STATIC_LIBS

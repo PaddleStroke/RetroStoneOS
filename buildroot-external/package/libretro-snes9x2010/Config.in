@@ -1,0 +1,20 @@
+config BR2_PACKAGE_LIBRETRO_SNES9X2010
+	bool "libretro-snes9x2010"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Snes9x 2010 (Snes9x 1.52 based, formerly snes9x-next): Super
+	  Nintendo / Super Famicom core. More accurate than snes9x2005
+	  (blargg SPC700/DSP, more special chips, MSU-1) but slower:
+	  SuperFX/SA-1 games drop below 60 fps on a ~1 GHz Cortex-A7.
+	  Per-game alternative to snes9x2005 (see docs/cores.md).
+
+	  Installs /usr/lib/libretro/snes9x2010_libretro.so and
+	  /usr/share/rsos/cores/snes9x2010.ini.
+
+	  https://github.com/libretro/snes9x2010
+
+comment "libretro-snes9x2010 needs a toolchain w/ threads, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_TOOLCHAIN_HAS_THREADS || BR2_STATIC_LIBS

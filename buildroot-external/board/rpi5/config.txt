@@ -1,0 +1,26 @@
+# RetroStoneOS for the Raspberry Pi 5 / 500: firmware configuration.
+# Community-tested port (docs/boards.md): not tested on hardware by the
+# RetroStoneOS developers.
+# https://www.raspberrypi.com/documentation/computers/config_txt.html
+#
+# The Pi 5 boots from its EEPROM bootloader: no start*.elf/fixup*.dat on the
+# card, only this file, cmdline.txt, the kernel, the device trees and the
+# overlays.
+
+kernel=Image
+arm_64bit=1
+
+# The frontend drives the display with DRM/KMS: the vc4 KMS driver (HDMI)
+# and the V3D 7.1 GPU (Mesa v3d, GLES 2.0 for the N64 cores). On a Pi 5 the
+# firmware maps this overlay to vc4-kms-v3d-pi5.
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+disable_overscan=1
+
+# Faster boot: no rainbow splash, no boot delay.
+disable_splash=1
+boot_delay=0
+
+# Serial console: the 3-pin debug UART connector between the HDMI ports
+# (ttyAMA10, always on). For a console on GPIO 14/15 instead, add
+# "dtparam=uart0_console" here and set serial_console = ttyAMA0 in board.ini.

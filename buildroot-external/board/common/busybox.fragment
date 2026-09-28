@@ -1,0 +1,35 @@
+# RetroStoneOS BusyBox options, merged on top of Buildroot's
+# package/busybox/busybox.config (BR2_PACKAGE_BUSYBOX_CONFIG_FRAGMENT_FILES).
+
+# Boot time, round 3 (docs/build.md, "Boot time"): a static BusyBox. init, the
+# rcS/data-partition shells and every applet they run (mount, dd, mkdir,
+# usleep, ...) are BusyBox; dynamically linked, each exec maps ld.so, libc
+# and libresolv and processes their relocations again (~1-2 ms of CPU per
+# exec on the A20), and the first ones page-fault those libraries in from the
+# SD card. Static, an exec only maps the one binary. The rest of the system
+# (frontend, cores, tools) stays dynamic.
+CONFIG_STATIC=y
+# BusyBox's own /etc/passwd and /etc/group parser: a static glibc would
+# otherwise dlopen its NSS modules for user lookups (id, ls -l, the login
+# shell's prompt).
+CONFIG_USE_BB_PWD_GRP=y
+CONFIG_USE_BB_SHADOW=y
+
+# readahead FILE...: readahead(2) on whole files. rcS uses it to prefetch the
+# frontend and its libraries in large reads while it mounts /data, at the
+# idle I/O priority (ionice -c 3; mq-deadline serves the other requests
+# first).
+CONFIG_READAHEAD=y
+CONFIG_IONICE=y
+
+# NTP client for the udhcpc hook (usr/share/udhcpc/default.script.d/rsos-ntp:
+# "timeout 30 ntpd -q -n -p <DHCP server> -p pool.ntp.org" once a lease is
+# bound; review S8). Client only, no /etc/ntp.conf.
+CONFIG_NTPD=y
+# CONFIG_FEATURE_NTPD_SERVER is not set
+# CONFIG_FEATURE_NTPD_CONF is not set
+CONFIG_TIMEOUT=y
+
+# fsync FILE: rsos-net writes settings.ini and the Bluetooth store as
+# tmp + fsync + rename (exFAT has no journal; review S12, S13).
+CONFIG_FSYNC=y

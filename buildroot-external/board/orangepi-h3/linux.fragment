@@ -1,0 +1,47 @@
+# Orange Pi H3 (PC, PC Plus, One, Lite) kernel options, merged on top of
+# sunxi_defconfig and board/common/linux-rsos.fragment. Community-tested
+# port (docs/boards.md). Mainline Linux 6.18 LTS.
+#
+# sunxi_defconfig already builds the display (sun4i-drm: DE2 mixer + TCON +
+# sun8i DesignWare HDMI), the Mali-400 (lima), the analog codec, the I2S
+# controllers, the watchdog, cpufreq-dt, the thermal sensor, EHCI/OHCI/MUSB
+# and the EMAC (dwmac-sun8i) in. What is added here:
+
+# --- HDMI audio: the DesignWare HDMI I2S input and a simple-audio-card
+# (patches/linux/0001: I2S2 -> HDMI, card "allwinner-hdmi")
+CONFIG_SND_SIMPLE_CARD=y
+CONFIG_DRM_DW_HDMI_I2S_AUDIO=y
+CONFIG_SND_SOC_HDMI_CODEC=y
+
+# --- CPU voltage regulators for cpufreq: SY8106A on I2C (PC, PC Plus),
+# GPIO regulator (One, Lite)
+CONFIG_REGULATOR_SY8106A=y
+CONFIG_REGULATOR_GPIO=y
+CONFIG_I2C_MV64XXX=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y
+
+# --- Watchdog (the frontend pets /dev/watchdog; U-Boot starts it)
+CONFIG_SUNXI_WATCHDOG=y
+
+# --- Ethernet: dwmac-sun8i with the internal PHY, built in (rsos-net only
+# brings eth0 up and down)
+CONFIG_STMMAC_ETH=y
+CONFIG_STMMAC_PLATFORM=y
+CONFIG_DWMAC_SUN8I=y
+
+# --- USB storage (rcS loads usb-storage, uas and sd_mod once the menu is
+# up)
+CONFIG_SCSI=y
+CONFIG_BLK_DEV_SD=m
+CONFIG_USB_STORAGE=m
+CONFIG_USB_UAS=m
+
+# --- Bluetooth and WiFi: no on-board chip that mainline supports (the PC
+# Plus / Lite RTL8189FTV needs an out-of-tree driver). Bluetooth USB dongles
+# (btusb) as modules for rsos-net's BlueZ.
+CONFIG_BT=m
+CONFIG_BT_HCIBTUSB=m
+
+# --- The lockup detectors of the common fragment depend on DEBUG_KERNEL,
+# which sunxi_defconfig does not set (the RetroStone2 fragment sets it too)
+CONFIG_DEBUG_KERNEL=y

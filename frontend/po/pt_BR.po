@@ -1,0 +1,2406 @@
+# Brazilian Portuguese translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "Não foi possível abrir o arquivo zip (%s)"
+
+msgid "No playable file in this zip"
+msgstr "Nenhum arquivo jogável neste zip"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "O arquivo neste zip é grande demais (%llu MB)"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "Não foi possível extrair %s do zip (%s)"
+
+msgid "Game file not found"
+msgstr "Arquivo do jogo não encontrado"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "Arquivos 7z não são suportados: use .zip ou descompacte"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "Não foi possível ler o arquivo do jogo (%s)"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "Este sistema"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s: %s não é a BIOS esperada"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%s ou %s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "%s precisa de %s em %s"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "Desligando..."
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "Controle do jogador 1 desconectado: pausado"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "Jogador 1: %s"
+
+msgid "Saving..."
+msgstr "Salvando..."
+
+msgid "This game cannot save a state now"
+msgstr "Este jogo não pode salvar um estado agora"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "Estado NÃO salvo: %s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "Estado carregado, slot %d"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "Nenhum estado no slot %d"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "Não foi possível carregar o estado do slot %d"
+
+#, c-format
+msgid "State slot %d"
+msgstr "Slot de estado %d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "Slot de estado %d (vazio)"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "Jogo reiniciado"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "Conectado: %s"
+
+msgid "Battery empty: game saved"
+msgstr "Bateria vazia: jogo salvo"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "Bateria fraca (%d%%)"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "%d ajuste, uns %d min"
+msgstr[1] "%d ajustes, uns %d min"
+
+msgid "No benchmark for this system"
+msgstr "Sem teste de desempenho para este sistema"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "Teste: este jogo não pode salvar um estado agora"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "Teste: não foi possível gravar %s"
+
+msgid "No result to use"
+msgstr "Nenhum resultado para usar"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "Configuração desconhecida %s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "Não foi possível salvar: %s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "\"%s\" salvo para este jogo (vale no próximo início)"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "\"%s\" salvo: o próximo início usa %s"
+
+msgid "The emulator stopped responding"
+msgstr "O emulador parou de responder"
+
+msgid "Cannot load the emulator core"
+msgstr "Não foi possível carregar o núcleo do emulador"
+
+msgid "Benchmark: bad plan"
+msgstr "Teste: plano inválido"
+
+msgid "Cannot start the save thread"
+msgstr "Não foi possível iniciar o processo de salvamento"
+
+msgid "Cannot open the display"
+msgstr "Não foi possível abrir a tela"
+
+msgid "This core needs a game file"
+msgstr "Este núcleo precisa de um arquivo de jogo"
+
+msgid "The emulator could not load this game"
+msgstr "O emulador não conseguiu carregar este jogo"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "Continuando de onde você parou"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "Falha ao iniciar a GPU (framebuffer 0x%x)"
+
+msgid "This build cannot run GLES games"
+msgstr "Esta versão não pode rodar jogos GLES"
+
+msgid "No GPU found (lima)"
+msgstr "Nenhuma GPU encontrada (lima)"
+
+msgid "The game was stopped"
+msgstr "O jogo foi interrompido"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "O emulador travou (%s). Os dados salvos até alguns segundos atrás foram mantidos."
+
+msgid "Could not start the game"
+msgstr "Não foi possível iniciar o jogo"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "O emulador parou de responder. Os dados salvos até alguns segundos atrás foram mantidos."
+
+msgid "Cannot start the game process"
+msgstr "Não foi possível iniciar o processo do jogo"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "O emulador falhou (código %d)"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "Inteiro"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "Esticado"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "Proporção"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "Sim"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "Não"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "(jogo)"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "(todos)"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "(teste)"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "travou"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "congelou"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "parado"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "falhou"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "Continuar"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "Slot %d"
+
+msgid "Save state"
+msgstr "Salvar estado"
+
+msgid "Load state"
+msgstr "Carregar estado"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "Disco"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "Reiniciar"
+
+msgid "Core options"
+msgstr "Opções do núcleo"
+
+msgid "Scaling"
+msgstr "Escala"
+
+msgid "Show FPS"
+msgstr "Mostrar FPS"
+
+msgid "Fast-forward"
+msgstr "Avanço rápido"
+
+msgid "Benchmark this game"
+msgstr "Testar desempenho"
+
+msgid "Controls"
+msgstr "Controles"
+
+msgid "Exit game"
+msgstr "Sair do jogo"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "Salvar para este jogo"
+
+msgid "Save for all games (this core)"
+msgstr "Salvar para todos (este núcleo)"
+
+msgid "Reset to defaults"
+msgstr "Restaurar padrões"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "Jogador %d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s (analógico)"
+
+msgid "D-pad as left stick (P1)"
+msgstr "Direcional como analógico esq. (J1)"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "Cima"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "Baixo"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "Esquerda"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "Direita"
+
+msgid "Left stick"
+msgstr "Analógico esquerdo"
+
+msgid "Right stick"
+msgstr "Analógico direito"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "Rodadas"
+
+msgid "Each run"
+msgstr "Cada rodada"
+
+msgid "from now, no input"
+msgstr "de agora, sem apertar nada"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "Parar"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs (cartão SD)"
+
+msgid "Results"
+msgstr "Resultados"
+
+msgid "Start benchmark"
+msgstr "Iniciar teste"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "não classificado"
+
+msgid "blank?"
+msgstr "em branco?"
+
+msgid "Use this for this game"
+msgstr "Usar neste jogo"
+
+msgid "Resume game"
+msgstr "Voltar ao jogo"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "Teste de desempenho"
+
+msgid "Benchmark results"
+msgstr "Resultados do teste"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "Vazio"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "(jogo) para este jogo, (todos) para todos, * salvo ao sair"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A: confirmar  B: continuar  </>: mudar"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A: confirmar  B: voltar  </>: mudar"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "Salvando slot %d..."
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "O slot %d está vazio"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "Disco %d inserido"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "Não foi possível trocar para o disco %d"
+
+msgid "Could not save the options"
+msgstr "Não foi possível salvar as opções"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "Salvo para %s"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "Salvo para todos os jogos com %s"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "Padrões restaurados (salvos ao sair)"
+
+msgid "Options saved for this game"
+msgstr "Opções salvas para este jogo"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "Tabela: %s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "Falha ao salvar o jogo: %s (tentando de novo)"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "Jogo salvo"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "Estado automático NÃO salvo: %s"
+
+msgid "Auto state saved"
+msgstr "Estado automático salvo"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "Estado %d NÃO salvo: %s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "Estado salvo, slot %d"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "Dados salvos ilegíveis: salvamento desativado"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr ","
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr "."
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "GB"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "MB"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "KB"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%d/%m/%Y"
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%d/%m/%Y %H:%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "A tela recusou esta frequência"
+
+msgid "No emulator is installed for this game."
+msgstr "Nenhum emulador instalado para este jogo."
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "Este jogo não pode iniciar (falta a BIOS?)."
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "Não foi possível iniciar o processo do jogo (%s)."
+
+msgid "The game could not be started."
+msgstr "Não foi possível iniciar o jogo."
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "Não foi possível restaurar a partição de dados. Talvez você precise copiar seus jogos e dados salvos de novo."
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "A partição de dados estava ilegível e foi formatada de novo."
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "A partição de dados tem erros: salvar pode falhar. Faça uma cópia dos seus dados salvos."
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "A última atualização não iniciou; a versão anterior foi restaurada."
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "O cartão SD foi verificado após um desligamento inesperado"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "Preparando o cartão SD, aguarde..."
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "Verificando o cartão SD, aguarde..."
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "Favoritos"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "Últimos jogados"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "Não há mais jogos nesta pasta"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "escolher"
+
+msgid "change"
+msgstr "mudar"
+
+msgid "select"
+msgstr "confirmar"
+
+msgid "back"
+msgstr "voltar"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "digitar"
+
+msgid "delete"
+msgstr "apagar"
+
+msgid "space"
+msgstr "espaço"
+
+msgid "shift"
+msgstr "maiúsc"
+
+msgid "ok"
+msgstr "ok"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "cancelar"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "MAIÚSC"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "ESPAÇO"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "APAGA"
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "Auto"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "Proporção"
+
+msgid "Integer"
+msgstr "Inteiro"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "Automático"
+
+msgid "Basic"
+msgstr "Básico"
+
+msgid "Detailed"
+msgstr "Detalhado"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "Superior direito"
+
+msgid "Top left"
+msgstr "Superior esquerdo"
+
+msgid "Bottom right"
+msgstr "Inferior direito"
+
+msgid "Bottom left"
+msgstr "Inferior esquerdo"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Hz (original)"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "Auto (quem inicia o jogo)"
+
+msgid "Built-in"
+msgstr "Integrado"
+
+msgid "External"
+msgstr "Externo"
+
+msgid "Could not save the settings"
+msgstr "Não foi possível salvar as configurações"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "TV"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "Frequência do LCD: 60 Hz"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "Frequência do LCD: de volta a 78 Hz"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "MANTER"
+
+msgid "REVERT"
+msgstr "DESFAZER"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"A tela agora está em 60 Hz.\n"
+"Manter esta configuração? Desfazendo em %d s"
+
+msgid "Display"
+msgstr "Tela"
+
+msgid "Brightness"
+msgstr "Brilho"
+
+msgid "LCD refresh rate"
+msgstr "Frequência do LCD"
+
+msgid "HDMI resolution"
+msgstr "Resolução HDMI"
+
+msgid "Game scaling"
+msgstr "Escala dos jogos"
+
+msgid "Game list style"
+msgstr "Estilo das listas"
+
+msgid "Battery in games"
+msgstr "Bateria nos jogos"
+
+msgid "Battery position"
+msgstr "Posição da bateria"
+
+msgid "Button test"
+msgstr "Teste de botões"
+
+msgid "no stick"
+msgstr "sem analógico"
+
+msgid "Hold SELECT + START to exit"
+msgstr "Segure SELECT + START para sair"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "Aperte o direcional para CIMA"
+
+msgid "Press D-pad DOWN"
+msgstr "Aperte o direcional para BAIXO"
+
+msgid "Press D-pad LEFT"
+msgstr "Aperte o direcional à ESQUERDA"
+
+msgid "Press D-pad RIGHT"
+msgstr "Aperte o direcional à DIREITA"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "Aperte o botão da DIREITA (A)"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "Aperte o botão de BAIXO (B)"
+
+msgid "Press the TOP face button (X)"
+msgstr "Aperte o botão de CIMA (X)"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "Aperte o botão da ESQUERDA (Y)"
+
+msgid "Press L1"
+msgstr "Aperte L1"
+
+msgid "Press R1"
+msgstr "Aperte R1"
+
+msgid "Press L2"
+msgstr "Aperte L2"
+
+msgid "Press R2"
+msgstr "Aperte R2"
+
+msgid "Press SELECT"
+msgstr "Aperte SELECT"
+
+msgid "Press START"
+msgstr "Aperte START"
+
+msgid "Press the left stick (L3)"
+msgstr "Aperte o analógico esquerdo (L3)"
+
+msgid "Press the right stick (R3)"
+msgstr "Aperte o analógico direito (R3)"
+
+msgid "Push the left stick RIGHT"
+msgstr "Analógico esquerdo para a DIREITA"
+
+msgid "Push the left stick DOWN"
+msgstr "Analógico esquerdo para BAIXO"
+
+msgid "Push the right stick RIGHT"
+msgstr "Analógico direito para a DIREITA"
+
+msgid "Push the right stick DOWN"
+msgstr "Analógico direito para BAIXO"
+
+msgid "Configure controller"
+msgstr "Configurar controle"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "Passo %d de %d"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "Não tem no controle? Espere %d s para pular"
+
+msgid "Controller saved"
+msgstr "Controle salvo"
+
+msgid "The mapping could not be saved."
+msgstr "Não foi possível salvar o mapeamento dos botões."
+
+msgid "Configure a controller"
+msgstr "Configurar um controle"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "personalizado"
+
+msgid "known pad"
+msgstr "controle conhecido"
+
+msgid "standard"
+msgstr "padrão"
+
+msgid "keyboard"
+msgstr "teclado"
+
+msgid "not configured"
+msgstr "não configurado"
+
+msgid "No external controller detected"
+msgstr "Nenhum controle externo detectado"
+
+msgid "built-in"
+msgstr "integrado"
+
+msgid "Player 1"
+msgstr "Jogador 1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "Botões C/Z extras instalados"
+
+msgid "Players"
+msgstr "Jogadores"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10 min"
+
+msgid "30 min"
+msgstr "30 min"
+
+msgid "1 hour"
+msgstr "1 hora"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "Nunca"
+
+msgid "please wait..."
+msgstr "aguarde..."
+
+msgid "not set"
+msgstr "não definido"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "ativo"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi: desligando, aguarde..."
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "Ethernet: desligando, aguarde..."
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "Bluetooth: desligando, aguarde..."
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi: ligando, aguarde..."
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "Ethernet: ligando, aguarde..."
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "Bluetooth: ligando, aguarde..."
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "Não foi possível executar %s"
+
+msgid "Could not save the WiFi settings"
+msgstr "Não foi possível salvar as configurações de Wi-Fi"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "A senha do Wi-Fi tem pelo menos 8 caracteres."
+
+msgid "Set the network name first."
+msgstr "Primeiro defina o nome da rede."
+
+msgid "WiFi password saved"
+msgstr "Senha do Wi-Fi salva"
+
+msgid "WiFi network name"
+msgstr "Nome da rede Wi-Fi"
+
+msgid "WiFi password"
+msgstr "Senha do Wi-Fi"
+
+msgid "Console name"
+msgstr "Nome do console"
+
+msgid "Use letters, digits and dashes."
+msgstr "Use letras, números e hifens."
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "Nome do console: %s (próxima transferência)"
+
+msgid "Network"
+msgstr "Rede"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Rede Wi-Fi"
+
+msgid "Transfer games from a computer or phone"
+msgstr "Transfira jogos do computador ou celular"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "Transferir pela rede"
+
+msgid "Stop when idle for"
+msgstr "Parar se inativo por"
+
+msgid "Keep receiving in the background"
+msgstr "Continuar recebendo em segundo plano"
+
+msgid "WiFi off"
+msgstr "Wi-Fi desligado"
+
+msgid "Ethernet off"
+msgstr "Ethernet desligada"
+
+msgid "Bluetooth off"
+msgstr "Bluetooth desligado"
+
+msgid "WiFi on"
+msgstr "Wi-Fi ligado"
+
+msgid "Ethernet on"
+msgstr "Ethernet ligada"
+
+msgid "Bluetooth on"
+msgstr "Bluetooth ligado"
+
+msgid "failed"
+msgstr "falhou"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "No theme found"
+msgstr "Nenhum tema encontrado"
+
+msgid "Game lists refreshed"
+msgstr "Listas de jogos atualizadas"
+
+msgid "Game lists"
+msgstr "Listas de jogos"
+
+msgid "Favorites first"
+msgstr "Favoritos primeiro"
+
+msgid "Favorites & last played pages"
+msgstr "Páginas Favoritos e Últimos jogados"
+
+msgid "Refresh game lists"
+msgstr "Atualizar listas de jogos"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "Perguntar"
+
+msgid "Always resume"
+msgstr "Sempre continuar"
+
+msgid "Always start fresh"
+msgstr "Sempre começar do zero"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "Jogos"
+
+msgid "Resume games"
+msgstr "Continuar jogos"
+
+msgid "Auto-save on exit"
+msgstr "Salvar automaticamente ao sair"
+
+msgid "On launch"
+msgstr "Ao iniciar"
+
+msgid "Powering off in a game always saves it"
+msgstr "Desligar durante um jogo sempre salva o jogo"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "Não foi possível atualizar /boot/rsos.env."
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "REINICIAR AGORA"
+
+msgid "LATER"
+msgstr "DEPOIS"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "É preciso reiniciar: a mudança vale no próximo início."
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "%s livres de %s"
+
+msgid "Storage"
+msgstr "Armazenamento"
+
+msgid "Game storage"
+msgstr "Armazenamento dos jogos"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "Pendrive"
+
+msgid "Import games"
+msgstr "Importar jogos"
+
+msgid "Export games"
+msgstr "Exportar jogos"
+
+msgid "Back up saves"
+msgstr "Copiar dados salvos"
+
+msgid "Eject USB drive"
+msgstr "Ejetar pendrive"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "Perguntar ao conectar um pendrive"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "Avançado: desligue para iniciar mais rápido (requer reinício)"
+
+msgid "Internal eMMC"
+msgstr "eMMC interna"
+
+msgid "M.2 SATA drive"
+msgstr "Disco M.2 SATA"
+
+msgid "no battery"
+msgstr "sem bateria"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%d%%, cheia em %d h %02d"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%d%%, cerca de %d h %02d"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%d%%, carregando"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%d%%, cheia"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%d%%"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "carregador, %s V"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "bateria, %s V"
+
+msgid "charger connected"
+msgstr "carregador conectado"
+
+msgid "battery"
+msgstr "bateria"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C (quente)"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "não montado"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s, menu %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "%d sistema"
+msgstr[1] "%d sistemas"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "%d jogo em %s"
+msgstr[1] "%d jogos em %s"
+
+msgid "System information"
+msgstr "Informações do sistema"
+
+msgid "Version"
+msgstr "Versão"
+
+msgid "Battery"
+msgstr "Bateria"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "Alimentação"
+
+msgid "Input devices"
+msgstr "Dispositivos de controle"
+
+msgid "CPU temperature"
+msgstr "Temperatura da CPU"
+
+msgid "1 min"
+msgstr "1 min"
+
+msgid "2 min"
+msgstr "2 min"
+
+msgid "5 min"
+msgstr "5 min"
+
+msgid "Voltage"
+msgstr "Tensão"
+
+msgid "AXP fuel gauge"
+msgstr "Medidor AXP"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "SIM"
+
+msgid "NO"
+msgstr "NÃO"
+
+msgid "Restart the console?"
+msgstr "Reiniciar o console?"
+
+msgid "Power off the console?"
+msgstr "Desligar o console?"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "Energia"
+
+msgid "Restart"
+msgstr "Reiniciar"
+
+msgid "Power off"
+msgstr "Desligar"
+
+msgid "Battery saving"
+msgstr "Economia de bateria"
+
+msgid "Dim the screen after"
+msgstr "Escurecer a tela após"
+
+msgid "Screen off after"
+msgstr "Desligar a tela após"
+
+msgid "Battery gauge"
+msgstr "Medidor de bateria"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "Fuso horário: %s"
+
+msgid "Time zone"
+msgstr "Fuso horário"
+
+msgid "That date is not valid."
+msgstr "Essa data não é válida."
+
+msgid "The clock could not be set."
+msgstr "Não foi possível acertar o relógio."
+
+msgid "Date and time set"
+msgstr "Data e hora definidas"
+
+msgid "Setting the clock needs the power module"
+msgstr "Para acertar o relógio é preciso o módulo de energia"
+
+msgid "Date & time"
+msgstr "Data e hora"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "Agora"
+
+msgid "Set the clock"
+msgstr "Acertar o relógio"
+
+msgid "Year"
+msgstr "Ano"
+
+msgid "Month"
+msgstr "Mês"
+
+msgid "Day"
+msgstr "Dia"
+
+msgid "Hour"
+msgstr "Hora"
+
+msgid "Minute"
+msgstr "Minuto"
+
+msgid "Set date and time"
+msgstr "Definir data e hora"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Settings"
+msgstr "Configurações"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "%s não está instalado"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "Escolha seu idioma"
+
+msgid "This game is not in the list any more"
+msgstr "Este jogo não está mais na lista"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "Favorito"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "Padrão do sistema"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s (experimental)"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "Padrão (%s)"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "nenhum"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "Núcleo para este jogo"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "Núcleo para todos os jogos de %s"
+
+msgid "Core"
+msgstr "Núcleo"
+
+msgid "none installed"
+msgstr "nenhum instalado"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "Jogar"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "Arquivo"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr ""
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr ""
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr ""
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr ""
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr ""
+
+msgctxt "system"
+msgid "32X"
+msgstr ""
+
+msgctxt "system"
+msgid "Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr ""
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr "Fliperama"
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr ""
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr "Fliperama (MAME 2003-Plus)"
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr "Fliperama (FinalBurn Neo)"
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "O cartão SD está cheio"
+
+msgid "The USB drive was removed"
+msgstr "O pendrive foi removido"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "Erro de leitura: o pendrive foi removido?"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "O pendrive está cheio"
+
+msgid "The USB drive is read-only"
+msgstr "O pendrive é somente leitura"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "Erro de gravação: o pendrive foi removido?"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "sem atividade"
+
+msgid "BIOS files"
+msgstr "Arquivos de BIOS"
+
+msgid "Themes"
+msgstr "Temas"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "O pendrive está ocupado"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "Pendrive ejetado: você já pode removê-lo"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "EJETAR"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "Raiz do pendrive"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s (backup)"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "%d biblioteca"
+msgstr[1] "todas as %d bibliotecas"
+
+msgid "Another copy is already running."
+msgstr "Já existe outra cópia em andamento."
+
+msgid "The copy could not start."
+msgstr "Não foi possível iniciar a cópia."
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "Bibliotecas de jogos no pendrive"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "%d jogo"
+msgstr[1] "%d jogos"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s, %s, %s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "%d arquivo, %s"
+msgstr[1] "%d arquivos, %s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "Tudo (%d biblioteca)"
+msgstr[1] "Tudo (%d bibliotecas)"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "%d jogo, %s"
+msgstr[1] "%d jogos, %s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "Ejetar"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "Procurando jogos no pendrive..."
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "Comparando com o console..."
+
+msgid "This drive could not be read."
+msgstr "Não foi possível ler este pendrive."
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "De"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "Jogos no pendrive"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "%d novo de %d, %s, dados salvos"
+msgstr[1] "%d novos de %d, %s, dados salvos"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "%d novo de %d, %s"
+msgstr[1] "%d novos de %d, %s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d, já está aqui, dados salvos"
+msgstr[1] "%d, já estão aqui, dados salvos"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d, já está aqui"
+msgstr[1] "%d, já estão aqui"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "Não suportado: %s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%d arquivo"
+msgstr[1] "%d arquivos"
+
+msgid "Nothing new on this drive"
+msgstr "Nada de novo neste pendrive"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "O que copiar"
+
+msgid "Saves & save states"
+msgstr "Dados salvos e estados"
+
+msgid "Screenshots"
+msgstr "Capturas de tela"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "Já no console"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "%d arquivo, ignorado"
+msgstr[1] "%d arquivos, ignorados"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "Diferentes no console"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d (com dados salvos): vamos perguntar"
+msgstr[1] "%d (com dados salvos): vamos perguntar"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d: vamos perguntar"
+msgstr[1] "%d: vamos perguntar"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "Para copiar"
+
+msgid "Not enough space"
+msgstr "Espaço insuficiente"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "até %s, %s livres"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "Copiar"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "Importar de %s"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "Este pendrive está ocupado (uma busca ou cópia está em andamento)."
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "Não é possível gravar no pendrive (ele está protegido contra gravação?)."
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "Comparando com o pendrive..."
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "Pasta no pendrive"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s (nova)"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "Jogos no console"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "Também arquivos de BIOS"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "Jogos"
+
+msgid "All games"
+msgstr "Todos os jogos"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "Último jogado: %s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "Também configurações (núcleo, botões)"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "Já no pendrive"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "%d arquivo, %s (%s livres)"
+msgstr[1] "%d arquivos, %s (%s livres)"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "Nada para copiar: o pendrive está atualizado"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "%d arquivo acima de 4 GB: não cabe em FAT32"
+msgstr[1] "%d arquivos acima de 4 GB: não cabem em FAT32"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "ignorado"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "Exportar"
+
+msgid "Back up"
+msgstr "Copiar"
+
+msgid "The USB drive is not there any more."
+msgstr "O pendrive não está mais conectado."
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "Exportar jogos para %s"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "Copiar dados salvos para %s"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "data desconhecida"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "PULAR"
+
+msgid "REPLACE"
+msgstr "SUBSTITUIR"
+
+msgid "SKIP ALL"
+msgstr "PULAR TODOS"
+
+msgid "REPLACE ALL"
+msgstr "SUBSTITUIR TODOS"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "Este arquivo de configurações já está no console, mas é diferente:"
+
+msgid "This save is already on the console, but different:"
+msgstr "Estes dados salvos já estão no console, mas são diferentes:"
+
+msgid "This game is already on the console, but different:"
+msgstr "Este jogo já está no console, mas é diferente:"
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "Este arquivo de BIOS já está no console, mas é diferente:"
+
+msgid "This file is already on the console, but different:"
+msgstr "Este arquivo já está no console, mas é diferente:"
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"Pendrive: %s, %s\n"
+"Console: %s, %s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "Dados salvos são preciosos: se você substituir, a cópia do console fica guardada como %s.bak."
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "Copiando de %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "Exportando jogos para %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "Copiando dados salvos para %s"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s de %s  -  %d de %d arquivo"
+msgstr[1] "%s de %s  -  %d de %d arquivos"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s MB/s, falta cerca de %d min"
+msgstr[1] "%s MB/s, faltam cerca de %d min"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s MB/s"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "%d já estava lá"
+msgstr[1] "%d já estavam lá"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "Cópia cancelada."
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "A cópia parou: %s."
+
+msgid "error"
+msgstr "erro"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "Importados: %d, já estavam lá: %d, ignorados: %d, substituídos: %d."
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "Alguns arquivos falharam."
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "Cancelado."
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "Parado: %s. O arquivo incompleto foi removido."
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "%d arquivo copiado (%s), já estavam lá: %d."
+msgstr[1] "%d arquivos copiados (%s), já estavam lá: %d."
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "%d arquivo acima de 4 GB ignorado (FAT32)."
+msgstr[1] "%d arquivos acima de 4 GB ignorados (FAT32)."
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "%d falhou."
+msgstr[1] "%d falharam."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "PARAR"
+
+msgid "CONTINUE"
+msgstr "CONTINUAR"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "Parar a cópia? Os arquivos já copiados ficam."
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "Parar? Os arquivos já copiados ficam no pendrive."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "IMPORTAR JOGOS"
+
+msgid "EXPORT GAMES"
+msgstr "EXPORTAR JOGOS"
+
+msgid "BACK UP SAVES"
+msgstr "COPIAR DADOS SALVOS"
+
+msgid "NOTHING"
+msgstr "NADA"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "Pendrive %s conectado: Configurações > Armazenamento para usar"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "Pendrive %s conectado"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "Pendrive \"%s\" conectado (%s, %s). O que você quer fazer?"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "Pendrive removido: a cópia parou"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "Pendrive removido"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "Pendrive: formato não suportado (use FAT32 ou exFAT)"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "Não foi possível ler o pendrive"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "Importar jogos de"
+
+msgid "Export games to"
+msgstr "Exportar jogos para"
+
+msgid "Back up saves to"
+msgstr "Copiar dados salvos para"
+
+msgid "USB transfers are not available in this build."
+msgstr "Transferências USB não estão disponíveis nesta versão."
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "Conecte um pendrive (FAT32, exFAT ou NTFS)."
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "Nenhum pendrive"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "Um pendrive está ocupado"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "Rede desligada: transferência web parada"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "parar"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "Abra este endereço em um navegador:"
+
+msgid "(no network address)"
+msgstr "(sem endereço de rede)"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "ou %s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "PIN errado: bloqueado por %d s"
+msgstr[1] "PIN errado: bloqueado por %d s"
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "Recebendo %s (%d%%)"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "Parado: %s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "Parado"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "Aguardando arquivos..."
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "%d arquivo recebido"
+msgstr[1] "%d arquivos recebidos"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "Só na rede da sua casa. Qualquer pessoa com o PIN pode adicionar arquivos."
+
+msgid "KEEP RECEIVING"
+msgstr "CONTINUAR RECEBENDO"
+
+msgid "Keep receiving files in the background?"
+msgstr "Continuar recebendo arquivos em segundo plano?"
+
+msgid "Network transfer is not available in this build."
+msgstr "A transferência pela rede não está disponível nesta versão."
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "Primeiro ligue o Wi-Fi ou a Ethernet (sem endereço de rede)."
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "Não foi possível iniciar a transferência (erro %d)."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "CONTINUAR"
+
+msgid "START FRESH"
+msgstr "COMEÇAR DO ZERO"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "Continuar %s?"
+
+msgid "No emulator is installed for this system."
+msgstr "Nenhum emulador instalado para este sistema."
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "Arquivos estão sendo copiados. Espere a cópia terminar ou cancele."
+
+msgid "Resume where you left off?"
+msgstr "Continuar de onde você parou?"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "CONFIGURAÇÕES"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "Controle conectado: %s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "Controle desconectado: %s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "Novo controle: %s (Configurações > Controles)"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "Novo controle: %s. Configurar em Configurações > Controles?"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "Lendo jogos de %s"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "Preparando seu console..."
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "Bateria fraca (%d%%)"
+
+msgid "Battery empty, saving..."
+msgstr "Bateria vazia, salvando..."
+
+msgid "Restarting..."
+msgstr "Reiniciando..."
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "Quente: mais devagar"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "Carregando"
+
+msgid "Fully charged"
+msgstr "Carga completa"
+
+msgid "Charger unplugged"
+msgstr "Carregador desconectado"
+
+msgid "Not charging"
+msgstr "Não está carregando"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%d%%"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "Cheia em %d h %02d min"
+
+msgid "Press the power button to start"
+msgstr "Aperte o botão liga/desliga para começar"
+
+msgid "Battery very low: plug in the charger"
+msgstr "Bateria muito fraca: conecte o carregador"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "Nota: "
+
+msgid "Released: "
+msgstr "Lançamento: "
+
+msgid "Developer: "
+msgstr "Desenvolvedora: "
+
+msgid "Publisher: "
+msgstr "Distribuidora: "
+
+msgid "Genre: "
+msgstr "Gênero: "
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "Jogadores: "
+
+msgid "Last played: "
+msgstr "Última partida: "
+
+msgid "Times played: "
+msgstr "Vezes jogado: "
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "Ano"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "Gênero"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "Jogad."
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "Nota"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "Seus jogos favoritos"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "Jogados recentemente"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "Todos os jogos do console"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "Computador doméstico · 1983"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "Fliperama · MAME 2003-Plus"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "Fliperama · FinalBurn Neo"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "desconhecido"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "nenhum jogo"
+
+msgid "launch"
+msgstr "jogar"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "opções"
+
+msgid "favorite"
+msgstr "favorito"
+
+msgid "menu"
+msgstr "menu"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "Adicionado aos favoritos"
+
+msgid "Removed from favorites"
+msgstr "Removido dos favoritos"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "%d jogo disponível"
+msgstr[1] "%d jogos disponíveis"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "%d favorito"
+msgstr[1] "%d favoritos"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s, %s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "Nenhum jogo encontrado. Copie as ROMs para /data/roms/<system>/"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "nunca"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "desconhecida"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "há %d s"
+msgstr[1] "há %d s"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "há %d minuto"
+msgstr[1] "há %d minutos"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "há %d hora"
+msgstr[1] "há %d horas"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "há %d dia"
+msgstr[1] "há %d dias"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%d/%m/%Y"

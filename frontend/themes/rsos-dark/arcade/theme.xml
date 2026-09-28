@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: arcade sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>e67e22</accent>
+		<icon>carbon/arcade</icon>
+		<tagline>Arcade · MAME 2003-Plus</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

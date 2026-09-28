@@ -1,0 +1,9 @@
+# RetroStone2 U-Boot options of the release build only
+# (retrostone2_release_defconfig lists this file after uboot.fragment;
+# docs/build.md "Release build").
+#
+# Autoboot at once and never look at the UART: no key stops it, so the debug
+# UART gives no U-Boot prompt (from which "init=/bin/sh" would bypass the
+# UART password). A unit that cannot boot is recovered by flashing the SD
+# card again.
+CONFIG_BOOTDELAY=-2

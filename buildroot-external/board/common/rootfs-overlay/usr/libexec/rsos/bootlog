@@ -1,0 +1,413 @@
+#!/bin/sh
+# Boot logger (bring-up aid). Copies the kernel log, the menu log, the game
+# log, the rcS step times and a CPU/voltage status to the data partition and
+# syncs, so a freeze leaves evidence readable on a PC:
+#   RETROSTONE drive -> rsos/logs/boot<N>/  (the last 5 boots; "last.txt" says
+#   which one is the newest).
+# Development build: every 2 s for the first 5 minutes, then every 30 s up
+# to 60 minutes (a play session). Release build (RSOS_RELEASE=1 in
+# /etc/rsos/build.env; docs/build.md "Release build"): light, when the menu
+# is up, 10 s later (the boot time line), then every 10 minutes up to 60
+# minutes; rsos/logs/verbose on the card restores the development cadence.
+# Disable by creating rsos/logs/disabled on the card.
+# Started in the background by rcS; it waits for the menu to be on screen
+# (/run/rsos/menu-up, at most 20 s) before touching the SD card, so its
+# writes and syncs stay out of the boot.
+#   RSOS_BOOTLOG_FAST_SECONDS (300 / 10), RSOS_BOOTLOG_SECONDS (3600),
+#   RSOS_BOOTLOG_FAST_PAUSE (2 / 10), RSOS_BOOTLOG_SLOW_PAUSE (30 / 600)
+#   override.
+#
+# Boot time (docs/build.md, "Boot time"), written once per boot:
+#   bootstage.txt   the whole boot on one time line, in ms since power-on:
+#                   U-Boot's bootstage marks (/proc/device-tree/bootstage),
+#                   the kernel's time 0 (from the ARM counter, see
+#                   /usr/libexec/rsos/cntvct), /sbin/init, rcS.times and the
+#                   frontend's start, logo and menu, then a per-stage summary
+#   initcalls.txt   only when booted with initcall_debug (fw_setenv
+#                   rsos_extraargs "initcall_debug log_buf_len=1M"): the
+#                   slowest initcalls and driver probes, and the deferrals
+# RSOS_BOOTLOG_BS (/proc/device-tree/bootstage), RSOS_BOOTLOG_RUN (/run/rsos)
+# and RSOS_BOOTLOG_DMESG (a file instead of the dmesg command) are for tests.
+
+D=/data/rsos/logs
+RSOS_RELEASE=0
+[ -r /etc/rsos/build.env ] && . /etc/rsos/build.env
+if [ "$RSOS_RELEASE" = 1 ] && [ ! -e "$D/verbose" ]; then
+	FAST=${RSOS_BOOTLOG_FAST_SECONDS:-10}
+	FAST_PAUSE=${RSOS_BOOTLOG_FAST_PAUSE:-10}
+	SLOW_PAUSE=${RSOS_BOOTLOG_SLOW_PAUSE:-600}
+else
+	FAST=${RSOS_BOOTLOG_FAST_SECONDS:-300}
+	FAST_PAUSE=${RSOS_BOOTLOG_FAST_PAUSE:-2}
+	SLOW_PAUSE=${RSOS_BOOTLOG_SLOW_PAUSE:-30}
+fi
+DURATION=${RSOS_BOOTLOG_SECONDS:-3600}
+BS=${RSOS_BOOTLOG_BS:-/proc/device-tree/bootstage}
+RUN=${RSOS_BOOTLOG_RUN:-/run/rsos}
+
+# The board: the system disk ($RSOS_DISK_NAME), the battery and the PMIC
+# power key (board.ini battery_supply, power_key_device).
+[ -r /usr/libexec/rsos/board.sh ] && . /usr/libexec/rsos/board.sh
+DISKN=${RSOS_DISK_NAME:-mmcblk0}
+BAT=
+case "$RSOS_BOARD_BATTERY_SUPPLY" in
+none) ;;
+""|auto)
+	for _t in /sys/class/power_supply/*/type; do
+		if [ "$(cat "$_t" 2>/dev/null)" = Battery ]; then
+			BAT=${_t%/type}
+			break
+		fi
+	done
+	;;
+*) BAT=/sys/class/power_supply/$RSOS_BOARD_BATTERY_SUPPLY ;;
+esac
+PEKD=
+case "$RSOS_BOARD_POWER_KEY_DEVICE" in
+""|auto|none) ;;
+*) PEKD=/sys/bus/platform/drivers/$RSOS_BOARD_POWER_KEY_DEVICE/$RSOS_BOARD_POWER_KEY_DEVICE ;;
+esac
+
+kmsg() {
+	if [ -n "$RSOS_BOOTLOG_DMESG" ]; then
+		cat "$RSOS_BOOTLOG_DMESG"
+	else
+		dmesg
+	fi
+}
+
+# be32 FILE: a big-endian 32-bit device tree cell as a decimal number
+be32() {
+	od -A n -t u1 "$1" | awk '{ v = 0; for (i = 1; i <= NF; i++) v = v * 256 + $i; printf "%.0f\n", v }'
+}
+
+# bootstage_txt: the boot time line, on stdout.
+bootstage_txt() {
+	# The kernel's time 0 on the counter: log the counter now, the printk
+	# timestamp of that line gives the offset.
+	[ -n "$RSOS_BOOTLOG_DMESG" ] || /usr/libexec/rsos/cntvct -k > /dev/null 2>&1
+	hold=
+	[ -n "$PEKD" ] && hold=$(cat "$PEKD/startup" 2>/dev/null)
+	zsize=$(wc -c < /boot/zImage 2>/dev/null)
+	{
+		# U-Boot: "U <us since power-on> <name>", "A <us> <name>" (accumulated)
+		for bs_node in "$BS"/*; do
+			[ -f "$bs_node/name" ] || continue
+			bs_name=$(tr -d '\0' < "$bs_node/name")
+			if [ -f "$bs_node/mark" ]; then
+				echo "U $(be32 "$bs_node/mark") u-boot: $bs_name"
+			elif [ -f "$bs_node/accum" ]; then
+				echo "A $(be32 "$bs_node/accum") $bs_name"
+			fi
+		done
+		# Kernel: "K <us of kernel time 0 since power-on>", "R <us since
+		# kernel time 0> <event>"
+		kmsg | awk '
+			function ts() { t = $0; sub(/^\[ */, "", t); sub(/\].*/, "", t); return t * 1000000 }
+			/\] rsos-cntvct: [0-9]+ ticks at [0-9]+ Hz/ && !k {
+				for (i = 1; i <= NF; i++) if ($i == "ticks") c = $(i - 1)
+				f = $(NF - 1)
+				if (f > 0) { printf "K %.0f\n", c / (f / 1000000) - ts(); k = 1 }
+			}
+			/\] Run \/sbin\/init as init process/ && !r { printf "R %.0f kernel: /sbin/init\n", ts(); r = 1 }
+		'
+		echo "R 0 kernel: time 0 (decompressed, running)"
+		# rcS.times: "<uptime> <step> [@<reads>:<sectors>]", the SD card's
+		# read requests and sectors so far: shown as the step's I/O (for
+		# "rcS start": everything read since the kernel started)
+		[ -f "$RUN/rcS.times" ] && awk '
+			{
+				t = $1; io = ""
+				if ($NF ~ /^@[0-9]+:[0-9]+$/) {
+					split(substr($NF, 2), c, ":"); $NF = ""
+					if (seen) io = sprintf("  [SD +%d req, +%d KiB]", c[1] - pr, (c[2] - ps) / 2)
+					else io = sprintf("  [SD %d req, %d KiB since power-on]", c[1], c[2] / 2)
+					pr = c[1]; ps = c[2]; seen = 1
+				}
+				$1 = ""; label = $0; sub(/^ +/, "", label); sub(/ +$/, "", label)
+				printf "R %.0f rcS: %s%s\n", t * 1000000, label, io
+			}' "$RUN/rcS.times"
+		[ -f "$RUN/frontend.log" ] && awk '
+			function ts() { t = $0; sub(/^\[ */, "", t); sub(/\].*/, "", t); return t * 1000000 }
+			/^\[ *[0-9.]+\] frontend: starting/ && !a { printf "R %.0f frontend: started\n", ts(); a = 1 }
+			/^\[ *[0-9.]+\] frontend: splash: / && !b { printf "R %.0f frontend: logo on screen\n", ts(); b = 1 }
+			/^\[ *[0-9.]+\] frontend: first frame/ && !c { printf "R %.0f frontend: first menu frame\n", ts(); c = 1 }
+			/^\[ *[0-9.]+\] frontend: menu up/ && !d { printf "R %.0f frontend: menu up\n", ts(); d = 1 }
+		' "$RUN/frontend.log"
+	} | awk -v hold="$hold" -v zsize="$zsize" '
+		{ kind = $1; us = $2 + 0; $1 = ""; $2 = ""; label = substr($0, 3) }
+		kind == "K" { t0 = us; havek = 1; next }
+		kind == "A" { acc[++na] = sprintf("%9.1f ms  %s", us / 1000, label); next }
+		{ n++; K[n] = kind; T[n] = us; L[n] = label }
+		END {
+			print "RetroStoneOS boot time line (docs/build.md, \"Boot time\")"
+			if (havek) {
+				print "Times in ms since power-on (reset of the SoC; the ARM counter starts there)."
+				for (i = 1; i <= n; i++) if (K[i] == "R") T[i] += t0
+			} else {
+				print "No rsos-cntvct line in the kernel log: U-Boot times are since power-on,"
+				print "kernel and user space times are since kernel time 0 (not comparable)."
+			}
+			if (hold != "")
+				print "Before that, the power key was held for the AXP209 power-on time: " hold " ms."
+			# sort by time (stable insertion sort; n is small)
+			for (i = 2; i <= n; i++) {
+				k = K[i]; t = T[i]; l = L[i]
+				for (j = i - 1; j >= 1 && T[j] > t; j--) { K[j + 1] = K[j]; T[j + 1] = T[j]; L[j + 1] = L[j] }
+				K[j + 1] = k; T[j + 1] = t; L[j + 1] = l
+			}
+			print ""
+			printf "%10s %9s  %s\n", "ms", "+ms", "step"
+			prev = 0
+			for (i = 1; i <= n; i++) {
+				printf "%10.1f %9.1f  %s\n", T[i] / 1000, (T[i] - prev) / 1000, L[i]
+				prev = T[i]
+				at[L[i]] = T[i]; seen[L[i]] = 1
+			}
+			if (na) {
+				print ""
+				print "U-Boot accumulated times:"
+				for (i = 1; i <= na; i++) print "  " acc[i]
+			}
+			print ""
+			print "Summary (ms):"
+			if (seen["u-boot: board_init_f"])
+				sum("boot ROM + SPL (DRAM init, loads U-Boot)", 0, at["u-boot: board_init_f"])
+			# SPL marks (U-Boot patch 0002, image 20260927b3 on)
+			if (seen["u-boot: spl: start"]) {
+				sum("  boot ROM (reads the SPL)", 0, at["u-boot: spl: start"])
+				step("  SPL: clocks, console, AXP209 set-up", "u-boot: spl: start", "u-boot: spl: pmic")
+				step("  SPL: DRAM init", "u-boot: spl: pmic", "u-boot: spl: dram")
+				step("  SPL: CPU clock up", "u-boot: spl: dram", "u-boot: spl: cpu clock")
+				step("  SPL: MMC init", "u-boot: spl: cpu clock", "u-boot: spl: mmc init")
+				step("  SPL: U-Boot read", "u-boot: spl: mmc init", "u-boot: end phase")
+				step("  U-Boot start (to board_init_f)", "u-boot: end phase", "u-boot: board_init_f")
+			}
+			if (seen["u-boot: board_init_f"] && seen["u-boot: main_loop"])
+				sum("U-Boot init (MMC, environment)", at["u-boot: board_init_f"], at["u-boot: main_loop"])
+			step("  pre-relocation init", "u-boot: board_init_f", "u-boot: board_f done")
+			step("  relocation, caches on", "u-boot: board_f done", "u-boot: board_init_r")
+			step("  driver model, MMC probe", "u-boot: board_init_r", "u-boot: mmc probed")
+			step("  card init + environment read", "u-boot: mmc probed", "u-boot: env loaded")
+			step("  rest of board_init_r", "u-boot: env loaded", "u-boot: main_loop")
+			if (seen["u-boot: main_loop"] && seen["u-boot: load-zImage"])
+				sum("bootcmd + boot.scr up to the kernel load", at["u-boot: main_loop"], at["u-boot: load-zImage"])
+			if (seen["u-boot: load-zImage"] && seen["u-boot: zImage-loaded"]) {
+				d = at["u-boot: zImage-loaded"] - at["u-boot: load-zImage"]
+				rate = (d > 0 && zsize > 0) ? sprintf(" (%d bytes, %.1f MB/s)", zsize, zsize / d) : ""
+				sum("zImage read" rate, at["u-boot: load-zImage"], at["u-boot: zImage-loaded"])
+			}
+			if (seen["u-boot: zImage-loaded"] && seen["u-boot: start_kernel"])
+				sum("DTB, overlays, bootz", at["u-boot: zImage-loaded"], at["u-boot: start_kernel"])
+			if (havek && seen["u-boot: start_kernel"])
+				sum("zImage decompression + kernel head", at["u-boot: start_kernel"], t0)
+			if (havek)
+				sum("power-on -> kernel time 0 (all pre-kernel)", 0, t0)
+			k0 = at["kernel: time 0 (decompressed, running)"]
+			if (seen["kernel: /sbin/init"])
+				sum("kernel: time 0 -> /sbin/init", k0, at["kernel: /sbin/init"])
+			if (seen["kernel: /sbin/init"] && seen["frontend: started"])
+				sum("/sbin/init + rcS -> frontend start", at["kernel: /sbin/init"], at["frontend: started"])
+			if (seen["frontend: started"] && seen["frontend: logo on screen"])
+				sum("frontend start -> logo", at["frontend: started"], at["frontend: logo on screen"])
+			if (havek && seen["frontend: logo on screen"])
+				sum("BLACK SCREEN: power-on -> logo", 0, at["frontend: logo on screen"])
+			if (seen["frontend: logo on screen"] && seen["frontend: menu up"])
+				sum("logo -> menu up", at["frontend: logo on screen"], at["frontend: menu up"])
+		}
+		function sum(what, a, b) { printf "  %-52s %8.1f\n", what, (b - a) / 1000 }
+		function step(what, a, b) { if (seen[a] && seen[b]) sum(what, at[a], at[b]) }
+	'
+}
+
+# initcalls_txt: the slowest initcalls and probes of an initcall_debug boot.
+initcalls_txt() {
+	kmsg | awk '
+		/\] initcall .* returned .* after [0-9]+ usecs/ {
+			for (i = 1; i <= NF; i++) if ($i == "after") u = $(i + 1)
+			fn = $0; sub(/.*\] initcall /, "", fn); sub(/ returned.*/, "", fn)
+			printf "I %d %s\n", u, fn; ti += u; next
+		}
+		/\] probe of .* returned .* after [0-9]+ usecs/ {
+			for (i = 1; i <= NF; i++) if ($i == "after") u = $(i + 1)
+			d = $0; sub(/.*\] probe of /, "", d); sub(/ after.*/, "", d)
+			printf "P %d %s\n", u, d; next
+		}
+		END { printf "S %d total\n", ti }
+	' > "$RUN/initcalls.raw"
+	{
+		echo "initcall_debug boot: $(cat /proc/cmdline)"
+		echo
+		awk '$1 == "S" { printf "Sum of all initcalls: %.1f ms\n", $2 / 1000 }' "$RUN/initcalls.raw"
+		echo
+		echo "Slowest initcalls (usecs):"
+		awk '$1 == "I" { $1 = ""; print substr($0, 2) }' "$RUN/initcalls.raw" | sort -rn | head -40
+		echo
+		echo "Slowest driver probes (usecs; \"returned -517\" = deferred, retried later):"
+		awk '$1 == "P" { $1 = ""; print substr($0, 2) }' "$RUN/initcalls.raw" | sort -rn | head -40
+		echo
+		echo "Deferred probes (returned -517):"
+		awk '$1 == "P" && / returned -517$/ { $1 = ""; $2 = ""; print substr($0, 3) }' "$RUN/initcalls.raw" | sort | uniq -c
+		echo
+		echo "Milestones on the way to /sbin/init (kernel time, s):"
+		kmsg | grep -E '\] (sun4i-pinctrl .*initialized|axp20x-i2c .*(found|loaded)|sunxi-mmc 1c0f000.mmc: initialized|Waiting for root device|mmc0: new|EXT4-fs \('"$DISKN"'p?[0-9]+\): mounted|Run /sbin/init|\[drm\] Initialized sun4i-drm|clk: Disabling unused|initcall (deferred_probe_initcall|clk_disable_unused))'
+	}
+	rm -f "$RUN/initcalls.raw"
+}
+
+# Test entry point: print the two reports without touching the SD card.
+if [ "$1" = "--report" ]; then
+	bootstage_txt
+	grep -q initcall_debug /proc/cmdline 2>/dev/null || [ -n "$RSOS_BOOTLOG_DMESG" ] && initcalls_txt
+	exit 0
+fi
+
+grep -q ' /data ' /proc/mounts || exit 0
+
+# The logger's own events (start, signals, exit) go to bootlog.txt next to
+# the logs (to $RUN/bootlog.txt until the boot<N> folder exists), so that a
+# logger that stops early says why. rcS starts it in its own session
+# (setsid). An error that ends the shell (e.g. arithmetic on a clobbered
+# variable, see status()) shows as "exit (status 2)".
+B=
+note() {
+	read -r _up _ < /proc/uptime
+	echo "$_up $*" >> "${B:-$RUN}/bootlog.txt"
+}
+# rcK stops the logger first at shutdown (SIGTERM, pid in $RUN/bootlog.pid):
+# exit at once, also from the sleeps between two copies. Other signals are
+# logged and ignored.
+echo $$ > "$RUN/bootlog.pid"
+NAP_PID=
+trap 'note "exit (status $?)"; rm -f "$RUN/bootlog.pid"' EXIT
+trap 'note "SIGTERM (rcK: shutdown)"; [ -n "$NAP_PID" ] && kill "$NAP_PID" 2> /dev/null; exit 0' TERM
+for sig in HUP INT QUIT PIPE USR1 USR2 ALRM; do
+	trap "note \"SIG$sig ignored\"" "$sig"
+done
+nap() {
+	sleep "$1" &
+	NAP_PID=$!
+	wait "$NAP_PID"
+	NAP_PID=
+}
+note "started (pid $$, session $(cut -d' ' -f6 /proc/$$/stat 2>/dev/null))"
+
+w=0
+while [ ! -e /run/rsos/menu-up ] && [ $w -lt 100 ]; do
+	usleep 200000
+	w=$((w + 1))
+done
+
+mkdir -p "$D" || exit 0
+[ -e "$D/disabled" ] && exit 0
+
+n=$(cat "$D/last.txt" 2>/dev/null)
+case "$n" in [1-5]) n=$((n % 5 + 1)) ;; *) n=1 ;; esac
+BN="$D/boot$n"
+rm -rf "$BN"
+mkdir -p "$BN" || exit 0
+echo "$n" > "$D/last.txt"
+cp "$RUN/bootlog.txt" "$BN/bootlog.txt" 2> /dev/null
+B=$BN
+note "writing to $B"
+
+# The previous shutdown's last steps (after rcK wrote shutdown.txt: sync,
+# unmount /data, poweroff -f) were kept in the AXP209's data registers
+# (/usr/libexec/rsos/axpstamp, which clears them). Append them to that
+# shutdown's block if they belong to it (same "log written" time).
+if [ -x /usr/libexec/rsos/axpstamp ] && [ -f "$D/shutdown.txt" ]; then
+	if set -- $(/usr/libexec/rsos/axpstamp show 2> /dev/null) && [ $# = 4 ]; then
+		last=$(grep ' log written' "$D/shutdown.txt" | tail -n 1)
+		if [ "${last%% *}" = "$1" ]; then
+			{
+				echo "$2 sync done"
+				echo "$3 /data unmounted"
+				echo "$4 poweroff -f (last 3 lines: AXP209 registers, read at the next boot)"
+			} >> "$D/shutdown.txt"
+		else
+			note "AXP209 shutdown times $* do not match shutdown.txt, ignored"
+		fi
+	fi
+fi
+
+{
+	echo "boot started (clock may be approximate): $(date)"
+	echo "cmdline: $(cat /proc/cmdline)"
+	echo "bootreason: $(cat /run/rsos/bootreason 2>/dev/null)"
+	echo "u-boot env: $(fw_printenv 2>/dev/null | grep '^rsos_' | tr '\n' ' ')"
+	echo "menu up: $(cat /run/rsos/menu-up 2>/dev/null) ms after the frontend started (logger waited $((w / 5)) s)"
+	echo "data mount: $(grep ' /data ' /proc/mounts)"
+	echo "io scheduler: $(cat /sys/block/$DISKN/queue/scheduler 2>/dev/null)"
+} > "$B/info.txt"
+
+# Shell functions share the script's variables: the names used here (st_*)
+# must not collide with the main loop's. (Image 20260927b: the thermal loop
+# used "t", the loop's elapsed-time counter, so "t=$((t + 30))" failed after
+# the first pass and the non-interactive shell exited.)
+status() {
+	echo "uptime: $(cat /proc/uptime)  load: $(cat /proc/loadavg)"
+	for st_pol in /sys/devices/system/cpu/cpufreq/policy*; do
+		[ -d "$st_pol" ] || continue
+		echo "cpufreq $st_pol: cur=$(cat $st_pol/scaling_cur_freq 2>/dev/null) gov=$(cat $st_pol/scaling_governor 2>/dev/null) min=$(cat $st_pol/scaling_min_freq 2>/dev/null) max=$(cat $st_pol/scaling_max_freq 2>/dev/null)"
+	done
+	for st_reg in /sys/class/regulator/regulator.*; do
+		[ -f "$st_reg/name" ] || continue
+		case "$(cat $st_reg/name)" in vdd-cpu|vdd-int-dll)
+			echo "regulator $(cat $st_reg/name): $(cat $st_reg/microvolts 2>/dev/null) uV" ;;
+		esac
+	done
+	for st_tz in /sys/class/thermal/thermal_zone*/temp; do
+		[ -f "$st_tz" ] && echo "temp $st_tz: $(cat $st_tz)"
+	done
+	[ -n "$BAT" ] && cat "$BAT/capacity" 2>/dev/null | sed 's/^/battery %: /'
+	[ -n "$BAT" ] && cat "$BAT/voltage_now" 2>/dev/null | sed 's/^/battery uV: /'
+	echo "sd card (reads, merged, sectors, ms, writes, merged, sectors, ms, ...): $(cat /sys/block/$DISKN/stat 2>/dev/null)"
+	echo "--- top"
+	top -b -n 1 2>/dev/null | head -15
+}
+
+# copy SRC NAME: atomic replace on the card, only when SRC exists
+copy() {
+	[ -f "$1" ] || return 0
+	cp "$1" "$B/$2.tmp" 2>/dev/null && mv -f "$B/$2.tmp" "$B/$2"
+}
+
+# heartbeat.txt says which step the logger is in: after a hard power-off it
+# shows the last step that reached the card (the file is synced at "sync").
+hb() {
+	read -r _up _ < /proc/uptime
+	echo "heartbeat $i at uptime $_up: $1" > "$B/heartbeat.txt"
+}
+
+i=0
+elapsed=0
+while [ "$elapsed" -lt "$DURATION" ]; do
+	hb "copying"
+	dmesg > "$B/dmesg.tmp" 2>/dev/null && mv -f "$B/dmesg.tmp" "$B/dmesg.txt"
+	copy /run/rsos/frontend.log frontend.log
+	copy /run/rsos/game.log game.log
+	copy /run/rsos/rcS.times rcS.times
+	# Once, on the second pass (2 s after the menu came up: the frontend
+	# has logged "menu up" by then)
+	if [ "$i" = 1 ]; then
+		bootstage_txt > "$B/bootstage.tmp" 2>&1 && mv -f "$B/bootstage.tmp" "$B/bootstage.txt"
+		if grep -q initcall_debug /proc/cmdline; then
+			initcalls_txt > "$B/initcalls.tmp" 2>&1 && mv -f "$B/initcalls.tmp" "$B/initcalls.txt"
+		fi
+	fi
+	status > "$B/status.tmp" 2>&1 && mv -f "$B/status.tmp" "$B/status.txt"
+	hb "sync"
+	sync
+	if [ "$elapsed" -lt "$FAST" ]; then
+		pause=$FAST_PAUSE
+	else
+		pause=$SLOW_PAUSE
+	fi
+	hb "sleeping ${pause} s"
+	nap $pause
+	elapsed=$((elapsed + pause))
+	i=$((i + 1))
+done
+echo "logger finished after ${DURATION}s (system was alive)" >> "$B/heartbeat.txt"
+note "finished after ${DURATION} s"
+sync

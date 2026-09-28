@@ -1,0 +1,37 @@
+config BR2_PACKAGE_LIBRETRO_PARALLEL_N64
+	bool "libretro-parallel-n64"
+	# ARMv7 + NEON (ARM ari64 dynarec), or aarch64 / x86_64 (their dynarecs)
+	depends on (BR2_arm && BR2_ARM_CPU_ARMV7A && BR2_ARM_CPU_HAS_NEON && BR2_ARM_EABIHF) || \
+		BR2_aarch64 || BR2_x86_64
+	depends on BR2_PACKAGE_HAS_LIBGLES # GLES2 hardware rendering
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  ParaLLEl-N64: Nintendo 64 emulator (Mupen64Plus fork), built
+	  as a GLES2 libretro core for Mali-400 class GPUs: ARM ari64
+	  dynarec, NEON, HLE RSP, and the light GLES2 renderers glide64,
+	  gln64 (gles2n64) and rice (GLideN64 needs GLES3 in this core
+	  and is left out; angrylion is software and far too slow;
+	  paraLLEl-RDP needs Vulkan).
+
+	  RetroStoneOS patch 0001 adds two core options: Count Per Op
+	  (parallel-n64-CountPerOp) and a display-list frameskip for the
+	  GL renderers (parallel-n64-frameskip, with an "auto" mode driven
+	  by the frontend's audio buffer).
+
+	  Requires a frontend that implements
+	  RETRO_ENVIRONMENT_SET_HW_RENDER with a GLES2 context. Only a
+	  subset of games is playable on a dual Cortex-A7; see
+	  docs/cores.md.
+
+	  Installs /usr/lib/libretro/parallel_n64_libretro.so and
+	  /usr/share/rsos/cores/parallel_n64.ini.
+
+	  https://github.com/libretro/parallel-n64
+
+comment "libretro-parallel-n64 needs an OpenGL ES provider, a toolchain w/ C++, threads, dynamic library"
+	depends on (BR2_arm && BR2_ARM_CPU_ARMV7A && BR2_ARM_CPU_HAS_NEON && BR2_ARM_EABIHF) || \
+		BR2_aarch64 || BR2_x86_64
+	depends on !BR2_PACKAGE_HAS_LIBGLES || !BR2_INSTALL_LIBSTDCPP || \
+		!BR2_TOOLCHAIN_HAS_THREADS || BR2_STATIC_LIBS

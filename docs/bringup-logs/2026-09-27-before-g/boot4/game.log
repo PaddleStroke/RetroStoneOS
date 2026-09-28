@@ -1,0 +1,34 @@
+
+=== [    4.188] launch: /usr/lib/libretro/gambatte_libretro.so /data/roms/gb/Espionage.gb system gb
+[     4.203] host I: game process: core gambatte, system gb, content /data/roms/gb/Espionage.gb
+[     4.377] host I: core: Gambatte v0.5.0 (need_fullpath 0, extensions gb|gbc|dmg)
+[     4.379] host I: core options: 0 package, 0 shipped, 0 system, 0 game overrides
+[   4.384] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   4.384] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[   4.385] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   4.385] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[     4.385] host I: input: launched by builtin (player 1 under the auto policy)
+[     4.385] host I: input: input layer, player 1 auto, C/Z buttons no
+[     4.389] host I: display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[     4.395] host I: display: plane 33: none
+[     4.395] host I: display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[     4.396] host I: output: Unknown-1 640x480@78.571 (reason 0)
+[     4.403] host I: core declared 17 options
+[     4.404] host I: core performance level: 4
+[     4.410] host I: content in memory: 65536 bytes
+[     4.410] host I: [gambatte] [Gambatte] Rumble environment supported.
+[     4.412] host I: pixel format RGB565
+[     4.412] host I: [gambatte] [Gambatte] MBC1 ROM loaded.
+[     4.412] host I: [gambatte] [Gambatte] rambanks: 0
+[     4.412] host I: [gambatte] [Gambatte] rombanks: 4
+[     4.417] host I: [gambatte] [Gambatte] Got internal game name: ESPIONAGE.
+[     4.418] host I: retro_load_game: 8 ms
+[     4.418] host I: AV: 160x144 (max 160x144, aspect 1.111), 59.7275 fps, 32768.0 Hz
+[     4.420] host W: display: hw-scaled path rejected on Unknown-1/crtc 0: Invalid argument
+[     4.433] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[     4.433] host I: game surface 160x144 RGB565, hardware scaled
+[     4.446] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[     5.216] host I: audio: plughw:0,0 open, 48000 Hz, buffer 3072 frames (64.0 ms), period 768 (16.0 ms)
+[     5.221] host I: pacing: audio clock (core 59.7275 fps 32768.0 Hz, display 78.571 Hz, ratio 1.464844)
+[     5.235] host I: display: overlay: plane 37, 72x20 at 564,4
+[    10.658] host I: toast: Powering off...

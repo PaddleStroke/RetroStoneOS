@@ -1,0 +1,135 @@
+# Orange Pi 5 (Rockchip RK3588S) kernel options, merged on top of the arm64
+# defconfig and board/common/linux-rsos.fragment. Community-tested port
+# (docs/boards.md). Mainline Linux 6.18 LTS: VOP2 + the DesignWare HDMI QP
+# encoder + the Samsung HDPTX PHY for HDMI0, Panthor for the Mali-G610.
+#
+# The arm64 defconfig builds most drivers as modules; with no udev nothing
+# would load them, so what the menu needs is built in.
+
+# --- Only the Rockchip platform (fewer drivers and modules in the image)
+# CONFIG_ARCH_ACTIONS is not set
+# CONFIG_ARCH_AIROHA is not set
+# CONFIG_ARCH_SUNXI is not set
+# CONFIG_ARCH_ALPINE is not set
+# CONFIG_ARCH_APPLE is not set
+# CONFIG_ARCH_ARTPEC is not set
+# CONFIG_ARCH_AXIADO is not set
+# CONFIG_ARCH_BCM is not set
+# CONFIG_ARCH_BCM2835 is not set
+# CONFIG_ARCH_BCM_IPROC is not set
+# CONFIG_ARCH_BCMBCA is not set
+# CONFIG_ARCH_BRCMSTB is not set
+# CONFIG_ARCH_BERLIN is not set
+# CONFIG_ARCH_BLAIZE is not set
+# CONFIG_ARCH_CIX is not set
+# CONFIG_ARCH_EXYNOS is not set
+# CONFIG_ARCH_SPARX5 is not set
+# CONFIG_ARCH_K3 is not set
+# CONFIG_ARCH_LG1K is not set
+# CONFIG_ARCH_HISI is not set
+# CONFIG_ARCH_KEEMBAY is not set
+# CONFIG_ARCH_MEDIATEK is not set
+# CONFIG_ARCH_MESON is not set
+# CONFIG_ARCH_MVEBU is not set
+# CONFIG_ARCH_NXP is not set
+# CONFIG_ARCH_LAYERSCAPE is not set
+# CONFIG_ARCH_MXC is not set
+# CONFIG_ARCH_S32 is not set
+# CONFIG_ARCH_MA35 is not set
+# CONFIG_ARCH_NPCM is not set
+# CONFIG_ARCH_QCOM is not set
+# CONFIG_ARCH_REALTEK is not set
+# CONFIG_ARCH_RENESAS is not set
+# CONFIG_ARCH_SEATTLE is not set
+# CONFIG_ARCH_INTEL_SOCFPGA is not set
+# CONFIG_ARCH_SOPHGO is not set
+# CONFIG_ARCH_STM32 is not set
+# CONFIG_ARCH_SYNQUACER is not set
+# CONFIG_ARCH_TEGRA is not set
+# CONFIG_ARCH_TESLA_FSD is not set
+# CONFIG_ARCH_SPRD is not set
+# CONFIG_ARCH_THUNDER is not set
+# CONFIG_ARCH_THUNDER2 is not set
+# CONFIG_ARCH_UNIPHIER is not set
+# CONFIG_ARCH_VEXPRESS is not set
+# CONFIG_ARCH_VISCONTI is not set
+# CONFIG_ARCH_XGENE is not set
+# CONFIG_ARCH_ZYNQMP is not set
+CONFIG_ARCH_ROCKCHIP=y
+# No PC graphics cards on this board
+# CONFIG_DRM_NOUVEAU is not set
+# CONFIG_DRM_AMDGPU is not set
+# CONFIG_DRM_RADEON is not set
+
+# --- Display: VOP2, HDMI0 (DesignWare HDMI QP + Samsung HDPTX PHY)
+CONFIG_DRM_ROCKCHIP=y
+CONFIG_ROCKCHIP_VOP2=y
+CONFIG_ROCKCHIP_DW_HDMI_QP=y
+CONFIG_PHY_ROCKCHIP_SAMSUNG_HDPTX=y
+CONFIG_ROCKCHIP_IOMMU=y
+CONFIG_ROCKCHIP_PM_DOMAINS=y
+
+# --- GPU: Mali-G610 (Panthor). A module on purpose: Panthor loads its CSF
+# firmware (arm/mali/arch10.8/mali_csffw.bin, linux-firmware) when it
+# probes, and a built-in driver probes before the root filesystem is
+# mounted (no initramfs). The board hook loads it once the menu is up
+# (rootfs-overlay/etc/rsos/board-hooks.sh); only the N64 cores use the GPU.
+CONFIG_DRM_PANTHOR=m
+
+# --- Audio: HDMI0 (I2S5 -> HDMI QP, card "HDMI0") and the ES8388 codec on
+# the 3.5 mm jack (I2S1)
+CONFIG_SND_SOC=y
+CONFIG_SND_SOC_ROCKCHIP_I2S_TDM=y
+CONFIG_SND_SIMPLE_CARD=y
+CONFIG_SND_SOC_HDMI_CODEC=y
+CONFIG_SND_SOC_ES8328=y
+CONFIG_SND_SOC_ES8328_I2C=y
+
+# --- USB: the USB 3 / USB 2 Type-A ports and the Type-C port (FUSB302),
+# all built in (the pads must work without module loading)
+CONFIG_USB_DWC3=y
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_EHCI_HCD_PLATFORM=y
+CONFIG_USB_OHCI_HCD=y
+CONFIG_USB_OHCI_HCD_PLATFORM=y
+CONFIG_PHY_ROCKCHIP_INNO_USB2=y
+CONFIG_PHY_ROCKCHIP_USBDP=y
+CONFIG_TYPEC=y
+CONFIG_TYPEC_TCPM=y
+CONFIG_TYPEC_FUSB302=y
+CONFIG_USB_ROLE_SWITCH=y
+
+# --- PMIC (RK806 on SPI), CPU/GPU regulators (RK8602 on I2C), I2C, PWM,
+# thermal
+CONFIG_SPI_ROCKCHIP=y
+CONFIG_MFD_RK8XX_SPI=y
+CONFIG_REGULATOR_RK808=y
+CONFIG_REGULATOR_FAN53555=y
+CONFIG_I2C_RK3X=y
+CONFIG_PWM_ROCKCHIP=y
+CONFIG_ROCKCHIP_THERMAL=y
+CONFIG_ROCKCHIP_IODOMAIN=y
+CONFIG_CPUFREQ_DT=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y
+
+# --- Watchdog (the frontend pets /dev/watchdog)
+CONFIG_DW_WATCHDOG=y
+
+# --- Ethernet: GMAC1 (dwmac-rk) + Motorcomm YT8531C PHY, built in
+# (rsos-net only brings eth0 up and down)
+CONFIG_STMMAC_ETH=y
+CONFIG_STMMAC_PLATFORM=y
+CONFIG_DWMAC_ROCKCHIP=y
+CONFIG_MOTORCOMM_PHY=y
+
+# --- USB storage (rcS loads usb-storage, uas and sd_mod once the menu is
+# up)
+CONFIG_SCSI=y
+CONFIG_BLK_DEV_SD=m
+CONFIG_USB_STORAGE=m
+CONFIG_USB_UAS=m
+
+# --- No on-board WiFi/Bluetooth (the M.2 E-key module is optional):
+# Bluetooth USB dongles (btusb) as modules for rsos-net's BlueZ
+CONFIG_BT=m
+CONFIG_BT_HCIBTUSB=m

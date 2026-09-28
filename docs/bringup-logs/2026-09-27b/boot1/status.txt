@@ -1,0 +1,24 @@
+uptime: 5.34 5.29  load: 0.16 0.03 0.01 2/87 266
+cpufreq /sys/devices/system/cpu/cpufreq/policy0: cur=720000 gov=schedutil min=720000 max=960000
+regulator vdd-cpu: 1200000 uV
+regulator vdd-int-dll: 1250000 uV
+temp /sys/class/thermal/thermal_zone0/temp: 36500
+battery %: 71
+battery uV: 3853300
+sd card (reads, merged, sectors, ms, writes, merged, sectors, ms, ...):      432      350    27772     1108       96    10547    20582    13673        0        0    14781        0        0        0        0        0        0
+--- top
+Mem: 59056K used, 967728K free, 24K shrd, 7332K buff, 13108K cached
+CPU:   4% usr   0% sys   0% nic  95% idle   0% io   0% irq   0% sirq
+Load average: 0.16 0.03 0.01 1/88 291
+  PID  PPID USER     STAT   VSZ %VSZ %CPU COMMAND
+  204     1 root     S    33664   3%   0% /usr/bin/rsos-frontend
+    1     0 root     S     2840   0%   0% init
+  209     1 root     S     2840   0%   0% {bootlog} /bin/sh /usr/libexec/rsos/bootlog
+  202     1 root     SN    2840   0%   0% {rsos-net} /bin/sh /usr/bin/rsos-net apply
+  203     1 root     S     2840   0%   0% -/bin/sh
+  290   209 root     R     2840   0%   0% top -b -n 1
+  291   209 root     S     2840   0%   0% head -15
+  245   202 root     SN    2708   0%   0% sleep 1
+   31     2 root     IW       0   0%   0% [kworker/u8:1-ev]
+   59     2 root     IW       0   0%   0% [kworker/u8:2-kv]
+   23     2 root     IW       0   0%   0% [kworker/1:0-eve]

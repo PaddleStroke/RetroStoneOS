@@ -1,0 +1,18 @@
+config BR2_PACKAGE_LIBRETRO_SMSPLUS_GX
+	bool "libretro-smsplus-gx"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  SMS Plus GX: light Sega Master System / Game Gear / SG-1000
+	  (and ColecoVision) emulator, built as a libretro core
+	  (GPL-2.0+). A licence-clean alternative to picodrive for the
+	  8-bit Sega systems.
+
+	  Installs /usr/lib/libretro/smsplus_libretro.so and
+	  /usr/share/rsos/cores/smsplus.ini.
+
+	  https://github.com/libretro/smsplus-gx
+
+comment "libretro-smsplus-gx needs a toolchain w/ dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_STATIC_LIBS

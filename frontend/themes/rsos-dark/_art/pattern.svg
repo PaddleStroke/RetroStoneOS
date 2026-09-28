@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" width="640" height="480">
+<!-- RetroStoneOS original art: diagonal light bands, tinted per system -->
+<g fill="#ffffff">
+<path fill-opacity="0.55" d="M-120 480L230 -20H330L-20 480Z"/>
+<path fill-opacity="0.30" d="M60 480L410 -20H450L100 480Z"/>
+<path fill-opacity="0.40" d="M330 480L680 -20H800L450 480Z"/>
+<path fill-opacity="0.20" d="M520 480L870 -20H900L550 480Z"/>
+<circle cx="560" cy="430" r="190" fill-opacity="0.18"/>
+<circle cx="70" cy="40" r="120" fill-opacity="0.12"/>
+</g>
+</svg>

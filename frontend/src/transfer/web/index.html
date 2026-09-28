@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>RetroStone transfer</title>
+<style>
+:root{--bg:#15171c;--card:#1f232b;--line:#2f3540;--fg:#e8eaee;--dim:#98a0ad;--acc:#4fa3ff;--ok:#3fbf73;--bad:#ff6b6b;--warn:#f2b84b}
+@media (prefers-color-scheme:light){:root{--bg:#f3f4f7;--card:#fff;--line:#dde1e7;--fg:#1b1e24;--dim:#5e6674;--acc:#1f6fd1;--ok:#1f8f4f;--bad:#cc3333;--warn:#a86c00}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:18px;margin:0;flex:1}
+main{max-width:860px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+label{color:var(--dim);font-size:13px}
+select,input,button{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px}
+button{cursor:pointer;background:var(--acc);border-color:var(--acc);color:#fff}
+button.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+button:disabled{opacity:.5;cursor:default}
+#drop{border:2px dashed var(--line);border-radius:10px;padding:26px 12px;text-align:center;color:var(--dim);margin-top:12px}
+#drop.over{border-color:var(--acc);color:var(--fg)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.free{min-width:180px;font-size:13px;color:var(--dim)}
+.free .bar>i{background:var(--ok)}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+li:last-child{border-bottom:0}
+li .n{flex:1;min-width:0;overflow-wrap:anywhere}
+li .s{color:var(--dim);font-size:13px;white-space:nowrap}
+li .st{font-size:13px;white-space:nowrap}
+li .bar{width:90px;flex:none}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}.dim{color:var(--dim)}
+.del{background:transparent;border-color:var(--line);color:var(--bad);min-height:32px;padding:4px 10px}
+#login{max-width:360px;margin:40px auto}
+#login input{width:100%;font-size:26px;letter-spacing:6px;text-align:center}
+.hidden{display:none!important}
+h2{font-size:16px;margin:0 0 10px}
+small{color:var(--dim)}
+</style>
+</head>
+<body>
+<header>
+  <h1>RetroStone &middot; file transfer</h1>
+  <div class="free hidden" id="freebox"><div id="freetxt"></div><div class="bar"><i id="freebar"></i></div></div>
+</header>
+<main>
+  <section id="login" class="card hidden">
+    <h2>Enter the PIN shown on the console</h2>
+    <form id="loginform" class="row" autocomplete="off">
+      <input id="pin" inputmode="numeric" pattern="[0-9]*" maxlength="10" autofocus aria-label="PIN">
+      <button type="submit" style="width:100%">Connect</button>
+    </form>
+    <p id="loginmsg" class="bad"></p>
+  </section>
+
+  <div id="app" class="hidden">
+    <section class="card">
+      <h2>Send files</h2>
+      <div class="row">
+        <div><label for="kind">Destination</label><br>
+          <select id="kind">
+            <option value="roms">Games</option>
+            <option value="bios">BIOS files</option>
+            <option value="saves">Saves</option>
+            <option value="states">Save states</option>
+            <option value="themes">Themes</option>
+          </select></div>
+        <div id="syswrap"><label for="sys">System</label><br><select id="sys"></select></div>
+      </div>
+      <div id="drop">
+        <p>Drop files or folders here</p>
+        <div class="row" style="justify-content:center">
+          <button type="button" id="pickfiles">Choose files</button>
+          <button type="button" class="ghost" id="pickdir">Choose a folder</button>
+        </div>
+        <input type="file" id="files" multiple class="hidden">
+        <input type="file" id="dir" webkitdirectory multiple class="hidden">
+      </div>
+      <p class="dim" id="hint"><small>With "Auto", each file goes to the system its extension belongs to. Files like .bin, .cue, .iso, .chd or .zip need a system to be chosen.</small></p>
+    </section>
+
+    <section class="card hidden" id="queuecard">
+      <div class="row" style="justify-content:space-between">
+        <h2 id="qtitle">Uploads</h2>
+        <div class="row"><button class="ghost" id="clearq">Clear finished</button><button class="ghost" id="cancelq">Cancel</button></div>
+      </div>
+      <div class="bar" style="margin:6px 0 10px"><i id="qbar"></i></div>
+      <ul id="queue"></ul>
+    </section>
+
+    <section class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 id="ltitle">Files</h2>
+        <input id="filter" placeholder="Filter" style="max-width:220px">
+      </div>
+      <ul id="list"></ul>
+      <p id="lmsg" class="dim"></p>
+    </section>
+  </div>
+</main>
+<script>
+"use strict";
+var $ = function (id) { return document.getElementById(id); };
+var info = null, queue = [], busy = false, cancelAll = false, curXhr = null, replacePolicy = null;
+var listCache = [];
+
+var EXT = {nes:"nes",unf:"nes",unif:"nes",fds:"fds",smc:"snes",sfc:"snes",fig:"snes",swc:"snes",
+  n64:"n64",z64:"n64",v64:"n64",gb:"gb",dmg:"gb",gbc:"gbc",gba:"gba",agb:"gba",sg:"sg1000",sms:"mastersystem",
+  md:"megadrive",gen:"megadrive",smd:"megadrive","32x":"sega32x",gg:"gamegear",pbp:"psx",pce:"pcengine",a26:"atari2600"};
+var BIOS = [/^scph\d+[a-z]?\.bin$/i, /^gba_bios\.bin$/i, /^gbc?_bios\.bin$/i, /^disksys\.rom$/i,
+  /^bios_cd_[uej]\.bin$/i, /^syscard\d?\.pce$/i, /^psxonpsp660\.bin$/i, /^ps1_rom\.bin$/i];
+var SAVE = /\.(srm|sav|rtc|eep|sra|fla|mpk|mcr)$/i;
+var STATE = /\.state(\d+|\.auto)?(\.png)?$/i;
+
+function fmt(n) {
+  var u = ["B","KB","MB","GB","TB"], i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return (i ? n.toFixed(n < 10 ? 1 : 0) : n) + " " + u[i];
+}
+function api(method, url, body, cb) {
+  var x = new XMLHttpRequest();
+  x.open(method, url);
+  x.setRequestHeader("X-Requested-With", "rsos");
+  x.onload = function () {
+    var j = null; try { j = JSON.parse(x.responseText); } catch (e) {}
+    if (x.status === 401) { showLogin(); return; }
+    cb(x.status, j || {});
+  };
+  x.onerror = function () { cb(0, {error: "network"}); };
+  x.send(body || null);
+  return x;
+}
+function qs(o) {
+  return Object.keys(o).map(function (k) { return k + "=" + encodeURIComponent(o[k]); }).join("&");
+}
+
+/* ---------------- login ---------------- */
+function showLogin(msg) {
+  $("app").classList.add("hidden"); $("freebox").classList.add("hidden");
+  $("login").classList.remove("hidden"); $("loginmsg").textContent = msg || "";
+  $("pin").focus();
+}
+function login(pin) {
+  api("POST", "/api/login", "pin=" + encodeURIComponent(pin), function (s, j) {
+    if (s === 200) { $("login").classList.add("hidden"); start(); return; }
+    if (s === 429) showLogin("Too many wrong PINs. Wait " + j.wait + " s.");
+    else if (s === 403) showLogin("Wrong PIN.");
+    else showLogin("Cannot reach the console.");
+  });
+}
+$("loginform").onsubmit = function (e) { e.preventDefault(); login($("pin").value.trim()); };
+
+/* ---------------- info and lists ---------------- */
+function refreshInfo(cb) {
+  api("GET", "/api/info", null, function (s, j) {
+    if (s !== 200) return;
+    info = j;
+    var used = j.total ? (j.total - j.free) / j.total : 0;
+    $("freebox").classList.remove("hidden");
+    $("freetxt").textContent = fmt(j.free) + " free of " + fmt(j.total);
+    $("freebar").style.width = Math.round(used * 100) + "%";
+    fillSystems();
+    if (cb) cb();
+  });
+}
+function fillSystems() {
+  var sel = $("sys"), keep = sel.value, kind = $("kind").value;
+  sel.textContent = "";
+  if (kind === "roms") sel.add(new Option("Auto (by file type)", "auto"));
+  info.systems.forEach(function (s) {
+    sel.add(new Option(s.name + (kind === "roms" ? "  (" + s.n + ")" : ""), s.id));
+  });
+  if (keep && Array.prototype.some.call(sel.options, function (o) { return o.value === keep; })) sel.value = keep;
+  $("syswrap").classList.toggle("hidden", kind === "bios" || kind === "themes");
+  $("hint").classList.toggle("hidden", kind !== "roms");
+}
+function curTarget() {
+  var kind = $("kind").value, sys = $("sys").value;
+  if (kind === "bios" || kind === "themes") return {target: kind};
+  if (sys === "auto") return null;
+  return {target: kind, sys: sys};
+}
+function targetLabel(t) {
+  if (t.target === "bios") return "BIOS";
+  if (t.target === "themes") return "Themes";
+  var s = info.systems.filter(function (x) { return x.id === t.sys; })[0];
+  var n = s ? s.name : t.sys;
+  return t.target === "roms" ? n : n + " " + (t.target === "saves" ? "saves" : "states");
+}
+function refreshList() {
+  var t = curTarget();
+  if (!t) { $("ltitle").textContent = "Files"; $("list").textContent = ""; $("lmsg").textContent = "Choose a system to see its files."; return; }
+  $("ltitle").textContent = "Files in " + targetLabel(t);
+  api("GET", "/api/list?" + qs(t), null, function (s, j) {
+    if (s !== 200) { $("lmsg").textContent = "Could not list the files."; return; }
+    listCache = j.files.sort(function (a, b) { return a.p.localeCompare(b.p, undefined, {numeric: true, sensitivity: "base"}); });
+    listCache.target = t;
+    renderList();
+    if (j.truncated) $("lmsg").textContent += " (list truncated)";
+  });
+}
+function renderList() {
+  var ul = $("list"), f = $("filter").value.toLowerCase(), shown = 0, t = listCache.target;
+  ul.textContent = "";
+  listCache.forEach(function (e) {
+    if (f && e.p.toLowerCase().indexOf(f) < 0) return;
+    if (++shown > 1500) return;
+    var li = document.createElement("li");
+    li.innerHTML = '<span class="n"></span><span class="s"></span><button class="del" title="Delete">Delete</button>';
+    li.querySelector(".n").textContent = e.p;
+    li.querySelector(".s").textContent = fmt(e.s);
+    li.querySelector(".del").onclick = function () {
+      if (!confirm("Delete " + e.p + " from the console?")) return;
+      var p = {target: t.target, path: e.p}; if (t.sys) p.sys = t.sys;
+      api("DELETE", "/api/file?" + qs(p), null, function (s) {
+        if (s === 200) { refreshList(); refreshInfo(); } else alert("Could not delete " + e.p);
+      });
+    };
+    ul.appendChild(li);
+  });
+  $("lmsg").textContent = listCache.length ? listCache.length + " file(s)" : "No files yet.";
+}
+$("kind").onchange = function () { fillSystems(); refreshList(); };
+$("sys").onchange = refreshList;
+$("filter").oninput = renderList;
+
+/* ---------------- choosing files ---------------- */
+function autoTarget(name, kind) {
+  var base = name.split("/").pop();
+  if (kind !== "roms") return null;
+  for (var i = 0; i < BIOS.length; i++) if (BIOS[i].test(base)) return {target: "bios"};
+  var ext = (base.match(/\.([^.]+)$/) || [])[1];
+  var sys = ext && EXT[ext.toLowerCase()];
+  if (SAVE.test(base) && sys) return {target: "saves", sys: sys};
+  return sys ? {target: "roms", sys: sys} : null;
+}
+function enqueue(file, rel) {
+  var kind = $("kind").value, t = curTarget(), base = rel.split("/").pop();
+  if (!t) t = autoTarget(rel, kind);
+  if (t && t.target === "roms") {
+    /* saves dropped into a game folder go where the emulator looks */
+    if (SAVE.test(base)) t = {target: "saves", sys: t.sys, path: base};
+    else if (STATE.test(base)) t = {target: "states", sys: t.sys, path: base};
+  }
+  var item = {file: file, rel: (t && t.path) || rel, t: t, state: t ? "wait" : "nosys", done: 0};
+  queue.push(item);
+  drawItem(item);
+}
+function addFiles(list) {
+  for (var i = 0; i < list.length; i++) enqueue(list[i], list[i].webkitRelativePath || list[i].name);
+  run();
+}
+function walkEntry(entry, path, out, done) {
+  if (entry.isFile) {
+    entry.file(function (f) { out.push([f, path + f.name]); done(); }, done);
+  } else if (entry.isDirectory) {
+    var rd = entry.createReader(), all = [];
+    (function more() {
+      rd.readEntries(function (ents) {
+        if (ents.length) { all = all.concat(Array.prototype.slice.call(ents)); more(); return; }
+        var left = all.length;
+        if (!left) return done();
+        all.forEach(function (e) { walkEntry(e, path + entry.name + "/", out, function () { if (--left === 0) done(); }); });
+      }, done);
+    })();
+  } else done();
+}
+var drop = $("drop");
+["dragenter", "dragover"].forEach(function (ev) {
+  drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("over"); });
+});
+["dragleave", "drop"].forEach(function (ev) {
+  drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+});
+drop.addEventListener("drop", function (e) {
+  var items = e.dataTransfer.items;
+  if (items && items.length && items[0].webkitGetAsEntry) {
+    var ents = [], out = [];
+    for (var i = 0; i < items.length; i++) { var en = items[i].webkitGetAsEntry(); if (en) ents.push(en); }
+    var left = ents.length;
+    ents.forEach(function (en) {
+      walkEntry(en, "", out, function () {
+        if (--left === 0) { out.forEach(function (p) { enqueue(p[0], p[1]); }); run(); }
+      });
+    });
+  } else addFiles(e.dataTransfer.files);
+});
+$("pickfiles").onclick = function () { $("files").click(); };
+$("pickdir").onclick = function () { $("dir").click(); };
+$("files").onchange = function () { addFiles(this.files); this.value = ""; };
+$("dir").onchange = function () { addFiles(this.files); this.value = ""; };
+
+/* ---------------- upload queue ---------------- */
+function drawItem(it) {
+  $("queuecard").classList.remove("hidden");
+  if (!it.li) {
+    it.li = document.createElement("li");
+    it.li.innerHTML = '<span class="n"></span><span class="s"></span><span class="bar"><i></i></span><span class="st"></span>';
+    it.li.querySelector(".n").textContent = it.rel + (it.t ? "  → " + targetLabel(it.t) : "");
+    it.li.querySelector(".s").textContent = fmt(it.file.size);
+    $("queue").appendChild(it.li);
+  }
+  var st = it.li.querySelector(".st"), pct = it.file.size ? it.done / it.file.size : (it.state === "ok" ? 1 : 0);
+  it.li.querySelector(".bar i").style.width = Math.round(pct * 100) + "%";
+  var txt = {wait: ["Waiting", "dim"], up: [Math.round(pct * 100) + "%", ""], ok: ["Done", "ok"],
+    skip: ["Skipped", "warn"], nosys: ["Choose a system", "bad"], err: [it.err || "Failed", "bad"],
+    cancel: ["Cancelled", "warn"]}[it.state];
+  st.textContent = txt[0]; st.className = "st " + txt[1];
+  drawTotal();
+}
+function drawTotal() {
+  var tot = 0, done = 0, n = 0, ok = 0;
+  queue.forEach(function (q) {
+    if (q.state === "nosys") return;
+    n++; tot += q.file.size; done += q.state === "ok" || q.state === "skip" ? q.file.size : q.done;
+    if (q.state === "ok") ok++;
+  });
+  $("qbar").style.width = (tot ? Math.round(done / tot * 100) : 0) + "%";
+  $("qtitle").textContent = "Uploads: " + ok + " of " + n + " (" + fmt(done) + " / " + fmt(tot) + ")";
+}
+function next() {
+  for (var i = 0; i < queue.length; i++) if (queue[i].state === "wait") return queue[i];
+  return null;
+}
+function run() {
+  if (busy) return;
+  var it = next();
+  if (!it) { refreshInfo(); refreshList(); replacePolicy = null; return; }
+  busy = true; cancelAll = false;
+  upload(it, false);
+}
+function upload(it, overwrite) {
+  var p = {target: it.t.target, path: it.rel, overwrite: overwrite ? 1 : 0,
+           mtime: Math.floor((it.file.lastModified || Date.now()) / 1000)};
+  if (it.t.sys) p.sys = it.t.sys;
+  var x = new XMLHttpRequest();
+  curXhr = x;
+  x.open("PUT", "/api/upload?" + qs(p));
+  x.setRequestHeader("X-Requested-With", "rsos");
+  x.setRequestHeader("Content-Type", "application/octet-stream");
+  x.upload.onprogress = function (e) { it.done = e.loaded; it.state = "up"; drawItem(it); };
+  x.onload = function () {
+    var j = {}; try { j = JSON.parse(x.responseText); } catch (e) {}
+    curXhr = null;
+    if (x.status === 201) { it.state = "ok"; it.done = it.file.size; }
+    else if (x.status === 409 && j.error === "exists") {
+      var save = it.t.target === "saves" || it.t.target === "states";
+      var yes = replacePolicy;
+      if (yes === null) {
+        yes = confirm(it.rel + " is already on the console" + (save ? " (a save: the old one is kept as .bak)" : "") +
+                      ".\nReplace it?\n\nOK = replace (and the next ones), Cancel = skip (and the next ones)");
+        replacePolicy = yes;
+      }
+      if (yes) { upload(it, true); return; }
+      it.state = "skip";
+    } else if (x.status === 401) { busy = false; showLogin("Session expired, enter the PIN again."); return; }
+    else if (x.status === 507) { it.state = "err"; it.err = "SD card full"; cancelAll = true; }
+    else if (x.status === 409 && j.error === "busy") { it.state = "err"; it.err = "Already being uploaded (another tab?)"; }
+    else if (x.status === 413) { it.state = "err"; it.err = "Too big for FAT32"; }
+    else if (x.status === 400) { it.state = "err"; it.err = "Invalid name"; }
+    else { it.state = "err"; it.err = "Error " + x.status; }
+    drawItem(it); busy = false;
+    if (cancelAll) { queue.forEach(function (q) { if (q.state === "wait") { q.state = "cancel"; drawItem(q); } }); }
+    run();
+  };
+  x.onerror = x.onabort = function () {
+    curXhr = null; it.state = cancelAll ? "cancel" : "err"; if (!cancelAll) it.err = "Connection lost";
+    drawItem(it); busy = false; run();
+  };
+  it.state = "up"; drawItem(it);
+  x.send(it.file);
+}
+$("cancelq").onclick = function () {
+  cancelAll = true;
+  queue.forEach(function (q) { if (q.state === "wait") { q.state = "cancel"; drawItem(q); } });
+  if (curXhr) curXhr.abort();
+};
+$("clearq").onclick = function () {
+  queue = queue.filter(function (q) {
+    var keep = q.state === "wait" || q.state === "up";
+    if (!keep && q.li) q.li.remove();
+    return keep;
+  });
+  if (!queue.length) $("queuecard").classList.add("hidden"); else drawTotal();
+};
+window.addEventListener("beforeunload", function (e) { if (busy) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------------- start ---------------- */
+function start() {
+  refreshInfo(function () {
+    $("login").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    refreshList();
+  });
+}
+(function () {
+  var m = location.hash.match(/pin=(\d+)/);
+  if (m) { history.replaceState(null, "", location.pathname); login(m[1]); return; }
+  api("GET", "/api/info", null, function (s) { if (s === 200) start(); });
+})();
+</script>
+</body>
+</html>

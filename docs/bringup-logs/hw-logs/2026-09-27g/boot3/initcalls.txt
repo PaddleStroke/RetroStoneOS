@@ -1,0 +1,104 @@
+initcall_debug boot: console=ttyS0,115200 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait ro quiet panic=10 consoleblank=0 driver_async_probe=dw-apb-uart,musb-sunxi,sun4i-ts,axp20x-i2c initcall_debug log_buf_len=1M rsos.slot=a 
+
+Sum of all initcalls: 271.0 ms
+
+Slowest initcalls (usecs):
+31000 of_platform_default_populate_init+0x0/0xcc
+24068 lima_platform_driver_init+0x0/0x10
+20153 deferred_probe_initcall+0x0/0xac
+15948 sun4i_codec_driver_init+0x0/0x10
+14477 cacheinfo_sysfs_init+0x0/0x40
+12949 clk_debug_init+0x0/0x10c
+12562 gpio_keys_polled_driver_init+0x0/0x10
+9694 slab_late_init+0x0/0x12c
+9444 param_sysfs_builtin_init+0x0/0x1d0
+8848 sun7i_dwmac_driver_init+0x0/0x1000 [dwmac_sunxi]
+7873 panel_simple_init+0x0/0x1c
+7250 sun4i_dma_driver_init+0x0/0x10
+6107 sun4i_a10_pinctrl_driver_init+0x0/0x10
+4834 mv64xxx_i2c_driver_init+0x0/0x10
+4228 inet_init+0x0/0x2b4
+3583 sunxi_sid_driver_init+0x0/0x10
+3519 sun4i_drv_platform_driver_init+0x0/0x28
+3203 gpio_keys_init+0x0/0x10
+3179 sun4i_tcon_platform_driver_init+0x0/0x10
+2936 serial8250_init+0x0/0xec
+2405 sunxi_wdt_driver_init+0x0/0x10
+2259 sunxi_rtc_driver_init+0x0/0x10
+2149 sun4i_usb_phy_driver_init+0x0/0x10
+2067 sunxi_sram_driver_init+0x0/0x18
+2000 cma_init_reserved_areas+0x0/0x28c
+1845 chr_dev_init+0x0/0xa8
+1554 loop_init+0x0/0xdc
+1309 sun4i_backend_platform_driver_init+0x0/0x10
+1281 sun4i_pwm_driver_init+0x0/0x10
+1069 uas_init+0x0/0x1000 [uas]
+1008 alsa_timer_init+0x0/0x220
+1001 gpio_led_driver_init+0x0/0x10
+1000 watchdog_init+0x0/0xbc
+1000 sun4i_a10_ccu_init+0x0/0x10
+1000 regulator_fixed_voltage_init+0x0/0x10
+1000 proto_init+0x0/0xc
+1000 oom_init+0x0/0x54
+1000 netlink_proto_init+0x0/0x110
+1000 net_dev_init+0x0/0x3fc
+1000 ksysfs_init+0x0/0xa0
+
+Slowest driver probes (usecs; "returned -517" = deferred, retried later):
+80623 1c1c400.usb returned 0
+78257 1c14400.usb returned 0
+46316 0-0034 returned 0
+41789 1c12000.mmc returned 0
+41100 1c14000.usb returned 0
+36000 1c28000.serial returned 0
+34287 1c28800.serial returned 0
+28357 1c50000.ethernet returned 0
+27977 1c1c000.usb returned 0
+23783 1c40000.gpu returned 0
+15054 1c22c00.codec returned 0
+14421 1c0f000.mmc returned 0
+13667 1c0c000.lcd-controller returned 0
+12666 axp20x-regulator returned 0
+9001 axp20x-gpio returned 0
+8604 axp20x-pek returned 0
+8448 gpio-keys-brightness returned 0
+7267 1c13000.usb returned 0
+6849 1c02000.dma-controller returned 0
+6809 axp20x-ac-power-supply returned 0
+6151 musb-hdrc.1.auto returned 0
+6144 mmc0:59b4 returned 0
+5760 1c20800.pinctrl returned 0
+4285 stmmac-0:01 returned 0
+4250 1c2ac00.i2c returned 0
+3787 axp20x-battery-power-supply returned 0
+3761 gpio-keys-shoulder returned 0
+2822 gpio-keys returned 0
+2750 cpufreq-dt returned 0
+2733 1c23800.eeprom returned 0
+2662 axp20x-adc returned 0
+2435 display-engine returned 0
+1934 1c20d00.rtc returned 0
+1913 usb3 returned 0
+1849 1c20c90.watchdog returned 0
+1799 usb5 returned 0
+1716 usb4 returned 0
+1696 usb2 returned 0
+1556 1c25000.rtp returned 0
+1426 1c0c000.lcd-controller returned 517
+
+Deferred probes (returned -517):
+      1 analog-stick returned -517
+      1 pmic-temp returned -517
+
+Milestones on the way to /sbin/init (kernel time, s):
+[    0.104836] sun4i-pinctrl 1c20800.pinctrl: initialized sunXi PIO driver
+[    0.209570] axp20x-i2c 0-0034: AXP20x variant AXP209 found
+[    0.231826] sunxi-mmc 1c0f000.mmc: initialized, max. request size: 16384 KB
+[    0.255222] axp20x-i2c 0-0034: AXP20X driver loaded
+[    0.294275] [drm] Initialized sun4i-drm 1.0.0 for display-engine on minor 1
+[    0.300905] initcall deferred_probe_initcall+0x0/0xac returned 0 after 20153 usecs
+[    0.305116] mmc0: new high speed SDHC card at address 59b4
+[    0.305335] clk: Disabling unused clocks
+[    0.305520] initcall clk_disable_unused+0x0/0x10c returned 0 after 185 usecs
+[    0.322130] EXT4-fs (mmcblk0p2): mounted filesystem 34fdd6c3-8e7b-489d-b52c-d9863d4c1d1a ro without journal. Quota mode: disabled.
+[    0.324951] Run /sbin/init as init process

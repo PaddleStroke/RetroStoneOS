@@ -1,0 +1,2406 @@
+# Swedish translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: sv\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "Kan inte öppna zip-filen (%s)"
+
+msgid "No playable file in this zip"
+msgstr "Ingen spelbar fil i den här zip-filen"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "Filen i zip-filen är för stor (%llu MB)"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "Kan inte packa upp %s ur zip-filen (%s)"
+
+msgid "Game file not found"
+msgstr "Spelfilen hittades inte"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "7z-arkiv fungerar inte här: använd .zip eller packa upp det"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "Kan inte läsa spelfilen (%s)"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "Det här systemet"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s: %s är inte den väntade BIOS-filen"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%s eller %s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "%s behöver %s i %s"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "Stänger av..."
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "Handkontroll för spelare 1 bortkopplad: paus"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "Spelare 1: %s"
+
+msgid "Saving..."
+msgstr "Sparar..."
+
+msgid "This game cannot save a state now"
+msgstr "Spelet kan inte göra en sparpunkt nu"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "Sparpunkt INTE sparad: %s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "Sparpunkt laddad, plats %d"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "Ingen sparpunkt på plats %d"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "Kan inte ladda sparpunkten på plats %d"
+
+#, c-format
+msgid "State slot %d"
+msgstr "Sparpunkt: plats %d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "Sparpunkt: plats %d (tom)"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "Spelet startades om"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "Ansluten: %s"
+
+msgid "Battery empty: game saved"
+msgstr "Batteriet är tomt: spelet sparat"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "Lågt batteri (%d %%)"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "%d inställning, ca %d min"
+msgstr[1] "%d inställningar, ca %d min"
+
+msgid "No benchmark for this system"
+msgstr "Inget prestandatest för det här systemet"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "Prestandatest: kan inte göra en sparpunkt nu"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "Prestandatest: kan inte skriva %s"
+
+msgid "No result to use"
+msgstr "Inget resultat att använda"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "Okänd konfiguration %s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "Kunde inte spara: %s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "Sparade \"%s\" för det här spelet (gäller från nästa start)"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "Sparade \"%s\": nästa start använder %s"
+
+msgid "The emulator stopped responding"
+msgstr "Emulatorn slutade svara"
+
+msgid "Cannot load the emulator core"
+msgstr "Kan inte ladda emulatorns kärna"
+
+msgid "Benchmark: bad plan"
+msgstr "Prestandatest: felaktig plan"
+
+msgid "Cannot start the save thread"
+msgstr "Kan inte starta spartråden"
+
+msgid "Cannot open the display"
+msgstr "Kan inte öppna skärmen"
+
+msgid "This core needs a game file"
+msgstr "Den här kärnan behöver en spelfil"
+
+msgid "The emulator could not load this game"
+msgstr "Emulatorn kunde inte ladda spelet"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "Fortsätter"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "GPU-start misslyckades (framebuffer 0x%x)"
+
+msgid "This build cannot run GLES games"
+msgstr "Den här versionen kan inte köra GLES-spel"
+
+msgid "No GPU found (lima)"
+msgstr "Ingen GPU hittades (lima)"
+
+msgid "The game was stopped"
+msgstr "Spelet stoppades"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "Emulatorn kraschade (%s). Sparfiler fram till för några sekunder sedan finns kvar."
+
+msgid "Could not start the game"
+msgstr "Kunde inte starta spelet"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "Emulatorn slutade svara. Sparfiler fram till för några sekunder sedan finns kvar."
+
+msgid "Cannot start the game process"
+msgstr "Kan inte starta spelprocessen"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "Emulatorn misslyckades (kod %d)"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "Pixelperfekt"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "Utsträckt"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "Originalformat"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "På"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "Av"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "(spel)"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "(alla)"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "(test)"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "kraschade"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "hängde sig"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "stoppad"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "misslyckades"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "Fortsätt"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "Plats %d"
+
+msgid "Save state"
+msgstr "Skapa sparpunkt"
+
+msgid "Load state"
+msgstr "Ladda sparpunkt"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "Skiva"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "Starta om spelet"
+
+msgid "Core options"
+msgstr "Kärnans inställningar"
+
+msgid "Scaling"
+msgstr "Bildstorlek"
+
+msgid "Show FPS"
+msgstr "Visa FPS"
+
+msgid "Fast-forward"
+msgstr "Snabbspola"
+
+msgid "Benchmark this game"
+msgstr "Prestandatesta spelet"
+
+msgid "Controls"
+msgstr "Kontroller"
+
+msgid "Exit game"
+msgstr "Avsluta spelet"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "Spara för det här spelet"
+
+msgid "Save for all games (this core)"
+msgstr "Spara för alla spel (den här kärnan)"
+
+msgid "Reset to defaults"
+msgstr "Återställ standard"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "Spelare %d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s (spak)"
+
+msgid "D-pad as left stick (P1)"
+msgstr "Styrkors som vänster spak (P1)"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "Upp"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "Ner"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "Vänster"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "Höger"
+
+msgid "Left stick"
+msgstr "Vänster spak"
+
+msgid "Right stick"
+msgstr "Höger spak"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "Körningar"
+
+msgid "Each run"
+msgstr "Varje körning"
+
+msgid "from now, no input"
+msgstr "från nu, utan knapptryck"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "Stoppa"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs (SD-kort)"
+
+msgid "Results"
+msgstr "Resultat"
+
+msgid "Start benchmark"
+msgstr "Starta prestandatest"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "ej rankad"
+
+msgid "blank?"
+msgstr "tom?"
+
+msgid "Use this for this game"
+msgstr "Använd för det här spelet"
+
+msgid "Resume game"
+msgstr "Fortsätt spela"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "Prestandatest"
+
+msgid "Benchmark results"
+msgstr "Testresultat"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "Tom"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "(spel) sparat för spelet, (alla) för alla spel, * sparas när du går ur"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A: välj  B: fortsätt  </>: ändra"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A: välj  B: tillbaka  </>: ändra"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "Sparar plats %d..."
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "Plats %d är tom"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "Skiva %d isatt"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "Kan inte byta till skiva %d"
+
+msgid "Could not save the options"
+msgstr "Kunde inte spara inställningarna"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "Sparat för %s"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "Sparat för alla spel med %s"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "Standard återställd (sparas när du går ur)"
+
+msgid "Options saved for this game"
+msgstr "Inställningar sparade för det här spelet"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "Tabell: %s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "Spelet kunde inte sparas: %s (försöker igen)"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "Spelet sparat"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "Autosparpunkt INTE sparad: %s"
+
+msgid "Auto state saved"
+msgstr "Autosparpunkt sparad"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "Sparpunkt %d INTE sparad: %s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "Sparpunkt sparad, plats %d"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "Sparfilen går inte att läsa: sparande avstängt"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr ","
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr " "
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "GB"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "MB"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "kB"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%Y-%m-%d"
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%Y-%m-%d %H:%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "Skärmen godtog inte den här bildfrekvensen"
+
+msgid "No emulator is installed for this game."
+msgstr "Ingen emulator är installerad för det här spelet."
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "Spelet kan inte starta (saknas BIOS?)."
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "Kan inte starta spelprocessen (%s)."
+
+msgid "The game could not be started."
+msgstr "Spelet kunde inte startas."
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "Datapartitionen kunde inte återställas. Du kan behöva kopiera dina spel och sparfiler igen."
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "Datapartitionen gick inte att läsa och har formaterats om."
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "Datapartitionen har fel: sparandet kan misslyckas. Säkerhetskopiera dina sparfiler."
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "Den senaste uppdateringen startade inte; den förra versionen har återställts."
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "SD-kortet kontrollerades efter ett oväntat strömavbrott"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "Förbereder SD-kortet, vänta lite..."
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "Kontrollerar SD-kortet, vänta lite..."
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "Favoriter"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "Senast spelade"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "Det finns inga spel kvar i den här mappen"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "bläddra"
+
+msgid "change"
+msgstr "ändra"
+
+msgid "select"
+msgstr "välj"
+
+msgid "back"
+msgstr "tillbaka"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "skriv"
+
+msgid "delete"
+msgstr "sudda"
+
+msgid "space"
+msgstr "mellanslag"
+
+msgid "shift"
+msgstr "skift"
+
+msgid "ok"
+msgstr "klar"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "avbryt"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "SKIFT"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "MELLANSLAG"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "SUDDA"
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "Auto"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "Originalformat"
+
+msgid "Integer"
+msgstr "Pixelperfekt"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "Automatisk"
+
+msgid "Basic"
+msgstr "Enkel"
+
+msgid "Detailed"
+msgstr "Detaljerad"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "Uppe till höger"
+
+msgid "Top left"
+msgstr "Uppe till vänster"
+
+msgid "Bottom right"
+msgstr "Nere till höger"
+
+msgid "Bottom left"
+msgstr "Nere till vänster"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Hz (original)"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "Auto (den som startar spelet)"
+
+msgid "Built-in"
+msgstr "Inbyggd"
+
+msgid "External"
+msgstr "Extern"
+
+msgid "Could not save the settings"
+msgstr "Kunde inte spara inställningarna"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "TV"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "LCD-bildfrekvens: 60 Hz"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "LCD-bildfrekvens: tillbaka till 78 Hz"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "BEHÅLL"
+
+msgid "REVERT"
+msgstr "ÅNGRA"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"Skärmen visar nu 60 Hz.\n"
+"Behålla? Ändras tillbaka om %d s"
+
+msgid "Display"
+msgstr "Skärm"
+
+msgid "Brightness"
+msgstr "Ljusstyrka"
+
+msgid "LCD refresh rate"
+msgstr "LCD-bildfrekvens"
+
+msgid "HDMI resolution"
+msgstr "HDMI-upplösning"
+
+msgid "Game scaling"
+msgstr "Bildstorlek i spel"
+
+msgid "Game list style"
+msgstr "Spellistans utseende"
+
+msgid "Battery in games"
+msgstr "Batteri i spel"
+
+msgid "Battery position"
+msgstr "Batteriets plats"
+
+msgid "Button test"
+msgstr "Knapptest"
+
+msgid "no stick"
+msgstr "ingen spak"
+
+msgid "Hold SELECT + START to exit"
+msgstr "Håll SELECT + START för att avsluta"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "Tryck UPP på styrkorset"
+
+msgid "Press D-pad DOWN"
+msgstr "Tryck NER på styrkorset"
+
+msgid "Press D-pad LEFT"
+msgstr "Tryck VÄNSTER på styrkorset"
+
+msgid "Press D-pad RIGHT"
+msgstr "Tryck HÖGER på styrkorset"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "Tryck på knappen till HÖGER (A)"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "Tryck på knappen NEDERST (B)"
+
+msgid "Press the TOP face button (X)"
+msgstr "Tryck på knappen ÖVERST (X)"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "Tryck på knappen till VÄNSTER (Y)"
+
+msgid "Press L1"
+msgstr "Tryck på L1"
+
+msgid "Press R1"
+msgstr "Tryck på R1"
+
+msgid "Press L2"
+msgstr "Tryck på L2"
+
+msgid "Press R2"
+msgstr "Tryck på R2"
+
+msgid "Press SELECT"
+msgstr "Tryck på SELECT"
+
+msgid "Press START"
+msgstr "Tryck på START"
+
+msgid "Press the left stick (L3)"
+msgstr "Tryck in vänster spak (L3)"
+
+msgid "Press the right stick (R3)"
+msgstr "Tryck in höger spak (R3)"
+
+msgid "Push the left stick RIGHT"
+msgstr "För vänster spak åt HÖGER"
+
+msgid "Push the left stick DOWN"
+msgstr "För vänster spak NER"
+
+msgid "Push the right stick RIGHT"
+msgstr "För höger spak åt HÖGER"
+
+msgid "Push the right stick DOWN"
+msgstr "För höger spak NER"
+
+msgid "Configure controller"
+msgstr "Ställ in handkontroll"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "Steg %d av %d"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "Finns inte? Vänta %d s för att hoppa över"
+
+msgid "Controller saved"
+msgstr "Handkontroll sparad"
+
+msgid "The mapping could not be saved."
+msgstr "Knappinställningen kunde inte sparas."
+
+msgid "Configure a controller"
+msgstr "Ställ in en handkontroll"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "egen"
+
+msgid "known pad"
+msgstr "känd kontroll"
+
+msgid "standard"
+msgstr "standard"
+
+msgid "keyboard"
+msgstr "tangentbord"
+
+msgid "not configured"
+msgstr "inte inställd"
+
+msgid "No external controller detected"
+msgstr "Ingen extern handkontroll hittades"
+
+msgid "built-in"
+msgstr "inbyggd"
+
+msgid "Player 1"
+msgstr "Spelare 1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "Extra C/Z-knappar monterade"
+
+msgid "Players"
+msgstr "Spelare"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10 min"
+
+msgid "30 min"
+msgstr "30 min"
+
+msgid "1 hour"
+msgstr "1 timme"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "Aldrig"
+
+msgid "please wait..."
+msgstr "vänta lite..."
+
+msgid "not set"
+msgstr "inte angivet"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "igång"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi: stängs av, vänta lite..."
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "Ethernet: stängs av, vänta lite..."
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "Bluetooth: stängs av, vänta lite..."
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi: slås på, vänta lite..."
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "Ethernet: slås på, vänta lite..."
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "Bluetooth: slås på, vänta lite..."
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "Kan inte köra %s"
+
+msgid "Could not save the WiFi settings"
+msgstr "Kunde inte spara Wi-Fi-inställningarna"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "Ett Wi-Fi-lösenord har minst 8 tecken."
+
+msgid "Set the network name first."
+msgstr "Ange nätverksnamnet först."
+
+msgid "WiFi password saved"
+msgstr "Wi-Fi-lösenord sparat"
+
+msgid "WiFi network name"
+msgstr "Wi-Fi-nätverkets namn"
+
+msgid "WiFi password"
+msgstr "Wi-Fi-lösenord"
+
+msgid "Console name"
+msgstr "Konsolens namn"
+
+msgid "Use letters, digits and dashes."
+msgstr "Använd bokstäver, siffror och bindestreck."
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "Konsolens namn: %s (vid nästa överföring)"
+
+msgid "Network"
+msgstr "Nätverk"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Wi-Fi-nätverk"
+
+msgid "Transfer games from a computer or phone"
+msgstr "Överför spel från dator eller mobil"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "Överföring via nätverk"
+
+msgid "Stop when idle for"
+msgstr "Stoppa efter inaktivitet"
+
+msgid "Keep receiving in the background"
+msgstr "Fortsätt ta emot i bakgrunden"
+
+msgid "WiFi off"
+msgstr "Wi-Fi av"
+
+msgid "Ethernet off"
+msgstr "Ethernet av"
+
+msgid "Bluetooth off"
+msgstr "Bluetooth av"
+
+msgid "WiFi on"
+msgstr "Wi-Fi på"
+
+msgid "Ethernet on"
+msgstr "Ethernet på"
+
+msgid "Bluetooth on"
+msgstr "Bluetooth på"
+
+msgid "failed"
+msgstr "misslyckades"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "No theme found"
+msgstr "Inget tema hittades"
+
+msgid "Game lists refreshed"
+msgstr "Spellistorna har uppdaterats"
+
+msgid "Game lists"
+msgstr "Spellistor"
+
+msgid "Favorites first"
+msgstr "Favoriter först"
+
+msgid "Favorites & last played pages"
+msgstr "Sidor för favoriter & senast spelade"
+
+msgid "Refresh game lists"
+msgstr "Uppdatera spellistorna"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "Fråga"
+
+msgid "Always resume"
+msgstr "Fortsätt alltid"
+
+msgid "Always start fresh"
+msgstr "Börja alltid om"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "Spel"
+
+msgid "Resume games"
+msgstr "Fortsätta spel"
+
+msgid "Auto-save on exit"
+msgstr "Autosparpunkt när du avslutar"
+
+msgid "On launch"
+msgstr "Vid start"
+
+msgid "Powering off in a game always saves it"
+msgstr "Att stänga av i ett spel sparar alltid"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "Kunde inte uppdatera /boot/rsos.env."
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "STARTA OM NU"
+
+msgid "LATER"
+msgstr "SENARE"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "Omstart krävs: ändringen gäller från nästa start."
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "%s ledigt av %s"
+
+msgid "Storage"
+msgstr "Lagring"
+
+msgid "Game storage"
+msgstr "Plats för spel"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "USB-minne"
+
+msgid "Import games"
+msgstr "Importera spel"
+
+msgid "Export games"
+msgstr "Exportera spel"
+
+msgid "Back up saves"
+msgstr "Säkerhetskopiera sparfiler"
+
+msgid "Eject USB drive"
+msgstr "Mata ut USB-minne"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "Fråga när ett USB-minne ansluts"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "Avancerat: av för snabbare start, omstart krävs"
+
+msgid "Internal eMMC"
+msgstr "Internt eMMC-minne"
+
+msgid "M.2 SATA drive"
+msgstr "M.2 SATA-enhet"
+
+msgid "no battery"
+msgstr "inget batteri"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%d %%, fullt om %d h %02d"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%d %%, ca %d h %02d"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%d %%, laddar"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%d %%, fullt"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%d %%"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "laddare, %s V"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "batteri, %s V"
+
+msgid "charger connected"
+msgstr "laddare ansluten"
+
+msgid "battery"
+msgstr "batteri"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C (varm)"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "inte monterad"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s, meny %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "%d system"
+msgstr[1] "%d system"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "%d spel i %s"
+msgstr[1] "%d spel i %s"
+
+msgid "System information"
+msgstr "Systeminformation"
+
+msgid "Version"
+msgstr "Version"
+
+msgid "Battery"
+msgstr "Batteri"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "Ström"
+
+msgid "Input devices"
+msgstr "Inmatningsenheter"
+
+msgid "CPU temperature"
+msgstr "CPU-temperatur"
+
+msgid "1 min"
+msgstr "1 min"
+
+msgid "2 min"
+msgstr "2 min"
+
+msgid "5 min"
+msgstr "5 min"
+
+msgid "Voltage"
+msgstr "Spänning"
+
+msgid "AXP fuel gauge"
+msgstr "AXP-batterimätare"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "JA"
+
+msgid "NO"
+msgstr "NEJ"
+
+msgid "Restart the console?"
+msgstr "Starta om konsolen?"
+
+msgid "Power off the console?"
+msgstr "Stänga av konsolen?"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "Ström"
+
+msgid "Restart"
+msgstr "Starta om"
+
+msgid "Power off"
+msgstr "Stäng av"
+
+msgid "Battery saving"
+msgstr "Batterisparande"
+
+msgid "Dim the screen after"
+msgstr "Dämpa skärmen efter"
+
+msgid "Screen off after"
+msgstr "Skärmen av efter"
+
+msgid "Battery gauge"
+msgstr "Batterimätare"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "Tidszon: %s"
+
+msgid "Time zone"
+msgstr "Tidszon"
+
+msgid "That date is not valid."
+msgstr "Det datumet finns inte."
+
+msgid "The clock could not be set."
+msgstr "Klockan kunde inte ställas."
+
+msgid "Date and time set"
+msgstr "Datum och tid inställda"
+
+msgid "Setting the clock needs the power module"
+msgstr "Klockan kan bara ställas med strömmodulen"
+
+msgid "Date & time"
+msgstr "Datum & tid"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "Nu"
+
+msgid "Set the clock"
+msgstr "Ställ klockan"
+
+msgid "Year"
+msgstr "År"
+
+msgid "Month"
+msgstr "Månad"
+
+msgid "Day"
+msgstr "Dag"
+
+msgid "Hour"
+msgstr "Timme"
+
+msgid "Minute"
+msgstr "Minut"
+
+msgid "Set date and time"
+msgstr "Ställ in datum och tid"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "Språk"
+
+msgid "Settings"
+msgstr "Inställningar"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "%s är inte installerad"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "Välj ditt språk"
+
+msgid "This game is not in the list any more"
+msgstr "Spelet finns inte längre i listan"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "Favorit"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "Systemets standard"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s (experimentell)"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "Standard (%s)"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "ingen"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "Kärna för det här spelet"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "Kärna för alla %s-spel"
+
+msgid "Core"
+msgstr "Kärna"
+
+msgid "none installed"
+msgstr "ingen installerad"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "Starta"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "Fil"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr ""
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr ""
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr ""
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr ""
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr ""
+
+msgctxt "system"
+msgid "32X"
+msgstr ""
+
+msgctxt "system"
+msgid "Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr ""
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr ""
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr ""
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr ""
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "SD-kortet är fullt"
+
+msgid "The USB drive was removed"
+msgstr "USB-minnet togs bort"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "Läsfel: togs USB-minnet bort?"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "USB-minnet är fullt"
+
+msgid "The USB drive is read-only"
+msgstr "USB-minnet är skrivskyddat"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "Skrivfel: togs USB-minnet bort?"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "inaktiv"
+
+msgid "BIOS files"
+msgstr "BIOS-filer"
+
+msgid "Themes"
+msgstr "Teman"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "USB-minnet är upptaget"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "USB-minnet är utmatat: du kan ta ut det"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "MATA UT"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "Översta mappen"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s (säkerhetskopia)"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "%d samling"
+msgstr[1] "alla %d samlingar"
+
+msgid "Another copy is already running."
+msgstr "En kopiering pågår redan."
+
+msgid "The copy could not start."
+msgstr "Kopieringen kunde inte starta."
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "Spelsamlingar på USB-minnet"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "%d spel"
+msgstr[1] "%d spel"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s, %s, %s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "%d fil, %s"
+msgstr[1] "%d filer, %s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "Alla (%d samling)"
+msgstr[1] "Alla (%d samlingar)"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "%d spel, %s"
+msgstr[1] "%d spel, %s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "Mata ut"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "Letar efter spel på USB-minnet..."
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "Jämför med konsolen..."
+
+msgid "This drive could not be read."
+msgstr "USB-minnet kunde inte läsas."
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "Från"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "Spel på USB-minnet"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "%d ny av %d, %s, sparfiler"
+msgstr[1] "%d nya av %d, %s, sparfiler"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "%d ny av %d, %s"
+msgstr[1] "%d nya av %d, %s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d, redan här, sparfiler"
+msgstr[1] "%d, redan här, sparfiler"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d, redan här"
+msgstr[1] "%d, redan här"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "Stöds inte: %s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%d fil"
+msgstr[1] "%d filer"
+
+msgid "Nothing new on this drive"
+msgstr "Inget nytt på USB-minnet"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "Kopiera"
+
+msgid "Saves & save states"
+msgstr "Sparfiler & sparpunkter"
+
+msgid "Screenshots"
+msgstr "Skärmbilder"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "Redan på konsolen"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "%d fil, hoppas över"
+msgstr[1] "%d filer, hoppas över"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "Annorlunda på konsolen"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d (även sparfiler): du får frågan"
+msgstr[1] "%d (även sparfiler): du får frågan"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d: du får frågan"
+msgstr[1] "%d: du får frågan"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "Att kopiera"
+
+msgid "Not enough space"
+msgstr "Inte tillräckligt med plats"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "upp till %s, %s ledigt"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "Kopiera"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "Importera från %s"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "USB-minnet är upptaget (en sökning eller kopiering pågår)."
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "Det går inte att skriva till USB-minnet (är det skrivskyddat?)."
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "Jämför med USB-minnet..."
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "Mapp på USB-minnet"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s (ny)"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "Spel på konsolen"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "BIOS-filer också"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "Spel"
+
+msgid "All games"
+msgstr "Alla spel"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "Senast spelat: %s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "Inställningar också (kärna, knappar)"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "Redan på USB-minnet"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "%d fil, %s (%s ledigt)"
+msgstr[1] "%d filer, %s (%s ledigt)"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "Inget att kopiera: USB-minnet är uppdaterat"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "%d fil över 4 GB: för stor för FAT32"
+msgstr[1] "%d filer över 4 GB: för stora för FAT32"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "hoppas över"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "Exportera"
+
+msgid "Back up"
+msgstr "Säkerhetskopiera"
+
+msgid "The USB drive is not there any more."
+msgstr "USB-minnet finns inte kvar."
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "Exportera spel till %s"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "Säkerhetskopiera sparfiler till %s"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "okänt datum"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "HOPPA ÖVER"
+
+msgid "REPLACE"
+msgstr "ERSÄTT"
+
+msgid "SKIP ALL"
+msgstr "HOPPA ÖVER ALLA"
+
+msgid "REPLACE ALL"
+msgstr "ERSÄTT ALLA"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "Den här inställningsfilen finns redan på konsolen, men är annorlunda:"
+
+msgid "This save is already on the console, but different:"
+msgstr "Den här sparfilen finns redan på konsolen, men är annorlunda:"
+
+msgid "This game is already on the console, but different:"
+msgstr "Det här spelet finns redan på konsolen, men är annorlunda:"
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "Den här BIOS-filen finns redan på konsolen, men är annorlunda:"
+
+msgid "This file is already on the console, but different:"
+msgstr "Den här filen finns redan på konsolen, men är annorlunda:"
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"USB-minne: %s, %s\n"
+"Konsol: %s, %s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "Sparfiler är värdefulla: om du ersätter den sparas konsolens kopia som %s.bak."
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "Kopierar från %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "Exporterar spel till %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "Säkerhetskopierar sparfiler till %s"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s av %s  -  %d av %d fil"
+msgstr[1] "%s av %s  -  %d av %d filer"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s MB/s, ca %d min kvar"
+msgstr[1] "%s MB/s, ca %d min kvar"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s MB/s"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "%d fanns redan"
+msgstr[1] "%d fanns redan"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "Kopieringen avbröts."
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "Kopieringen stoppade: %s."
+
+msgid "error"
+msgstr "fel"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "Importerade %d, fanns redan %d, hoppade över %d, ersatte %d."
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "Några filer misslyckades."
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "Avbrutet."
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "Stoppat: %s. Den halvfärdiga filen togs bort."
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "Kopierade %d fil (%s), fanns redan %d."
+msgstr[1] "Kopierade %d filer (%s), fanns redan %d."
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "%d fil över 4 GB hoppades över (FAT32)."
+msgstr[1] "%d filer över 4 GB hoppades över (FAT32)."
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "%d misslyckades."
+msgstr[1] "%d misslyckades."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "STOPPA"
+
+msgid "CONTINUE"
+msgstr "FORTSÄTT"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "Stoppa kopieringen? Filer som redan kopierats finns kvar."
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "Stoppa? Filer som redan kopierats finns kvar på USB-minnet."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "IMPORTERA SPEL"
+
+msgid "EXPORT GAMES"
+msgstr "EXPORTERA SPEL"
+
+msgid "BACK UP SAVES"
+msgstr "SÄKERHETSKOPIERA SPARFILER"
+
+msgid "NOTHING"
+msgstr "INGET"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "USB-minnet %s anslutet: Inställningar > Lagring"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "USB-minnet %s anslutet"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "USB-minnet \"%s\" anslutet (%s, %s). Vad vill du göra?"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "USB-minnet togs bort: kopieringen stoppade"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "USB-minnet togs bort"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "USB-minne: formatet stöds inte (använd FAT32 eller exFAT)"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "USB-minnet kunde inte läsas"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "Importera spel från"
+
+msgid "Export games to"
+msgstr "Exportera spel till"
+
+msgid "Back up saves to"
+msgstr "Säkerhetskopiera sparfiler till"
+
+msgid "USB transfers are not available in this build."
+msgstr "USB-överföring finns inte i den här versionen."
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "Anslut ett USB-minne (FAT32, exFAT eller NTFS)."
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "Inget USB-minne"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "Ett USB-minne är upptaget"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "Nätverket av: webböverföringen stoppad"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "stoppa"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "Öppna den här adressen i en webbläsare:"
+
+msgid "(no network address)"
+msgstr "(ingen nätverksadress)"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "eller %s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "Fel PIN-kod: låst i %d s"
+msgstr[1] "Fel PIN-kod: låst i %d s"
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "Tar emot %s (%d %%)"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "Stoppad: %s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "Stoppad"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "Väntar på filer..."
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "%d fil mottagen"
+msgstr[1] "%d filer mottagna"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "Bara på ditt hemnätverk. Alla som har PIN-koden kan lägga till filer."
+
+msgid "KEEP RECEIVING"
+msgstr "FORTSÄTT TA EMOT"
+
+msgid "Keep receiving files in the background?"
+msgstr "Fortsätta ta emot filer i bakgrunden?"
+
+msgid "Network transfer is not available in this build."
+msgstr "Nätverksöverföring finns inte i den här versionen."
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "Slå på Wi-Fi eller Ethernet först (ingen nätverksadress)."
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "Överföringen kunde inte starta (fel %d)."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "FORTSÄTT"
+
+msgid "START FRESH"
+msgstr "BÖRJA OM"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "Fortsätta %s?"
+
+msgid "No emulator is installed for this system."
+msgstr "Ingen emulator är installerad för det här systemet."
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "Filer kopieras just nu. Vänta tills det är klart, eller avbryt."
+
+msgid "Resume where you left off?"
+msgstr "Fortsätta där du slutade?"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "INSTÄLLNINGAR"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "Handkontroll ansluten: %s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "Handkontroll bortkopplad: %s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "Ny handkontroll: %s (Inställningar > Kontroller)"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "Ny handkontroll: %s. Ställa in den i Inställningar > Kontroller?"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "Läser in spel: %s"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "Förbereder din konsol..."
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "Lågt batteri (%d %%)"
+
+msgid "Battery empty, saving..."
+msgstr "Batteriet är tomt, sparar..."
+
+msgid "Restarting..."
+msgstr "Startar om..."
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "Varm, saktar ner"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "Laddar"
+
+msgid "Fully charged"
+msgstr "Fulladdat"
+
+msgid "Charger unplugged"
+msgstr "Laddaren urkopplad"
+
+msgid "Not charging"
+msgstr "Laddar inte"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%d %%"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "Fullt om %d h %02d min"
+
+msgid "Press the power button to start"
+msgstr "Tryck på strömknappen för att starta"
+
+msgid "Battery very low: plug in the charger"
+msgstr "Mycket lågt batteri: anslut laddaren"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "Betyg: "
+
+msgid "Released: "
+msgstr "Utgiven: "
+
+msgid "Developer: "
+msgstr "Utvecklare: "
+
+msgid "Publisher: "
+msgstr "Utgivare: "
+
+msgid "Genre: "
+msgstr "Genre: "
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "Spelare: "
+
+msgid "Last played: "
+msgstr "Senast spelat: "
+
+msgid "Times played: "
+msgstr "Antal gånger: "
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "År"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "Genre"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "Spelare"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "Betyg"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "Dina favoritspel"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "Senast spelade"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "Alla spel på konsolen"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "Hemdator · 1983"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "Arcade · MAME 2003-Plus"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "Arcade · FinalBurn Neo"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "okänd"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "inga spel"
+
+msgid "launch"
+msgstr "starta"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "alternativ"
+
+msgid "favorite"
+msgstr "favorit"
+
+msgid "menu"
+msgstr "meny"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "Tillagd i favoriter"
+
+msgid "Removed from favorites"
+msgstr "Borttagen från favoriter"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "%d spel tillgängligt"
+msgstr[1] "%d spel tillgängliga"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "%d favorit"
+msgstr[1] "%d favoriter"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s, %s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "Inga spel hittades. Kopiera ROM-filer till /data/roms/<system>/"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "aldrig"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "okänt"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "för %d s sedan"
+msgstr[1] "för %d s sedan"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "för %d minut sedan"
+msgstr[1] "för %d minuter sedan"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "för %d timme sedan"
+msgstr[1] "för %d timmar sedan"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "för %d dag sedan"
+msgstr[1] "för %d dagar sedan"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%Y-%m-%d"

@@ -1,0 +1,18 @@
+config BR2_PACKAGE_LIBRETRO_GEARCOLECO
+	bool "libretro-gearcoleco"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Gearcoleco: ColecoVision (and Coleco ADAM) emulator, built as a
+	  libretro core (GPL-3.0). Needs the ColecoVision BIOS
+	  (colecovision.rom).
+
+	  Installs /usr/lib/libretro/gearcoleco_libretro.so and
+	  /usr/share/rsos/cores/gearcoleco.ini.
+
+	  https://github.com/drhelius/Gearcoleco
+
+comment "libretro-gearcoleco needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

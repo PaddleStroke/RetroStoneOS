@@ -1,0 +1,53 @@
+config BR2_PACKAGE_RSOS_FRONTEND
+	bool "rsos-frontend"
+	depends on BR2_TOOLCHAIN_HAS_THREADS # libdrm, alsa-lib, transfer threads
+	depends on !BR2_STATIC_LIBS # dlopen() of the libretro cores and of EGL/GLES
+	select BR2_PACKAGE_LIBDRM
+	select BR2_PACKAGE_ALSA_LIB
+	select BR2_PACKAGE_ALSA_LIB_PCM
+	# rsos-update, the system updater (docs/updates.md): zstd payloads,
+	# HTTPS to GitHub (mbedTLS + the CA bundle)
+	select BR2_PACKAGE_ZSTD
+	select BR2_PACKAGE_MBEDTLS
+	select BR2_PACKAGE_CA_CERTIFICATES
+	help
+	  RetroStoneOS frontend: the menu (EmulationStation-style UI and
+	  theme engine), the KMS display layer (live LCD/HDMI switching,
+	  hardware-scaled planes), the libretro host (one process per
+	  game), input, power management and ROM transfer.
+
+	  Also rsos-update, the system updater (docs/updates.md), run by
+	  the menu as a helper process: it alone links zstd and mbedTLS,
+	  so the menu's start-up is not slowed down by them.
+
+	  When enabled, init starts /usr/bin/rsos-frontend (respawned):
+	  post-build.sh adds the inittab line when the binary exists.
+
+	  Installs to /usr/bin:
+	  - rsos-frontend: the menu; "rsos-frontend --run ..." is the
+	    game process it starts for each game;
+	  - rsos-run: the same libretro host as a stand-alone tool;
+	  - rsos-bootreason, rsos-clock: init helpers (charge-mode boot
+	    detection, clock save/restore);
+	  - rsos-kmstest, rsos-display-selftest: display bring-up tools.
+
+	  And /usr/share/rsos/{fonts,themes,remaps,coreopts,web},
+	  gamecontrollerdb.txt, data-README.txt and /etc/rsos-version.
+
+	  EGL, GLES2 and GBM (mesa3d) are only needed at build time for
+	  their headers: HW-rendered cores (N64) dlopen() them at run time.
+
+if BR2_PACKAGE_RSOS_FRONTEND
+
+config BR2_PACKAGE_RSOS_FRONTEND_SPLASH_BG
+	string "boot logo background colour"
+	default "2a2a35"
+	help
+	  Background of the boot logo (/usr/share/rsos/splash.rle), as
+	  RRGGBB. Previews: docs/ui-previews/splash-*.png (000000,
+	  16161c, 2a2a35, 16191e, e6e6ea, ffffff).
+
+endif
+
+comment "rsos-frontend needs a toolchain w/ threads, dynamic library"
+	depends on !BR2_TOOLCHAIN_HAS_THREADS || BR2_STATIC_LIBS

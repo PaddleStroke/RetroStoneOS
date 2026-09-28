@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" width="120" height="180">
+<!-- RetroStoneOS original art: a generic portrait handheld -->
+<path fill="#ffffff" fill-rule="evenodd" d="M24 5H96A14 14 0 0 1 110 19V150A25 25 0 0 1 85 175H24A14 14 0 0 1 10 161V19A14 14 0 0 1 24 5Z
+M26 20H94A4 4 0 0 1 98 24V80A4 4 0 0 1 94 84H26A4 4 0 0 1 22 80V24A4 4 0 0 1 26 20Z
+M33 106H43V116H53V126H43V136H33V126H23V116H33Z
+M78 118a7 7 0 1 0 14 0a7 7 0 1 0 -14 0Z
+M90 106a7 7 0 1 0 14 0a7 7 0 1 0 -14 0Z
+M44 152h12v5h-12Z M62 152h12v5h-12Z"/>
+</svg>

@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: wonderswancolor sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>3f9f7f</accent>
+		<icon>carbon/wonderswan</icon>
+		<tagline>Bandai · 2000</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

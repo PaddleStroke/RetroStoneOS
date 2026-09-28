@@ -1,0 +1,2406 @@
+# Finnish translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: fi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "Zip-tiedostoa ei voi avata (%s)"
+
+msgid "No playable file in this zip"
+msgstr "Zipissä ei ole pelattavaa tiedostoa"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "Zipin tiedosto on liian suuri (%llu Mt)"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "Tiedostoa %s ei voi purkaa zipistä (%s)"
+
+msgid "Game file not found"
+msgstr "Pelitiedostoa ei löydy"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "7z-paketteja ei tueta: käytä .zip-tiedostoa tai pura paketti"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "Pelitiedostoa ei voi lukea (%s)"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "Tämä järjestelmä"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s: %s ei ole oikea BIOS-tiedosto"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%s tai %s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "%s tarvitsee BIOS-tiedoston %s kansioon %s"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "Sammutetaan..."
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "Pelaajan 1 ohjain irrotettu: tauko"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "Pelaaja 1: %s"
+
+msgid "Saving..."
+msgstr "Tallennetaan..."
+
+msgid "This game cannot save a state now"
+msgstr "Tämä peli ei voi tallentaa tilaa nyt"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "Tilaa EI tallennettu: %s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "Tila ladattu, paikka %d"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "Paikassa %d ei ole tilaa"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "Paikan %d tilaa ei voi ladata"
+
+#, c-format
+msgid "State slot %d"
+msgstr "Tilapaikka %d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "Tilapaikka %d (tyhjä)"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "Aloitettu alusta"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "Yhdistetty: %s"
+
+msgid "Battery empty: game saved"
+msgstr "Akku loppui: peli tallennettu"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "Akku vähissä (%d %%)"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "%d asetus, noin %d min"
+msgstr[1] "%d asetusta, noin %d min"
+
+msgid "No benchmark for this system"
+msgstr "Tälle järjestelmälle ei ole nopeustestiä"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "Nopeustesti: peli ei voi tallentaa tilaa nyt"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "Nopeustesti: tiedostoa %s ei voi kirjoittaa"
+
+msgid "No result to use"
+msgstr "Ei käytettävää tulosta"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "Tuntematon kokoonpano %s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "Tallennus epäonnistui: %s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "\"%s\" tallennettu tälle pelille (käytössä ensi kerralla)"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "\"%s\" tallennettu: ensi kerralla käytetään %s"
+
+msgid "The emulator stopped responding"
+msgstr "Emulaattori lakkasi vastaamasta"
+
+msgid "Cannot load the emulator core"
+msgstr "Emulaattorin ydintä ei voi ladata"
+
+msgid "Benchmark: bad plan"
+msgstr "Nopeustesti: virheellinen suunnitelma"
+
+msgid "Cannot start the save thread"
+msgstr "Tallennussäiettä ei voi käynnistää"
+
+msgid "Cannot open the display"
+msgstr "Näyttöä ei voi avata"
+
+msgid "This core needs a game file"
+msgstr "Tämä ydin tarvitsee pelitiedoston"
+
+msgid "The emulator could not load this game"
+msgstr "Emulaattori ei voinut ladata tätä peliä"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "Jatketaan"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "GPU:n käynnistys epäonnistui (framebuffer 0x%x)"
+
+msgid "This build cannot run GLES games"
+msgstr "Tämä versio ei tue GLES-pelejä"
+
+msgid "No GPU found (lima)"
+msgstr "GPU:ta ei löytynyt (lima)"
+
+msgid "The game was stopped"
+msgstr "Peli pysäytettiin"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "Emulaattori kaatui (%s). Tallennukset ovat tallessa muutamaa viime sekuntia lukuun ottamatta."
+
+msgid "Could not start the game"
+msgstr "Peliä ei voitu käynnistää"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "Emulaattori lakkasi vastaamasta. Tallennukset ovat tallessa muutamaa viime sekuntia lukuun ottamatta."
+
+msgid "Cannot start the game process"
+msgstr "Peliprosessia ei voi käynnistää"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "Emulaattorissa tapahtui virhe (koodi %d)"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "Pikselitarkka"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "Venytys"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "Kuvasuhde"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "Päällä"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "Pois"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "(peli)"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "(kaikki)"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "(testi)"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "kaatui"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "jumittui"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "pysäytetty"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "epäonnistui"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "Jatka"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "Paikka %d"
+
+msgid "Save state"
+msgstr "Tallenna tila"
+
+msgid "Load state"
+msgstr "Lataa tila"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "Levy"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "Aloita alusta"
+
+msgid "Core options"
+msgstr "Ytimen asetukset"
+
+msgid "Scaling"
+msgstr "Skaalaus"
+
+msgid "Show FPS"
+msgstr "Näytä FPS"
+
+msgid "Fast-forward"
+msgstr "Pikakelaus"
+
+msgid "Benchmark this game"
+msgstr "Testaa pelin nopeus"
+
+msgid "Controls"
+msgstr "Ohjaimet"
+
+msgid "Exit game"
+msgstr "Lopeta peli"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "Tallenna tälle pelille"
+
+msgid "Save for all games (this core)"
+msgstr "Tallenna kaikille peleille (tämä ydin)"
+
+msgid "Reset to defaults"
+msgstr "Palauta oletukset"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "Pelaaja %d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s (tatti)"
+
+msgid "D-pad as left stick (P1)"
+msgstr "Ristiohjain vasemmaksi tatiksi (P1)"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "Ylös"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "Alas"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "Vasen"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "Oikea"
+
+msgid "Left stick"
+msgstr "Vasen tatti"
+
+msgid "Right stick"
+msgstr "Oikea tatti"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "Ajot"
+
+msgid "Each run"
+msgstr "Jokainen ajo"
+
+msgid "from now, no input"
+msgstr "nyt, ilman painalluksia"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "Lopetus"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs (SD-kortti)"
+
+msgid "Results"
+msgstr "Tulokset"
+
+msgid "Start benchmark"
+msgstr "Aloita nopeustesti"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "ei sijoitusta"
+
+msgid "blank?"
+msgstr "yksivärinen?"
+
+msgid "Use this for this game"
+msgstr "Käytä tätä tässä pelissä"
+
+msgid "Resume game"
+msgstr "Jatka peliä"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "Nopeustesti"
+
+msgid "Benchmark results"
+msgstr "Testin tulokset"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "Tyhjä"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "(peli) tälle pelille, (kaikki) kaikille peleille, * tallentuu poistuessa"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A: valitse  B: jatka  </>: muuta"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A: valitse  B: takaisin  </>: muuta"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "Tallennetaan paikkaan %d..."
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "Paikka %d on tyhjä"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "Levy %d asetettu"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "Levyyn %d ei voi vaihtaa"
+
+msgid "Could not save the options"
+msgstr "Asetuksia ei voitu tallentaa"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "Tallennettu: %s"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "Tallennettu kaikille peleille (%s)"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "Oletukset palautettu (tallentuu poistuessa)"
+
+msgid "Options saved for this game"
+msgstr "Asetukset tallennettu tälle pelille"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "Taulukko: %s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "Tallennus epäonnistui: %s (yritetään uudelleen)"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "Peli tallennettu"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "Autotilaa EI tallennettu: %s"
+
+msgid "Auto state saved"
+msgstr "Autotila tallennettu"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "Tilaa %d EI tallennettu: %s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "Tila tallennettu, paikka %d"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "Tallennusta ei voi lukea: tallennus pois käytöstä"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr ","
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr " "
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "Gt"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "Mt"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "kt"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%d.%m.%Y"
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%d.%m.%Y %H.%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "Näyttö ei hyväksynyt tätä taajuutta"
+
+msgid "No emulator is installed for this game."
+msgstr "Tälle pelille ei ole asennettu emulaattoria."
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "Peli ei käynnisty (puuttuuko BIOS?)."
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "Peliprosessia ei voi käynnistää (%s)."
+
+msgid "The game could not be started."
+msgstr "Peliä ei voitu käynnistää."
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "Dataosiota ei voitu palauttaa. Pelit ja tallennukset pitää ehkä kopioida uudelleen."
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "Dataosiota ei voitu lukea, joten se alustettiin uudelleen."
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "Dataosiossa on virheitä: tallennus voi epäonnistua. Varmuuskopioi tallennuksesi."
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "Viimeisin päivitys ei käynnistynyt, joten edellinen versio palautettiin."
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "SD-kortti tarkistettiin odottamattoman virtakatkon jälkeen"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "Valmistellaan SD-korttia, odota hetki..."
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "Tarkistetaan SD-korttia, odota hetki..."
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "Suosikit"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "Viimeksi pelatut"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "Kansiossa ei ole enää pelejä"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "selaa"
+
+msgid "change"
+msgstr "muuta"
+
+msgid "select"
+msgstr "valitse"
+
+msgid "back"
+msgstr "takaisin"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "kirjoita"
+
+msgid "delete"
+msgstr "poista"
+
+msgid "space"
+msgstr "väli"
+
+msgid "shift"
+msgstr "vaihto"
+
+msgid "ok"
+msgstr "ok"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "peruuta"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "VAIHTO"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "VÄLILYÖNTI"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "PYYHI"
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "Auto"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "Kuvasuhde"
+
+msgid "Integer"
+msgstr "Pikselitarkka"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "Automaattinen"
+
+msgid "Basic"
+msgstr "Perus"
+
+msgid "Detailed"
+msgstr "Laaja"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "Oikea yläkulma"
+
+msgid "Top left"
+msgstr "Vasen yläkulma"
+
+msgid "Bottom right"
+msgstr "Oikea alakulma"
+
+msgid "Bottom left"
+msgstr "Vasen alakulma"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Hz (vanha)"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "Auto (pelin aloittava ohjain)"
+
+msgid "Built-in"
+msgstr "Sisäinen"
+
+msgid "External"
+msgstr "Ulkoinen"
+
+msgid "Could not save the settings"
+msgstr "Asetuksia ei voitu tallentaa"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "TV"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "LCD-taajuus: 60 Hz"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "LCD-taajuus: palautettu 78 Hz"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "PIDÄ"
+
+msgid "REVERT"
+msgstr "PERU"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"Näyttö toimii nyt 60 Hz:n taajuudella.\n"
+"Pidätkö asetuksen? Palautus %d s kuluttua"
+
+msgid "Display"
+msgstr "Näyttö"
+
+msgid "Brightness"
+msgstr "Kirkkaus"
+
+msgid "LCD refresh rate"
+msgstr "LCD-taajuus"
+
+msgid "HDMI resolution"
+msgstr "HDMI-tarkkuus"
+
+msgid "Game scaling"
+msgstr "Pelin skaalaus"
+
+msgid "Game list style"
+msgstr "Pelilistan tyyli"
+
+msgid "Battery in games"
+msgstr "Akku peleissä"
+
+msgid "Battery position"
+msgstr "Akun sijainti"
+
+msgid "Button test"
+msgstr "Nappitesti"
+
+msgid "no stick"
+msgstr "ei tattia"
+
+msgid "Hold SELECT + START to exit"
+msgstr "Lopeta pitämällä SELECT + START pohjassa"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "Paina ristiohjainta YLÖS"
+
+msgid "Press D-pad DOWN"
+msgstr "Paina ristiohjainta ALAS"
+
+msgid "Press D-pad LEFT"
+msgstr "Paina ristiohjainta VASEMMALLE"
+
+msgid "Press D-pad RIGHT"
+msgstr "Paina ristiohjainta OIKEALLE"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "Paina OIKEAA nappia (A)"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "Paina ALINTA nappia (B)"
+
+msgid "Press the TOP face button (X)"
+msgstr "Paina YLINTÄ nappia (X)"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "Paina VASENTA nappia (Y)"
+
+msgid "Press L1"
+msgstr "Paina L1"
+
+msgid "Press R1"
+msgstr "Paina R1"
+
+msgid "Press L2"
+msgstr "Paina L2"
+
+msgid "Press R2"
+msgstr "Paina R2"
+
+msgid "Press SELECT"
+msgstr "Paina SELECT"
+
+msgid "Press START"
+msgstr "Paina START"
+
+msgid "Press the left stick (L3)"
+msgstr "Paina vasenta tattia (L3)"
+
+msgid "Press the right stick (R3)"
+msgstr "Paina oikeaa tattia (R3)"
+
+msgid "Push the left stick RIGHT"
+msgstr "Työnnä vasenta tattia OIKEALLE"
+
+msgid "Push the left stick DOWN"
+msgstr "Työnnä vasenta tattia ALAS"
+
+msgid "Push the right stick RIGHT"
+msgstr "Työnnä oikeaa tattia OIKEALLE"
+
+msgid "Push the right stick DOWN"
+msgstr "Työnnä oikeaa tattia ALAS"
+
+msgid "Configure controller"
+msgstr "Määritä ohjain"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "Vaihe %d/%d"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "Puuttuuko nappi? Ohitus %d s kuluttua"
+
+msgid "Controller saved"
+msgstr "Ohjain tallennettu"
+
+msgid "The mapping could not be saved."
+msgstr "Nappiasetuksia ei voitu tallentaa."
+
+msgid "Configure a controller"
+msgstr "Määritä ohjain"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "oma"
+
+msgid "known pad"
+msgstr "tunnettu ohjain"
+
+msgid "standard"
+msgstr "vakio"
+
+msgid "keyboard"
+msgstr "näppäimistö"
+
+msgid "not configured"
+msgstr "ei määritetty"
+
+msgid "No external controller detected"
+msgstr "Ulkoista ohjainta ei löytynyt"
+
+msgid "built-in"
+msgstr "sisäinen"
+
+msgid "Player 1"
+msgstr "Pelaaja 1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "Lisänapit C/Z asennettu"
+
+msgid "Players"
+msgstr "Pelaajat"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10 min"
+
+msgid "30 min"
+msgstr "30 min"
+
+msgid "1 hour"
+msgstr "1 tunti"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "Ei koskaan"
+
+msgid "please wait..."
+msgstr "odota hetki..."
+
+msgid "not set"
+msgstr "ei asetettu"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "käynnissä"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi: sammutetaan, odota hetki..."
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "Ethernet: sammutetaan, odota hetki..."
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "Bluetooth: sammutetaan, odota hetki..."
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi: käynnistetään, odota hetki..."
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "Ethernet: käynnistetään, odota hetki..."
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "Bluetooth: käynnistetään, odota hetki..."
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "Ei voi suorittaa: %s"
+
+msgid "Could not save the WiFi settings"
+msgstr "Wi-Fi-asetuksia ei voitu tallentaa"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "Wi-Fi-salasanassa on vähintään 8 merkkiä."
+
+msgid "Set the network name first."
+msgstr "Anna ensin verkon nimi."
+
+msgid "WiFi password saved"
+msgstr "Wi-Fi-salasana tallennettu"
+
+msgid "WiFi network name"
+msgstr "Wi-Fi-verkon nimi"
+
+msgid "WiFi password"
+msgstr "Wi-Fi-salasana"
+
+msgid "Console name"
+msgstr "Konsolin nimi"
+
+msgid "Use letters, digits and dashes."
+msgstr "Käytä kirjaimia, numeroita ja väliviivoja."
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "Konsolin nimi: %s (seuraavasta siirrosta)"
+
+msgid "Network"
+msgstr "Verkko"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Wi-Fi-verkko"
+
+msgid "Transfer games from a computer or phone"
+msgstr "Siirrä pelejä tietokoneelta tai puhelimesta"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "Siirto verkon kautta"
+
+msgid "Stop when idle for"
+msgstr "Lopeta tauon jälkeen"
+
+msgid "Keep receiving in the background"
+msgstr "Vastaanota taustalla"
+
+msgid "WiFi off"
+msgstr "Wi-Fi pois"
+
+msgid "Ethernet off"
+msgstr "Ethernet pois"
+
+msgid "Bluetooth off"
+msgstr "Bluetooth pois"
+
+msgid "WiFi on"
+msgstr "Wi-Fi päällä"
+
+msgid "Ethernet on"
+msgstr "Ethernet päällä"
+
+msgid "Bluetooth on"
+msgstr "Bluetooth päällä"
+
+msgid "failed"
+msgstr "epäonnistui"
+
+msgid "Theme"
+msgstr "Teema"
+
+msgid "No theme found"
+msgstr "Teemoja ei löytynyt"
+
+msgid "Game lists refreshed"
+msgstr "Pelilistat päivitetty"
+
+msgid "Game lists"
+msgstr "Pelilistat"
+
+msgid "Favorites first"
+msgstr "Suosikit ensin"
+
+msgid "Favorites & last played pages"
+msgstr "Näytä Suosikit ja Viimeksi pelatut"
+
+msgid "Refresh game lists"
+msgstr "Päivitä pelilistat"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "Kysy"
+
+msgid "Always resume"
+msgstr "Jatka aina"
+
+msgid "Always start fresh"
+msgstr "Aloita aina alusta"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "Pelit"
+
+msgid "Resume games"
+msgstr "Pelin jatkaminen"
+
+msgid "Auto-save on exit"
+msgstr "Autotallennus poistuessa"
+
+msgid "On launch"
+msgstr "Käynnistettäessä"
+
+msgid "Powering off in a game always saves it"
+msgstr "Sammutus kesken pelin tallentaa aina"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "Tiedostoa /boot/rsos.env ei voitu päivittää."
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "KÄYNNISTÄ NYT"
+
+msgid "LATER"
+msgstr "MYÖHEMMIN"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "Käynnistä konsoli uudelleen: muutos tulee voimaan vasta silloin."
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "%s vapaana (koko %s)"
+
+msgid "Storage"
+msgstr "Tallennustila"
+
+msgid "Game storage"
+msgstr "Tila peleille"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "USB-tikku"
+
+msgid "Import games"
+msgstr "Tuo pelejä"
+
+msgid "Export games"
+msgstr "Vie pelejä"
+
+msgid "Back up saves"
+msgstr "Varmuuskopioi tallennukset"
+
+msgid "Eject USB drive"
+msgstr "Irrota USB-tikku"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "Kysy, kun USB-tikku liitetään"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "Lisäasetukset: pois = nopeampi käynnistys"
+
+msgid "Internal eMMC"
+msgstr "Sisäinen eMMC"
+
+msgid "M.2 SATA drive"
+msgstr "M.2 SATA -asema"
+
+msgid "no battery"
+msgstr "ei akkua"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%d %%, täyteen %d h %02d"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%d %%, noin %d h %02d"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%d %%, latautuu"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%d %%, täynnä"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%d %%"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "laturi, %s V"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "akku, %s V"
+
+msgid "charger connected"
+msgstr "laturi kytketty"
+
+msgid "battery"
+msgstr "akku"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C (kuuma)"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "ei liitetty"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s, valikko %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "%d järjestelmä"
+msgstr[1] "%d järjestelmää"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "%d peli (%s)"
+msgstr[1] "%d peliä (%s)"
+
+msgid "System information"
+msgstr "Tietoja konsolista"
+
+msgid "Version"
+msgstr "Versio"
+
+msgid "Battery"
+msgstr "Akku"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "Virtalähde"
+
+msgid "Input devices"
+msgstr "Syöttölaitteet"
+
+msgid "CPU temperature"
+msgstr "CPU:n lämpötila"
+
+msgid "1 min"
+msgstr "1 min"
+
+msgid "2 min"
+msgstr "2 min"
+
+msgid "5 min"
+msgstr "5 min"
+
+msgid "Voltage"
+msgstr "Jännite"
+
+msgid "AXP fuel gauge"
+msgstr "AXP-akkumittari"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "KYLLÄ"
+
+msgid "NO"
+msgstr "EI"
+
+msgid "Restart the console?"
+msgstr "Käynnistetäänkö konsoli uudelleen?"
+
+msgid "Power off the console?"
+msgstr "Sammutetaanko konsoli?"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "Virta"
+
+msgid "Restart"
+msgstr "Käynnistä uudelleen"
+
+msgid "Power off"
+msgstr "Sammuta"
+
+msgid "Battery saving"
+msgstr "Virransäästö"
+
+msgid "Dim the screen after"
+msgstr "Näytön himmennys"
+
+msgid "Screen off after"
+msgstr "Näytön sammutus"
+
+msgid "Battery gauge"
+msgstr "Akkumittari"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "Aikavyöhyke: %s"
+
+msgid "Time zone"
+msgstr "Aikavyöhyke"
+
+msgid "That date is not valid."
+msgstr "Päivämäärä ei kelpaa."
+
+msgid "The clock could not be set."
+msgstr "Kelloa ei voitu asettaa."
+
+msgid "Date and time set"
+msgstr "Päivä ja aika asetettu"
+
+msgid "Setting the clock needs the power module"
+msgstr "Kellon asetus vaatii virtamoduulin"
+
+msgid "Date & time"
+msgstr "Päivä ja aika"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "Nyt"
+
+msgid "Set the clock"
+msgstr "Aseta kello"
+
+msgid "Year"
+msgstr "Vuosi"
+
+msgid "Month"
+msgstr "Kuukausi"
+
+msgid "Day"
+msgstr "Päivä"
+
+msgid "Hour"
+msgstr "Tunti"
+
+msgid "Minute"
+msgstr "Minuutti"
+
+msgid "Set date and time"
+msgstr "Aseta päivä ja aika"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "Kieli"
+
+msgid "Settings"
+msgstr "Asetukset"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "%s ei ole asennettu"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "Valitse kieli"
+
+msgid "This game is not in the list any more"
+msgstr "Peli ei ole enää listalla"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "Suosikki"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "Järjestelmän oletus"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s (kokeellinen)"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "Oletus (%s)"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "ei ydintä"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "Tämän pelin ydin"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "Ydin kaikille peleille: %s"
+
+msgid "Core"
+msgstr "Ydin"
+
+msgid "none installed"
+msgstr "ei asennettu"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "Pelaa"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "Tiedosto"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr ""
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr ""
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr ""
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr ""
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr ""
+
+msgctxt "system"
+msgid "32X"
+msgstr ""
+
+msgctxt "system"
+msgid "Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr ""
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr ""
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr ""
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr ""
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "SD-kortti on täynnä"
+
+msgid "The USB drive was removed"
+msgstr "USB-tikku irrotettiin"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "Lukuvirhe: irrotettiinko USB-tikku?"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "USB-tikku on täynnä"
+
+msgid "The USB drive is read-only"
+msgstr "USB-tikku on kirjoitussuojattu"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "Kirjoitusvirhe: irrotettiinko USB-tikku?"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "ei toimintaa"
+
+msgid "BIOS files"
+msgstr "BIOS-tiedostot"
+
+msgid "Themes"
+msgstr "Teemat"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "USB-tikku on varattu"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "USB-tikku irrotettu: voit ottaa sen pois"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "IRROTA"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "USB-tikun päätaso"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s (varmuuskopio)"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "kaikki %d kirjasto"
+msgstr[1] "kaikki %d kirjastoa"
+
+msgid "Another copy is already running."
+msgstr "Toinen kopiointi on jo käynnissä."
+
+msgid "The copy could not start."
+msgstr "Kopiointia ei voitu aloittaa."
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "Pelikirjastot USB-tikulla"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "%d peli"
+msgstr[1] "%d peliä"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s, %s, %s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "%d tiedosto, %s"
+msgstr[1] "%d tiedostoa, %s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "Kaikki (%d kirjasto)"
+msgstr[1] "Kaikki (%d kirjastoa)"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "%d peli, %s"
+msgstr[1] "%d peliä, %s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "Irrota"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "Etsitään pelejä USB-tikulta..."
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "Verrataan konsoliin..."
+
+msgid "This drive could not be read."
+msgstr "Tätä USB-tikkua ei voitu lukea."
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "Mistä"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "Pelit USB-tikulla"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "%d uusi %d:stä, %s, tallennukset"
+msgstr[1] "%d uutta %d:stä, %s, tallennukset"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "%d uusi %d:stä, %s"
+msgstr[1] "%d uutta %d:stä, %s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d, jo konsolilla, tallennukset"
+msgstr[1] "%d, jo konsolilla, tallennukset"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d, jo konsolilla"
+msgstr[1] "%d, jo konsolilla"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "Ei tuettu: %s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%d tiedosto"
+msgstr[1] "%d tiedostoa"
+
+msgid "Nothing new on this drive"
+msgstr "USB-tikulla ei ole mitään uutta"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "Kopioi"
+
+msgid "Saves & save states"
+msgstr "Tallennukset ja tilat"
+
+msgid "Screenshots"
+msgstr "Kuvakaappaukset"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "Jo konsolilla"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "%d tiedosto, ohitetaan"
+msgstr[1] "%d tiedostoa, ohitetaan"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "Erilainen konsolilla"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d (myös tallennuksia): sinulta kysytään"
+msgstr[1] "%d (myös tallennuksia): sinulta kysytään"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d: sinulta kysytään"
+msgstr[1] "%d: sinulta kysytään"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "Kopioitavaa"
+
+msgid "Not enough space"
+msgstr "Tila ei riitä"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "enintään %s, %s vapaana"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "Kopioi"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "Tuo pelejä: %s"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "USB-tikku on varattu (haku tai kopiointi on käynnissä)."
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "USB-tikulle ei voi kirjoittaa (onko se kirjoitussuojattu?)."
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "Verrataan USB-tikkuun..."
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "Kansio USB-tikulla"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s (uusi)"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "Pelit konsolilla"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "Myös BIOS-tiedostot"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "Pelit"
+
+msgid "All games"
+msgstr "Kaikki pelit"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "Viimeksi pelattu: %s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "Myös asetukset (ydin, napit)"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "Jo USB-tikulla"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "%d tiedosto, %s (%s vapaana)"
+msgstr[1] "%d tiedostoa, %s (%s vapaana)"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "Ei kopioitavaa: USB-tikku on ajan tasalla"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "%d tiedosto yli 4 Gt: ei mahdu FAT32:een"
+msgstr[1] "%d tiedostoa yli 4 Gt: eivät mahdu FAT32:een"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "ohitetaan"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "Vie"
+
+msgid "Back up"
+msgstr "Varmuuskopioi"
+
+msgid "The USB drive is not there any more."
+msgstr "USB-tikku ei ole enää paikallaan."
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "Vie pelejä: %s"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "Varmuuskopioi tallennukset: %s"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "tuntematon päivä"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "OHITA"
+
+msgid "REPLACE"
+msgstr "KORVAA"
+
+msgid "SKIP ALL"
+msgstr "OHITA KAIKKI"
+
+msgid "REPLACE ALL"
+msgstr "KORVAA KAIKKI"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "Tämä asetustiedosto on jo konsolilla, mutta erilaisena:"
+
+msgid "This save is already on the console, but different:"
+msgstr "Tämä tallennus on jo konsolilla, mutta erilaisena:"
+
+msgid "This game is already on the console, but different:"
+msgstr "Tämä peli on jo konsolilla, mutta erilaisena:"
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "Tämä BIOS-tiedosto on jo konsolilla, mutta erilaisena:"
+
+msgid "This file is already on the console, but different:"
+msgstr "Tämä tiedosto on jo konsolilla, mutta erilaisena:"
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"USB-tikku: %s, %s\n"
+"Konsoli: %s, %s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "Tallennukset ovat arvokkaita: jos korvaat sen, konsolin kopio säilytetään nimellä %s.bak."
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "Kopioidaan: %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "Viedään pelejä: %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "Varmuuskopioidaan tallennuksia: %s"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s / %s  -  %d / %d tiedosto"
+msgstr[1] "%s / %s  -  %d / %d tiedostoa"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s Mt/s, noin %d min jäljellä"
+msgstr[1] "%s Mt/s, noin %d min jäljellä"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s Mt/s"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "%d oli jo olemassa"
+msgstr[1] "%d oli jo olemassa"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "Kopiointi peruttu."
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "Kopiointi keskeytyi: %s."
+
+msgid "error"
+msgstr "virhe"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "Tuotu %d, jo olemassa %d, ohitettu %d, korvattu %d."
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "Osa tiedostoista epäonnistui."
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "Peruttu."
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "Pysäytetty: %s. Keskeneräinen tiedosto poistettiin."
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "Kopioitu %d tiedosto (%s), jo olemassa %d."
+msgstr[1] "Kopioitu %d tiedostoa (%s), jo olemassa %d."
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "%d yli 4 Gt:n tiedosto ohitettu (FAT32)."
+msgstr[1] "%d yli 4 Gt:n tiedostoa ohitettu (FAT32)."
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "%d epäonnistui."
+msgstr[1] "%d epäonnistui."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "LOPETA"
+
+msgid "CONTINUE"
+msgstr "JATKA"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "Lopetetaanko kopiointi? Jo kopioidut tiedostot säilyvät."
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "Lopetetaanko? Jo kopioidut tiedostot jäävät USB-tikulle."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "TUO PELEJÄ"
+
+msgid "EXPORT GAMES"
+msgstr "VIE PELEJÄ"
+
+msgid "BACK UP SAVES"
+msgstr "VARMUUSKOPIOI"
+
+msgid "NOTHING"
+msgstr "EI MITÄÄN"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "USB-tikku %s liitetty: katso Asetukset > Tallennustila"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "USB-tikku %s liitetty"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "USB-tikku \"%s\" liitetty (%s, %s). Mitä haluat tehdä?"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "USB-tikku irrotettiin: kopiointi keskeytyi"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "USB-tikku irrotettu"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "USB-tikku: muotoa ei tueta (käytä FAT32 tai exFAT)"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "USB-tikkua ei voitu lukea"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "Mistä tuodaan pelit?"
+
+msgid "Export games to"
+msgstr "Minne viedään pelit?"
+
+msgid "Back up saves to"
+msgstr "Minne varmuuskopioidaan?"
+
+msgid "USB transfers are not available in this build."
+msgstr "USB-siirrot eivät ole käytettävissä tässä versiossa."
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "Liitä USB-tikku (FAT32, exFAT tai NTFS)."
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "Ei USB-tikkua"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "USB-tikku on varattu"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "Verkko pois: verkkosiirto pysähtyi"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "lopeta"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "Avaa tämä osoite selaimessa:"
+
+msgid "(no network address)"
+msgstr "(ei verkko-osoitetta)"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "tai %s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "Väärä PIN: lukittu %d s"
+msgstr[1] "Väärä PIN: lukittu %d s"
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "Vastaanotetaan %s (%d %%)"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "Pysäytetty: %s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "Pysäytetty"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "Odotetaan tiedostoja..."
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "%d tiedosto vastaanotettu"
+msgstr[1] "%d tiedostoa vastaanotettu"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "Vain kotiverkossa. Kuka tahansa PIN-koodin tietävä voi lisätä tiedostoja."
+
+msgid "KEEP RECEIVING"
+msgstr "JATKA"
+
+msgid "Keep receiving files in the background?"
+msgstr "Jatketaanko tiedostojen vastaanottoa taustalla?"
+
+msgid "Network transfer is not available in this build."
+msgstr "Verkkosiirto ei ole käytettävissä tässä versiossa."
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "Kytke ensin Wi-Fi tai Ethernet päälle (ei verkko-osoitetta)."
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "Siirtoa ei voitu aloittaa (virhe %d)."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "JATKA"
+
+msgid "START FRESH"
+msgstr "ALOITA ALUSTA"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "Jatketaanko peliä %s?"
+
+msgid "No emulator is installed for this system."
+msgstr "Tälle järjestelmälle ei ole asennettu emulaattoria."
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "Tiedostoja kopioidaan. Odota, että kopiointi valmistuu, tai peru se."
+
+msgid "Resume where you left off?"
+msgstr "Jatketaanko siitä, mihin jäit?"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "ASETUKSET"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "Ohjain yhdistetty: %s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "Ohjain irrotettu: %s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "Uusi ohjain: %s (Asetukset > Ohjaimet)"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "Uusi ohjain: %s. Määritetäänkö se kohdassa Asetukset > Ohjaimet?"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "Luetaan pelejä: %s"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "Valmistellaan konsolia..."
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "Akku vähissä (%d %%)"
+
+msgid "Battery empty, saving..."
+msgstr "Akku loppui, tallennetaan..."
+
+msgid "Restarting..."
+msgstr "Käynnistetään uudelleen..."
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "Kuuma, hidastetaan"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "Latautuu"
+
+msgid "Fully charged"
+msgstr "Täyteen ladattu"
+
+msgid "Charger unplugged"
+msgstr "Laturi irrotettu"
+
+msgid "Not charging"
+msgstr "Ei lataudu"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%d %%"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "Täynnä %d h %02d min kuluttua"
+
+msgid "Press the power button to start"
+msgstr "Käynnistä painamalla virtanappia"
+
+msgid "Battery very low: plug in the charger"
+msgstr "Akku lähes tyhjä: kytke laturi"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "Arvio: "
+
+msgid "Released: "
+msgstr "Julkaistu: "
+
+msgid "Developer: "
+msgstr "Kehittäjä: "
+
+msgid "Publisher: "
+msgstr "Julkaisija: "
+
+msgid "Genre: "
+msgstr "Laji: "
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "Pelaajia: "
+
+msgid "Last played: "
+msgstr "Viimeksi pelattu: "
+
+msgid "Times played: "
+msgstr "Pelikertoja: "
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "VUOSI"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "LAJI"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "PELAAJIA"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "ARVIO"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "Suosikkipelisi"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "Äskettäin pelatut"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "Kaikki konsolin pelit"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "Kotitietokone · 1983"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "Arcade · MAME 2003-Plus"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "Arcade · FinalBurn Neo"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "tuntematon"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "ei pelejä"
+
+msgid "launch"
+msgstr "pelaa"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "valinnat"
+
+msgid "favorite"
+msgstr "suosikki"
+
+msgid "menu"
+msgstr "valikko"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "Lisätty suosikkeihin"
+
+msgid "Removed from favorites"
+msgstr "Poistettu suosikeista"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "%d peli"
+msgstr[1] "%d peliä"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "%d suosikki"
+msgstr[1] "%d suosikkia"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s, %s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "Pelejä ei löytynyt. Kopioi ROMit kansioon /data/roms/<system>/"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "ei koskaan"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "tuntematon"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "%d s sitten"
+msgstr[1] "%d s sitten"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d minuutti sitten"
+msgstr[1] "%d minuuttia sitten"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d tunti sitten"
+msgstr[1] "%d tuntia sitten"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d päivä sitten"
+msgstr[1] "%d päivää sitten"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%d.%m.%Y"

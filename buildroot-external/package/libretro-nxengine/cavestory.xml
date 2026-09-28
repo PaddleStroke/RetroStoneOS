@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<gameList>
+	<game>
+		<path>./Doukutsu.exe</path>
+		<name>Cave Story</name>
+		<desc>A robot wakes up in a cave with no memory and stumbles into the fate of the Mimiga, a peaceful people hunted by the tyrannical Doctor. A side-scrolling action-adventure with many weapons to level up and several endings, made alone over five years by Daisuke "Pixel" Amaya. Freeware, English translation by Aeon Genesis.</desc>
+		<releasedate>20041220T000000</releasedate>
+		<developer>Studio Pixel</developer>
+		<publisher>Studio Pixel</publisher>
+		<genre>Platform, Action-Adventure</genre>
+		<players>1</players>
+	</game>
+</gameList>

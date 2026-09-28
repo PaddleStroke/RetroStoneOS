@@ -1,0 +1,23 @@
+#!/bin/sh
+# Shell on the debug UART (/etc/inittab, ttyS0::respawn). init starts it at
+# the same moment as the frontend; a login shell reads /etc/profile and
+# /etc/profile.d/* and runs "id" from the SD card, which competes with the
+# frontend's own start-up reads (boot round 3). So wait for the menu
+# (/run/rsos/menu-up, at most 5 s: without a frontend the shell still comes
+# up), then:
+#   RSOS_UART_SHELL=open      a root shell ("-/bin/sh" in inittab terms;
+#                             development builds)
+#   RSOS_UART_SHELL=password  a root login (release builds by default; the
+#                             password is set at build time)
+# from /etc/rsos/build.env (board/common/post-build.sh). "disabled" removes
+# the inittab line altogether.
+[ -r /etc/rsos/build.env ] && . /etc/rsos/build.env
+i=0
+while [ ! -e /run/rsos/menu-up ] && [ $i -lt 50 ]; do
+	usleep 100000
+	i=$((i + 1))
+done
+case "$RSOS_UART_SHELL" in
+password | disabled) exec /bin/login ;;
+esac
+exec /bin/sh -l

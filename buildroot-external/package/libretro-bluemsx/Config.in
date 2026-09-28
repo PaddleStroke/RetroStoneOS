@@ -1,0 +1,20 @@
+config BR2_PACKAGE_LIBRETRO_BLUEMSX
+	bool "libretro-bluemsx"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  blueMSX: MSX / MSX2 / MSX2+ / turbo R emulator, built as a
+	  libretro core (zlib-style licence with GPL-2.0+ parts). Ships
+	  the free C-BIOS replacement BIOS, so cartridges run without
+	  the original MSX system ROMs.
+
+	  Installs /usr/lib/libretro/bluemsx_libretro.so,
+	  /usr/share/rsos/cores/bluemsx.ini and the machine definitions
+	  and databases in /usr/share/rsos/cores/bluemsx/.
+
+	  https://github.com/libretro/blueMSX-libretro
+
+comment "libretro-bluemsx needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

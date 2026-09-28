@@ -1,0 +1,36 @@
+config BR2_PACKAGE_RSOS_FREEDOOM
+	bool "rsos-freedoom"
+	depends on BR2_PACKAGE_RSOS_HOMEBREW # rsos-seed-homebrew copies the games
+	help
+	  Freedoom (https://freedoom.github.io/), a complete free game
+	  for Doom engines (BSD-3-Clause), pre-installed so that the
+	  "doom" system plays out of the box with libretro-prboom.
+
+	  Installs the IWADs to /usr/share/rsos/homebrew/doom/ with a
+	  gamelist.xml, and the licence and credits to
+	  /usr/share/rsos/licenses/freedoom/. rsos-seed-homebrew
+	  (rsos-homebrew) copies them to /data/roms/doom/ on the first
+	  boot. About 28 MB per phase in the root filesystem (and again
+	  on the data partition).
+
+	  See docs/homebrew.md.
+
+if BR2_PACKAGE_RSOS_FREEDOOM
+
+config BR2_PACKAGE_RSOS_FREEDOOM_PHASE1
+	bool "Freedoom: Phase 1 (freedoom1.wad)"
+	default y
+	help
+	  Four episodes, compatible with Doom / The Ultimate Doom
+	  PWADs.
+
+config BR2_PACKAGE_RSOS_FREEDOOM_PHASE2
+	bool "Freedoom: Phase 2 (freedoom2.wad)"
+	default y
+	help
+	  32 levels, compatible with Doom II / Final Doom PWADs.
+
+endif
+
+comment "rsos-freedoom needs rsos-homebrew (first-boot seeding)"
+	depends on !BR2_PACKAGE_RSOS_HOMEBREW

@@ -1,0 +1,179 @@
+# RetroStoneOS boot script (A/B) for the U-Boot single-board computers
+# (Orange Pi ports, docs/boards.md). It is the RetroStone2's A/B logic
+# (board/retrostone2/boot.cmd, docs/build.md "A/B slots") without the
+# RetroStone2 specifics (bootstage marks, A20 probe list, debug arguments).
+# board/sbc-uboot/mk-boot-scr.sh fills in the @...@ values for the board and
+# compiles it to /boot/boot.scr in the root filesystem. U-Boot's bootcmd
+# (board/sbc-uboot/uboot.fragment) runs the one of the current slot, falling
+# back to the other slot's copy if it cannot be loaded.
+#
+# Board values: kernel /boot/@KERNEL@ started with "@BOOTM@", SD card = U-Boot
+# "mmc @MMC@" = Linux /dev/@DISK@, device tree /boot/<fdt> where <fdt> is
+# rsos_fdtfile if set (fw_setenv rsos_fdtfile <name>.dtb: a sister board that
+# boots with this U-Boot, e.g. the Orange Pi PC Plus with the PC image), else
+# U-Boot's own fdtfile, else @FDT_DEFAULT@.
+#
+# Boot state, in the redundant U-Boot environment (raw on the card, outside
+# any partition; fw_printenv/fw_setenv from Linux, /etc/fw_env.config):
+#   rsos_slot      a|b  slot to boot (default a)
+#   rsos_ok        1    the slot is confirmed (it reached a stable menu once)
+#                  0    freshly updated slot, on trial
+#   rsos_tries     N    trial slot: boots left before falling back
+#   rsos_fails     N    confirmed slot: boots in a row that did not reach
+#                       rsos-boot-ok
+#   rsos_fallback  a|b  the slot this one fell back from (no ping-pong)
+#   rsos_maxfails  N    fallback threshold for a confirmed slot (default 3;
+#                       0 = never count, no environment write on a normal boot)
+# Every boot is counted here and confirmed by /usr/bin/rsos-boot-ok once the
+# menu has been stable; an orderly shutdown before that gives the try back.
+# Fall back = switch to the other slot if it has a kernel, mark it confirmed
+# and remember rsos_fallback. If the kernel or the device tree cannot be
+# loaded, or the boot command returns, switch to the other slot at once
+# (reset), or power off when no slot can be booted.
+#
+# Updater contract: write the inactive slot, then in one "fw_setenv -s":
+#   rsos_slot <new>, rsos_ok 0, rsos_tries 3, rsos_fails 0, rsos_fallback (empty)
+#
+# Optional settings (fw_setenv):
+#   rsos_overlays   /boot/overlays/<name>.dtbo to apply (none are shipped)
+#   rsos_extraargs  appended to the kernel command line
+#   rsos_fdtfile    device tree to load instead of U-Boot's fdtfile
+#
+# Hush local variables (l_*) are never written to the environment.
+
+l_save=0
+# First boot (no saved environment yet): store the defaults, so that
+# fw_setenv in Linux always finds a valid environment written by this U-Boot.
+if test -z "${rsos_slot}"; then
+	setenv rsos_slot a
+	setenv rsos_ok 1
+	setenv rsos_tries 0
+	l_save=1
+fi
+
+if test "${rsos_slot}" != "b"; then
+	setenv rsos_slot a
+fi
+if test "${rsos_ok}" != "0"; then
+	setenv rsos_ok 1
+fi
+l_maxfails=3
+if test -n "${rsos_maxfails}"; then
+	l_maxfails=${rsos_maxfails}
+fi
+
+l_fallback=0
+l_state=ok
+if test "${rsos_ok}" = "0"; then
+	if test -n "${rsos_tries}" && test ${rsos_tries} -gt 0; then
+		setexpr rsos_tries ${rsos_tries} - 1
+		echo "rsos: trying unconfirmed slot ${rsos_slot}, ${rsos_tries} tries left after this one"
+	else
+		l_fallback=1
+	fi
+	l_save=1
+	l_state=pending
+elif test ${l_maxfails} -gt 0; then
+	if test -z "${rsos_fails}"; then
+		setenv rsos_fails 0
+	fi
+	if test ${rsos_fails} -ge ${l_maxfails}; then
+		l_fallback=1
+	else
+		setexpr rsos_fails ${rsos_fails} + 1
+	fi
+	l_save=1
+	l_state=pending
+fi
+
+if test "${rsos_slot}" = "b"; then
+	l_other=a
+	l_opart=2
+else
+	l_other=b
+	l_opart=3
+fi
+if test ${l_fallback} = 1; then
+	if test "${rsos_fallback}" = "${l_other}"; then
+		echo "rsos: slot ${rsos_slot} fails too, and slot ${l_other} failed before: staying on ${rsos_slot}"
+	elif test -e mmc @MMC@:${l_opart} /boot/@KERNEL@; then
+		echo "rsos: slot ${rsos_slot} failed too often, falling back to slot ${l_other}"
+		setenv rsos_fallback ${rsos_slot}
+		setenv rsos_slot ${l_other}
+	else
+		echo "rsos: slot ${l_other} has no kernel: staying on ${rsos_slot}"
+	fi
+	setenv rsos_ok 1
+	setenv rsos_tries 0
+	setenv rsos_fails 1
+fi
+
+if test "${rsos_slot}" = "b"; then
+	l_part=3
+	l_other=a
+	l_opart=2
+else
+	l_part=2
+	l_other=b
+	l_opart=3
+fi
+
+if test ${l_save} = 1; then
+	saveenv
+fi
+
+l_fdt=@FDT_DEFAULT@
+if test -n "${fdtfile}"; then
+	l_fdt=${fdtfile}
+fi
+if test -n "${rsos_fdtfile}"; then
+	l_fdt=${rsos_fdtfile}
+fi
+# (U-Boot's fdtfile may carry a vendor directory that /boot does not have)
+if test -e mmc @MMC@:${l_part} /boot/${l_fdt}; then
+	true
+else
+	echo "rsos: no /boot/${l_fdt}, using @FDT_DEFAULT@"
+	l_fdt=@FDT_DEFAULT@
+fi
+
+setenv bootargs "@CONSOLE@ root=/dev/@DISK@p${l_part} rootfstype=ext4 rootwait ro quiet panic=10 consoleblank=0 @EXTRA_ARGS@rsos.slot=${rsos_slot} rsos.boot=${l_state} ${rsos_extraargs}"
+
+if load mmc @MMC@:${l_part} ${kernel_addr_r} /boot/@KERNEL@; then
+	if load mmc @MMC@:${l_part} ${fdt_addr_r} /boot/${l_fdt}; then
+		fdt addr ${fdt_addr_r}
+		if test -n "${rsos_overlays}"; then
+			fdt resize 65536
+			for l_ov in ${rsos_overlays}; do
+				if load mmc @MMC@:${l_part} ${fdtoverlay_addr_r} /boot/overlays/${l_ov}.dtbo; then
+					if fdt apply ${fdtoverlay_addr_r}; then
+						echo "rsos: overlay ${l_ov} applied"
+					else
+						echo "rsos: overlay ${l_ov} failed, reloading the base DT"
+						load mmc @MMC@:${l_part} ${fdt_addr_r} /boot/${l_fdt}
+						fdt addr ${fdt_addr_r}
+						fdt resize 65536
+					fi
+				fi
+			done
+		fi
+		@BOOTM@ ${kernel_addr_r} - ${fdt_addr_r}
+	fi
+fi
+
+# Only reached when the kernel or the DTB cannot be loaded, or the boot
+# command fails: switch to the other slot once (unless it is the one that
+# failed before, or has no kernel), else power off.
+echo "rsos: cannot boot slot ${rsos_slot} (partition ${l_part}, /boot/@KERNEL@, /boot/${l_fdt})"
+if test "${rsos_fallback}" != "${l_other}" && test -e mmc @MMC@:${l_opart} /boot/@KERNEL@; then
+	echo "rsos: switching to slot ${l_other}"
+	setenv rsos_fallback ${rsos_slot}
+	setenv rsos_slot ${l_other}
+	setenv rsos_ok 1
+	setenv rsos_tries 0
+	setenv rsos_fails 0
+	saveenv
+	reset
+fi
+echo "rsos: no slot can be booted, powering off"
+poweroff

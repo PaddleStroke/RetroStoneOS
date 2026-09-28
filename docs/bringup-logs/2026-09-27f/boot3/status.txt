@@ -1,0 +1,24 @@
+uptime: 435.28 466.70  load: 1.64 1.42 0.74 2/64 5710
+cpufreq /sys/devices/system/cpu/cpufreq/policy0: cur=960000 gov=performance min=720000 max=960000
+regulator vdd-cpu: 1400000 uV
+regulator vdd-int-dll: 1250000 uV
+temp /sys/class/thermal/thermal_zone0/temp: 46300
+battery %: 60
+battery uV: 3770800
+sd card (reads, merged, sectors, ms, writes, merged, sectors, ms, ...):      727     1372   113797     5253     4377     1256  2420890   381878        0    18015   387131        0        0        0        0        0        0
+--- top
+Mem: 248888K used, 779164K free, 11112K shrd, 7680K buff, 61764K cached
+CPU:  28% usr  14% sys   0% nic  57% idle   0% io   0% irq   0% sirq
+Load average: 1.64 1.42 0.74 2/65 5735
+  PID  PPID USER     STAT   VSZ %VSZ %CPU COMMAND
+ 5432   105 root     R     882m  88%  33% /proc/self/exe --run --core /usr/lib/libretro/parallel_n64_libretro.so --rom /data/roms/n64/Super Smash Bros. (USA).n64 --system n64 --status-fd 3 --no-governor --hdmi 1280x720 --p1-device builtin
+   33     2 root     IW       0   0%   5% [kworker/1:1-eve]
+  105     1 root     S    39676   4%   0% /usr/bin/rsos-frontend
+  109     1 root     S     2836   0%   0% {bootlog} /bin/sh /usr/libexec/rsos/bootlog
+    1     0 root     S     2836   0%   0% init
+ 5734   109 root     R     2836   0%   0% top -b -n 1
+  107     1 root     S     2836   0%   0% -/bin/sh
+ 5735   109 root     S     2836   0%   0% head -15
+   41     2 root     IW       0   0%   0% [kworker/0:7-eve]
+   54     2 root     IW       0   0%   0% [kworker/0:18-ev]
+   14     2 root     IW       0   0%   0% [rcu_sched]

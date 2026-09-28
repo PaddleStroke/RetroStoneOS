@@ -1,0 +1,10 @@
+0.41 rcS start @42:3386
+0.45 mounts @52:3930
+0.52 governor @56:7258
+0.53 bootreason @56:7258
+4.62 data-partition @272:23957
+4.63 clock @272:23957
+4.63 rcS done @272:23957
+5.83 bg: menu up (waited 1 s) @323:29108
+5.92 bg: mixer @340:29340
+6.01 bg: usb storage modules @354:30172

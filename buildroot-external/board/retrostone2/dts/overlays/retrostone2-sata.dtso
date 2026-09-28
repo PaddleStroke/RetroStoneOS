@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * RetroStone2: enable the SATA controller for the M.2 NGFF M-key slot J1
+ * ("Pro" part in schematic v1.15). The slot is powered from the 3.3 V rail,
+ * so there is no target-supply GPIO (PC3 is an unconnected pad).
+ *
+ * Needs a base DTB built with symbols (dtc -@).
+ * TODO(hw): test with a SATA M.2 SSD on a unit that has J1 fitted.
+ */
+
+/dts-v1/;
+/plugin/;
+
+&ahci {
+	status = "okay";
+};

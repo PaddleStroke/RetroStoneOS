@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: megadrive sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>2458c7</accent>
+		<icon>carbon/megadrive</icon>
+		<tagline>Sega · 1988</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

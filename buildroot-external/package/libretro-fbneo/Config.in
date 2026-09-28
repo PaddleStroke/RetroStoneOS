@@ -1,0 +1,22 @@
+config BR2_PACKAGE_LIBRETRO_FBNEO
+	bool "libretro-fbneo"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  FinalBurn Neo: arcade emulator (Neo Geo, CPS-1/2, Toaplan,
+	  Cave, Konami, Sega System 16/18...) plus a few consoles, built
+	  as a libretro core with the Cyclone ARM 68000 core. Uses the
+	  current FBNeo romsets. Large: about 59 MB once stripped, and a
+	  few minutes of build time.
+
+	  Installs /usr/lib/libretro/fbneo_libretro.so and
+	  /usr/share/rsos/cores/fbneo.ini.
+
+	  https://github.com/libretro/FBNeo
+
+comment "libretro-fbneo needs a toolchain w/ C++, threads, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || !BR2_TOOLCHAIN_HAS_THREADS || \
+		BR2_STATIC_LIBS

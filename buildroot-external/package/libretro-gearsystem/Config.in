@@ -1,0 +1,18 @@
+config BR2_PACKAGE_LIBRETRO_GEARSYSTEM
+	bool "libretro-gearsystem"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Gearsystem: Sega Master System / Game Gear / SG-1000 emulator,
+	  built as a libretro core (GPL-3.0). A licence-clean alternative
+	  to picodrive for the 8-bit Sega systems.
+
+	  Installs /usr/lib/libretro/gearsystem_libretro.so and
+	  /usr/share/rsos/cores/gearsystem.ini.
+
+	  https://github.com/drhelius/Gearsystem
+
+comment "libretro-gearsystem needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

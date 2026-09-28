@@ -1,0 +1,64 @@
+[    4.504] frontend: starting (pid 224)
+[     4.512] display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[     4.515] display: plane 33: none
+[     4.515] display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[     4.541] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[     4.554] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[    4.554] frontend: output init: Unknown-1 640x480@78.571 Hz, UI 640x480
+[    4.562] frontend: splash: 11114 bytes, 640x480, shown 63 ms after start (read 305 us, decode + present 7793 us)
+[   4.563] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   4.567] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[   4.700] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   4.702] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   4.736] ui I: ui: created in 33810 us, theme rsos-dark
+[   4.736] ui I: ui: logical size 640x480
+[   4.839] ui I: games: /data/roms/nes/gamelist.xml: 2 entries matched
+[   4.842] ui I: games: nes: scanned 2 games in 106039 us
+[    4.864] frontend: first frame 365 ms after start (ui_create 33810 us)
+[power] PEK force-off 6000 ms, power-on hold 1000 ms
+[power] battery 72 % 3844 mV discharging, charger off, boot key
+[    5.044] frontend: power: mode normal, battery 72 %
+[   5.454] ui I: games: fds: scanned 0 games in 408863 us
+[   5.460] ui I: games: snes: scanned 0 games in 1127 us
+[   5.537] ui I: games: n64: scanned 0 games in 76848 us
+[   5.559] ui I: games: /data/roms/gb/gamelist.xml: 5 entries matched
+[   5.560] ui I: games: gb: scanned 5 games in 17112 us
+[   5.671] ui I: games: /data/roms/gbc/gamelist.xml: 1 entries matched
+[   5.672] ui I: games: gbc: scanned 1 games in 111640 us
+[   5.785] ui I: games: gba: scanned 0 games in 108018 us
+[   5.790] ui I: games: sg1000: scanned 0 games in 1114 us
+[   5.900] ui I: games: mastersystem: scanned 0 games in 109421 us
+[   6.011] ui I: games: /data/roms/megadrive/gamelist.xml: 3 entries matched
+[   6.012] ui I: games: megadrive: scanned 3 games in 107637 us
+[   6.018] ui I: games: segacd: scanned 0 games in 1045 us
+[   6.019] ui I: games: sega32x: scanned 0 games in 772 us
+[   6.019] ui I: games: pico: scanned 0 games in 650 us
+[   6.129] ui I: games: gamegear: scanned 0 games in 109974 us
+[   6.135] ui I: games: psx: scanned 0 games in 985 us
+[   6.136] ui I: games: pcengine: scanned 0 games in 693 us
+[   6.136] ui I: games: pcenginecd: scanned 0 games in 640 us
+[   6.137] ui I: games: ngp: scanned 0 games in 583 us
+[   6.138] ui I: games: ngpc: scanned 0 games in 610 us
+[   6.138] ui I: games: wonderswan: scanned 0 games in 614 us
+[   6.139] ui I: games: wonderswancolor: scanned 0 games in 625 us
+[   6.249] ui I: games: atari2600: scanned 0 games in 109507 us
+[   6.363] ui I: games: atari7800: scanned 0 games in 109676 us
+[   6.476] ui I: games: atarilynx: scanned 0 games in 108739 us
+[   6.612] ui I: games: coleco: scanned 0 games in 131024 us
+[   6.744] ui I: games: msx: scanned 0 games in 126052 us
+[   6.862] ui I: games: arcade: scanned 0 games in 112454 us
+[   6.981] ui I: games: fbneo: scanned 0 games in 114587 us
+[   7.101] ui I: games: neogeo: scanned 0 games in 114727 us
+[   7.218] ui I: games: neocd: scanned 0 games in 111945 us
+[   7.225] ui I: ui: menu style bg fa1b1e23 dim 99000000 text ffeceef1 selector ff3d7bd9
+[   7.226] ui I: ui: 4 systems, 11 games loaded in 2488482 us
+[   7.957] ui I: ui: first frame in 730432 us (theme parsing 21843 us)
+[    7.960] frontend: menu up: running /usr/bin/rsos-boot-ok
+[  26.580] ui I: ui: launch "Espionage" (/data/roms/gb/Espionage.gb) with gambatte
+[    26.675] display: suspended: DRM master dropped
+[   26.675] frontend: launch Espionage (/data/roms/gb/Espionage.gb) with /usr/lib/libretro/gambatte_libretro.so
+[    26.677] host I: game process 492 started: /usr/lib/libretro/gambatte_libretro.so /data/roms/gb/Espionage.gb
+[    76.562] host I: game process 492 exited: 0
+[    76.577] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[    76.577] display: resumed on Unknown-1 in 15 ms
+[   76.578] frontend: game ended: status 0, exit 0

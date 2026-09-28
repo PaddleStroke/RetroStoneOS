@@ -1,0 +1,13 @@
+config BR2_PACKAGE_LIBRETRO_POKEMINI
+	bool "libretro-pokemini"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  PokeMini: Pokemon mini emulator, built as a libretro core.
+	  Uses its free replacement BIOS unless bios.min is in the
+	  system directory.
+
+	  Installs /usr/lib/libretro/pokemini_libretro.so and
+	  /usr/share/rsos/cores/pokemini.ini. ROM folder: pokemini.
+
+	  https://github.com/libretro/PokeMini

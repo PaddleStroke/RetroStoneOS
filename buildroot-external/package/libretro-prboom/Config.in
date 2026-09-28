@@ -1,0 +1,19 @@
+config BR2_PACKAGE_LIBRETRO_PRBOOM
+	bool "libretro-prboom"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_TOOLCHAIN_HAS_THREADS # rthreads (libretro-common)
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  PrBoom: the Doom engine (Doom, Doom II, Final Doom, Freedoom
+	  and PWADs), built as a libretro core. prboom.wad (the
+	  engine's own resources) is compiled into the core.
+
+	  Installs /usr/lib/libretro/prboom_libretro.so and
+	  /usr/share/rsos/cores/prboom.ini. ROM folder: doom.
+	  rsos-freedoom pre-installs the free Freedoom IWADs.
+
+	  https://github.com/libretro/libretro-prboom
+
+comment "libretro-prboom needs a toolchain w/ threads, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_TOOLCHAIN_HAS_THREADS || BR2_STATIC_LIBS

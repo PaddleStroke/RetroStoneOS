@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: RetroStoneOS <noreply@8bcraft.com>
+Date: Sun, 27 Sep 2026 12:00:00 +0200
+Subject: [PATCH] sunxi: bootstage timestamps on sun7i, and "bootstage mark"
+
+Bootstage needs timer_get_boot_us(), which the sun4i/5i/7i timer code does
+not provide, so BOOTSTAGE did not link on the A20. Take it from the ARM
+generic counter (CNTPCT, 24 MHz), which runs from reset: the marks are then
+times since power-on, on the same counter as Linux's clocksource.
+
+Add "bootstage mark <name>" so that boot scripts can time their own steps
+(loading the kernel, the DTB, the overlays). With BOOTSTAGE_FDT the marks
+reach Linux in /proc/device-tree/bootstage/.
+---
+diff --git a/arch/arm/mach-sunxi/timer.c b/arch/arm/mach-sunxi/timer.c
+--- a/arch/arm/mach-sunxi/timer.c
++++ b/arch/arm/mach-sunxi/timer.c
+@@ -5,6 +5,8 @@
+  * Tom Cubie <tangliang@allwinnertech.com>
+  */
+ 
++#include <bootstage.h>
++#include <div64.h>
+ #include <init.h>
+ #include <time.h>
+ #include <asm/global_data.h>
+@@ -45,6 +47,24 @@
+ 	return ~readl(&timer->val);
+ }
+ 
++#if CONFIG_IS_ENABLED(BOOTSTAGE) && defined(CONFIG_MACH_SUN7I)
++/*
++ * Bootstage timestamps from the ARM generic timer's physical counter (CNTPCT,
++ * 24 MHz from the oscillator). It counts from reset and Linux uses the same
++ * counter for its clocksource, so U-Boot's marks and the kernel's timestamps
++ * share one time base. TIMER0 above is restarted by SPL and again by U-Boot
++ * proper, so it cannot give times since power-on.
++ */
++ulong timer_get_boot_us(void)
++{
++	u64 cnt;
++
++	asm volatile("isb\n\tmrrc p15, 0, %Q0, %R0, c14" : "=r" (cnt));
++
++	return lldiv(cnt, 24);
++}
++#endif
++
+ /* init timer register */
+ int timer_init(void)
+ {
+diff --git a/cmd/bootstage.c b/cmd/bootstage.c
+--- a/cmd/bootstage.c
++++ b/cmd/bootstage.c
+@@ -8,6 +8,22 @@
+ #include <vsprintf.h>
+ #include <linux/string.h>
+ 
++static int do_bootstage_mark(struct cmd_tbl *cmdtp, int flag, int argc,
++			     char *const argv[])
++{
++	char *name;
++
++	if (argc != 2)
++		return CMD_RET_USAGE;
++	/* The record keeps the pointer: the name must outlive the command */
++	name = strdup(argv[1]);
++	if (!name)
++		return CMD_RET_FAILURE;
++	bootstage_mark_name(BOOTSTAGE_ID_ALLOC, name);
++
++	return 0;
++}
++
+ static int do_bootstage_report(struct cmd_tbl *cmdtp, int flag, int argc,
+ 			       char *const argv[])
+ {
+@@ -64,6 +80,7 @@
+ 
+ static struct cmd_tbl cmd_bootstage_sub[] = {
+ 	U_BOOT_CMD_MKENT(report, 2, 1, do_bootstage_report, "", ""),
++	U_BOOT_CMD_MKENT(mark, 2, 0, do_bootstage_mark, "", ""),
+ #if IS_ENABLED(CONFIG_BOOTSTAGE_STASH)
+ 	U_BOOT_CMD_MKENT(stash, 4, 0, do_bootstage_stash, "", ""),
+ 	U_BOOT_CMD_MKENT(unstash, 4, 0, do_bootstage_stash, "", ""),
+@@ -95,6 +112,7 @@
+ 	"Boot stage command",
+ 	" - check boot progress and timing\n"
+ 	"report                      - Print a report\n"
++	"mark <name>                 - Record a timestamp named <name>\n"
+ #if IS_ENABLED(CONFIG_BOOTSTAGE_STASH)
+ 	"stash [<start> [<size>]]    - Stash data into memory\n"
+ 	"unstash [<start> [<size>]]  - Unstash data from memory\n"
+-- 
+2.43.0

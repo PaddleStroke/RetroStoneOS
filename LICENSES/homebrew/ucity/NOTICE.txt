@@ -1,0 +1,32 @@
+µCity (uCity) v1.2 - city building game for the Game Boy Color
+Copyright (C) 2017-2018 Antonio Niño Díaz (AntonioND/SkyLyrac)
+https://github.com/AntonioND/ucity
+
+Bundled file: ucity.gbc
+  sha256 39a254f95672c3dafe8ae0e12763366b990bc9993fab13bd0c8283b0459be102
+  This is byte-for-byte the "ucity.gbc" asset of the upstream v1.2 release:
+  https://github.com/AntonioND/ucity/releases/download/v1.2/ucity.gbc
+
+Licences (from the upstream readme.rst):
+  - Game code: GNU General Public License version 3 or later (GPL-3.0.txt),
+    for the source files that carry the GPL header.
+  - GBT Player (music engine), Copyright (c) 2009-2016 Antonio Niño Díaz:
+    2-clause BSD licence (GBT-Player-BSD-2-Clause.txt).
+  - Media files (graphics and music): Creative Commons Attribution-ShareAlike
+    4.0 International (CC-BY-SA-4.0.txt).
+    Attribution: "µCity graphics and music by Antonio Niño Díaz, CC BY-SA 4.0".
+
+Corresponding Source (GPL-3.0, section 6)
+  The complete Corresponding Source of this ROM is the upstream tag v1.2:
+    https://github.com/AntonioND/ucity/tree/v1.2
+    https://github.com/AntonioND/ucity/archive/refs/tags/v1.2.tar.gz
+    (sha256 of that archive when it was checked, 2026-09-25:
+     9ffdd325294ebbd8a4adcc5a5bb40a2ea4b981cb8e4889a5392ef4796cdb2dc1)
+
+  Written offer: for at least three years after the last RetroStone2 unit
+  or firmware image containing this program is distributed, 8BCraft will
+  give anyone who asks a complete machine-readable copy of that source code,
+  for no more than the cost of physically performing the transfer. The
+  source is also published next to the RetroStoneOS firmware downloads.
+  TODO(owner): put the contact address for source requests here, and mirror
+  the archive above on the firmware download page.

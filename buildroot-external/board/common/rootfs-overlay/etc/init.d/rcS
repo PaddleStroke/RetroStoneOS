@@ -1,0 +1,171 @@
+#!/bin/sh
+# RetroStoneOS early init, run once by BusyBox init (::sysinit). The menu
+# (rsos-frontend) starts when this script exits, so only what the menu needs
+# runs here in order: mounts, the boot reason, /data, the clock. Everything
+# else goes to one background job, most of it after the menu is on screen
+# (/run/rsos/menu-up, written by the frontend).
+#
+# Timings: /run/rsos/rcS.times gets "<uptime> <step> @<reads>:<sectors>" per
+# step: the SD card's completed read requests and 512-byte sectors so far
+# (/proc/diskstats), so the boot logger can show the I/O of each step. Read
+# with shell builtins: no fork.
+#
+# Kernel command line switches for boot-time experiments (add them with
+# fw_setenv rsos_extraargs "..."):
+#   rsos.prefetch=0   no prefetch of the frontend's files (see below)
+#   rsos.ra_kb=<N>    read_ahead_kb of the SD card (kernel default: 128)
+
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+# iost: IO="@<read requests>:<sectors read>" of the SD card (the system
+# disk, $RSOS_DISK_NAME), from /proc/diskstats ("179 0 mmcblk0 reads merged
+# sectors ...")
+iost() {
+	IO=
+	while read -r _ _ _n _r _ _s _; do
+		if [ "$_n" = "$RSOS_DISK_NAME" ]; then
+			IO="@$_r:$_s"
+			return
+		fi
+	done < /proc/diskstats
+}
+
+# --- Pseudo filesystems. /dev is devtmpfs, mounted by the kernel
+# (CONFIG_DEVTMPFS_MOUNT). The root filesystem stays read-only.
+mount -t proc -o nosuid,nodev,noexec proc /proc
+read -r T_START _ < /proc/uptime
+read -r CMDLINE < /proc/cmdline
+# The board: RSOS_DISK(_NAME), /etc/rsos/board.env, the board hooks
+# (/usr/libexec/rsos/board.sh: builtins only, no fork)
+[ -r /usr/libexec/rsos/board.sh ] && . /usr/libexec/rsos/board.sh
+# for data-partition (it then skips reading the board files again)
+export RSOS_DISK RSOS_BOARD_DATA_PARTITION
+iost; IO_START=$IO
+
+# --- Prefetch (boot round 3): the frontend and the libraries it maps (and
+# the two small tools below) are read from the SD card by page faults when
+# they start, one synchronous request per fault. readahead(2) queues them now
+# in large requests, at the idle I/O priority: mq-deadline serves the
+# requests of this script (the /data mount) first, and the prefetch fills the
+# time the card would otherwise be idle while this script runs. The list is
+# what the frontend touches up to its first frame (measured under qemu-arm).
+case " $CMDLINE " in
+*" rsos.prefetch=0 "*) ;;
+*)
+	# /lib/ld-linux*.so.[0-9]: the dynamic loader (ld-linux-armhf.so.3 on
+	# the A20, ld-linux-aarch64.so.1 on arm64)
+	ionice -c 3 readahead /lib/ld-linux*.so.[0-9] /lib/libc.so.6 \
+		/usr/bin/rsos-bootreason /usr/bin/rsos-clock \
+		/usr/bin/rsos-frontend /usr/lib/libdrm.so.2 /lib/libm.so.6 \
+		/usr/share/rsos/splash.rle \
+		/usr/lib/libasound.so.2 /usr/share/rsos/cores/*.ini \
+		> /dev/null 2>&1 &
+	;;
+esac
+
+# sysfs, devpts and the tmpfs mounts, from /etc/fstab in one process
+mkdir -p /dev/pts /dev/shm
+mount -a -t sysfs,devpts,tmpfs
+mkdir -p /run/rsos
+read -r T_MOUNTS _ < /proc/uptime
+iost; IO_MOUNTS=$IO
+
+case " $CMDLINE " in
+*" rsos.ra_kb="*)
+	_ra=${CMDLINE##*rsos.ra_kb=}
+	_ra=${_ra%% *}
+	[ -w "/sys/block/$RSOS_DISK_NAME/queue/read_ahead_kb" ] &&
+		echo "$_ra" > "/sys/block/$RSOS_DISK_NAME/queue/read_ahead_kb"
+	;;
+esac
+
+# Boot at full clock: the power module sets the menu governor (schedutil)
+# once it starts, right after the first menu frame.
+for g in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do
+	[ -w "$g" ] && echo performance > "$g"
+done
+
+# Data safety (requirements.md §6, docs/power.md §11): dirty pages reach the
+# card 2 s after they were written instead of 30 s (the flusher looks every
+# 1 s instead of 5 s, and only while something is dirty: no wake-ups when
+# idle). A save or a setting written just before the battery dies or the
+# power key is held survives. (Builtins, no fork.)
+echo 200 > /proc/sys/vm/dirty_expire_centisecs
+echo 100 > /proc/sys/vm/dirty_writeback_centisecs
+
+# A/B boot: U-Boot counted this boot (rsos.boot=pending); rsos-boot-ok
+# confirms it once the menu is stable, rcK gives the try back on an orderly
+# shutdown before that (board/retrostone2/boot.cmd).
+case " $CMDLINE " in
+*" rsos.boot=pending "*) echo pending > /run/rsos/boot-state ;;
+esac
+
+TIMES=/run/rsos/rcS.times
+echo "$T_START rcS start $IO_START" > $TIMES
+echo "$T_MOUNTS mounts $IO_MOUNTS" >> $TIMES
+ts() {
+	read -r _t _ < /proc/uptime
+	iost
+	echo "$_t $1 $IO" >> $TIMES
+}
+ts "governor"
+
+# --- Why did we power on: power key or charger insertion (charge mode)?
+# Read once from the AXP209 (docs/power.md); the frontend and rsos-net use it.
+# Only on a board with that PMIC (board.ini: boot_reason = axp209).
+[ "$RSOS_BOARD_BOOT_REASON" = axp209 ] && [ -x /usr/bin/rsos-bootreason ] &&
+	/usr/bin/rsos-bootreason -w /run/rsos/bootreason
+ts "bootreason"
+
+# --- User data partition (exFAT) on /data. Created on the first boot.
+/usr/libexec/rsos/data-partition
+ts "data-partition"
+
+# --- No RTC backup cell on this board: restore the last saved time so the
+# clock never goes backwards across a flat battery (docs/power.md). Before
+# the frontend: it writes files (and the power module saves the clock).
+[ -x /usr/bin/rsos-clock ] && /usr/bin/rsos-clock restore
+ts "clock"
+
+# --- Everything the menu does not need, in the background.
+(
+	hostname -F /etc/hostname
+	ip link set lo up
+
+	# Power the WiFi chip down now if WiFi is off (never blocks the menu).
+	/usr/bin/rsos-net apply-early &
+
+	# Bring-up aid: copies the logs to the data partition (it waits for the
+	# menu before its first write, see the script). In its own session
+	# (setsid), detached from rcS and this subshell.
+	setsid /usr/libexec/rsos/bootlog < /dev/null > /dev/null 2>&1 &
+
+	# Wait for the menu (at most 20 s): the rest competes for the CPU and
+	# the SD card otherwise.
+	i=0
+	while [ ! -e /run/rsos/menu-up ] && [ $i -lt 200 ]; do
+		usleep 100000
+		i=$((i + 1))
+	done
+	ts "bg: menu up (waited $((i / 10)) s)"
+
+	# Audio: the board's mixer defaults (/etc/rsos/board-hooks.sh; the
+	# RetroStone2 sets its codec's power amplifier level there).
+	rsos_board_late_audio
+	ts "bg: mixer"
+
+	# USB sticks ("Import ROMs from USB"): usb-storage, uas and sd_mod are
+	# modules since boot round 3 (smaller kernel) and there is no udev to
+	# load them on hotplug, so load them now, once the menu is up. A stick
+	# that is already plugged in is picked up when the driver binds; the
+	# frontend sees its block device appear as for a hotplug. (NTFS3 is
+	# loaded by the kernel itself when a stick is mounted as ntfs3.)
+	modprobe -q -a usb-storage uas sd_mod
+	# The board's other storage modules (/etc/rsos/board-hooks.sh; the
+	# RetroStone2 "Pro" SATA controller).
+	rsos_board_late_storage
+	ts "bg: usb storage modules"
+) < /dev/null > /dev/null 2>&1 &
+
+ts "rcS done"

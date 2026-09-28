@@ -1,0 +1,292 @@
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 6.18.54 (root@DESKTOP-3HCGN2H) (arm-linux-gcc.br_real (Buildroot 2021.11-18033-g83947c7bb6) 14.3.0, GNU ld (GNU Binutils) 2.43.1) #1 SMP Sun Sep 27 09:12:58 CEST 2026
+[    0.000000] CPU: ARMv7 Processor [410fc074] revision 4 (ARMv7), cr=10c5387d
+[    0.000000] CPU: div instructions available: patching division code
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+[    0.000000] OF: fdt: Machine model: 8BCraft RetroStone2
+[    0.000000] Memory policy: Data cache writealloc
+[    0.000000] Reserved memory: created CMA memory pool at 0x4a000000, size 96 MiB
+[    0.000000] OF: reserved mem: initialized node default-pool, compatible id shared-dma-pool
+[    0.000000] OF: reserved mem: 0x4a000000..0x4fffffff (98304 KiB) map reusable default-pool
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000006fffffff]
+[    0.000000]   HighMem  [mem 0x0000000070000000-0x000000007fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000007fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000007fffffff]
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: Using PSCI v0.1 Function IDs from DT
+[    0.000000] percpu: Embedded 12 pages/cpu s20364 r8192 d20596 u49152
+[    0.000000] pcpu-alloc: s20364 r8192 d20596 u49152 alloc=12*4096
+[    0.000000] pcpu-alloc: [0] 0 [0] 1 
+[    0.000000] Kernel command line: console=ttyS0,115200 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait ro quiet panic=10 consoleblank=0 driver_async_probe=dw-apb-uart,musb-sunxi,sun4i-ts rsos.slot=a 
+[    0.000000] printk: log buffer data + meta data: 131072 + 409600 = 540672 bytes
+[    0.000000] Dentry cache hash table entries: 131072 (order: 7, 524288 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 262144
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=2, Nodes=1
+[    0.000000] rcu: Hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=2.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=2
+[    0.000000] NR_IRQS: 16, nr_irqs: 16, preallocated irqs: 16
+[    0.000000] GIC: Using split EOI/Deactivate mode
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (phys).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000002] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000018] Switching to timer-based delay loop, resolution 41ns
+[    0.000535] clocksource: timer: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 79635851949 ns
+[    0.001233] Console: colour dummy device 80x30
+[    0.001322] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=24000)
+[    0.001348] CPU: Testing write buffer coherency: ok
+[    0.001415] pid_max: default: 32768 minimum: 301
+[    0.001621] Mount-cache hash table entries: 2048 (order: 1, 8192 bytes, linear)
+[    0.001645] Mountpoint-cache hash table entries: 2048 (order: 1, 8192 bytes, linear)
+[    0.002840] /cpus/cpu@0 missing clock-frequency property
+[    0.002892] /cpus/cpu@1 missing clock-frequency property
+[    0.002907] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+[    0.004727] Setting up static identity map for 0x40100000 - 0x40100060
+[    0.005021] rcu: Hierarchical SRCU implementation.
+[    0.005031] rcu: 	Max phase no-delay instances is 400.
+[    0.005564] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.006119] smp: Bringing up secondary CPUs ...
+[    0.017357] CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
+[    0.017673] smp: Brought up 1 node, 2 CPUs
+[    0.017693] SMP: Total of 2 processors activated (96.00 BogoMIPS).
+[    0.017705] CPU: All CPU(s) started in HYP mode.
+[    0.017710] CPU: Virtualization extensions available.
+[    0.017996] Memory: 927232K/1048576K available (7168K kernel code, 596K rwdata, 1984K rodata, 1024K init, 218K bss, 21548K reserved, 98304K cma-reserved, 262144K highmem)
+[    0.019071] devtmpfs: initialized
+[    0.030585] VFP support v0.3: implementor 41 architecture 2 part 30 variant 7 rev 4
+[    0.030952] posixtimers hash table entries: 1024 (order: 1, 8192 bytes, linear)
+[    0.031052] futex hash table entries: 512 (32768 bytes on 1 NUMA nodes, total 32 KiB, linear).
+[    0.032982] pinctrl core: initialized pinctrl subsystem
+[    0.035202] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.036700] DMA: preallocated 256 KiB pool for atomic coherent allocations
+[    0.038037] thermal_sys: Registered thermal governor 'step_wise'
+[    0.047743] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /soc/hdmi@1c16000
+[    0.047858] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.047945] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.048048] /soc/lcd-controller@1c0d000: Fixed dependency cycle(s) with /soc/hdmi@1c16000
+[    0.048139] /soc/lcd-controller@1c0d000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.048229] /soc/lcd-controller@1c0d000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.048472] /soc/hdmi@1c16000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0d000
+[    0.048604] /soc/hdmi@1c16000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0c000
+[    0.048893] /soc/interrupt-controller@1c81000: Fixed dependency cycle(s) with /soc/interrupt-controller@1c81000
+[    0.049041] /soc/display-frontend@1e00000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.049182] /soc/display-frontend@1e00000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.049333] /soc/display-frontend@1e20000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.049474] /soc/display-frontend@1e20000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.049551] /soc/display-backend@1e40000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0d000
+[    0.049616] /soc/display-backend@1e40000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0c000
+[    0.049675] /soc/display-backend@1e40000: Fixed dependency cycle(s) with /soc/display-frontend@1e20000
+[    0.049751] /soc/display-backend@1e40000: Fixed dependency cycle(s) with /soc/display-frontend@1e00000
+[    0.049834] /soc/display-backend@1e60000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0d000
+[    0.049900] /soc/display-backend@1e60000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0c000
+[    0.049959] /soc/display-backend@1e60000: Fixed dependency cycle(s) with /soc/display-frontend@1e20000
+[    0.050018] /soc/display-backend@1e60000: Fixed dependency cycle(s) with /soc/display-frontend@1e00000
+[    0.050943] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /soc/hdmi@1c16000
+[    0.051057] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.051155] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.051494] /soc/lcd-controller@1c0d000: Fixed dependency cycle(s) with /soc/hdmi@1c16000
+[    0.051598] /soc/lcd-controller@1c0d000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.051696] /soc/lcd-controller@1c0d000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.053964] /soc/lcd-controller@1c0d000: Fixed dependency cycle(s) with /soc/hdmi@1c16000
+[    0.054241] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /soc/hdmi@1c16000
+[    0.054474] /soc/hdmi@1c16000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0d000
+[    0.054692] /soc/hdmi@1c16000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0c000
+[    0.057181] /soc/pinctrl@1c20800: Fixed dependency cycle(s) with /soc/pinctrl@1c20800/clk-out-a-pin
+[    0.060865] /soc/display-frontend@1e00000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.061015] /soc/display-frontend@1e00000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.061446] /soc/display-frontend@1e20000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.061552] /soc/display-frontend@1e20000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.061936] /soc/display-frontend@1e20000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.062171] /soc/display-frontend@1e00000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.062319] /soc/lcd-controller@1c0d000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.062450] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /soc/display-backend@1e40000
+[    0.062573] /soc/display-backend@1e40000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0d000
+[    0.062709] /soc/display-backend@1e40000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0c000
+[    0.062826] /soc/display-backend@1e40000: Fixed dependency cycle(s) with /soc/display-frontend@1e20000
+[    0.062942] /soc/display-backend@1e40000: Fixed dependency cycle(s) with /soc/display-frontend@1e00000
+[    0.063451] /soc/display-frontend@1e20000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.063642] /soc/display-frontend@1e00000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.063783] /soc/lcd-controller@1c0d000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.063918] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /soc/display-backend@1e60000
+[    0.064086] /soc/display-backend@1e60000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0d000
+[    0.064216] /soc/display-backend@1e60000: Fixed dependency cycle(s) with /soc/lcd-controller@1c0c000
+[    0.064346] /soc/display-backend@1e60000: Fixed dependency cycle(s) with /soc/display-frontend@1e20000
+[    0.064468] /soc/display-backend@1e60000: Fixed dependency cycle(s) with /soc/display-frontend@1e00000
+[    0.067063] /soc/hdmi@1c16000: Fixed dependency cycle(s) with /hdmi-connector
+[    0.067361] /hdmi-connector: Fixed dependency cycle(s) with /soc/hdmi@1c16000
+[    0.068471] /soc/lcd-controller@1c0c000: Fixed dependency cycle(s) with /panel
+[    0.068692] /panel: Fixed dependency cycle(s) with /soc/lcd-controller@1c0c000
+[    0.074131] SCSI subsystem initialized
+[    0.074208] libata version 3.00 loaded.
+[    0.074552] usbcore: registered new interface driver usbfs
+[    0.074628] usbcore: registered new interface driver hub
+[    0.074689] usbcore: registered new device driver usb
+[    0.074993] pps_core: LinuxPPS API ver. 1 registered
+[    0.075004] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.075031] PTP clock support registered
+[    0.075855] Advanced Linux Sound Architecture Driver Initialized.
+[    0.077595] clocksource: Switched to clocksource arch_sys_counter
+[    0.090509] NET: Registered PF_INET protocol family
+[    0.090885] IP idents hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    0.093408] tcp_listen_portaddr_hash hash table entries: 512 (order: 0, 4096 bytes, linear)
+[    0.093456] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.093475] TCP established hash table entries: 8192 (order: 3, 32768 bytes, linear)
+[    0.093614] TCP bind hash table entries: 8192 (order: 5, 131072 bytes, linear)
+[    0.094011] TCP: Hash tables configured (established 8192 bind 8192)
+[    0.094226] UDP hash table entries: 512 (order: 3, 28672 bytes, linear)
+[    0.094333] UDP-Lite hash table entries: 512 (order: 3, 28672 bytes, linear)
+[    0.094796] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.096416] workingset: timestamp_bits=30 max_order=18 bucket_order=0
+[    0.097193] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 247)
+[    0.097216] io scheduler mq-deadline registered
+[    0.112310] Serial: 8250/16550 driver, 8 ports, IRQ sharing disabled
+[    0.137858] lima 1c40000.gpu: gp - mali400 version major 1 minor 1
+[    0.138051] lima 1c40000.gpu: pp0 - mali400 version major 1 minor 1
+[    0.138185] lima 1c40000.gpu: pp1 - mali400 version major 1 minor 1
+[    0.138250] lima 1c40000.gpu: l2_cache0 64K, 4-way, 64byte cache line, 64bit external bus
+[    0.139040] lima 1c40000.gpu: bus rate = 300000000
+[    0.139072] lima 1c40000.gpu: mod rate = 384000000
+[    0.140058] [drm] Initialized lima 1.1.0 for 1c40000.gpu on minor 0
+[    0.143471] loop: module loaded
+[    0.146220] usbcore: registered new interface driver uas
+[    0.146300] usbcore: registered new interface driver usb-storage
+[    0.147537] usbcore: registered new interface driver xpad
+[    0.148895] sunxi-rtc 1c20d00.rtc: registered as rtc0
+[    0.148957] sunxi-rtc 1c20d00.rtc: setting system clock to 2026-09-27T08:32:42 UTC (1790497962)
+[    0.149193] i2c_dev: i2c /dev entries driver
+[    0.151531] sunxi-wdt 1c20c90.watchdog: Watchdog enabled (timeout=16 sec, nowayout=0)
+[    0.153991] clocksource: hstimer: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 6370868154 ns
+[    0.156373] usbcore: registered new interface driver usbhid
+[    0.156392] usbhid: USB HID core driver
+[    0.167073] NET: Registered PF_PACKET protocol family
+[    0.167174] Key type dns_resolver registered
+[    0.167283] Registering SWP/SWPB emulation handler
+[    0.198202] sun4i-pinctrl 1c20800.pinctrl: supply vcc-pi not found, using dummy regulator
+[    0.199289] gpio gpiochip0: Static allocation of GPIO base is deprecated, use dynamic allocation.
+[    0.202185] sun4i-pinctrl 1c20800.pinctrl: initialized sunXi PIO driver
+[    0.203362] sun4i-pinctrl 1c20800.pinctrl: supply vcc-pb not found, using dummy regulator
+[    0.205080] sun4i-pinctrl 1c20800.pinctrl: supply vcc-ph not found, using dummy regulator
+[    0.207950] sun4i-pinctrl 1c20800.pinctrl: supply vcc-pd not found, using dummy regulator
+[    0.210279] panel-simple panel: Specify missing bus_format
+[    0.210311] panel-simple panel: Expected bpc in {6,8} but got: 0
+[    0.212302] printk: legacy console [ttyS0] disabled
+[    0.215080] input: RetroStone2 Shoulder Buttons as /devices/platform/gpio-keys-shoulder/input/input2
+[    0.217936] sun4i-pinctrl 1c20800.pinctrl: supply vcc-pc not found, using dummy regulator
+[    0.218392] input: RetroStone2 Brightness Keys as /devices/platform/gpio-keys-brightness/input/input3
+[    0.220886] ehci-platform 1c14000.usb: EHCI Host Controller
+[    0.220939] ehci-platform 1c14000.usb: new USB bus registered, assigned bus number 1
+[    0.228393] ehci-platform 1c1c000.usb: EHCI Host Controller
+[    0.228507] ehci-platform 1c1c000.usb: new USB bus registered, assigned bus number 2
+[    0.230298] ohci-platform 1c14400.usb: Generic Platform OHCI controller
+[    0.230341] ohci-platform 1c14400.usb: new USB bus registered, assigned bus number 3
+[    0.231523] axp20x-i2c 0-0034: AXP20x variant AXP209 found
+[    0.233596] 1c28000.serial: ttyS0 at MMIO 0x1c28000 (irq = 75, base_baud = 1500000) is a U6_16550A
+[    0.234530] ohci-platform 1c1c400.usb: Generic Platform OHCI controller
+[    0.234624] ohci-platform 1c1c400.usb: new USB bus registered, assigned bus number 4
+[    0.235145] printk: legacy console [ttyS0] enabled
+[    0.236227] usb_phy_generic usb_phy_generic.0.auto: dummy supplies not allowed for exclusive requests (id=vbus)
+[    0.250019] ehci-platform 1c1c000.usb: irq 79, io mem 0x01c1c000
+[    0.250955] musb-hdrc musb-hdrc.1.auto: MUSB HDRC host driver
+[    0.251010] musb-hdrc musb-hdrc.1.auto: new USB bus registered, assigned bus number 5
+[    0.252664] hub 5-0:1.0: USB hub found
+[    0.252878] hub 5-0:1.0: 1 port detected
+[    0.254669] ehci-platform 1c1c000.usb: USB 2.0 started, EHCI 1.00
+[    0.256294] hub 2-0:1.0: USB hub found
+[    0.256391] hub 2-0:1.0: 1 port detected
+[    0.265220] /soc/i2c@1c2ac00/pmic@34/gpio: Fixed dependency cycle(s) with /soc/i2c@1c2ac00/pmic@34/gpio/gpio1-adc-pin
+[    0.265281] /soc/i2c@1c2ac00/pmic@34/gpio: Fixed dependency cycle(s) with /soc/i2c@1c2ac00/pmic@34/gpio/gpio0-adc-pin
+[    0.265437] axp20x-gpio axp20x-gpio: DMA mask not set
+[    0.268738] axp20x-gpio axp20x-gpio: AXP209 pinctrl and GPIO driver loaded
+[    0.269503] 1c28800.serial: ttyS1 at MMIO 0x1c28800 (irq = 76, base_baud = 1500000) is a U6_16550A
+[    0.270234] serial serial0: tty port ttyS1 registered
+[    0.270891] ohci-platform 1c14400.usb: irq 80, io mem 0x01c14400
+[    0.271664] ohci-platform 1c1c400.usb: irq 121, io mem 0x01c1c400
+[    0.271914] ehci-platform 1c14000.usb: irq 77, io mem 0x01c14000
+[    0.277602] ehci-platform 1c14000.usb: USB 2.0 started, EHCI 1.00
+[    0.278154] input: axp20x-pek as /devices/platform/soc/1c2ac00.i2c/i2c-0/0-0034/axp20x-pek/input/input4
+[    0.280324] hub 1-0:1.0: USB hub found
+[    0.280933] axp20x-adc axp20x-adc: DMA mask not set
+[    0.281209] hub 1-0:1.0: 1 port detected
+[    0.284990] axp20x-battery-power-supply axp20x-battery-power-supply: DMA mask not set
+[    0.287691] vcc-pg: Bringing 3300000uV into 2800000-2800000uV
+[    0.288649] axp20x-ac-power-supply axp20x-ac-power-supply: DMA mask not set
+[    0.301781] axp20x-i2c 0-0034: AXP20X driver loaded
+[    0.304028] core: _opp_supported_by_regulators: OPP minuV: 1100000 maxuV: 1100000, not supported by regulator
+[    0.304075] cpu cpu0: _opp_add: OPP not supported by regulators (528000000)
+[    0.304217] core: _opp_supported_by_regulators: OPP minuV: 1000000 maxuV: 1000000, not supported by regulator
+[    0.304235] cpu cpu0: _opp_add: OPP not supported by regulators (312000000)
+[    0.304361] core: _opp_supported_by_regulators: OPP minuV: 1000000 maxuV: 1000000, not supported by regulator
+[    0.304378] cpu cpu0: _opp_add: OPP not supported by regulators (144000000)
+[    0.308354] sun4i-pinctrl 1c20800.pinctrl: supply vcc-pf not found, using dummy regulator
+[    0.308500] sun4i-pinctrl 1c20800.pinctrl: supply vcc-pd not found, using dummy regulator
+[    0.311154] sun4i-drm display-engine: bound 1e00000.display-frontend (ops 0xc083f448)
+[    0.311362] sun4i-drm display-engine: bound 1e20000.display-frontend (ops 0xc083f448)
+[    0.312875] sun4i-drm display-engine: bound 1e60000.display-backend (ops 0xc083ebb0)
+[    0.313346] sun4i-drm display-engine: bound 1e40000.display-backend (ops 0xc083ebb0)
+[    0.316388] sun4i-drm display-engine: bound 1c0c000.lcd-controller (ops 0xc083d34c)
+[    0.317073] sunxi-mmc 1c12000.mmc: allocated mmc-pwrseq
+[    0.317534] sun4i-drm display-engine: No panel or bridge found... RGB output disabled
+[    0.317631] sun4i-drm display-engine: bound 1c0d000.lcd-controller (ops 0xc083d34c)
+[    0.320679] sunxi-mmc 1c0f000.mmc: Got CD GPIO
+[    0.328519] hub 3-0:1.0: USB hub found
+[    0.328729] hub 3-0:1.0: 1 port detected
+[    0.330278] input: sun4i-hdmi HDMI Jack as /devices/platform/soc/1c16000.hdmi/sound/card1/input5
+[    0.330964] sun4i-drm display-engine: bound 1c16000.hdmi (ops 0xc083fb84)
+[    0.332529] [drm] Initialized sun4i-drm 1.0.0 for display-engine on minor 1
+[    0.334102] input: analog-stick as /devices/platform/analog-stick/input/input6
+[    0.335626] hub 4-0:1.0: USB hub found
+[    0.335774] hub 4-0:1.0: 1 port detected
+[    0.336811] input: RetroStone2 Buttons as /devices/platform/gpio-keys/input/input7
+[    0.338351] clk: Disabling unused clocks
+[    0.338656] ALSA device list:
+[    0.338676]   #0: sun4i-codec
+[    0.338692]   #1: sun4i-hdmi
+[    0.339384] check access for rdinit=/init failed: -2, ignoring
+[    0.341722] sunxi-mmc 1c12000.mmc: initialized, max. request size: 16384 KB
+[    0.346076] sunxi-mmc 1c0f000.mmc: initialized, max. request size: 16384 KB
+[    0.346286] Waiting for root device /dev/mmcblk0p2...
+[    0.378873] mmc2: new high speed SDIO card at address 0001
+[    0.387801] mmc0: host does not support reading read-only switch, assuming write-enable
+[    0.389882] mmc0: new high speed SDHC card at address 59b4
+[    0.391305] mmcblk0: mmc0:59b4 SDU1 7.46 GiB
+[    0.394810]  mmcblk0: p1 p2 p3
+[    0.432080] EXT4-fs (mmcblk0p2): mounted filesystem fbe08429-403a-4984-9951-4bf572e71c32 ro with ordered data mode. Quota mode: disabled.
+[    0.432256] VFS: Mounted root (ext4 filesystem) readonly on device 179:2.
+[    0.434889] devtmpfs: mounted
+[    0.436739] Freeing unused kernel image (initmem) memory: 1024K
+[    0.437248] Run /sbin/init as init process
+[    0.437267]   with arguments:
+[    0.437275]     /sbin/init
+[    0.437284]   with environment:
+[    0.437290]     HOME=/
+[    0.437298]     TERM=linux
+[    0.866960] mmc2: card 0001 removed
+[    2.566244] sun4i-pinctrl 1c20800.pinctrl: supply vcc-pa not found, using dummy regulator
+[    2.567408] sun7i-dwmac 1c50000.ethernet: IRQ eth_wake_irq not found
+[    2.567493] sun7i-dwmac 1c50000.ethernet: IRQ sfty not found
+[    2.568160] sun7i-dwmac 1c50000.ethernet: PTP uses main clock
+[    2.568351] sun7i-dwmac 1c50000.ethernet: no regulator found
+[    2.569347] sun7i-dwmac 1c50000.ethernet: Version ID not available
+[    2.569408] sun7i-dwmac 1c50000.ethernet: 	DWMAC1000
+[    2.569426] sun7i-dwmac 1c50000.ethernet: No HW DMA feature register supported
+[    2.569439] sun7i-dwmac 1c50000.ethernet: TX Checksum insertion supported
+[    2.569453] sun7i-dwmac 1c50000.ethernet: Normal descriptors
+[    2.569464] sun7i-dwmac 1c50000.ethernet: Ring mode enabled
+[    2.635897] sun7i-dwmac 1c50000.ethernet eth0: Register MEM_TYPE_PAGE_POOL RxQ-0
+[    2.673191] sun7i-dwmac 1c50000.ethernet eth0: PHY [stmmac-0:01] driver [SMSC LAN8710/LAN8720] (irq=POLL)
+[    2.675490] sun7i-dwmac 1c50000.ethernet eth0: No Safety Features support found
+[    2.675514] sun7i-dwmac 1c50000.ethernet eth0: RX IPC Checksum Offload disabled
+[    2.675533] sun7i-dwmac 1c50000.ethernet eth0: No MAC Management Counters available
+[    2.678718] sun7i-dwmac 1c50000.ethernet eth0: PTP not supported by HW
+[    2.678769] sun7i-dwmac 1c50000.ethernet eth0: configuring for phy/mii link mode
+[    2.719513] sun7i-dwmac 1c50000.ethernet eth0: stmmac_dvr_remove: removing driver
+[    4.591484] rsos-cntvct: 138768130 ticks at 24000000 Hz
+[    5.891653] random: crng init done

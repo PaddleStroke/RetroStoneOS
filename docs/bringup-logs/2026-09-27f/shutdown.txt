@@ -1,0 +1,35 @@
+=== shutdown: poweroff
+10.63 frontend: shutdown requested
+11.42 rcK start
+11.45 bootlog stopped
+11.59 frontend stopped
+11.63 clock saved
+11.63 log written; next: sync, unmount /data
+=== shutdown: poweroff
+20.94 frontend: shutdown requested
+21.58 rcK start
+21.61 bootlog stopped
+21.76 frontend stopped
+21.79 clock saved
+21.80 log written; next: sync, unmount /data
+=== shutdown: poweroff
+5.33 frontend: shutdown requested
+5.94 rcK start
+5.97 bootlog stopped
+6.11 frontend stopped
+6.15 clock saved
+6.15 log written; next: sync, unmount /data
+=== shutdown: poweroff
+5.32 frontend: shutdown requested
+5.95 rcK start
+5.98 bootlog stopped
+6.12 frontend stopped
+6.15 clock saved
+6.16 log written; next: sync, unmount /data
+=== shutdown: poweroff
+445.31 frontend: shutdown requested
+445.73 rcK start
+445.76 bootlog stopped
+445.89 frontend stopped
+445.95 clock saved
+445.95 log written; next: sync, unmount /data

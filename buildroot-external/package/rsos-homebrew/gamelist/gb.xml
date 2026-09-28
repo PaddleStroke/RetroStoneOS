@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<gameList>
+	<game>
+		<path>./databay.gb</path>
+		<name>Run to Databay</name>
+		<desc>Jammer the hacker races his land speeder away from the Corporation with stolen data. Steer left and right to dodge the obstacles on the road to Databay. Made for GBJAM 4.</desc>
+		<releasedate>20150816T000000</releasedate>
+		<developer>Fredrik Brundin (Momeka)</developer>
+		<genre>Action</genre>
+		<players>1</players>
+	</game>
+	<game>
+		<path>./Espionage.gb</path>
+		<name>Espionage</name>
+		<desc>A spy sneaks into the enemy base to grab as much data as he can, but he must get out before the timer runs out and the guards come back. Greed is the enemy. Made for the first GBJAM.</desc>
+		<releasedate>20130714T000000</releasedate>
+		<developer>Fredrik Brundin (Momeka)</developer>
+		<genre>Action</genre>
+		<players>1</players>
+	</game>
+	<game>
+		<path>./Into the Blue.gb</path>
+		<name>Into the Blue</name>
+		<desc>Panels rise from the bottom of the well. Swap them to line up three or more of the same kind before the stack reaches the top. Nine speed levels, three difficulties and an original chiptune soundtrack.</desc>
+		<image>./media/images/Into the Blue.jpg</image>
+		<releasedate>20180624T000000</releasedate>
+		<developer>Jonas Fischbach</developer>
+		<genre>Puzzle</genre>
+		<players>1</players>
+	</game>
+	<game>
+		<path>./Retroid.gb</path>
+		<name>Retroid</name>
+		<desc>A brick breaker in the spirit of Breakout and Arkanoid: 20 stages, power-up items, eight chiptunes, a boss battle and a secret cheat code.</desc>
+		<image>./media/images/Retroid.jpg</image>
+		<releasedate>20160910T000000</releasedate>
+		<developer>Jonas Fischbach</developer>
+		<genre>Action</genre>
+		<players>1</players>
+	</game>
+	<game>
+		<path>./ropeandbombs.gb</path>
+		<name>Rope &amp; Bombs</name>
+		<desc>Pieces of rope and bombs fall from the sky. Connect the rope so the fires burn as much of it as possible, and use the bombs to clear space before the pile reaches the top. Colour on the Game Boy Color.</desc>
+		<releasedate>20170902T000000</releasedate>
+		<developer>Team Lampoil</developer>
+		<genre>Puzzle</genre>
+		<players>1</players>
+	</game>
+</gameList>

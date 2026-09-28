@@ -1,0 +1,692 @@
+From f13d8d8c5565b7024e4f80fb4b022597f18df40d Mon Sep 17 00:00:00 2001
+From: RetroStoneOS <pierrelouis.boyer@gmail.com>
+Date: Fri, 25 Sep 2026 23:07:08 +0200
+Subject: [PATCH 2/3] drm/sun4i: hdmi: add HDMI audio support (EXPERIMENTAL)
+
+Add HDMI audio for the sun4i HDMI encoder (A10, A10s, A20, A31), as a
+forward port of "drm: sun4i: hdmi: Add support for sun4i HDMI encoder
+audio" v3 by Stefan Mavrodiev (Olimex, January 2020), which was tested
+on the A20 but never merged. The register programming (audio reset and
+enable, layout and channel count, channel map, channel status sampling
+frequency, N/CTS, audio infoframe at 0x0a0) comes from that patch and
+from the Allwinner BSP it was based on.
+
+The structure is reworked for Linux 6.18 and for the review comments:
+
+ - Use the generic DRM HDMI audio helpers: drm_connector_hdmi_audio_init()
+   creates an hdmi-codec device for the connector (ELD control, ELD
+   based hw constraints, IEC 60958 channel status, audio infoframe
+   contents and jack), like vc4_hdmi does. The driver only implements
+   the startup/prepare/shutdown hooks. This replaces the custom ELD
+   kcontrol of v2 and the hand-built audio infoframe.
+
+ - The CPU DAI is the HDMI audio FIFO, fed by the dedicated DMA channel
+   "audio-tx" (already described in sun7i-a20.dtsi) through the generic
+   dmaengine PCM, with the same bus width, burst and buffer limits as
+   the tested patch.
+
+ - The sound card is registered once at bind time, device-managed,
+   instead of at every encoder enable/disable (review by Maxime Ripard).
+   devm_snd_soc_register_deferrable_card() is used because the built-in
+   hdmi-codec driver registers after drivers/gpu. The device drvdata
+   that snd_soc_register_card() overwrites is restored afterwards, and
+   the card finds the HDMI structure through card->drvdata.
+
+ - Audio setup failures are not fatal for the display.
+
+ - N/CTS are computed with drm_hdmi_acr_get_n_cts() from the TMDS
+   character rate, and reprogrammed when the video mode changes while
+   audio is running.
+
+ - The audio infoframe is written through write_infoframe() and added
+   to the packet scheduler (packet type 3, from the BSP) while audio is
+   running; clear_infoframe() removes it.
+
+ - The hdmi-codec jack follows the connector: plugged after an EDID
+   read, unplugged when detect() sees HPD low.
+
+ - Unsupported infoframe types (the SPD infoframe is generated at every
+   modeset) are logged at debug level instead of as errors.
+
+Only 16-bit stereo PCM is offered, at 32 to 192 kHz: the BSP formats
+S20_3LE and S24_LE did not work in the original patch and multichannel
+was never tested. As in the BSP and the original patch, the DMA
+destination address is left at 0 because the dedicated DMA HDMI audio
+port is selected by its DRQ type.
+
+Chen-Yu Tsai suggested in the v3 review to drop ASoC for a plain ALSA
+dmaengine card. The generic hdmi-codec route was chosen instead because
+it is now the standard way for DRM HDMI drivers and brings the ELD,
+channel status, infoframe and jack handling for free.
+
+Link: https://lore.kernel.org/all/20200128140642.8404-2-stefan@olimex.com/
+Link: https://lore.kernel.org/all/20200120123326.30743-1-stefan@olimex.com/
+Link: https://lore.kernel.org/all/20200110141140.28527-1-stefan@olimex.com/
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/gpu/drm/sun4i/Kconfig            |  13 +
+ drivers/gpu/drm/sun4i/Makefile           |   1 +
+ drivers/gpu/drm/sun4i/sun4i_hdmi.h       |  68 +++++
+ drivers/gpu/drm/sun4i/sun4i_hdmi_audio.c | 328 +++++++++++++++++++++++
+ drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c   |  78 +++++-
+ 5 files changed, 478 insertions(+), 10 deletions(-)
+ create mode 100644 drivers/gpu/drm/sun4i/sun4i_hdmi_audio.c
+
+diff --git a/drivers/gpu/drm/sun4i/Kconfig b/drivers/gpu/drm/sun4i/Kconfig
+index b56ba00aa..b3ba791fa 100644
+--- a/drivers/gpu/drm/sun4i/Kconfig
++++ b/drivers/gpu/drm/sun4i/Kconfig
+@@ -27,6 +27,19 @@ config DRM_SUN4I_HDMI
+ 	  Choose this option if you have an Allwinner A10/A10s/A20/A31
+ 	  SoC with an HDMI controller.
+ 
++config DRM_SUN4I_HDMI_AUDIO
++	bool "Allwinner A10/A10s/A20/A31 HDMI Audio Support (EXPERIMENTAL)"
++	depends on DRM_SUN4I_HDMI
++	depends on SND_SOC=y
++	select SND_SOC_GENERIC_DMAENGINE_PCM
++	select SND_SOC_HDMI_CODEC
++	help
++	  Choose this option if you have an Allwinner A10/A10s/A20/A31
++	  SoC with an HDMI controller and want to play audio over HDMI.
++	  The audio FIFO is fed by the dedicated DMA engine (DMA_SUN4I)
++	  and only 16-bit stereo PCM is supported. Only the A20 register
++	  layout has been tested (out of tree).
++
+ config DRM_SUN4I_HDMI_CEC
+ 	bool "Allwinner A10/A10s/A20/A31 HDMI CEC Support"
+ 	depends on DRM_SUN4I_HDMI
+diff --git a/drivers/gpu/drm/sun4i/Makefile b/drivers/gpu/drm/sun4i/Makefile
+index bad7497a0..b96f5e511 100644
+--- a/drivers/gpu/drm/sun4i/Makefile
++++ b/drivers/gpu/drm/sun4i/Makefile
+@@ -9,6 +9,7 @@ sun4i-drm-hdmi-y		+= sun4i_hdmi_ddc_clk.o
+ sun4i-drm-hdmi-y		+= sun4i_hdmi_enc.o
+ sun4i-drm-hdmi-y		+= sun4i_hdmi_i2c.o
+ sun4i-drm-hdmi-y		+= sun4i_hdmi_tmds_clk.o
++sun4i-drm-hdmi-$(CONFIG_DRM_SUN4I_HDMI_AUDIO) += sun4i_hdmi_audio.o
+ 
+ sun8i-drm-hdmi-y		+= sun8i_dw_hdmi.o
+ sun8i-drm-hdmi-y		+= sun8i_hdmi_phy.o
+diff --git a/drivers/gpu/drm/sun4i/sun4i_hdmi.h b/drivers/gpu/drm/sun4i/sun4i_hdmi.h
+index 9dbbd4594..dc19c5697 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_hdmi.h
++++ b/drivers/gpu/drm/sun4i/sun4i_hdmi.h
+@@ -15,6 +15,11 @@
+ 
+ #include <media/cec-pin.h>
+ 
++#ifdef CONFIG_DRM_SUN4I_HDMI_AUDIO
++#include <sound/jack.h>
++#include <sound/soc.h>
++#endif
++
+ #define SUN4I_HDMI_CTRL_REG		0x004
+ #define SUN4I_HDMI_CTRL_ENABLE			BIT(31)
+ 
+@@ -43,7 +48,31 @@
+ #define SUN4I_HDMI_VID_TIMING_POL_VSYNC		BIT(1)
+ #define SUN4I_HDMI_VID_TIMING_POL_HSYNC		BIT(0)
+ 
++#define SUN4I_HDMI_AUDIO_CTRL_REG	0x040
++#define SUN4I_HDMI_AUDIO_CTRL_ENABLE		BIT(31)
++#define SUN4I_HDMI_AUDIO_CTRL_RESET		BIT(30)
++
++#define SUN4I_HDMI_AUDIO_FMT_REG	0x048
++#define SUN4I_HDMI_AUDIO_FMT_SRC		BIT(31)
++#define SUN4I_HDMI_AUDIO_FMT_LAYOUT		BIT(3)
++#define SUN4I_HDMI_AUDIO_FMT_CH_CFG(n)		(((n) - 1) & GENMASK(2, 0))
++#define SUN4I_HDMI_AUDIO_FMT_CH_CFG_MASK	GENMASK(2, 0)
++
++#define SUN4I_HDMI_AUDIO_PCM_REG	0x04c
++#define SUN4I_HDMI_AUDIO_PCM_CH_MAP_IDENTITY	0x76543210
++
++#define SUN4I_HDMI_AUDIO_CTS_REG	0x050
++#define SUN4I_HDMI_AUDIO_CTS(n)			((n) & GENMASK(19, 0))
++
++#define SUN4I_HDMI_AUDIO_N_REG		0x054
++#define SUN4I_HDMI_AUDIO_N(n)			((n) & GENMASK(19, 0))
++
++#define SUN4I_HDMI_AUDIO_STAT0_REG	0x058
++#define SUN4I_HDMI_AUDIO_STAT0_FREQ(n)		(((n) & 0xf) << 24)
++#define SUN4I_HDMI_AUDIO_STAT0_FREQ_MASK	GENMASK(27, 24)
++
+ #define SUN4I_HDMI_AVI_INFOFRAME_REG(n)	(0x080 + (n))
++#define SUN4I_HDMI_AUDIO_INFOFRAME_REG(n)	(0x0a0 + (n))
+ 
+ #define SUN4I_HDMI_PAD_CTRL0_REG	0x200
+ #define SUN4I_HDMI_PAD_CTRL0_BIASEN		BIT(31)
+@@ -191,6 +220,7 @@
+ 
+ enum sun4i_hdmi_pkt_type {
+ 	SUN4I_HDMI_PKT_AVI = 2,
++	SUN4I_HDMI_PKT_AUDIO = 3,	/* buffer at 0x0a0, from the BSP */
+ 	SUN4I_HDMI_PKT_END = 15,
+ };
+ 
+@@ -289,6 +319,28 @@ struct sun4i_hdmi {
+ 	/* Hotplug detection: the controller has no HPD interrupt */
+ 	struct delayed_work	hpd_work;
+ 
++	/*
++	 * Send the audio infoframe packet.
++	 * Protected by connector.hdmi.infoframes.lock.
++	 */
++	bool			audio_infoframe;
++
++#ifdef CONFIG_DRM_SUN4I_HDMI_AUDIO
++	struct {
++		struct snd_soc_card		card;
++		struct snd_soc_dai_link		link;
++		struct snd_soc_dai_link_component cpu;
++		struct snd_soc_dai_link_component codec;
++		struct snd_soc_dai_link_component platform;
++		struct snd_soc_jack		jack;
++
++		/* Protects the audio registers and the fields below */
++		struct mutex			lock;
++		unsigned long long		tmds_rate;
++		unsigned int			sample_rate; /* 0: stopped */
++	} audio;
++#endif
++
+ 	struct cec_adapter	*cec_adap;
+ 
+ 	const struct sun4i_hdmi_variant	*variant;
+@@ -298,4 +350,20 @@ int sun4i_ddc_create(struct sun4i_hdmi *hdmi, struct clk *clk);
+ int sun4i_tmds_create(struct sun4i_hdmi *hdmi);
+ int sun4i_hdmi_i2c_create(struct device *dev, struct sun4i_hdmi *hdmi);
+ 
++#ifdef CONFIG_DRM_SUN4I_HDMI_AUDIO
++int sun4i_hdmi_audio_init(struct sun4i_hdmi *hdmi);
++void sun4i_hdmi_audio_mode_set(struct sun4i_hdmi *hdmi,
++			       unsigned long long tmds_rate);
++#else
++static inline int sun4i_hdmi_audio_init(struct sun4i_hdmi *hdmi)
++{
++	return 0;
++}
++
++static inline void sun4i_hdmi_audio_mode_set(struct sun4i_hdmi *hdmi,
++					     unsigned long long tmds_rate)
++{
++}
++#endif
++
+ #endif /* _SUN4I_HDMI_H_ */
+diff --git a/drivers/gpu/drm/sun4i/sun4i_hdmi_audio.c b/drivers/gpu/drm/sun4i/sun4i_hdmi_audio.c
+new file mode 100644
+index 000000000..2adbf77f8
+--- /dev/null
++++ b/drivers/gpu/drm/sun4i/sun4i_hdmi_audio.c
+@@ -0,0 +1,328 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * Allwinner A10/A10s/A20/A31 HDMI audio
++ *
++ * The register programming comes from "drm: sun4i: hdmi: Add support for
++ * sun4i HDMI encoder audio" (v3, January 2020) by Stefan Mavrodiev
++ * <stefan@olimex.com>, which was itself based on the Allwinner BSP and was
++ * tested on the A20, but was never merged. This version is reworked on top
++ * of the generic DRM HDMI audio helpers (hdmi-codec), like vc4_hdmi:
++ *
++ *  - the CPU DAI is the HDMI audio FIFO, fed by the dedicated DMA
++ *    channel "audio-tx" through the generic dmaengine PCM;
++ *  - the codec DAI is hdmi-codec, created by drm_connector_hdmi_audio_init(),
++ *    which provides the ELD control, the ELD constraints and the jack;
++ *  - the sound card is registered once at bind time instead of at every
++ *    modeset, as requested in the v1/v3 review.
++ */
++
++#include <linux/device.h>
++#include <linux/dmaengine.h>
++#include <linux/mutex.h>
++#include <linux/of.h>
++#include <linux/regmap.h>
++
++#include <drm/display/drm_hdmi_audio_helper.h>
++#include <drm/display/drm_hdmi_helper.h>
++#include <drm/display/drm_hdmi_state_helper.h>
++#include <drm/drm_print.h>
++
++#include <sound/asoundef.h>
++#include <sound/dmaengine_pcm.h>
++#include <sound/hdmi-codec.h>
++#include <sound/jack.h>
++#include <sound/pcm.h>
++#include <sound/soc.h>
++
++#include "sun4i_hdmi.h"
++
++#define connector_to_sun4i_hdmi(c)		\
++	container_of_const(c, struct sun4i_hdmi, connector)
++
++/* Called with hdmi->audio.lock held */
++static void sun4i_hdmi_audio_set_n_cts(struct sun4i_hdmi *hdmi)
++{
++	unsigned int n, cts;
++
++	if (!hdmi->audio.sample_rate || !hdmi->audio.tmds_rate)
++		return;
++
++	drm_hdmi_acr_get_n_cts(hdmi->audio.tmds_rate, hdmi->audio.sample_rate,
++			       &n, &cts);
++
++	regmap_write(hdmi->regmap, SUN4I_HDMI_AUDIO_CTS_REG,
++		     SUN4I_HDMI_AUDIO_CTS(cts));
++	regmap_write(hdmi->regmap, SUN4I_HDMI_AUDIO_N_REG,
++		     SUN4I_HDMI_AUDIO_N(n));
++}
++
++/* Called from the encoder enable path, to follow TMDS clock changes */
++void sun4i_hdmi_audio_mode_set(struct sun4i_hdmi *hdmi,
++			       unsigned long long tmds_rate)
++{
++	mutex_lock(&hdmi->audio.lock);
++	hdmi->audio.tmds_rate = tmds_rate;
++	sun4i_hdmi_audio_set_n_cts(hdmi);
++	mutex_unlock(&hdmi->audio.lock);
++}
++
++static int sun4i_hdmi_audio_startup(struct drm_connector *connector)
++{
++	/* A DVI sink cannot receive audio packets */
++	if (!connector->display_info.is_hdmi)
++		return -ENODEV;
++
++	return 0;
++}
++
++static int sun4i_hdmi_audio_prepare(struct drm_connector *connector,
++				    struct hdmi_codec_daifmt *fmt,
++				    struct hdmi_codec_params *hparms)
++{
++	struct sun4i_hdmi *hdmi = connector_to_sun4i_hdmi(connector);
++	unsigned int channels = hparms->channels;
++	u32 reg;
++	int ret;
++
++	if (channels < 1 || channels > 8)
++		return -EINVAL;
++
++	mutex_lock(&hdmi->audio.lock);
++
++	/* Reset the audio block, the reset bit clears itself */
++	regmap_write(hdmi->regmap, SUN4I_HDMI_AUDIO_CTRL_REG, 0);
++	regmap_write(hdmi->regmap, SUN4I_HDMI_AUDIO_CTRL_REG,
++		     SUN4I_HDMI_AUDIO_CTRL_RESET);
++	ret = regmap_read_poll_timeout(hdmi->regmap, SUN4I_HDMI_AUDIO_CTRL_REG,
++				       reg, !(reg & SUN4I_HDMI_AUDIO_CTRL_RESET),
++				       100, 50000);
++	if (ret) {
++		drm_err(connector->dev, "Failed to reset the HDMI audio block\n");
++		goto out_unlock;
++	}
++
++	/* Two channels use layout 0, more channels use layout 1 */
++	regmap_update_bits(hdmi->regmap, SUN4I_HDMI_AUDIO_FMT_REG,
++			   SUN4I_HDMI_AUDIO_FMT_LAYOUT |
++			   SUN4I_HDMI_AUDIO_FMT_CH_CFG_MASK,
++			   (channels > 2 ? SUN4I_HDMI_AUDIO_FMT_LAYOUT : 0) |
++			   SUN4I_HDMI_AUDIO_FMT_CH_CFG(channels));
++
++	/* Identity channel map */
++	regmap_write(hdmi->regmap, SUN4I_HDMI_AUDIO_PCM_REG,
++		     SUN4I_HDMI_AUDIO_PCM_CH_MAP_IDENTITY);
++
++	/* IEC 60958 channel status: sampling frequency (bits 24-27) */
++	regmap_update_bits(hdmi->regmap, SUN4I_HDMI_AUDIO_STAT0_REG,
++			   SUN4I_HDMI_AUDIO_STAT0_FREQ_MASK,
++			   SUN4I_HDMI_AUDIO_STAT0_FREQ(hparms->iec.status[3] &
++						       IEC958_AES3_CON_FS));
++
++	hdmi->audio.sample_rate = hparms->sample_rate;
++	sun4i_hdmi_audio_set_n_cts(hdmi);
++
++	regmap_write(hdmi->regmap, SUN4I_HDMI_AUDIO_CTRL_REG,
++		     SUN4I_HDMI_AUDIO_CTRL_ENABLE);
++
++out_unlock:
++	mutex_unlock(&hdmi->audio.lock);
++	if (ret)
++		return ret;
++
++	return drm_atomic_helper_connector_hdmi_update_audio_infoframe(connector,
++								       &hparms->cea);
++}
++
++static void sun4i_hdmi_audio_shutdown(struct drm_connector *connector)
++{
++	struct sun4i_hdmi *hdmi = connector_to_sun4i_hdmi(connector);
++
++	mutex_lock(&hdmi->audio.lock);
++	regmap_write(hdmi->regmap, SUN4I_HDMI_AUDIO_CTRL_REG, 0);
++	hdmi->audio.sample_rate = 0;
++	mutex_unlock(&hdmi->audio.lock);
++
++	drm_atomic_helper_connector_hdmi_clear_audio_infoframe(connector);
++}
++
++static const struct drm_connector_hdmi_audio_funcs sun4i_hdmi_audio_funcs = {
++	.startup	= sun4i_hdmi_audio_startup,
++	.prepare	= sun4i_hdmi_audio_prepare,
++	.shutdown	= sun4i_hdmi_audio_shutdown,
++};
++
++/*
++ * The audio FIFO is fed by a dedicated DMA channel (DDMA DRQ 24). As in the
++ * Allwinner BSP and in the original patch, the destination address is left
++ * at 0: the DDMA HDMI audio port is selected by its DRQ type only.
++ * TODO(hw): confirm on the RetroStone2 that no FIFO address is needed.
++ */
++static int sun4i_hdmi_audio_cpu_dai_probe(struct snd_soc_dai *dai)
++{
++	struct snd_dmaengine_dai_dma_data *dma_data;
++
++	dma_data = devm_kzalloc(dai->dev, sizeof(*dma_data), GFP_KERNEL);
++	if (!dma_data)
++		return -ENOMEM;
++
++	dma_data->addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
++	dma_data->maxburst = 8;
++
++	snd_soc_dai_init_dma_data(dai, dma_data, NULL);
++
++	return 0;
++}
++
++static const struct snd_soc_dai_ops sun4i_hdmi_audio_cpu_dai_ops = {
++	.probe	= sun4i_hdmi_audio_cpu_dai_probe,
++};
++
++/*
++ * Only S16_LE stereo is offered: the BSP also listed S20_3LE and S24_LE
++ * but they did not work, and multichannel layouts were never tested.
++ */
++static struct snd_soc_dai_driver sun4i_hdmi_audio_cpu_dai_drv = {
++	.name	= "sun4i-hdmi-cpu-dai",
++	.ops	= &sun4i_hdmi_audio_cpu_dai_ops,
++	.playback = {
++		.stream_name	= "Playback",
++		.channels_min	= 2,
++		.channels_max	= 2,
++		.rates		= SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100 |
++				  SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_88200 |
++				  SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_176400 |
++				  SNDRV_PCM_RATE_192000,
++		.formats	= SNDRV_PCM_FMTBIT_S16_LE,
++	},
++};
++
++static const struct snd_soc_component_driver sun4i_hdmi_audio_cpu_dai_comp = {
++	.name			= "sun4i-hdmi-cpu-dai-component",
++	.legacy_dai_naming	= 1,
++};
++
++/* Buffer limits from the original (tested) patch */
++static const struct snd_pcm_hardware sun4i_hdmi_audio_pcm_hardware = {
++	.info			= SNDRV_PCM_INFO_INTERLEAVED |
++				  SNDRV_PCM_INFO_BLOCK_TRANSFER |
++				  SNDRV_PCM_INFO_MMAP |
++				  SNDRV_PCM_INFO_MMAP_VALID,
++	.formats		= SNDRV_PCM_FMTBIT_S16_LE,
++	.rates			= SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100 |
++				  SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_88200 |
++				  SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_176400 |
++				  SNDRV_PCM_RATE_192000,
++	.rate_min		= 32000,
++	.rate_max		= 192000,
++	.channels_min		= 2,
++	.channels_max		= 2,
++	.buffer_bytes_max	= 128 * 1024,
++	.period_bytes_min	= 4 * 1024,
++	.period_bytes_max	= 32 * 1024,
++	.periods_min		= 2,
++	.periods_max		= 8,
++};
++
++static const struct snd_dmaengine_pcm_config sun4i_hdmi_audio_pcm_config = {
++	.chan_names[SNDRV_PCM_STREAM_PLAYBACK] = "audio-tx",
++	.pcm_hardware		= &sun4i_hdmi_audio_pcm_hardware,
++	.prealloc_buffer_size	= 128 * 1024,
++	.prepare_slave_config	= snd_dmaengine_pcm_prepare_slave_config,
++};
++
++static int sun4i_hdmi_audio_codec_init(struct snd_soc_pcm_runtime *rtd)
++{
++	struct sun4i_hdmi *hdmi = snd_soc_card_get_drvdata(rtd->card);
++	struct snd_soc_component *component =
++		snd_soc_rtd_to_codec(rtd, 0)->component;
++	int ret;
++
++	ret = snd_soc_card_jack_new(rtd->card, "HDMI Jack", SND_JACK_LINEOUT,
++				    &hdmi->audio.jack);
++	if (ret) {
++		dev_err(rtd->dev, "HDMI Jack creation failed: %d\n", ret);
++		return ret;
++	}
++
++	return snd_soc_component_set_jack(component, &hdmi->audio.jack, NULL);
++}
++
++int sun4i_hdmi_audio_init(struct sun4i_hdmi *hdmi)
++{
++	struct snd_soc_dai_link *link = &hdmi->audio.link;
++	struct snd_soc_card *card = &hdmi->audio.card;
++	struct device *dev = hdmi->dev;
++	int ret;
++
++	mutex_init(&hdmi->audio.lock);
++
++	if (!of_property_present(dev->of_node, "dmas")) {
++		dev_warn(dev, "No 'dmas' DT property, no HDMI audio\n");
++		return 0;
++	}
++
++	/*
++	 * Everything below is device-managed on the HDMI device, which is
++	 * released when the component is unbound (see vc4_hdmi for why this
++	 * is preferred over DRM-managed actions with ASoC).
++	 */
++	ret = devm_snd_dmaengine_pcm_register(dev, &sun4i_hdmi_audio_pcm_config,
++					      0);
++	if (ret)
++		return dev_err_probe(dev, ret, "Could not register PCM\n");
++
++	ret = devm_snd_soc_register_component(dev,
++					      &sun4i_hdmi_audio_cpu_dai_comp,
++					      &sun4i_hdmi_audio_cpu_dai_drv, 1);
++	if (ret)
++		return dev_err_probe(dev, ret, "Could not register CPU DAI\n");
++
++	ret = drm_connector_hdmi_audio_init(&hdmi->connector, dev,
++					    &sun4i_hdmi_audio_funcs,
++					    2, 0, false, -1);
++	if (ret)
++		return dev_err_probe(dev, ret, "Could not create HDMI codec\n");
++
++	link->cpus		= &hdmi->audio.cpu;
++	link->codecs		= &hdmi->audio.codec;
++	link->platforms		= &hdmi->audio.platform;
++	link->num_cpus		= 1;
++	link->num_codecs	= 1;
++	link->num_platforms	= 1;
++	link->playback_only	= 1;
++	link->name		= "HDMI";
++	link->stream_name	= "HDMI PCM";
++	link->cpus->dai_name	= dev_name(dev);
++	link->codecs->name	=
++		dev_name(&hdmi->connector.hdmi_audio.codec_pdev->dev);
++	link->codecs->dai_name	= "i2s-hifi";
++	link->platforms->name	= dev_name(dev);
++	link->init		= sun4i_hdmi_audio_codec_init;
++
++	card->dai_link		= link;
++	card->num_links		= 1;
++	card->name		= "sun4i-hdmi";
++	card->driver_name	= "sun4i-hdmi";
++	card->dev		= dev;
++	card->owner		= THIS_MODULE;
++	snd_soc_card_set_drvdata(card, hdmi);
++
++	/*
++	 * The deferrable variant binds the card later if hdmi-codec is not
++	 * probed yet (built-in drivers/gpu initcalls run before sound/).
++	 */
++	ret = devm_snd_soc_register_deferrable_card(dev, card);
++
++	/*
++	 * snd_soc_register_card() stores the card in the device drvdata, but
++	 * the HDMI driver uses it for its own structure (unbind). Nothing in
++	 * ASoC reads it back for a card that is not a platform driver, so
++	 * restore it. The card keeps its own pointer to us in card->drvdata.
++	 */
++	dev_set_drvdata(dev, hdmi);
++
++	if (ret)
++		return dev_err_probe(dev, ret, "Could not register sound card\n");
++
++	return 0;
++}
+diff --git a/drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c b/drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c
+index 85184127b..d99937996 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c
++++ b/drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c
+@@ -26,6 +26,7 @@
+ #include <drm/drm_probe_helper.h>
+ #include <drm/drm_simple_kms_helper.h>
+ 
++#include <drm/display/drm_hdmi_audio_helper.h>
+ #include <drm/display/drm_hdmi_helper.h>
+ #include <drm/display/drm_hdmi_state_helper.h>
+ 
+@@ -40,6 +41,25 @@
+ #define drm_connector_to_sun4i_hdmi(c)		\
+ 	container_of_const(c, struct sun4i_hdmi, connector)
+ 
++/*
++ * Program the packet scheduler: AVI infoframe, then the audio infoframe
++ * when audio is running. Called with connector->hdmi.infoframes.lock held,
++ * or from the encoder enable path.
++ */
++static void sun4i_hdmi_write_pkt_ctrl(struct sun4i_hdmi *hdmi)
++{
++	unsigned int slot = 0;
++	u32 val;
++
++	val = SUN4I_HDMI_PKT_CTRL_TYPE(slot++, SUN4I_HDMI_PKT_AVI);
++	/* TODO(hw): packet type 3 for the audio infoframe comes from the BSP */
++	if (hdmi->audio_infoframe)
++		val |= SUN4I_HDMI_PKT_CTRL_TYPE(slot++, SUN4I_HDMI_PKT_AUDIO);
++	val |= SUN4I_HDMI_PKT_CTRL_TYPE(slot, SUN4I_HDMI_PKT_END);
++
++	writel(val, hdmi->base + SUN4I_HDMI_PKT_CTRL_REG(0));
++}
++
+ static int sun4i_hdmi_write_infoframe(struct drm_connector *connector,
+ 				      enum hdmi_infoframe_type type,
+ 				      const u8 *buffer, size_t len)
+@@ -47,17 +67,42 @@ static int sun4i_hdmi_write_infoframe(struct drm_connector *connector,
+ 	struct sun4i_hdmi *hdmi = drm_connector_to_sun4i_hdmi(connector);
+ 	int i;
+ 
+-	if (type != HDMI_INFOFRAME_TYPE_AVI) {
+-		drm_err(connector->dev,
+-			"Unsupported infoframe type: %u\n", type);
+-		return 0;
++	switch (type) {
++	case HDMI_INFOFRAME_TYPE_AVI:
++		for (i = 0; i < len; i++)
++			writeb(buffer[i],
++			       hdmi->base + SUN4I_HDMI_AVI_INFOFRAME_REG(i));
++		break;
++
++	case HDMI_INFOFRAME_TYPE_AUDIO:
++		for (i = 0; i < len; i++)
++			writeb(buffer[i],
++			       hdmi->base + SUN4I_HDMI_AUDIO_INFOFRAME_REG(i));
++		hdmi->audio_infoframe = true;
++		sun4i_hdmi_write_pkt_ctrl(hdmi);
++		break;
++
++	default:
++		/* The SPD infoframe is generated at every modeset: no error */
++		drm_dbg_kms(connector->dev,
++			    "Unsupported infoframe type: %u\n", type);
++		break;
+ 	}
+ 
+-	for (i = 0; i < len; i++)
+-		writeb(buffer[i], hdmi->base + SUN4I_HDMI_AVI_INFOFRAME_REG(i));
+-
+ 	return 0;
++}
++
++static int sun4i_hdmi_clear_infoframe(struct drm_connector *connector,
++				      enum hdmi_infoframe_type type)
++{
++	struct sun4i_hdmi *hdmi = drm_connector_to_sun4i_hdmi(connector);
++
++	if (type == HDMI_INFOFRAME_TYPE_AUDIO) {
++		hdmi->audio_infoframe = false;
++		sun4i_hdmi_write_pkt_ctrl(hdmi);
++	}
+ 
++	return 0;
+ }
+ 
+ static void sun4i_hdmi_disable(struct drm_encoder *encoder,
+@@ -146,9 +191,12 @@ static void sun4i_hdmi_enable(struct drm_encoder *encoder,
+ 
+ 	drm_atomic_helper_connector_hdmi_update_infoframes(connector, state);
+ 
+-	val = SUN4I_HDMI_PKT_CTRL_TYPE(0, SUN4I_HDMI_PKT_AVI);
+-	val |= SUN4I_HDMI_PKT_CTRL_TYPE(1, SUN4I_HDMI_PKT_END);
+-	writel(val, hdmi->base + SUN4I_HDMI_PKT_CTRL_REG(0));
++	mutex_lock(&connector->hdmi.infoframes.lock);
++	sun4i_hdmi_write_pkt_ctrl(hdmi);
++	mutex_unlock(&connector->hdmi.infoframes.lock);
++
++	/* Audio clock regeneration (N/CTS) depends on the TMDS rate */
++	sun4i_hdmi_audio_mode_set(hdmi, tmds_rate);
+ 
+ 	val = SUN4I_HDMI_VID_CTRL_ENABLE;
+ 	if (display->is_hdmi)
+@@ -199,6 +247,9 @@ static int sun4i_hdmi_get_modes(struct drm_connector *connector)
+ 	cec_s_phys_addr(hdmi->cec_adap,
+ 			connector->display_info.source_physical_address, false);
+ 
++	/* The ELD is up to date now: let hdmi-codec report the jack */
++	drm_connector_hdmi_audio_plugged_notify(connector, !!drm_edid);
++
+ 	if (!drm_edid)
+ 		return 0;
+ 
+@@ -236,6 +287,7 @@ static struct i2c_adapter *sun4i_hdmi_get_ddc(struct device *dev)
+ 
+ static const struct drm_connector_hdmi_funcs sun4i_hdmi_hdmi_connector_funcs = {
+ 	.tmds_char_rate_valid	= sun4i_hdmi_connector_clock_valid,
++	.clear_infoframe	= sun4i_hdmi_clear_infoframe,
+ 	.write_infoframe	= sun4i_hdmi_write_infoframe,
+ };
+ 
+@@ -254,6 +306,7 @@ sun4i_hdmi_connector_detect(struct drm_connector *connector, bool force)
+ 	reg = readl(hdmi->base + SUN4I_HDMI_HPD_REG);
+ 	if (!(reg & SUN4I_HDMI_HPD_HIGH)) {
+ 		cec_phys_addr_invalidate(hdmi->cec_adap);
++		drm_connector_hdmi_audio_plugged_notify(connector, false);
+ 		return connector_status_disconnected;
+ 	}
+ 
+@@ -703,6 +756,11 @@ static int sun4i_hdmi_bind(struct device *dev, struct device *master,
+ 		goto err_cleanup_connector;
+ 	drm_connector_attach_encoder(&hdmi->connector, &hdmi->encoder);
+ 
++	/* Audio is optional: never fail the display because of it */
++	ret = sun4i_hdmi_audio_init(hdmi);
++	if (ret)
++		dev_warn(dev, "HDMI audio disabled: %d\n", ret);
++
+ 	INIT_DELAYED_WORK(&hdmi->hpd_work, sun4i_hdmi_hpd_work);
+ 	sun4i_hdmi_hpd_schedule(hdmi);
+ 

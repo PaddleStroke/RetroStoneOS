@@ -1,0 +1,181 @@
+# RetroStoneOS for the Raspberry Pi 2 (32-bit; also boots the Pi 3, 3B+ and
+# Zero 2 W in 32-bit mode). COMMUNITY-TESTED: it builds, but the RetroStoneOS
+# developers have not run it on hardware (docs/boards.md). HDMI only, USB
+# pads, no battery.
+#
+#   make O=~/rsos/output-rpi2 BR2_EXTERNAL=.../buildroot-external rpi2_defconfig
+#   make O=~/rsos/output-rpi2
+#
+# The Raspberry Pi parts follow Buildroot's configs/raspberrypi2_defconfig
+# (the same Raspberry Pi kernel, firmware and patches). The CPU is the
+# RetroStone2's class (Cortex-A7, NEON): the cores use the same arm-a7 build
+# (package/libretro-common.mk), which also runs on the Pi 3's Cortex-A53 in
+# 32-bit mode.
+
+# Architecture: Cortex-A7, NEON/VFPv4, EABIhf
+BR2_arm=y
+BR2_cortex_a7=y
+BR2_ARM_EABIHF=y
+BR2_ARM_FPU_NEON_VFPV4=y
+
+# Build
+BR2_DL_DIR="$(HOME)/rsos/dl"
+BR2_CCACHE=y
+# Buildroot's own patches (and the hash of the kernel tarball) for the
+# Raspberry Pi kernel
+BR2_GLOBAL_PATCH_DIR="board/raspberrypi/patches"
+BR2_DOWNLOAD_FORCE_CHECK_HASHES=y
+
+# Toolchain: Bootlin armv7-eabihf glibc stable (C++ included), as the RetroStone2
+BR2_TOOLCHAIN_EXTERNAL=y
+BR2_TOOLCHAIN_EXTERNAL_BOOTLIN=y
+BR2_TOOLCHAIN_EXTERNAL_BOOTLIN_ARMV7_EABIHF_GLIBC_STABLE=y
+
+# System: BusyBox init, devtmpfs only (no udev, no mdev), read-only root
+BR2_TARGET_GENERIC_HOSTNAME="retrostone"
+BR2_TARGET_GENERIC_ISSUE="RetroStoneOS"
+BR2_INIT_BUSYBOX=y
+BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_DEVTMPFS=y
+# BR2_TARGET_GENERIC_GETTY is not set
+# BR2_TARGET_GENERIC_REMOUNT_ROOTFS_RW is not set
+BR2_SYSTEM_DHCP=""
+# The parts all boards share (board/common), then the Pi 2's board.ini. The
+# SD card image is made by the Raspberry Pi post-image script (board/rpi4,
+# shared by all the Raspberry Pi ports).
+BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_RETROSTONE_PATH)/board/common/rootfs-overlay $(BR2_EXTERNAL_RETROSTONE_PATH)/board/rpi2/rootfs-overlay"
+BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_RETROSTONE_PATH)/board/common/post-build.sh"
+BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_RETROSTONE_PATH)/board/rpi4/post-image.sh"
+BR2_PACKAGE_BUSYBOX_CONFIG_FRAGMENT_FILES="$(BR2_EXTERNAL_RETROSTONE_PATH)/board/common/busybox.fragment"
+
+# Kernel: the Raspberry Pi kernel of Buildroot's raspberrypi2_defconfig,
+# bcm2709_defconfig + the RetroStoneOS needs + the Pi 2 fragment. zImage.
+BR2_LINUX_KERNEL=y
+BR2_LINUX_KERNEL_CUSTOM_TARBALL=y
+BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="$(call github,raspberrypi,linux,21b410140c47ffab5668399f6f143c7d7b935c8b)/linux-21b410140c47ffab5668399f6f143c7d7b935c8b.tar.gz"
+BR2_LINUX_KERNEL_DEFCONFIG="bcm2709"
+BR2_LINUX_KERNEL_CONFIG_FRAGMENT_FILES="$(BR2_EXTERNAL_RETROSTONE_PATH)/board/common/linux-rsos.fragment $(BR2_EXTERNAL_RETROSTONE_PATH)/board/rpi2/linux.fragment"
+BR2_LINUX_KERNEL_DTS_SUPPORT=y
+# Pi 2 (BCM2836 and BCM2837 revisions), Pi 3 / 3B+ / Zero 2 W / CM3 in 32-bit
+# mode: the firmware picks the device tree of the board it runs on.
+BR2_LINUX_KERNEL_INTREE_DTS_NAME="broadcom/bcm2709-rpi-2-b broadcom/bcm2710-rpi-2-b broadcom/bcm2710-rpi-3-b broadcom/bcm2710-rpi-3-b-plus broadcom/bcm2710-rpi-zero-2-w broadcom/bcm2710-rpi-cm3"
+BR2_LINUX_KERNEL_NEEDS_HOST_OPENSSL=y
+
+# Firmware: bootcode.bin + the Pi 0-3 GPU firmware, config.txt, cmdline.txt,
+# DT overlays (vc4-kms-v3d, miniuart-bt); WiFi/BT firmware of the Pi 3 /
+# Zero 2 W chips (BCM43430, CYW43455, BCM43436)
+BR2_PACKAGE_RPI_FIRMWARE=y
+BR2_PACKAGE_RPI_FIRMWARE_BOOTCODE_BIN=y
+BR2_PACKAGE_RPI_FIRMWARE_VARIANT_PI=y
+BR2_PACKAGE_RPI_FIRMWARE_CONFIG_FILE="$(BR2_EXTERNAL_RETROSTONE_PATH)/board/rpi2/config.txt"
+BR2_PACKAGE_RPI_FIRMWARE_CMDLINE_FILE="$(BR2_EXTERNAL_RETROSTONE_PATH)/board/rpi2/cmdline.txt"
+BR2_PACKAGE_RPI_FIRMWARE_INSTALL_DTB_OVERLAYS=y
+BR2_PACKAGE_BRCMFMAC_SDIO_FIRMWARE_RPI=y
+BR2_PACKAGE_BRCMFMAC_SDIO_FIRMWARE_RPI_BT=y
+BR2_PACKAGE_BRCMFMAC_SDIO_FIRMWARE_RPI_WIFI=y
+
+# Audio
+BR2_PACKAGE_ALSA_LIB=y
+BR2_PACKAGE_ALSA_UTILS=y
+BR2_PACKAGE_ALSA_UTILS_AMIXER=y
+BR2_PACKAGE_ALSA_UTILS_APLAY=y
+BR2_PACKAGE_ALSA_UTILS_SPEAKER_TEST=y
+
+# Graphics: libdrm, Mesa vc4 (KMS and GPU are the same vc4 device on the
+# Pi 0-3), EGL/GLES/GBM
+BR2_PACKAGE_LIBDRM=y
+BR2_PACKAGE_LIBDRM_INSTALL_TESTS=y
+BR2_PACKAGE_MESA3D=y
+BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_VC4=y
+BR2_PACKAGE_MESA3D_OPENGL_EGL=y
+BR2_PACKAGE_MESA3D_OPENGL_ES=y
+BR2_PACKAGE_KMSCUBE=y
+
+# Bring-up tools
+BR2_PACKAGE_EVTEST=y
+BR2_PACKAGE_BUSYBOX_SHOW_OTHERS=y
+BR2_PACKAGE_HTOP=y
+
+# Data partition (created at first boot)
+BR2_PACKAGE_EXFATPROGS=y
+BR2_PACKAGE_UTIL_LINUX=y
+BR2_PACKAGE_UTIL_LINUX_BINARIES=y
+BR2_PACKAGE_UTIL_LINUX_PARTX=y
+
+# WiFi / Bluetooth (installed, never started automatically)
+BR2_PACKAGE_WPA_SUPPLICANT=y
+BR2_PACKAGE_WPA_SUPPLICANT_CLI=y
+BR2_PACKAGE_BLUEZ5_UTILS=y
+BR2_PACKAGE_BLUEZ5_UTILS_CLIENT=y
+BR2_PACKAGE_BLUEZ5_UTILS_PLUGINS_HID=y
+
+# Root filesystem (one A/B slot): ext4, mounted read-only. 512 MiB = the
+# slot size in board/rpi4/genimage.cfg.in. The kernel, device trees and
+# firmware are in the boot FAT partition, not in /boot.
+BR2_TARGET_ROOTFS_EXT2=y
+BR2_TARGET_ROOTFS_EXT2_4=y
+BR2_TARGET_ROOTFS_EXT2_LABEL="rsos-root"
+BR2_TARGET_ROOTFS_EXT2_SIZE="512M"
+BR2_TARGET_ROOTFS_EXT2_MKFS_OPTIONS="-O ^64bit,^has_journal,^orphan_file -b 4096"
+# BR2_TARGET_ROOTFS_TAR is not set
+
+# Host tools: genimage, mkfs.vfat + mtools (boot FAT, data seed)
+BR2_PACKAGE_HOST_GENIMAGE=y
+BR2_PACKAGE_HOST_DOSFSTOOLS=y
+BR2_PACKAGE_HOST_MTOOLS=y
+
+# RetroStoneOS frontend and libretro cores (the RetroStone2's set; the
+# platform/dynarec per architecture is in package/libretro-common.mk)
+BR2_PACKAGE_RSOS_FRONTEND=y
+# Needs the gitignored homebrew/license ok/ folder: set to n in a fresh clone.
+BR2_PACKAGE_RSOS_HOMEBREW=y
+BR2_PACKAGE_LIBRETRO_FCEUMM=y
+BR2_PACKAGE_LIBRETRO_SNES9X2005=y
+BR2_PACKAGE_LIBRETRO_SNES9X2010=y
+BR2_PACKAGE_LIBRETRO_PICODRIVE=y
+BR2_PACKAGE_LIBRETRO_GAMBATTE=y
+BR2_PACKAGE_LIBRETRO_GPSP=y
+BR2_PACKAGE_LIBRETRO_PCSX_REARMED=y
+BR2_PACKAGE_LIBRETRO_MAME2003_PLUS=y
+BR2_PACKAGE_LIBRETRO_FBNEO=y
+BR2_PACKAGE_LIBRETRO_PARALLEL_N64=y
+BR2_PACKAGE_LIBRETRO_MUPEN64PLUS_NEXT=y
+BR2_PACKAGE_LIBRETRO_BEETLE_PCE_FAST=y
+BR2_PACKAGE_LIBRETRO_STELLA2014=y
+BR2_PACKAGE_LIBRETRO_PROSYSTEM=y
+BR2_PACKAGE_LIBRETRO_HANDY=y
+BR2_PACKAGE_LIBRETRO_BEETLE_NGP=y
+BR2_PACKAGE_LIBRETRO_BEETLE_WSWAN=y
+BR2_PACKAGE_LIBRETRO_GEARSYSTEM=y
+BR2_PACKAGE_LIBRETRO_SMSPLUS_GX=y
+BR2_PACKAGE_LIBRETRO_GEARBOY=y
+BR2_PACKAGE_LIBRETRO_GEARCOLECO=y
+BR2_PACKAGE_LIBRETRO_BLUEMSX=y
+BR2_PACKAGE_LIBRETRO_BEETLE_SUPAFAUST=y
+BR2_PACKAGE_LIBRETRO_CLOWNMDEMU=y
+BR2_PACKAGE_LIBRETRO_GEOLITH=y
+# Third batch: computers, fantasy consoles, game engines (docs/cores.md).
+# rsos-freedoom (free Doom IWADs) is seeded to /data/roms/doom like rsos-homebrew;
+# the Cave Story data (BR2_PACKAGE_LIBRETRO_NXENGINE_CAVESTORY) stays off: owner
+# decision (docs/homebrew.md).
+BR2_PACKAGE_LIBRETRO_PRBOOM=y
+BR2_PACKAGE_RSOS_FREEDOOM=y
+BR2_PACKAGE_LIBRETRO_FAKE08=y
+BR2_PACKAGE_LIBRETRO_DOSBOX_PURE=y
+BR2_PACKAGE_LIBRETRO_SCUMMVM=y
+BR2_PACKAGE_LIBRETRO_NXENGINE=y
+BR2_PACKAGE_LIBRETRO_BEETLE_SUPERGRAFX=y
+BR2_PACKAGE_LIBRETRO_FUSE=y
+BR2_PACKAGE_LIBRETRO_CAP32=y
+BR2_PACKAGE_LIBRETRO_POKEMINI=y
+BR2_PACKAGE_LIBRETRO_VICE=y
+
+# SMB share \RETROSTONE (in-kernel ksmbd), started on demand by the frontend
+BR2_PACKAGE_KSMBD_TOOLS=y
+
+# e2fsprogs: mkfs.ext4/e2fsck for the Bluetooth pairing store
+BR2_PACKAGE_E2FSPROGS=y
+# Hardening, pinned explicitly (docs/review/frontend-review.md F-L24)
+BR2_SSP_STRONG=y
+BR2_RELRO_FULL=y
+BR2_FORTIFY_SOURCE_2=y
+BR2_PIC_PIE=y

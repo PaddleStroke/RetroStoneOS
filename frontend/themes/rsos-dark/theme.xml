@@ -1,0 +1,370 @@
+<!--
+RetroStoneOS "rsos-dark" theme, EmulationStation theme format.
+Layout, background, pattern and generic icons: original work for
+RetroStoneOS (./_art/*.svg). The console pictures (./_art/carbon/*.svg) are
+the controller vectors of the "carbon" theme by Rookervik, CC BY-NC-SA, with
+thicker lines: see LICENSE.txt. No console logos or photos; system names
+are typography. The layout follows the familiar 640x480 "gbz35"
+arrangement: system carousel band, list on the right, metadata panel on the
+left, accent color per system.
+Fonts: Roboto Condensed (Apache-2.0), shipped with the frontend (":/fonts").
+The system folders only set variables (accent, icon = art under ./_art
+without ".svg", tagline).
+-->
+<theme>
+	<formatVersion>7</formatVersion>
+
+	<variables>
+		<!-- per system (the system folders define them first) -->
+		<accent>5b7fa6</accent>
+		<icon>icon-console</icon>
+		<tagline></tagline>
+		<!-- palette -->
+		<text>eceef1</text>
+		<textDim>9aa3ad</textDim>
+		<panel>0b0d10b4</panel>
+		<band>0b0d10c8</band>
+		<bandInfo>00000070</bandInfo>
+		<patternAlpha>3c</patternAlpha>
+		<iconAlpha>ff</iconAlpha>
+		<iconShade>ffffff48</iconShade>
+		<selected>ffffff</selected>
+		<menuBg>1b1e23fa</menuBg>
+		<menuAccent>3d7bd9</menuAccent>
+		<separator>ffffff20</separator>
+		<fontRegular>:/fonts/RobotoCondensed-Regular.ttf</fontRegular>
+		<fontBold>:/fonts/RobotoCondensed-Bold.ttf</fontBold>
+		<fontLight>:/fonts/RobotoCondensed-Light.ttf</fontLight>
+	</variables>
+
+	<!-- ============================================================ system -->
+	<view name="system">
+		<image name="bg" extra="true">
+			<path>./_art/bg.svg</path>
+			<pos>0 0</pos>
+			<size>1 1</size>
+			<zIndex>1</zIndex>
+		</image>
+		<image name="pattern" extra="true">
+			<path>./_art/pattern.svg</path>
+			<pos>0 0</pos>
+			<size>1 1</size>
+			<color>${accent}${patternAlpha}</color>
+			<zIndex>2</zIndex>
+		</image>
+		<image name="sysicon" extra="true">
+			<path>./_art/${icon}.svg</path>
+			<pos>0.5 0.195</pos>
+			<origin>0.5 0.5</origin>
+			<maxSize>0.46 0.28</maxSize>
+			<color>${accent}${iconAlpha}</color>
+			<zIndex>3</zIndex>
+		</image>
+		<image name="sysiconshade" extra="true">
+			<!-- the same art again in white (dark) or black (light) at a low
+			     alpha: a lighter / deeper tint of the accent -->
+			<path>./_art/${icon}.svg</path>
+			<pos>0.5 0.195</pos>
+			<origin>0.5 0.5</origin>
+			<maxSize>0.46 0.28</maxSize>
+			<color>${iconShade}</color>
+			<zIndex>3</zIndex>
+		</image>
+		<image name="accentline" extra="true">
+			<path>./_art/white.svg</path>
+			<pos>0 0.3775</pos>
+			<size>1 0.006</size>
+			<color>${accent}</color>
+			<zIndex>4</zIndex>
+		</image>
+		<text name="tagline" extra="true">
+			<text>${tagline}</text>
+			<pos>0 0.735</pos>
+			<size>1 0.07</size>
+			<alignment>center</alignment>
+			<color>${accent}</color>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.045</fontSize>
+			<forceUppercase>1</forceUppercase>
+			<zIndex>5</zIndex>
+		</text>
+		<image name="helpband" extra="true">
+			<path>./_art/white.svg</path>
+			<pos>0 1</pos>
+			<origin>0 1</origin>
+			<size>1 0.07</size>
+			<color>${band}</color>
+			<zIndex>6</zIndex>
+		</image>
+		<carousel name="systemcarousel">
+			<type>horizontal</type>
+			<pos>0 0.38375</pos>
+			<size>1 0.2325</size>
+			<color>${band}</color>
+			<logoSize>0.3 0.13</logoSize>
+			<logoScale>1.3</logoScale>
+			<maxLogoCount>3</maxLogoCount>
+			<zIndex>40</zIndex>
+		</carousel>
+		<text name="logoText">
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.066</fontSize>
+			<color>${text}</color>
+			<forceUppercase>1</forceUppercase>
+			<lineSpacing>1.05</lineSpacing>
+		</text>
+		<text name="systemInfo">
+			<backgroundColor>${bandInfo}</backgroundColor>
+			<color>${textDim}</color>
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.04</fontSize>
+		</text>
+		<helpsystem name="help">
+			<textColor>${textDim}</textColor>
+			<iconColor>${textDim}</iconColor>
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.038</fontSize>
+		</helpsystem>
+	</view>
+
+	<!-- ================================================== all game lists -->
+	<view name="basic, detailed, video">
+		<image name="background">
+			<path>./_art/bg.svg</path>
+			<pos>0 0</pos>
+			<size>1 1</size>
+		</image>
+		<image name="pattern" extra="true">
+			<path>./_art/pattern.svg</path>
+			<pos>0 0</pos>
+			<size>1 1</size>
+			<color>${accent}${patternAlpha}</color>
+		</image>
+		<image name="helpband" extra="true">
+			<path>./_art/white.svg</path>
+			<pos>0 1</pos>
+			<origin>0 1</origin>
+			<size>1 0.07</size>
+			<color>${band}</color>
+		</image>
+		<helpsystem name="help">
+			<textColor>${textDim}</textColor>
+			<iconColor>${textDim}</iconColor>
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.038</fontSize>
+		</helpsystem>
+		<textlist name="gamelist">
+			<selectorColor>${accent}</selectorColor>
+			<selectedColor>${selected}</selectedColor>
+			<primaryColor>${text}</primaryColor>
+			<secondaryColor>${accent}</secondaryColor>
+			<fontPath>${fontRegular}</fontPath>
+		</textlist>
+	</view>
+
+	<!-- ============================================================= basic -->
+	<view name="basic">
+		<image name="headerband" extra="true">
+			<path>./_art/white.svg</path>
+			<pos>0 0</pos>
+			<size>1 0.16</size>
+			<color>${band}</color>
+		</image>
+		<image name="headeraccent" extra="true">
+			<path>./_art/white.svg</path>
+			<pos>0 0.16</pos>
+			<size>1 0.006</size>
+			<color>${accent}</color>
+		</image>
+		<text name="logoText">
+			<pos>0.5 0.08</pos>
+			<origin>0.5 0.5</origin>
+			<size>0.9 0.12</size>
+			<alignment>center</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.07</fontSize>
+			<color>${text}</color>
+			<forceUppercase>1</forceUppercase>
+		</text>
+		<image name="listpanel" extra="true">
+			<path>./_art/white.svg</path>
+			<pos>0.5 0.185</pos>
+			<origin>0.5 0</origin>
+			<size>0.96 0.725</size>
+			<color>${panel}</color>
+		</image>
+		<textlist name="gamelist">
+			<pos>0.03 0.195</pos>
+			<size>0.94 0.7</size>
+			<fontSize>0.06</fontSize>
+			<lineSpacing>1.4</lineSpacing>
+			<alignment>center</alignment>
+			<horizontalMargin>0.01</horizontalMargin>
+		</textlist>
+	</view>
+
+	<!-- ================================================ detailed and video -->
+	<view name="detailed, video">
+		<image name="infopanel" extra="true">
+			<path>./_art/white.svg</path>
+			<pos>0.02 0.02</pos>
+			<size>0.35 0.89</size>
+			<color>${panel}</color>
+		</image>
+		<image name="infoaccent" extra="true">
+			<path>./_art/white.svg</path>
+			<pos>0.02 0.02</pos>
+			<size>0.35 0.008</size>
+			<color>${accent}</color>
+		</image>
+		<image name="listpanel" extra="true">
+			<path>./_art/white.svg</path>
+			<pos>0.38 0.02</pos>
+			<size>0.6 0.89</size>
+			<color>${panel}</color>
+		</image>
+		<text name="logoText">
+			<pos>0.195 0.095</pos>
+			<origin>0.5 0.5</origin>
+			<size>0.33 0.13</size>
+			<alignment>center</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.05</fontSize>
+			<color>${text}</color>
+			<forceUppercase>1</forceUppercase>
+			<lineSpacing>1.1</lineSpacing>
+		</text>
+		<textlist name="gamelist">
+			<pos>0.39 0.03</pos>
+			<size>0.577 0.86</size>
+			<fontSize>0.055</fontSize>
+			<lineSpacing>1.5</lineSpacing>
+			<alignment>left</alignment>
+			<horizontalMargin>0.012</horizontalMargin>
+		</textlist>
+
+		<!-- metadata: year, genre, players, rating -->
+		<text name="md_lbl_releasedate, md_lbl_genre, md_lbl_players, md_lbl_rating, md_lbl_playtime">
+			<size>0.1 0.04</size>
+			<color>${accent}</color>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.032</fontSize>
+			<forceUppercase>1</forceUppercase>
+		</text>
+		<text name="md_lbl_releasedate">
+			<text>Year</text>
+			<pos>0.035 0.185</pos>
+		</text>
+		<text name="md_lbl_genre">
+			<text>Genre</text>
+			<pos>0.035 0.225</pos>
+		</text>
+		<text name="md_lbl_players">
+			<text>Players</text>
+			<pos>0.035 0.265</pos>
+		</text>
+		<text name="md_lbl_rating">
+			<text>Rating</text>
+			<pos>0.035 0.305</pos>
+		</text>
+		<!-- RetroStoneOS: the play time (not an ES-DE element) -->
+		<text name="md_lbl_playtime">
+			<text>Played</text>
+			<pos>0.035 0.345</pos>
+		</text>
+		<datetime name="md_releasedate">
+			<pos>0.14 0.185</pos>
+			<size>0.215 0.04</size>
+			<format>%Y</format>
+			<color>${text}</color>
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.036</fontSize>
+		</datetime>
+		<text name="md_genre, md_players, md_playtime">
+			<size>0.215 0.04</size>
+			<color>${text}</color>
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.036</fontSize>
+		</text>
+		<text name="md_genre">
+			<pos>0.14 0.225</pos>
+		</text>
+		<text name="md_players">
+			<pos>0.14 0.265</pos>
+		</text>
+		<text name="md_playtime">
+			<pos>0.14 0.345</pos>
+		</text>
+		<rating name="md_rating">
+			<pos>0.14 0.311</pos>
+			<size>0 0.028</size>
+			<filledPath>./_art/star-filled.svg</filledPath>
+			<unfilledPath>./_art/star-empty.svg</unfilledPath>
+			<color>${accent}</color>
+		</rating>
+		<text name="md_lbl_developer, md_lbl_publisher, md_lbl_lastplayed, md_lbl_playcount, md_developer, md_publisher, md_playcount">
+			<pos>1 1</pos>
+		</text>
+		<datetime name="md_lastplayed">
+			<pos>1 1</pos>
+		</datetime>
+		<text name="md_description">
+			<pos>0.035 0.665</pos>
+			<size>0.32 0.225</size>
+			<color>${textDim}</color>
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.032</fontSize>
+			<lineSpacing>1.3</lineSpacing>
+		</text>
+		<image name="md_favorite">
+			<path>./_art/icon-star.svg</path>
+			<pos>0.36 0.035</pos>
+			<origin>1 0</origin>
+			<maxSize>0.035 0.035</maxSize>
+			<color>${accent}</color>
+		</image>
+	</view>
+
+	<view name="detailed">
+		<image name="md_image">
+			<pos>0.195 0.52</pos>
+			<origin>0.5 0.5</origin>
+			<maxSize>0.325 0.26</maxSize>
+		</image>
+	</view>
+
+	<view name="video">
+		<video name="md_video">
+			<pos>0.195 0.52</pos>
+			<origin>0.5 0.5</origin>
+			<maxSize>0.325 0.26</maxSize>
+			<showSnapshotNoVideo>true</showSnapshotNoVideo>
+		</video>
+		<image name="md_marquee">
+			<pos>2 2</pos>
+		</image>
+	</view>
+
+	<!-- ============================================================ menus -->
+	<view name="menu">
+		<menuBackground name="menubg">
+			<color>${menuBg}</color>
+		</menuBackground>
+		<menuText name="menutext">
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.05</fontSize>
+			<color>${text}</color>
+			<selectedColor>ffffff</selectedColor>
+			<selectorColor>${menuAccent}</selectorColor>
+			<separatorColor>${separator}</separatorColor>
+		</menuText>
+		<menuTextSmall name="menutextsmall">
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.038</fontSize>
+			<color>${textDim}</color>
+		</menuTextSmall>
+		<menuGroup name="menugroup">
+			<fontPath>${fontBold}</fontPath>
+		</menuGroup>
+	</view>
+</theme>

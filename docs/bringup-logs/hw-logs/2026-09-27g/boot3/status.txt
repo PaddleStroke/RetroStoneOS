@@ -1,0 +1,24 @@
+uptime: 13.22 17.74  load: 0.15 0.03 0.01 1/82 453
+cpufreq /sys/devices/system/cpu/cpufreq/policy0: cur=960000 gov=performance min=720000 max=960000
+regulator vdd-cpu: 1400000 uV
+regulator vdd-int-dll: 1250000 uV
+temp /sys/class/thermal/thermal_zone0/temp: 40000
+battery %: 64
+battery uV: 3815900
+sd card (reads, merged, sectors, ms, writes, merged, sectors, ms, ...):      331     1939    47099     2371       78      257     1051     3046        0        0     5417        0        0        0        0        0        0
+--- top
+Mem: 52716K used, 973188K free, 36K shrd, 7648K buff, 16232K cached
+CPU:   9% usr   4% sys   0% nic  85% idle   0% io   0% irq   0% sirq
+Load average: 0.15 0.03 0.01 1/83 478
+  PID  PPID USER     STAT   VSZ %VSZ %CPU COMMAND
+  216    97 root     S    26892   3%  10% /proc/self/exe --run --core /usr/lib/libretro/gambatte_libretro.so --rom /data/roms/gb/Into the Blue.gb --system gb --status-fd 3 --no-governor --load-state auto --hdmi 1280x720 --lcd-refresh 0 --p1-device builtin
+   97     1 root     S    31888   3%   0% /usr/bin/rsos-frontend
+  100     1 root     S     1972   0%   0% {bootlog} /bin/sh /usr/libexec/rsos/bootlog
+    1     0 root     S     1972   0%   0% init
+   98     1 root     S     1972   0%   0% /bin/sh -l
+  477   100 root     R     1972   0%   0% top -b -n 1
+  478   100 root     S     1972   0%   0% head -15
+   37     2 root     IW       0   0%   0% [kworker/1:2-eve]
+   54     2 root     RW       0   0%   0% [kworker/0:17-ev]
+   38     2 root     IW       0   0%   0% [kworker/u8:2-ev]
+   30     2 root     IW       0   0%   0% [kworker/u8:1-kv]

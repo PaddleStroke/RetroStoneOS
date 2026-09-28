@@ -1,0 +1,166 @@
+From bf3cee0552f45b41458703686645b4e9eb1fe698 Mon Sep 17 00:00:00 2001
+From: RetroStoneOS <pierrelouis.boyer@gmail.com>
+Date: Fri, 25 Sep 2026 23:08:27 +0200
+Subject: [PATCH 3/3] drm/sun4i: backend: use the backend 2x/4x integer scaler
+ (EXPERIMENTAL)
+
+The display backend can scale each layer up by exactly 2 or 4, on each
+axis independently, by repeating pixels (LAY_WSCAFCT and LAY_HSCAFCT in
+ATTCTL_REG1). A TODO in sun4i_backend_plane_uses_frontend() already
+noted that this should be used instead of the frontend when possible.
+
+Implement it: a plane whose on-screen size is 1, 2 or 4 times its
+source size on each axis, with an RGB format the backend supports, is
+now handled by the backend alone. This brings scaling to the formats
+the frontend can't read (RGB565, ARGB8888, ARGB1555, ARGB4444, RGB888,
+...), keeps per-pixel alpha, gives a sharp nearest-neighbour result,
+and leaves the single frontend free. Other ratios still go through the
+frontend (XRGB8888, BGRX8888 and YUV only) as before.
+
+The scaling bits are cleared in sun4i_backend_cleanup_layer() so that a
+layer switching to the frontend or to 1:1 doesn't keep a stale factor.
+
+This is untested on hardware: the layer size register is assumed to
+hold the on-screen size (as today) and not the source size when the
+scaler is enabled, and YUV layers are left out because it is not known
+whether the backend YUV channel is scaled.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/gpu/drm/sun4i/sun4i_backend.c | 76 ++++++++++++++++++++++++---
+ 1 file changed, 68 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/gpu/drm/sun4i/sun4i_backend.c b/drivers/gpu/drm/sun4i/sun4i_backend.c
+index bb8952dc6..ab73e7a91 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_backend.c
++++ b/drivers/gpu/drm/sun4i/sun4i_backend.c
+@@ -6,8 +6,10 @@
+  * Maxime Ripard <maxime.ripard@free-electrons.com>
+  */
+ 
++#include <linux/bitfield.h>
+ #include <linux/component.h>
+ #include <linux/list.h>
++#include <linux/log2.h>
+ #include <linux/module.h>
+ #include <linux/of_device.h>
+ #include <linux/of_graph.h>
+@@ -175,7 +177,13 @@ int sun4i_backend_update_layer_coord(struct sun4i_backend *backend,
+ 
+ 	DRM_DEBUG_DRIVER("Updating layer %d\n", layer);
+ 
+-	/* Set height and width */
++	/*
++	 * Set height and width. This is the size on screen: with the
++	 * backend integer scaler, the framebuffer area read is this size
++	 * divided by the scaling factor.
++	 * TODO(hw): confirm that the layer size is not the source size when
++	 * LAY_HSCAFCT/LAY_WSCAFCT are set.
++	 */
+ 	DRM_DEBUG_DRIVER("Layer size W: %u H: %u\n",
+ 			 state->crtc_w, state->crtc_h);
+ 	regmap_write(backend->engine.regs, SUN4I_BACKEND_LAYSIZE_REG(layer),
+@@ -249,6 +257,36 @@ static int sun4i_backend_update_yuv_format(struct sun4i_backend *backend,
+ 	return 0;
+ }
+ 
++/*
++ * The backend can scale a layer up by exactly 2 or 4, on each axis
++ * independently, by repeating pixels. Returns the factor (1, 2 or 4) for
++ * one axis, or 0 if the ratio can't be done by the backend.
++ */
++static unsigned int sun4i_backend_int_scale_factor(unsigned int src,
++						   unsigned int dst)
++{
++	if (dst == src)
++		return 1;
++	if (dst == 2 * src)
++		return 2;
++	if (dst == 4 * src)
++		return 4;
++
++	return 0;
++}
++
++static bool sun4i_backend_plane_uses_int_scaler(struct drm_plane_state *state)
++{
++	/* TODO: check whether the backend also scales its YUV channel */
++	if (state->fb->format->is_yuv)
++		return false;
++
++	return sun4i_backend_int_scale_factor(state->src_w >> 16,
++					      state->crtc_w) &&
++	       sun4i_backend_int_scale_factor(state->src_h >> 16,
++					      state->crtc_h);
++}
++
+ int sun4i_backend_update_layer_formats(struct sun4i_backend *backend,
+ 				       int layer, struct drm_plane *plane)
+ {
+@@ -279,9 +317,22 @@ int sun4i_backend_update_layer_formats(struct sun4i_backend *backend,
+ 		return ret;
+ 	}
+ 
++	/*
++	 * Integer scaling by the backend itself, validated in atomic_check.
++	 * The register fields hold log2 of the factor (1x, 2x or 4x).
++	 */
++	val |= FIELD_PREP(SUN4I_BACKEND_ATTCTL_REG1_LAY_WSCAFCT,
++			  ilog2(sun4i_backend_int_scale_factor(state->src_w >> 16,
++							       state->crtc_w)));
++	val |= FIELD_PREP(SUN4I_BACKEND_ATTCTL_REG1_LAY_HSCAFCT,
++			  ilog2(sun4i_backend_int_scale_factor(state->src_h >> 16,
++							       state->crtc_h)));
++
+ 	regmap_update_bits(backend->engine.regs,
+ 			   SUN4I_BACKEND_ATTCTL_REG1(layer),
+-			   SUN4I_BACKEND_ATTCTL_REG1_LAY_FBFMT, val);
++			   SUN4I_BACKEND_ATTCTL_REG1_LAY_FBFMT |
++			   SUN4I_BACKEND_ATTCTL_REG1_LAY_WSCAFCT |
++			   SUN4I_BACKEND_ATTCTL_REG1_LAY_HSCAFCT, val);
+ 
+ 	return 0;
+ }
+@@ -389,6 +440,12 @@ void sun4i_backend_cleanup_layer(struct sun4i_backend *backend,
+ 			   SUN4I_BACKEND_ATTCTL_REG0(layer),
+ 			   SUN4I_BACKEND_ATTCTL_REG0_LAY_VDOEN |
+ 			   SUN4I_BACKEND_ATTCTL_REG0_LAY_YUVEN, 0);
++
++	/* No integer scaling unless update_layer_formats() sets it again */
++	regmap_update_bits(backend->engine.regs,
++			   SUN4I_BACKEND_ATTCTL_REG1(layer),
++			   SUN4I_BACKEND_ATTCTL_REG1_LAY_WSCAFCT |
++			   SUN4I_BACKEND_ATTCTL_REG1_LAY_HSCAFCT, 0);
+ }
+ 
+ static bool sun4i_backend_plane_uses_scaler(struct drm_plane_state *state)
+@@ -422,11 +479,13 @@ static bool sun4i_backend_plane_uses_frontend(struct drm_plane_state *state)
+ 		return true;
+ 
+ 	/*
+-	 * TODO: The backend alone allows 2x and 4x integer scaling, including
+-	 * support for an alpha component (which the frontend doesn't support).
+-	 * Use the backend directly instead of the frontend in this case, with
+-	 * another test to return false.
++	 * The backend alone allows 2x and 4x integer scaling, including
++	 * support for an alpha component (which the frontend doesn't support),
++	 * with pixel repetition instead of filtering. Use the backend directly
++	 * instead of the frontend in this case.
+ 	 */
++	if (sun4i_backend_plane_uses_int_scaler(state))
++		return false;
+ 
+ 	if (sun4i_backend_plane_uses_scaler(state))
+ 		return true;
+@@ -448,8 +507,9 @@ static bool sun4i_backend_plane_is_supported(struct drm_plane_state *state,
+ 
+ 	*uses_frontend = false;
+ 
+-	/* Scaling is not supported without the frontend. */
+-	if (sun4i_backend_plane_uses_scaler(state))
++	/* Without the frontend, only 2x and 4x integer scaling is possible. */
++	if (sun4i_backend_plane_uses_scaler(state) &&
++	    !sun4i_backend_plane_uses_int_scaler(state))
+ 		return false;
+ 
+ 	return true;

@@ -1,0 +1,394 @@
+# RetroStone2 kernel options, merged on top of arch/arm/configs/sunxi_defconfig.
+# Drivers the handheld needs at boot are built in (=y). WiFi/BT are modules
+# because they need firmware from the rootfs.
+
+# --- Display: sun4i DRM (TCON0 parallel RGB LCD + on-chip HDMI), panel-dpi
+CONFIG_DRM=y
+CONFIG_DRM_SUN4I=y
+CONFIG_DRM_SUN4I_HDMI=y
+CONFIG_DRM_SUN4I_BACKEND=y
+CONFIG_DRM_PANEL_SIMPLE=y
+CONFIG_PWM=y
+CONFIG_PWM_SUN4I=y
+CONFIG_BACKLIGHT_CLASS_DEVICE=y
+CONFIG_BACKLIGHT_PWM=y
+# The frontend owns KMS directly: no fbdev emulation, no fbcon (faster boot,
+# no fbcon taking the display back). Kernel messages go to the UART.
+# CONFIG_DRM_FBDEV_EMULATION is not set
+# CONFIG_FB_SIMPLE is not set
+
+# --- GPU: Mali-400 MP2
+CONFIG_DRM_LIMA=y
+
+# --- PMIC AXP209: regulators, battery/AC/USB supplies, ADC (analog stick), power key
+CONFIG_MFD_AXP20X_I2C=y
+CONFIG_REGULATOR_AXP20X=y
+CONFIG_POWER_SUPPLY=y
+CONFIG_AXP20X_POWER=y
+CONFIG_CHARGER_AXP20X=y
+CONFIG_BATTERY_AXP20X=y
+CONFIG_IIO=y
+CONFIG_AXP20X_ADC=y
+CONFIG_INPUT_AXP20X_PEK=y
+# AXP209 GPIO0/GPIO1 pinctrl: switches the analog stick pins to ADC mode
+CONFIG_PINCTRL_AXP209=y
+# IIO channels (AXP ADC) exposed through hwmon
+CONFIG_SENSORS_IIO_HWMON=y
+
+# --- Board EEPROM (24C16 on I2C1). The i2c1 node is disabled in the DTS
+# (bus stuck on the first boot) and nothing reads the EEPROM: module.
+CONFIG_EEPROM_AT24=m
+
+# --- MMC power sequences: WiFi WL_REG_ON (mmc3) and eMMC reset (Pro)
+CONFIG_MMC=y
+CONFIG_MMC_SUNXI=y
+CONFIG_PWRSEQ_SIMPLE=y
+CONFIG_PWRSEQ_EMMC=y
+
+# --- Input
+CONFIG_INPUT_EVDEV=y
+CONFIG_INPUT_JOYSTICK=y
+CONFIG_JOYSTICK_ADC=y
+CONFIG_JOYSTICK_XPAD=y
+CONFIG_INPUT_KEYBOARD=y
+CONFIG_KEYBOARD_GPIO=y
+CONFIG_KEYBOARD_GPIO_POLLED=y
+CONFIG_HID=y
+CONFIG_HID_GENERIC=y
+CONFIG_USB_HID=y
+# Built in, not modules: there is no udev, so nothing would autoload a module
+# when a pad is plugged in (docs/input-design.md, docs/requirements.md).
+# UHID is used by BlueZ for Bluetooth LE gamepads (HOG).
+CONFIG_UHID=y
+CONFIG_INPUT_FF_MEMLESS=y
+CONFIG_HID_SONY=y
+CONFIG_SONY_FF=y
+CONFIG_LEDS_CLASS_MULTICOLOR=y
+CONFIG_HID_PLAYSTATION=y
+CONFIG_PLAYSTATION_FF=y
+CONFIG_HID_NINTENDO=y
+CONFIG_NINTENDO_FF=y
+CONFIG_HID_MICROSOFT=y
+CONFIG_HID_LOGITECH=y
+CONFIG_LOGITECH_FF=y
+CONFIG_HID_DRAGONRISE=y
+CONFIG_DRAGONRISE_FF=y
+CONFIG_HID_GREENASIA=y
+CONFIG_GREENASIA_FF=y
+CONFIG_HID_SMARTJOYPLUS=y
+CONFIG_SMARTJOYPLUS_FF=y
+CONFIG_HID_STEAM=y
+CONFIG_HID_EMS_FF=y
+CONFIG_JOYSTICK_XPAD_FF=y
+CONFIG_JOYSTICK_XPAD_LEDS=y
+
+# --- Audio: A20 on-chip codec
+CONFIG_SOUND=y
+CONFIG_SND=y
+CONFIG_SND_SOC=y
+CONFIG_SND_SUN4I_CODEC=y
+
+# --- Filesystems
+CONFIG_EXT4_FS=y
+CONFIG_VFAT_FS=y
+CONFIG_EXFAT_FS=y
+CONFIG_NLS_UTF8=y
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_ISO8859_1=y
+# USB sticks for "Import ROMs from USB" (docs/rom-transfer.md): modules since
+# boot round 3, to keep ~0.5 MB of SCSI/usb-storage/NTFS code out of the
+# zImage that U-Boot reads and decompresses on every boot. There is no udev,
+# so /etc/init.d/rcS loads usb-storage, uas and sd_mod itself in the
+# background once the menu is up (a stick plugged in before that is picked up
+# when the driver binds). NTFS3 is loaded by the kernel itself on the first
+# "mount -t ntfs3" (request_module("fs-ntfs3") runs /sbin/modprobe).
+CONFIG_SCSI=m
+CONFIG_USB_STORAGE=m
+CONFIG_USB_UAS=m
+CONFIG_NTFS3_FS=m
+# No SCSI generic/bsg users (no sg3_utils, no udev)
+# CONFIG_BLK_DEV_BSG is not set
+# CONFIG_SCSI_PROC_FS is not set
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_TMPFS=y
+
+# --- CPU frequency scaling and thermal
+CONFIG_CPU_FREQ=y
+CONFIG_CPUFREQ_DT=y
+CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y
+CONFIG_THERMAL=y
+CONFIG_CPU_THERMAL=y
+# A10/A20 thermal sensor lives in the resistive touchscreen controller (sun4i-ts)
+CONFIG_HWMON=y
+CONFIG_INPUT_TOUCHSCREEN=y
+CONFIG_TOUCHSCREEN_SUN4I=y
+# Critical trip: if the orderly power-off has not finished after 5 s, force it.
+CONFIG_THERMAL_EMERGENCY_POWEROFF_DELAY_MS=5000
+
+# --- Robustness (review S7; same block in board/common/linux-rsos.fragment).
+# Hardware watchdog: U-Boot starts the A20 watchdog (16 s), the kernel finds
+# it running and services it until the frontend opens /dev/watchdog
+# (uboot.fragment, docs/power.md). A soft lockup (a CPU stuck in the kernel
+# for 20 s) or a hard lockup (interrupts off for 10 s; the "buddy" detector:
+# the two CPUs watch each other, no NMI needed) panics, and a panic reboots
+# after 10 s (panic=10 in boot.cmd, PANIC_TIMEOUT here too): boot.cmd counts
+# that boot as failed until rsos-boot-ok confirms it. Hung tasks (D state for
+# 120 s) are only logged (the boot logger keeps dmesg): a slow card flushing a
+# large copy can legitimately block that long. The detectors wake each CPU
+# every 4 s (watchdog_thresh 10 s * 2/5): no measurable idle cost.
+CONFIG_WATCHDOG=y
+CONFIG_WATCHDOG_CORE=y
+CONFIG_WATCHDOG_HANDLE_BOOT_ENABLED=y
+CONFIG_WATCHDOG_OPEN_TIMEOUT=0
+CONFIG_SUNXI_WATCHDOG=y
+CONFIG_PANIC_TIMEOUT=10
+CONFIG_SOFTLOCKUP_DETECTOR=y
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC=y
+CONFIG_HARDLOCKUP_DETECTOR=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC=y
+CONFIG_DETECT_HUNG_TASK=y
+CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
+# CONFIG_BOOTPARAM_HUNG_TASK_PANIC is not set
+
+# --- Networking hardware is OFF by default and switched at runtime by
+# /usr/bin/rsos-net, so all of it is modules that nothing loads at boot. The
+# sunxi-mmc host driver stays built in (the SD card needs it); the WiFi chip is
+# powered down by unbinding the mmc3 host (the pwrseq drops WL_REG_ON).
+# WiFi: brcmfmac on SDIO (mmc3)
+CONFIG_WIRELESS=y
+CONFIG_CFG80211=m
+CONFIG_WLAN=y
+CONFIG_WLAN_VENDOR_BROADCOM=y
+CONFIG_BRCMFMAC=m
+CONFIG_BRCMFMAC_SDIO=y
+CONFIG_RFKILL=m
+# Bluetooth: hci_uart + btbcm on UART2 (serdev; the driver powers the chip)
+CONFIG_BT=m
+CONFIG_BT_BREDR=y
+CONFIG_BT_LE=y
+CONFIG_BT_HIDP=m
+CONFIG_SERIAL_DEV_BUS=y
+CONFIG_SERIAL_DEV_CTRL_TTYPORT=y
+CONFIG_BT_HCIUART=m
+CONFIG_BT_HCIUART_SERDEV=y
+CONFIG_BT_HCIUART_BCM=y
+# Ethernet: A20 GMAC (stmmac/dwmac-sunxi) + LAN8710A PHY. The older EMAC is a
+# module too, in case the PHY is wired to it. The PHY driver (SMSC_PHY, a
+# module requested by phylib when the MAC scans the MDIO bus) suspends the PHY
+# with genphy_suspend (BMCR power-down) when the interface is closed.
+# TODO(hw): confirm GMAC vs EMAC and the PHY address against the schematic.
+CONFIG_STMMAC_ETH=m
+CONFIG_STMMAC_PLATFORM=m
+CONFIG_DWMAC_SUNXI=m
+CONFIG_SUN4I_EMAC=m
+CONFIG_MDIO_SUN4I=m
+# phylib (+ phylink, fixed PHY, PTP) only serves the Ethernet modules: modules
+# too, loaded as their dependencies by "modprobe dwmac-sunxi" (rsos-net).
+CONFIG_PHYLIB=m
+CONFIG_PHYLINK=m
+# sunxi_defconfig builds stmmac in, which pins its XPCS helper (and through it
+# phylink/phylib) to =y: modules too
+CONFIG_PCS_XPCS=m
+CONFIG_SMSC_PHY=m
+CONFIG_PTP_1588_CLOCK=m
+CONFIG_PPS=m
+# CONFIG_PTP_1588_CLOCK_KVM is not set
+# Firmware is loaded directly by the kernel from /lib/firmware (no udev helper)
+# CONFIG_FW_LOADER_USER_HELPER is not set
+
+# --- SATA (M.2) and eMMC only exist on the "Pro" variant. Their DT nodes are
+# disabled in the base DTS and enabled by the opt-in overlays (sata/emmc in
+# rsos_overlays in the U-Boot environment). The eMMC uses the built-in
+# sunxi-mmc driver. SATA (libata + ahci_sunxi + sd_mod) is modules since boot
+# round 3: /etc/init.d/rcS loads ahci_sunxi in the background when the sata
+# overlay has enabled the controller, so a base unit carries none of it in the
+# zImage.
+CONFIG_ATA=m
+CONFIG_AHCI_SUNXI=m
+CONFIG_BLK_DEV_SD=m
+
+# --- Trimmed: hardware the RetroStone2 does not have, or boot-time dead weight
+# CONFIG_CAN is not set
+# CONFIG_IP_PNP is not set
+# CONFIG_NFS_FS is not set
+# CONFIG_ROOT_NFS is not set
+# CONFIG_MEDIA_SUPPORT is not set
+# CONFIG_STAGING_MEDIA is not set
+# CONFIG_RC_CORE is not set
+# CONFIG_SERIO_SUN4I_PS2 is not set
+# CONFIG_KEYBOARD_SUN4I_LRADC is not set
+# CONFIG_DRM_SUN8I_DW_HDMI is not set
+# CONFIG_DRM_SUN6I_DSI is not set
+# CONFIG_DRM_PANEL_LVDS is not set
+# CONFIG_DRM_PANEL_EDP is not set
+# CONFIG_SND_SUN8I_CODEC is not set
+# CONFIG_SND_SUN8I_CODEC_ANALOG is not set
+# CONFIG_SND_SUN4I_SPDIF is not set
+# CONFIG_SUN8I_THERMAL is not set
+# CONFIG_MFD_AC100 is not set
+# CONFIG_RTC_DRV_AC100 is not set
+# CONFIG_CRYPTO_DEV_SUN8I_CE is not set
+# CONFIG_CRYPTO_DEV_SUN8I_SS is not set
+# CONFIG_PHY_SUN9I_USB is not set
+
+# --- SMB server (ksmbd) for the \\RETROSTONE share: module. Not wired yet:
+# the frontend will load it only while the share is on (docs/rom-transfer.md
+# 3.3, docs/build.md "Networking")
+CONFIG_SMB_SERVER=m
+# CONFIG_SMB_SERVER_SMBDIRECT is not set
+
+# --- Loop devices: the Bluetooth pairing store /data/rsos/bluetooth.img
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_LOOP_MIN_COUNT=1
+
+# --- Boot time (docs/build.md, "Boot time"). The kernel is LZ4-compressed
+# (BR2_LINUX_KERNEL_LZ4 in the defconfig sets CONFIG_KERNEL_LZ4): a bigger
+# zImage to read, but its decompression is several times faster than gzip on
+# the Cortex-A7. Everything below is code the RetroStone2 cannot use: it makes
+# the image smaller (read + decompressed on every boot) and removes initcalls.
+#
+# 1000 Hz tick: msleep() and polling loops in the boot path (rootwait polls
+# every 5 ms, i.e. 10-20 ms at HZ=100) get 1 ms granularity. NO_HZ_IDLE keeps
+# the idle CPU tickless.
+CONFIG_HZ_1000=y
+# Other Allwinner SoCs: only the A20 (sun7i) platform, its clock, pin, DMA,
+# RTC and interrupt drivers stay.
+# CONFIG_MACH_SUN4I is not set
+# CONFIG_MACH_SUN5I is not set
+# CONFIG_MACH_SUN6I is not set
+# CONFIG_MACH_SUN8I is not set
+# CONFIG_MACH_SUN9I is not set
+# CONFIG_PINCTRL_SUN5I is not set
+# CONFIG_PINCTRL_SUN6I_A31 is not set
+# CONFIG_PINCTRL_SUN6I_A31_R is not set
+# CONFIG_PINCTRL_SUN8I_A23 is not set
+# CONFIG_PINCTRL_SUN8I_A33 is not set
+# CONFIG_PINCTRL_SUN8I_A83T is not set
+# CONFIG_PINCTRL_SUN8I_A83T_R is not set
+# CONFIG_PINCTRL_SUN8I_A23_R is not set
+# CONFIG_PINCTRL_SUN8I_H3 is not set
+# CONFIG_PINCTRL_SUN8I_H3_R is not set
+# CONFIG_PINCTRL_SUN8I_V3S is not set
+# CONFIG_PINCTRL_SUN9I_A80 is not set
+# CONFIG_PINCTRL_SUN9I_A80_R is not set
+# CONFIG_PINCTRL_SUN20I_D1 is not set
+# CONFIG_SUN20I_D1_CCU is not set
+# CONFIG_SUN20I_D1_R_CCU is not set
+# CONFIG_SUN5I_CCU is not set
+# CONFIG_SUN6I_A31_CCU is not set
+# CONFIG_SUN6I_RTC_CCU is not set
+# CONFIG_SUN8I_A23_CCU is not set
+# CONFIG_SUN8I_A33_CCU is not set
+# CONFIG_SUN8I_A83T_CCU is not set
+# CONFIG_SUN8I_H3_CCU is not set
+# CONFIG_SUN8I_V3S_CCU is not set
+# CONFIG_SUN8I_DE2_CCU is not set
+# CONFIG_SUN8I_R40_CCU is not set
+# CONFIG_SUN9I_A80_CCU is not set
+# CONFIG_SUN8I_R_CCU is not set
+# CONFIG_CLK_SUNXI_PRCM_SUN6I is not set
+# CONFIG_CLK_SUNXI_PRCM_SUN8I is not set
+# CONFIG_CLK_SUNXI_PRCM_SUN9I is not set
+# CONFIG_SUNXI_RSB is not set
+# CONFIG_MFD_AXP20X_RSB is not set
+# CONFIG_MFD_SUN6I_PRCM is not set
+# CONFIG_I2C_SUN6I_P2WI is not set
+# CONFIG_RTC_DRV_SUN6I is not set
+# CONFIG_DMA_SUN6I is not set
+# CONFIG_MAILBOX is not set
+# CONFIG_SUN20I_PPU is not set
+# CONFIG_SUN55I_PCK600 is not set
+# CONFIG_REGULATOR_SUN20I is not set
+# CONFIG_PHY_SUN6I_MIPI_DPHY is not set
+# CONFIG_DRM_SUN8I_MIXER is not set
+# CONFIG_DRM_SUN8I_TCON_TOP is not set
+# CONFIG_DWMAC_SUN8I is not set
+# CONFIG_DWMAC_SUN55I is not set
+# CONFIG_MDIO_BUS_MUX is not set
+# No SPI device on the board (the A20 SPI controllers are unused)
+# CONFIG_SPI is not set
+# HDMI-CEC is not a requirement (docs/requirements.md: "Off")
+# CONFIG_DRM_SUN4I_HDMI_CEC is not set
+# The codec is the A20's internal one; no I2S device
+# CONFIG_SND_SUN4I_I2S is not set
+# Ethernet PHYs other than the LAN8710A (SMSC_PHY)
+# CONFIG_MICREL_PHY is not set
+# CONFIG_REALTEK_PHY is not set
+# The micro-USB port has no data lines: the OTG controller is host only
+# (dr_mode = "host" in the DTS), no gadget (docs/rom-transfer.md)
+# CONFIG_USB_GADGET is not set
+CONFIG_USB_MUSB_HOST=y
+# No PS/2 keyboard, no I2C HID device
+# CONFIG_KEYBOARD_ATKBD is not set
+# CONFIG_SERIO is not set
+# CONFIG_I2C_HID is not set
+# SATA: AHCI only (no PATA/SFF controllers, no port multipliers)
+# CONFIG_ATA_SFF is not set
+# CONFIG_SATA_PMP is not set
+# No initramfs: this also drops the gzip/bzip2/lzma/xz/lzo/lz4/zstd initrd
+# decompressors
+# CONFIG_BLK_DEV_INITRD is not set
+# Unused kernel features (no systemd, no containers, no profiling, no swap).
+# EXPERT only makes some of them (namespaces, io_uring, the cfg80211 option
+# below) selectable. It also changes a few defaults, pinned back here: the
+# USB keyboard/mouse quirk drivers stay, no debug/tracing extras, no GCC
+# plugins, no sysfs GPIO, and the A20 crypto engine stays unused (the crypto
+# API becomes modules, loaded by the WiFi/BT/SMB modules that need it).
+CONFIG_EXPERT=y
+CONFIG_HID_A4TECH=y
+CONFIG_HID_APPLE=y
+CONFIG_HID_BELKIN=y
+CONFIG_HID_CHERRY=y
+CONFIG_HID_CHICONY=y
+CONFIG_HID_CYPRESS=y
+CONFIG_HID_EZKEY=y
+CONFIG_HID_ITE=y
+CONFIG_HID_KENSINGTON=y
+CONFIG_HID_MONTEREY=y
+CONFIG_HID_REDRAGON=y
+# CONFIG_DEBUG_MISC is not set
+# CONFIG_FTRACE is not set
+# CONFIG_RCU_TRACE is not set
+# CONFIG_GCC_PLUGINS is not set
+# CONFIG_GPIO_SYSFS is not set
+# CONFIG_CRYPTO_DEV_SUN4I_SS is not set
+# CONFIG_CGROUPS is not set
+# CONFIG_NAMESPACES is not set
+# CONFIG_IO_URING is not set
+# CONFIG_PERF_EVENTS is not set
+# CONFIG_SWAP is not set
+# One I/O scheduler: mq-deadline (the default for the SD card)
+# CONFIG_MQ_IOSCHED_KYBER is not set
+# CONFIG_IOSCHED_BFQ is not set
+# No legacy BSD ptys (registering them created 512 device nodes at boot)
+# CONFIG_LEGACY_PTYS is not set
+# The WiFi regulatory database is not in the image (cfg80211 uses its built-in
+# world domain), so no signature checking: this drops the X.509/PKCS#7 key
+# infrastructure and the "Loading compiled-in X.509 certificates" step.
+# (CERTIFICATION_ONUS only makes the option visible; the regulatory
+# relaxations it also exposes stay off.)
+CONFIG_CFG80211_CERTIFICATION_ONUS=y
+# CONFIG_CFG80211_REQUIRE_SIGNED_REGDB is not set
+
+# --- Boot time, round 3 (docs/build.md, "Boot time"). Besides the modules
+# above (SCSI/usb-storage/UAS/SATA/NTFS3, phylib/PTP, the EEPROM):
+# No virtual terminals: there is no fbcon and no VT user (the console is the
+# UART, the frontend owns KMS). This drops the VT code, the keyboard handler
+# attached to every input device, and the 64 tty0..tty63 devices created at
+# boot.
+# CONFIG_VT is not set
+# Only uart0 (console) and uart2 (Bluetooth) exist: 4 8250 ports instead of 8
+# placeholder ports registered at boot.
+CONFIG_SERIAL_8250_NR_UARTS=4
+CONFIG_SERIAL_8250_RUNTIME_UARTS=4
+# No kernel keyrings users (no NFS/CIFS client, no fscrypt, no signed regdb)
+# CONFIG_DNS_RESOLVER is not set
+# CONFIG_KEYS is not set
+# (ETHTOOL_NETLINK stays: the stmmac Ethernet driver depends on it.)
+# XZ decompression: no user (no squashfs, no compressed firmware or modules)
+# CONFIG_XZ_DEC is not set
+# CONFIG_BLK_DEBUG_FS is not set

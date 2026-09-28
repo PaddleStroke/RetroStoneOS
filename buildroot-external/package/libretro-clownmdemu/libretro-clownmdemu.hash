@@ -1,0 +1,6 @@
+# Locally computed
+sha256  d06075bde791fdad24764677ede75c56aa8701aab6df216c502c43dc2407bde1  libretro-clownmdemu-0f23a1696581f6969cfc78cc763af492c4bb3fd6-git4.tar.gz
+sha256  8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef  LICENCE.txt
+sha256  86723cedb4955538ac3c01c705f1f5675f2824762744eafe3f5a68d0577cce56  common/clowncd/LICENCE.txt
+sha256  870a99568e37acd1e713bd62e367b9cf3924a2f8d1d2f64a2b73c0fa0073c849  common/clowncd/libraries/clownresampler/LICENCE.txt
+sha256  e3989a7aee74a91b8cdbdfe204a6b8d03288863ec7533a21c51f1a987ba73539  common/clowncd/libraries/chd/libchdr/LICENSE.txt

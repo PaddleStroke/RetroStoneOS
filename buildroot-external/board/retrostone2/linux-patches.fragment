@@ -1,0 +1,29 @@
+# Kernel options needed by the patches in patches/linux/ (see docs/kernel-patches.md).
+# Merged after linux.fragment.
+
+# 0001 (HDMI hotplug polling): no option. The poll period is a parameter of
+# the built-in sun4i-drm-hdmi driver, default 500 ms. To change it, add e.g.
+# sun4i_drm_hdmi.hpd_poll_ms=250 to the kernel command line.
+CONFIG_DRM_SUN4I=y
+CONFIG_DRM_SUN4I_HDMI=y
+
+# 0002 (HDMI audio, experimental): the option added by the patch. It needs ASoC
+# built in (SND_SOC=y) and the A20 DMA controller, whose dedicated channel feeds
+# the HDMI audio FIFO. It selects SND_SOC_HDMI_CODEC and
+# SND_SOC_GENERIC_DMAENGINE_PCM.
+CONFIG_SOUND=y
+CONFIG_SND=y
+CONFIG_SND_SOC=y
+CONFIG_DMA_SUN4I=y
+CONFIG_DRM_SUN4I_HDMI_AUDIO=y
+
+# 0003 (backend 2x/4x integer scaling, experimental): no option, it is part of
+# the display backend driver.
+CONFIG_DRM_SUN4I_BACKEND=y
+
+# 0004 (exFAT directory read-ahead plug): no option.
+
+# 0005 (A10/A20 CCU registered at subsys_initcall, so the pin controller and
+# everything behind it are not deferred to late_initcall): the CCU driver
+# must be built in.
+CONFIG_SUN4I_A10_CCU=y

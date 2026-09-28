@@ -1,0 +1,190 @@
+#!/bin/sh
+# RetroStoneOS shutdown, run by BusyBox init (::shutdown) when it gets
+# SIGUSR2 (poweroff), SIGTERM (reboot) or SIGUSR1 (halt), before it kills
+# every process: let the frontend save, then unmount /data cleanly.
+#
+# Fast path (a power-off or reboot requested by the frontend, which writes
+# /run/rsos/shutdown-mode = poweroff|reboot and /run/rsos/shutdown-start = its
+# /proc/uptime at the key press): once /data is unmounted, this script powers
+# off or reboots itself with "poweroff -f" / "reboot -f" (the AXP209 is
+# switched off by the kernel's axp20x power-off handler, as on init's path).
+# That skips init's own end of shutdown, which sleeps 2 s in total (after its
+# SIGTERM to every process, and again before reboot(2)). Nothing that is
+# still running at that point writes to a disk: the root is read-only, /data
+# is unmounted (or read-only), the rest is tmpfs.
+# Any other shutdown (e.g. "reboot" or "poweroff" typed on the UART: no
+# shutdown-mode/-start file) does the same clean-up, then returns to init's
+# normal path.
+#
+# Timing: each step is logged ("<uptime> <step>") and appended to
+# /data/rsos/logs/shutdown.txt before /data is unmounted (the last 5
+# shutdowns). The steps after that (sync, unmount, poweroff -f) are kept in
+# the AXP209's data registers and added to shutdown.txt by the boot logger on
+# the next boot. The U-Boot environment is never touched here.
+
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+RUN=/run/rsos
+LOG=$RUN/shutdown.log
+KEEP=5
+
+ts() {
+	read -r _t _ < /proc/uptime
+	echo "$_t $1" >> "$LOG"
+}
+
+# mounted DIR: true if something is mounted on DIR (no fork)
+mounted() {
+	while read -r _dev _dir _rest; do
+		[ "$_dir" = "$1" ] && return 0
+	done < /proc/mounts
+	return 1
+}
+
+# mounted_rw DIR: true if DIR is mounted read-write
+mounted_rw() {
+	while read -r _dev _dir _type _opts _rest; do
+		if [ "$_dir" = "$1" ]; then
+			case ",$_opts," in *,rw,*) return 0 ;; esac
+			return 1
+		fi
+	done < /proc/mounts
+	return 1
+}
+
+MODE=
+if [ -f "$RUN/shutdown-mode" ] || [ -f "$RUN/shutdown-start" ]; then
+	[ -f "$RUN/shutdown-mode" ] && read -r MODE _ < "$RUN/shutdown-mode"
+	case "$MODE" in
+	reboot) ;;
+	*) MODE=poweroff ;;
+	esac
+fi
+
+mkdir -p "$RUN"
+echo "=== shutdown: ${MODE:-requested outside the frontend, by init}" > "$LOG"
+if [ -f "$RUN/shutdown-start" ]; then
+	read -r _s _ < "$RUN/shutdown-start"
+	echo "$_s frontend: shutdown requested" >> "$LOG"
+fi
+if [ -f "$RUN/shutdown-signal" ]; then
+	read -r _s _ < "$RUN/shutdown-signal"
+	echo "$_s frontend: init signalled" >> "$LOG"
+fi
+ts "rcK start"
+
+# --- 1. The boot logger syncs and writes to /data every few seconds: stop it
+# first (it exits at once on SIGTERM, see /usr/libexec/rsos/bootlog).
+if [ -f "$RUN/bootlog.pid" ]; then
+	read -r _p _ < "$RUN/bootlog.pid"
+	if [ -n "$_p" ] && kill -TERM "$_p" 2> /dev/null; then
+		i=0
+		while [ -d "/proc/$_p" ] && [ $i -lt 25 ]; do
+			usleep 20000
+			i=$((i + 1))
+		done
+	fi
+	ts "bootlog stopped"
+fi
+
+# --- 2. The frontend (and a running game) save their state on SIGTERM. On
+# the fast path the frontend has usually exited already. (The wait polls
+# with the kill builtin: no fork per check.)
+_fp=$(pidof rsos-frontend)
+if [ -n "$_fp" ]; then
+	kill -TERM $_fp 2> /dev/null
+	i=0
+	while [ $i -lt 150 ]; do
+		_alive=
+		for _p in $_fp; do
+			kill -0 "$_p" 2> /dev/null && _alive=1
+		done
+		[ -z "$_alive" ] && break
+		usleep 20000
+		i=$((i + 1))
+	done
+	ts "frontend stopped"
+fi
+
+# The hardware watchdog (docs/power.md): the frontend normally closes it
+# with the magic character when it exits; do it here too (a frontend that
+# crashed, or never opened it: the kernel was servicing it), so that a slow
+# shutdown never turns into a reset. Fails harmlessly while someone holds it.
+[ -c /dev/watchdog ] && { echo V > /dev/watchdog; } 2> /dev/null
+
+# A/B boot (board/retrostone2/boot.cmd): an orderly shutdown before
+# rsos-boot-ok confirmed this boot gives back the try that U-Boot counted
+# (one fw_setenv; only when /run/rsos/boot-state says "pending").
+_bs=
+[ -r "$RUN/boot-state" ] && read -r _bs _ < "$RUN/boot-state"
+if [ "$_bs" = pending ] && [ -x /usr/bin/rsos-boot-ok ]; then
+	/usr/bin/rsos-boot-ok refund
+	ts "boot try given back"
+fi
+
+# --- 3. No RTC backup cell: save the clock (docs/power.md).
+[ -x /usr/bin/rsos-clock ] && /usr/bin/rsos-clock save
+ts "clock saved"
+
+# --- 4. Bluetooth pairing store: a loop-mounted image on /data (see
+# rsos-net; at most 3 s behind a running rsos-net). SMB share: ksmbd keeps
+# files of /data open.
+if mounted /var/lib/bluetooth; then
+	RSOS_NET_LOCK_WAIT=3 /usr/bin/rsos-net -n bt off
+	ts "bluetooth off"
+fi
+if [ -d /sys/module/ksmbd ] && [ -x /usr/sbin/ksmbd.control ]; then
+	/usr/sbin/ksmbd.control --shutdown > /dev/null 2>&1
+	ts "smb share stopped"
+fi
+
+# --- 5. The shutdown log, then /data: one sync, unmount (read-only if busy).
+# The times of the steps after the log was written go to the AXP209's data
+# registers just before the power-off (/usr/libexec/rsos/axpstamp); the boot
+# logger appends them to shutdown.txt on the next boot.
+T_LOG=
+T_SYNC=
+T_UMOUNT=
+if mounted /data; then
+	L=/data/rsos/logs
+	if [ -d "$L" ] && [ ! -e "$L/disabled" ]; then
+		ts "log written; next: sync, unmount /data"
+		T_LOG=$_t
+		{
+			cat "$L/shutdown.txt" 2> /dev/null
+			cat "$LOG"
+		} | awk -v keep="$KEEP" '
+			/^=== / { n++ }
+			{ line[NR] = $0; sec[NR] = n }
+			END { for (i = 1; i <= NR; i++) if (sec[i] > n - keep) print line[i] }
+		' > "$L/shutdown.tmp" && mv -f "$L/shutdown.tmp" "$L/shutdown.txt"
+	fi
+	sync
+	read -r T_SYNC _ < /proc/uptime
+	umount /data 2> /dev/null || mount -o remount,ro /data 2> /dev/null
+	read -r T_UMOUNT _ < /proc/uptime
+	if mounted_rw /data; then
+		# Something still writes there: stop everything (as init would)
+		# and try again.
+		kill -TERM -1 2> /dev/null
+		usleep 200000
+		kill -KILL -1 2> /dev/null
+		# The Bluetooth store's loop device keeps /data busy until its
+		# own filesystem is gone (the loop device then frees itself).
+		umount /var/lib/bluetooth 2> /dev/null
+		sync
+		umount /data 2> /dev/null || mount -o remount,ro /data 2> /dev/null
+	fi
+	ts "/data unmounted"
+fi
+
+# --- 6. Fast path: power off / reboot now (poweroff -f syncs first).
+if [ -n "$MODE" ] && [ -n "$T_LOG" ] && [ -x /usr/libexec/rsos/axpstamp ]; then
+	/usr/libexec/rsos/axpstamp save "$T_LOG" "$T_SYNC" "$T_UMOUNT" 2> /dev/null
+fi
+case "$MODE" in
+poweroff) poweroff -f ;;
+reboot) reboot -f ;;
+esac
+exit 0

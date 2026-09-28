@@ -1,0 +1,49 @@
+RetroStoneOS boot time line (docs/build.md, "Boot time")
+Times in ms since power-on (reset of the SoC; the ARM counter starts there).
+Before that, the power key was held for the AXP209 power-on time: 128 ms.
+
+        ms       +ms  step
+       0.0       0.0  u-boot: reset
+     468.5     468.5  u-boot: board_init_f
+     653.4     184.9  u-boot: board_init_r
+     708.6      55.2  u-boot: main_loop
+     716.7       8.1  u-boot: boot.scr
+     717.3       0.6  u-boot: load-zImage
+     948.6     231.3  u-boot: zImage-loaded
+     955.6       6.9  u-boot: dtb-loaded
+     955.7       0.2  u-boot: bootm_start
+     968.0      12.2  u-boot: boot_jump_linux
+     968.0       0.0  u-boot: start_kernel
+    1156.1     188.1  kernel: time 0 (decompressed, running)
+    1571.4     415.3  kernel: /sbin/init
+    1716.1     144.7  rcS: rcS start
+    1746.1      30.0  rcS: sysfs + governor
+    1786.1      40.0  rcS: mounts
+    1796.1      10.0  rcS: bootreason
+    1886.1      90.0  rcS: data-partition
+    1896.1      10.0  rcS: clock
+    1896.1       0.0  rcS: rcS done
+    2014.1     118.0  frontend: started
+    2086.1      72.0  frontend: logo on screen
+    2338.1     252.0  frontend: first menu frame
+    2359.1      21.0  frontend: menu up
+    2386.1      27.0  rcS: bg: menu up (waited 0 s)
+    2806.1     420.0  rcS: bg: mixer
+
+U-Boot accumulated times:
+      100.2 ms  dm_f
+        8.9 ms  dm_r
+
+Summary (ms):
+  boot ROM + SPL (DRAM init, loads U-Boot)                468.5
+  U-Boot init (MMC, environment)                          240.1
+  bootcmd + boot.scr up to the kernel load                  8.7
+  zImage read (5479128 bytes, 23.7 MB/s)                  231.3
+  DTB, overlays, bootz                                     19.3
+  zImage decompression + kernel head                      188.1
+  power-on -> kernel time 0 (all pre-kernel)             1156.1
+  kernel: time 0 -> /sbin/init                            415.3
+  /sbin/init + rcS -> frontend start                      442.7
+  frontend start -> logo                                   72.0
+  BLACK SCREEN: power-on -> logo                         2086.1
+  logo -> menu up                                         273.0

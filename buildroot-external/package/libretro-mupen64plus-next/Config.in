@@ -1,0 +1,29 @@
+config BR2_PACKAGE_LIBRETRO_MUPEN64PLUS_NEXT
+	bool "libretro-mupen64plus-next (experimental)"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_PACKAGE_HAS_LIBGLES # GLES2 hardware rendering
+	depends on BR2_PACKAGE_HAS_LIBEGL # GLideN64 uses eglGetProcAddress()
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Mupen64Plus-Next: Nintendo 64 emulator with the GLideN64
+	  renderer, built as a GLES2 libretro core (same recipe as the
+	  Raspberry Pi 2 Mesa build): ARM ari64 dynarec, NEON, GLES2.
+
+	  Experimental on Mali-400 / lima: GLideN64's GLES2 path is
+	  kept upstream but gets little testing, its shaders run at
+	  fp16 (mediump) on Utgard, and it is heavier than the
+	  glide64/gln64 renderers of libretro-parallel-n64, which is the
+	  recommended N64 core. Useful as a per-game alternative.
+
+	  Installs /usr/lib/libretro/mupen64plus_next_libretro.so and
+	  /usr/share/rsos/cores/mupen64plus_next.ini.
+
+	  https://github.com/libretro/mupen64plus-libretro-nx
+
+comment "libretro-mupen64plus-next needs OpenGL ES and EGL providers, a toolchain w/ C++, threads, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_PACKAGE_HAS_LIBGLES || !BR2_PACKAGE_HAS_LIBEGL || \
+		!BR2_INSTALL_LIBSTDCPP || !BR2_TOOLCHAIN_HAS_THREADS || \
+		BR2_STATIC_LIBS

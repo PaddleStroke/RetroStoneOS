@@ -1,0 +1,149 @@
+[    0.862] frontend: starting (pid 105)
+[     0.872] display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[     0.886] display: plane 33: none
+[     0.886] display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[     0.911] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[     0.924] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[    0.924] frontend: output init: Unknown-1 640x480@78.571 Hz, UI 640x480
+[    0.934] frontend: splash: 11114 bytes, 640x480, shown 77 ms after start (read 2842 us, decode + present 7344 us)
+[   0.943] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   0.945] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[   0.946] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   0.947] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   0.976] ui I: ui: warm-up: 7 folders, 6 reads, 1024 KiB, 28379 us
+[   1.000] ui I: ui: menu style bg f0202226 dim 99000000 text ffe8e8e8 selector ff3d7bd9
+[   1.001] ui I: ui: created in 53631 us, theme rsos-light (io 1 reads, 0 KiB)
+[   1.001] ui I: ui: logical size 640x480
+[   1.076] ui I: ui: menu style bg faf6f7f9 dim 99000000 text ff1d2126 selector ff2f6fd0
+[   1.078] ui I: ui: menu from the snapshot: 5 entries, 11 games, in 61371 us (warm-up 12 folders, 10 reads, 43804 us; io 4 reads); checking 30 systems in the background
+[     1.079] display: hotplug uevent (seq 961), debounce 250 ms
+[   1.188] ui I: ui: first frame in 108808 us (theme parsing 19935 us, images: 0 decoded in 0 us, 0 from the cache in 0 us, 0 shared; backdrops: 1 from the cache, 0 composited, 18012 us; io 1 reads, 69 KiB)
+[    1.191] frontend: frame 0: 112119 us (wait for a buffer 237, render 109233, present 2649)
+[    1.191] frontend: first frame 334 ms after start (ui_create 53631 us)
+[power] PEK force-off 6000 ms, power-on hold 128 ms
+[power] battery 66 % 3819 mV discharging, charger off, boot key
+[    1.211] frontend: power: mode normal, battery 66 %
+[    1.212] transfer: usb: watching /sys/block (kernel uevents)
+[    1.212] frontend: menu up 356 ms after start (game lists still loading): running /usr/bin/rsos-boot-ok
+[    1.242] frontend: frame 1: 20483 us (wait for a buffer 7, render 17259, present 3217)
+[     1.330] display: hotplug: no change (Unknown-1 still 640x480@78.57)
+[   1.536] ui I: games: gb: 5 games from the cache in 67432 us (folder 128, read 66904, stat 194 x1, parse 156)
+[   1.536] ui I: games: gbc: 1 games from the cache in 1526 us (folder 208, read 928, stat 279 x1, parse 92)
+[   1.536] ui I: games: nes: 2 games from the cache in 2632 us (folder 46, read 2085, stat 268 x1, parse 215)
+[   1.536] ui I: games: megadrive: 3 games from the cache in 4422 us (folder 184, read 2779, stat 283 x1, parse 1158)
+[   1.536] ui I: games: fds: still an empty folder (same mtime), 1208 us
+[    1.563] frontend: frame 2: 26593 us (wait for a buffer 7, render 18484, present 8102)
+[   1.576] ui I: games: snes: still an empty folder (same mtime), 7586 us
+[   1.576] ui I: games: n64: still an empty folder (same mtime), 2483 us
+[   1.576] ui I: games: gba: still an empty folder (same mtime), 2142 us
+[   1.576] ui I: games: sg1000: still an empty folder (same mtime), 2260 us
+[   1.576] ui I: games: mastersystem: still an empty folder (same mtime), 1950 us
+[   1.576] ui I: games: segacd: still an empty folder (same mtime), 1855 us
+[   1.576] ui I: games: sega32x: still an empty folder (same mtime), 2615 us
+[   1.576] ui I: games: pico: still an empty folder (same mtime), 2072 us
+[   1.576] ui I: games: gamegear: still an empty folder (same mtime), 2890 us
+[   1.576] ui I: games: psx: still an empty folder (same mtime), 1485 us
+[   1.576] ui I: games: pcengine: still an empty folder (same mtime), 1576 us
+[   1.576] ui I: games: pcenginecd: still an empty folder (same mtime), 2205 us
+[   1.576] ui I: games: ngp: still an empty folder (same mtime), 3011 us
+[   1.576] ui I: games: ngpc: still an empty folder (same mtime), 2326 us
+[   1.576] ui I: games: wonderswan: still an empty folder (same mtime), 1899 us
+[   1.576] ui I: games: wonderswancolor: still an empty folder (same mtime), 3043 us
+[    1.603] frontend: frame 3: 26031 us (wait for a buffer 5, render 17871, present 8155)
+[   1.611] ui I: games: atari2600: still an empty folder (same mtime), 2999 us
+[   1.612] ui I: games: atari7800: still an empty folder (same mtime), 2966 us
+[   1.612] ui I: games: atarilynx: still an empty folder (same mtime), 1263 us
+[   1.613] ui I: games: coleco: still an empty folder (same mtime), 1123 us
+[   1.613] ui I: games: msx: still an empty folder (same mtime), 2609 us
+[   1.613] ui I: games: arcade: still an empty folder (same mtime), 1122 us
+[   1.613] ui I: games: fbneo: still an empty folder (same mtime), 3513 us
+[   1.613] ui I: games: neogeo: still an empty folder (same mtime), 1308 us
+[   1.613] ui I: games: neocd: still an empty folder (same mtime), 935 us
+[   1.614] ui I: ui: game lists complete: 30 systems checked, 4 with games, 11 games, in 596 ms (worker 370 ms; warm-up 38 folders, 12 reads, 4864 KiB, 234 ms); carousel unchanged, 0 lists replaced; io 19 reads, 5580 KiB; digest 4c8b852a00efaadb
+[   1.614] ui I: ui: game list time by step: folder 566 us, cache read 72696 us, validation stat 61468 us, decode 1621 us, readdir 0 us, gamelist.xml 0 us, cache write 0 us; slowest gb 67432 us
+[    1.640] frontend: game lists complete 784 ms after start
+[   13.436] transfer: usb: disk sda: "General USB Flash Disk", 3.8 GB, 1 partition
+[   13.452] transfer: usb: sda1 (vfat, "", 3.8 GB) mounted read-only on /media/usb0
+[   13.452] frontend: USB mounted: sda1 /media/usb0 vfat
+[  13.455] ui I: usb: General USB Flash Disk (/media/usb0): dialog shown
+[   13.507] frontend: frame 5: 50467 us (wait for a buffer 8, render 47407, present 3052) slow
+[  14.576] ui I: usb: dialog answer for /media/usb0: import games
+[   14.713] transfer: libraries on /media/usb0: 1: / (66 games) (136 ms)
+[  14.736] ui I: usb: General USB Flash Disk: 1 game library found
+[   14.755] transfer: plan: 1 folder from /media/usb0: 17 systems, 66 games (66 to copy), bios 0, saves 0 (0 differ), themes 0, screenshots 0; 0 already there, 0 differ; 1.1 GB to copy, 6.7 GB free; 18 ms
+[  23.347] ui I: usb: import started from General USB Flash Disk (Top of the drive)
+[   23.347] transfer: import started: 66 files, 1.1 GB, from /media/usb0
+[  321.708] transfer: import done: imported 66, already there 0, skipped 0, replaced 0, failed 0; 1.1 GB in 298.3 s (3.9 MB/s)
+[ 321.865] ui I: transfer: gamegear changed
+[ 321.866] ui I: transfer: gb changed
+[ 321.866] ui I: transfer: gba changed
+[ 321.867] ui I: transfer: gbc changed
+[ 321.867] ui I: transfer: mastersystem changed
+[ 321.867] ui I: transfer: megadrive changed
+[ 321.869] ui I: transfer: n64 changed
+[ 321.869] ui I: transfer: neogeo changed
+[ 321.869] ui I: transfer: nes changed
+[ 321.870] ui I: transfer: psx changed
+[ 321.871] ui I: transfer: snes changed
+[ 321.871] ui I: usb: Imported 66, already there 0, skipped 0, replaced 0.
+[ 321.897] ui I: games: /data/roms/nes/gamelist.xml: 2 entries matched
+[ 321.904] ui I: games: /data/roms/gb/gamelist.xml: 5 entries matched
+[ 321.907] ui I: games: /data/roms/gbc/gamelist.xml: 1 entries matched
+[ 321.913] ui I: games: /data/roms/megadrive/gamelist.xml: 3 entries matched
+[ 321.920] ui I: games: nes: scanned 7 games in 5254 us (folder 410, cache read 196, readdir 647 x1, gamelist 2933, cache write 922) (on demand)
+[ 321.920] ui I: games: fds: still an empty folder (same mtime), 30 us (on demand)
+[ 321.920] ui I: games: snes: scanned 15 games in 2009 us (folder 48, cache read 133, readdir 522 x1, gamelist 175, cache write 968) (on demand)
+[ 321.920] ui I: games: n64: scanned 8 games in 1660 us (folder 93, cache read 156, readdir 569 x1, gamelist 154, cache write 633) (on demand)
+[ 321.920] ui I: games: gb: scanned 13 games in 3634 us (folder 109, cache read 112, readdir 585 x1, gamelist 1735, cache write 973) (on demand)
+[ 321.920] ui I: games: gbc: scanned 7 games in 3126 us (folder 44, cache read 144, readdir 625 x1, gamelist 1274, cache write 914) (on demand)
+[ 321.920] ui I: games: gba: scanned 11 games in 1678 us (folder 47, cache read 107, readdir 549 x1, gamelist 148, cache write 767) (on demand)
+[ 321.920] ui I: games: sg1000: still an empty folder (same mtime), 55 us (on demand)
+[ 321.920] ui I: games: mastersystem: scanned 1 games in 1217 us (folder 50, cache read 133, readdir 241 x1, gamelist 179, cache write 575) (on demand)
+[ 321.920] ui I: games: megadrive: scanned 9 games in 3124 us (folder 58, cache read 151, readdir 633 x1, gamelist 1278, cache write 908) (on demand)
+[ 321.920] ui I: games: segacd: still an empty folder (same mtime), 25 us (on demand)
+[ 321.920] ui I: games: sega32x: still an empty folder (same mtime), 23 us (on demand)
+[ 321.920] ui I: games: pico: still an empty folder (same mtime), 19 us (on demand)
+[ 321.920] ui I: games: gamegear: scanned 1 games in 1520 us (folder 44, cache read 352, readdir 256 x1, gamelist 100, cache write 717) (on demand)
+[ 321.920] ui I: games: psx: scanned 4 games in 1769 us (folder 63, cache read 109, readdir 449 x1, gamelist 126, cache write 756) (on demand)
+[ 321.921] ui I: games: pcengine: still an empty folder (same mtime), 64 us (on demand)
+[ 321.921] ui I: games: pcenginecd: still an empty folder (same mtime), 25 us (on demand)
+[ 321.921] ui I: games: ngp: still an empty folder (same mtime), 18 us (on demand)
+[ 321.921] ui I: games: ngpc: still an empty folder (same mtime), 20 us (on demand)
+[ 321.921] ui I: games: wonderswan: still an empty folder (same mtime), 36 us (on demand)
+[ 321.921] ui I: games: wonderswancolor: still an empty folder (same mtime), 23 us (on demand)
+[ 321.921] ui I: games: atari2600: still an empty folder (same mtime), 21 us (on demand)
+[ 321.921] ui I: games: atari7800: still an empty folder (same mtime), 56 us (on demand)
+[ 321.921] ui I: games: atarilynx: still an empty folder (same mtime), 29 us (on demand)
+[ 321.921] ui I: games: coleco: still an empty folder (same mtime), 18 us (on demand)
+[ 321.921] ui I: games: msx: still an empty folder (same mtime), 29 us (on demand)
+[ 321.921] ui I: games: arcade: still an empty folder (same mtime), 41 us (on demand)
+[ 321.921] ui I: games: fbneo: still an empty folder (same mtime), 56 us (on demand)
+[ 321.921] ui I: games: neogeo: scanned 1 games in 1420 us (folder 96, cache read 167, readdir 339 x1, gamelist 89, cache write 684) (on demand)
+[ 321.921] ui I: games: neocd: still an empty folder (same mtime), 52 us (on demand)
+[ 321.921] ui I: ui: menu style bg faf6f7f9 dim 99000000 text ff1d2126 selector ff2f6fd0
+[ 321.923] ui I: ui: game lists complete: 30 systems checked, 11 with games, 77 games, in 51 ms (worker 0 ms; warm-up 38 folders, 12 reads, 4864 KiB, 20 ms); carousel updated, 0 lists replaced; io 96 reads, 5622 KiB; digest a3c27aac91330b20
+[ 321.923] ui I: ui: game list time by step: folder 1062 us, cache read 1760 us, validation stat 640 us, decode 0 us, readdir 5415 us, gamelist.xml 8191 us, cache write 8817 us; slowest nes 5254 us
+[ 321.924] ui I: ui: carousel snapshot saved (12 entries)
+[ 321.925] ui I: ui: menu style bg faf6f7f9 dim 99000000 text ff1d2126 selector ff2f6fd0
+[ 321.925] ui I: ui: game lists reloaded in 54 ms
+[  376.300] transfer: usb: eject /media/usb0 (sda1): done
+[ 376.300] ui I: usb: eject /media/usb0: done
+[ 376.300] ui I: ui: toast: USB drive ejected: you can unplug it
+[  376.300] frontend: USB ejected: sda1 /media/usb0 vfat
+[ 376.300] ui I: ui: toast: USB drive ejected: you can unplug it
+[  376.930] transfer: usb: disk sda: "", 0 KB, 1 partition (no table)
+[  376.931] transfer: usb: disk sda: no media (card reader?), waiting for a card
+[ 386.754] ui I: ui: launch "Super Mario 64" (/data/roms/n64/Super Mario 64.z64) with parallel_n64
+[  386.839] frontend: launch: player 1 = builtin
+[   386.841] display: suspended: DRM master dropped
+[  386.841] frontend: launch Super Mario 64 (/data/roms/n64/Super Mario 64.z64) with /usr/lib/libretro/parallel_n64_libretro.so
+[   386.843] host I: game process 5009 started: /usr/lib/libretro/parallel_n64_libretro.so /data/roms/n64/Super Mario 64.z64
+[   414.973] host I: game process 5009 exited: 0
+[   414.980] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[   414.980] display: resumed on Unknown-1 in 7 ms
+[  414.981] frontend: game ended: status 0, exit 0
+[ 415.961] ui I: ui: launch "Super Smash Bros." (/data/roms/n64/Super Smash Bros. (USA).n64) with parallel_n64
+[  416.014] frontend: launch: player 1 = builtin
+[   416.014] display: suspended: DRM master dropped
+[  416.014] frontend: launch Super Smash Bros. (/data/roms/n64/Super Smash Bros. (USA).n64) with /usr/lib/libretro/parallel_n64_libretro.so
+[   416.017] host I: game process 5432 started: /usr/lib/libretro/parallel_n64_libretro.so /data/roms/n64/Super Smash Bros. (USA).n64

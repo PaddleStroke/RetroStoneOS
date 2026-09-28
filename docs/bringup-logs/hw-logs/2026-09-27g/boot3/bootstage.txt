@@ -1,0 +1,67 @@
+RetroStoneOS boot time line (docs/build.md, "Boot time")
+Times in ms since power-on (reset of the SoC; the ARM counter starts there).
+Before that, the power key was held for the AXP209 power-on time: 128 ms.
+
+        ms       +ms  step
+     399.7     399.7  u-boot: spl: start
+     424.4      24.8  u-boot: spl: pmic
+     432.9       8.5  u-boot: spl: dram
+     436.3       3.4  u-boot: spl: cpu clock
+     487.2      50.9  u-boot: end phase
+     487.9       0.7  u-boot: board_init_f
+     559.6      71.7  u-boot: board_f done
+     571.8      12.2  u-boot: board_init_r
+     598.0      26.2  u-boot: mmc probed
+     627.7      29.7  u-boot: env loaded
+     627.8       0.1  u-boot: main_loop
+     635.7       7.9  u-boot: boot.scr
+     636.4       0.7  u-boot: load-zImage
+     845.5     209.1  u-boot: zImage-loaded
+     852.2       6.7  u-boot: dtb-loaded
+     852.4       0.2  u-boot: bootm_start
+     863.4      11.0  u-boot: boot_jump_linux
+     863.4       0.0  u-boot: start_kernel
+    1047.5     184.1  kernel: time 0 (decompressed, running)
+    1372.4     325.0  kernel: /sbin/init
+    1467.5      95.0  rcS: rcS start [SD 42 req, 1693 KiB since power-on]
+    1497.5      30.0  rcS: mounts [SD +10 req, +272 KiB]
+    1577.5      80.0  rcS: governor [SD +4 req, +1664 KiB]
+    1577.5       0.0  rcS: bootreason [SD +0 req, +0 KiB]
+    1747.5     170.0  rcS: data-partition [SD +42 req, +2831 KiB]
+    1747.5       0.0  rcS: clock [SD +1 req, +0 KiB]
+    1747.5       0.0  rcS: rcS done [SD +0 req, +0 KiB]
+    1786.5      39.0  frontend: started
+    1862.5      76.0  frontend: logo on screen
+    2076.5     214.0  frontend: first menu frame
+    2092.5      16.0  frontend: menu up
+    2097.5       5.0  rcS: bg: menu up (waited 0 s) [SD +54 req, +2471 KiB]
+    2497.5     400.0  rcS: bg: mixer [SD +42 req, +4914 KiB]
+    2577.5      80.0  rcS: bg: usb storage modules [SD +18 req, +572 KiB]
+
+U-Boot accumulated times:
+        8.8 ms  dm_r
+        0.5 ms  dm_f
+
+Summary (ms):
+  boot ROM + SPL (DRAM init, loads U-Boot)                487.9
+    boot ROM (reads the SPL)                              399.7
+    SPL: clocks, console, AXP209 set-up                    24.8
+    SPL: DRAM init                                          8.5
+    SPL: CPU clock up                                       3.4
+    U-Boot start (to board_init_f)                          0.7
+  U-Boot init (MMC, environment)                          139.9
+    pre-relocation init                                    71.7
+    relocation, caches on                                  12.2
+    driver model, MMC probe                                26.2
+    card init + environment read                           29.7
+    rest of board_init_r                                    0.1
+  bootcmd + boot.scr up to the kernel load                  8.6
+  zImage read (4942136 bytes, 23.6 MB/s)                  209.1
+  DTB, overlays, bootz                                     17.9
+  zImage decompression + kernel head                      184.1
+  power-on -> kernel time 0 (all pre-kernel)             1047.5
+  kernel: time 0 -> /sbin/init                            325.0
+  /sbin/init + rcS -> frontend start                      414.0
+  frontend start -> logo                                   76.0
+  BLACK SCREEN: power-on -> logo                         1862.5
+  logo -> menu up                                         230.0

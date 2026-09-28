@@ -1,0 +1,16 @@
+config BR2_PACKAGE_LIBRETRO_FCEUMM
+	bool "libretro-fceumm"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  FCEUmm: NES / Famicom / Famicom Disk System emulator, built
+	  as a libretro core.
+
+	  Installs /usr/lib/libretro/fceumm_libretro.so and the
+	  RetroStoneOS metadata file /usr/share/rsos/cores/fceumm.ini.
+
+	  https://github.com/libretro/libretro-fceumm
+
+comment "libretro-fceumm needs a toolchain w/ dynamic library"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_STATIC_LIBS

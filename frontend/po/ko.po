@@ -1,0 +1,2374 @@
+# Korean translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "zip 파일을 열 수 없어요 (%s)"
+
+msgid "No playable file in this zip"
+msgstr "이 zip에는 플레이할 수 있는 파일이 없어요"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "zip 안의 파일이 너무 커요 (%llu MB)"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "zip에서 %s 파일을 꺼낼 수 없어요 (%s)"
+
+msgid "Game file not found"
+msgstr "게임 파일을 찾을 수 없어요"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "7z 압축 파일은 쓸 수 없어요. .zip을 쓰거나 압축을 풀어 주세요"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "게임 파일을 읽을 수 없어요 (%s)"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "이 게임기"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s: %s 파일은 올바른 BIOS가 아니에요"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%s 또는 %s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "%1$s에는 %3$s 폴더의 %2$s 파일이 필요해요"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "전원을 끄는 중…"
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "플레이어 1 컨트롤러 연결이 끊겼어요: 일시 정지"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "플레이어 1: %s"
+
+msgid "Saving..."
+msgstr "저장 중…"
+
+msgid "This game cannot save a state now"
+msgstr "지금은 상태 저장을 할 수 없어요"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "상태 저장 실패: %s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "슬롯 %d의 상태를 불러왔어요"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "슬롯 %d에 저장된 상태가 없어요"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "슬롯 %d의 상태를 불러올 수 없어요"
+
+#, c-format
+msgid "State slot %d"
+msgstr "상태 저장: 슬롯 %d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "상태 저장: 슬롯 %d (비어 있음)"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "리셋했어요"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "연결됨: %s"
+
+msgid "Battery empty: game saved"
+msgstr "배터리 없음: 게임을 저장했어요"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "배터리 부족 (%d%%)"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "설정 %d개, 약 %d분"
+
+msgid "No benchmark for this system"
+msgstr "이 게임기는 벤치마크가 없어요"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "벤치마크: 지금은 상태 저장을 할 수 없어요"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "벤치마크: %s에 쓸 수 없어요"
+
+msgid "No result to use"
+msgstr "사용할 결과가 없어요"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "알 수 없는 설정: %s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "저장하지 못했어요: %s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "이 게임에 \"%s\" 설정을 저장했어요 (다음 실행부터 적용)"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "\"%s\" 저장됨: 다음 실행부터 %s 사용"
+
+msgid "The emulator stopped responding"
+msgstr "에뮬레이터가 응답하지 않아요"
+
+msgid "Cannot load the emulator core"
+msgstr "에뮬레이터 코어를 불러올 수 없어요"
+
+msgid "Benchmark: bad plan"
+msgstr "벤치마크: 잘못된 계획"
+
+msgid "Cannot start the save thread"
+msgstr "저장 스레드를 시작할 수 없어요"
+
+msgid "Cannot open the display"
+msgstr "화면을 열 수 없어요"
+
+msgid "This core needs a game file"
+msgstr "이 코어에는 게임 파일이 필요해요"
+
+msgid "The emulator could not load this game"
+msgstr "에뮬레이터가 이 게임을 불러오지 못했어요"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "이어서 시작했어요"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "GPU 초기화 실패 (framebuffer 0x%x)"
+
+msgid "This build cannot run GLES games"
+msgstr "이 빌드에서는 GLES 게임을 실행할 수 없어요"
+
+msgid "No GPU found (lima)"
+msgstr "GPU를 찾을 수 없어요 (lima)"
+
+msgid "The game was stopped"
+msgstr "게임이 중지되었어요"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "에뮬레이터가 멈췄어요 (%s). 몇 초 전까지의 세이브 데이터는 남아 있어요."
+
+msgid "Could not start the game"
+msgstr "게임을 시작하지 못했어요"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "에뮬레이터가 응답하지 않아요. 몇 초 전까지의 세이브 데이터는 남아 있어요."
+
+msgid "Cannot start the game process"
+msgstr "게임 프로세스를 시작할 수 없어요"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "에뮬레이터 오류 (코드 %d)"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "정수배"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "늘리기"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "원래 비율"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "켬"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "끔"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "(게임)"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "(전체)"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "(벤치)"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "비정상 종료"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "응답 없음"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "중지됨"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "실패"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "계속하기"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "슬롯 %d"
+
+msgid "Save state"
+msgstr "상태 저장"
+
+msgid "Load state"
+msgstr "상태 불러오기"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "디스크"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "리셋"
+
+msgid "Core options"
+msgstr "코어 옵션"
+
+msgid "Scaling"
+msgstr "화면 크기"
+
+msgid "Show FPS"
+msgstr "FPS 표시"
+
+msgid "Fast-forward"
+msgstr "빨리 감기"
+
+msgid "Benchmark this game"
+msgstr "이 게임 벤치마크"
+
+msgid "Controls"
+msgstr "컨트롤러"
+
+msgid "Exit game"
+msgstr "게임 종료"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "이 게임에 저장"
+
+msgid "Save for all games (this core)"
+msgstr "모든 게임에 저장 (이 코어)"
+
+msgid "Reset to defaults"
+msgstr "기본값으로 되돌리기"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "플레이어 %d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s (스틱)"
+
+msgid "D-pad as left stick (P1)"
+msgstr "십자 버튼을 왼쪽 스틱으로 (1P)"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "위"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "아래"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "왼쪽"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "오른쪽"
+
+msgid "Left stick"
+msgstr "왼쪽 스틱"
+
+msgid "Right stick"
+msgstr "오른쪽 스틱"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "실행"
+
+msgid "Each run"
+msgstr "매번"
+
+msgid "from now, no input"
+msgstr "지금부터, 입력 없이"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "중지"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs (SD 카드)"
+
+msgid "Results"
+msgstr "결과"
+
+msgid "Start benchmark"
+msgstr "벤치마크 시작"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "순위 없음"
+
+msgid "blank?"
+msgstr "빈 화면?"
+
+msgid "Use this for this game"
+msgstr "이 게임에 이 설정 사용"
+
+msgid "Resume game"
+msgstr "게임 계속하기"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "벤치마크"
+
+msgid "Benchmark results"
+msgstr "벤치마크 결과"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "비어 있음"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "(게임) 이 게임에만, (전체) 모든 게임에, * 나갈 때 저장"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A: 결정  B: 계속하기  </>: 바꾸기"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A: 결정  B: 뒤로  </>: 바꾸기"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "슬롯 %d에 저장 중…"
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "슬롯 %d번은 비어 있어요"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "디스크 %d번을 넣었어요"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "디스크 %d번으로 바꿀 수 없어요"
+
+msgid "Could not save the options"
+msgstr "옵션을 저장하지 못했어요"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "%s 게임에 저장했어요"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "%s의 모든 게임에 저장했어요"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "기본값으로 되돌렸어요 (나갈 때 저장)"
+
+msgid "Options saved for this game"
+msgstr "이 게임의 옵션을 저장했어요"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "표: %s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "게임 저장 실패: %s (다시 시도 중)"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "게임을 저장했어요"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "이어하기 저장 실패: %s"
+
+msgid "Auto state saved"
+msgstr "이어하기를 저장했어요"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "슬롯 %d 상태 저장 실패: %s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "슬롯 %d에 상태를 저장했어요"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "세이브 파일을 읽을 수 없어서 저장하지 않아요"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr "."
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr ","
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "GB"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "MB"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "KB"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%Y.%m.%d."
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%Y.%m.%d. %H:%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "화면이 이 주사율을 지원하지 않아요"
+
+msgid "No emulator is installed for this game."
+msgstr "이 게임용 에뮬레이터가 설치되어 있지 않아요."
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "이 게임을 시작할 수 없어요 (BIOS가 없나요?)."
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "게임 프로세스를 시작할 수 없어요 (%s)."
+
+msgid "The game could not be started."
+msgstr "게임을 시작하지 못했어요."
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "데이터 영역을 복구하지 못했어요. 게임과 세이브 데이터를 다시 복사해야 할 수도 있어요."
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "데이터 영역을 읽을 수 없어서 다시 포맷했어요."
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "데이터 영역에 오류가 있어요. 저장이 실패할 수 있으니 세이브 데이터를 백업해 주세요."
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "지난 업데이트가 시작되지 않아서 이전 버전으로 되돌렸어요."
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "갑자기 전원이 꺼져서 SD 카드를 검사했어요"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "SD 카드를 준비하는 중이에요. 잠시 기다려 주세요…"
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "SD 카드를 검사하는 중이에요. 잠시 기다려 주세요…"
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "즐겨찾기"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "최근 플레이"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "이 폴더에 이제 게임이 없어요"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "선택"
+
+msgid "change"
+msgstr "바꾸기"
+
+msgid "select"
+msgstr "결정"
+
+msgid "back"
+msgstr "뒤로"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "확인"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "입력"
+
+msgid "delete"
+msgstr "지우기"
+
+msgid "space"
+msgstr "띄어쓰기"
+
+msgid "shift"
+msgstr "시프트"
+
+msgid "ok"
+msgstr "확인"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "취소"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "시프트"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "띄어쓰기"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "삭제"
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "자동"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "원래 비율"
+
+msgid "Integer"
+msgstr "정수배"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "자동"
+
+msgid "Basic"
+msgstr "기본"
+
+msgid "Detailed"
+msgstr "자세히"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "오른쪽 위"
+
+msgid "Top left"
+msgstr "왼쪽 위"
+
+msgid "Bottom right"
+msgstr "오른쪽 아래"
+
+msgid "Bottom left"
+msgstr "왼쪽 아래"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Hz (이전 설정)"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "자동 (게임을 시작한 컨트롤러)"
+
+msgid "Built-in"
+msgstr "내장"
+
+msgid "External"
+msgstr "외부"
+
+msgid "Could not save the settings"
+msgstr "설정을 저장하지 못했어요"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "TV"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "LCD 주사율: 60 Hz"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "LCD 주사율: 78 Hz로 되돌렸어요"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "유지"
+
+msgid "REVERT"
+msgstr "되돌리기"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"화면 주사율이 60 Hz로 바뀌었어요.\n"
+"이 설정을 유지할까요? %d초 후에 되돌려요"
+
+msgid "Display"
+msgstr "화면"
+
+msgid "Brightness"
+msgstr "밝기"
+
+msgid "LCD refresh rate"
+msgstr "LCD 주사율"
+
+msgid "HDMI resolution"
+msgstr "HDMI 해상도"
+
+msgid "Game scaling"
+msgstr "게임 화면 크기"
+
+msgid "Game list style"
+msgstr "게임 목록 스타일"
+
+msgid "Battery in games"
+msgstr "게임 중 배터리 표시"
+
+msgid "Battery position"
+msgstr "배터리 표시 위치"
+
+msgid "Button test"
+msgstr "버튼 테스트"
+
+msgid "no stick"
+msgstr "스틱 없음"
+
+msgid "Hold SELECT + START to exit"
+msgstr "SELECT + START를 길게 누르면 나가요"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "십자 버튼 '위'를 눌러 주세요"
+
+msgid "Press D-pad DOWN"
+msgstr "십자 버튼 '아래'를 눌러 주세요"
+
+msgid "Press D-pad LEFT"
+msgstr "십자 버튼 '왼쪽'을 눌러 주세요"
+
+msgid "Press D-pad RIGHT"
+msgstr "십자 버튼 '오른쪽'을 눌러 주세요"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "'오른쪽' 버튼(A)을 눌러 주세요"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "'아래쪽' 버튼(B)을 눌러 주세요"
+
+msgid "Press the TOP face button (X)"
+msgstr "'위쪽' 버튼(X)을 눌러 주세요"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "'왼쪽' 버튼(Y)을 눌러 주세요"
+
+msgid "Press L1"
+msgstr "L1을 눌러 주세요"
+
+msgid "Press R1"
+msgstr "R1을 눌러 주세요"
+
+msgid "Press L2"
+msgstr "L2를 눌러 주세요"
+
+msgid "Press R2"
+msgstr "R2를 눌러 주세요"
+
+msgid "Press SELECT"
+msgstr "SELECT를 눌러 주세요"
+
+msgid "Press START"
+msgstr "START를 눌러 주세요"
+
+msgid "Press the left stick (L3)"
+msgstr "왼쪽 스틱을 눌러 주세요 (L3)"
+
+msgid "Press the right stick (R3)"
+msgstr "오른쪽 스틱을 눌러 주세요 (R3)"
+
+msgid "Push the left stick RIGHT"
+msgstr "왼쪽 스틱을 '오른쪽'으로 밀어 주세요"
+
+msgid "Push the left stick DOWN"
+msgstr "왼쪽 스틱을 '아래'로 밀어 주세요"
+
+msgid "Push the right stick RIGHT"
+msgstr "오른쪽 스틱을 '오른쪽'으로 밀어 주세요"
+
+msgid "Push the right stick DOWN"
+msgstr "오른쪽 스틱을 '아래'로 밀어 주세요"
+
+msgid "Configure controller"
+msgstr "컨트롤러 설정"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "%d단계 / 총 %d단계"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "이 버튼이 없나요? %d초 기다리면 건너뛰어요"
+
+msgid "Controller saved"
+msgstr "컨트롤러 설정을 저장했어요"
+
+msgid "The mapping could not be saved."
+msgstr "버튼 설정을 저장하지 못했어요."
+
+msgid "Configure a controller"
+msgstr "컨트롤러 설정하기"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "사용자 설정"
+
+msgid "known pad"
+msgstr "지원 컨트롤러"
+
+msgid "standard"
+msgstr "표준"
+
+msgid "keyboard"
+msgstr "키보드"
+
+msgid "not configured"
+msgstr "설정 안 됨"
+
+msgid "No external controller detected"
+msgstr "외부 컨트롤러가 없어요"
+
+msgid "built-in"
+msgstr "내장"
+
+msgid "Player 1"
+msgstr "플레이어 1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "C/Z 버튼 추가 장착"
+
+msgid "Players"
+msgstr "플레이어"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10분"
+
+msgid "30 min"
+msgstr "30분"
+
+msgid "1 hour"
+msgstr "1시간"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "안 함"
+
+msgid "please wait..."
+msgstr "잠시 기다려 주세요…"
+
+msgid "not set"
+msgstr "설정 안 됨"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "실행 중"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi: 끄는 중이에요. 잠시 기다려 주세요…"
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "유선 LAN: 끄는 중이에요. 잠시 기다려 주세요…"
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "블루투스: 끄는 중이에요. 잠시 기다려 주세요…"
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi: 켜는 중이에요. 잠시 기다려 주세요…"
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "유선 LAN: 켜는 중이에요. 잠시 기다려 주세요…"
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "블루투스: 켜는 중이에요. 잠시 기다려 주세요…"
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "실행할 수 없어요: %s"
+
+msgid "Could not save the WiFi settings"
+msgstr "Wi-Fi 설정을 저장하지 못했어요"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "Wi-Fi 비밀번호는 8자 이상이어야 해요."
+
+msgid "Set the network name first."
+msgstr "먼저 네트워크 이름을 설정해 주세요."
+
+msgid "WiFi password saved"
+msgstr "Wi-Fi 비밀번호를 저장했어요"
+
+msgid "WiFi network name"
+msgstr "Wi-Fi 네트워크 이름"
+
+msgid "WiFi password"
+msgstr "Wi-Fi 비밀번호"
+
+msgid "Console name"
+msgstr "기기 이름"
+
+msgid "Use letters, digits and dashes."
+msgstr "영문자, 숫자, 하이픈(-)만 쓸 수 있어요."
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "기기 이름: %s (다음 전송부터)"
+
+msgid "Network"
+msgstr "네트워크"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Wi-Fi 네트워크"
+
+msgid "Transfer games from a computer or phone"
+msgstr "컴퓨터나 휴대폰에서 게임 보내기"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "네트워크 전송"
+
+msgid "Stop when idle for"
+msgstr "사용하지 않을 때 자동 중지"
+
+msgid "Keep receiving in the background"
+msgstr "백그라운드에서 계속 받기"
+
+msgid "WiFi off"
+msgstr "Wi-Fi 꺼짐"
+
+msgid "Ethernet off"
+msgstr "유선 LAN 꺼짐"
+
+msgid "Bluetooth off"
+msgstr "블루투스 꺼짐"
+
+msgid "WiFi on"
+msgstr "Wi-Fi 켜짐"
+
+msgid "Ethernet on"
+msgstr "유선 LAN 켜짐"
+
+msgid "Bluetooth on"
+msgstr "블루투스 켜짐"
+
+msgid "failed"
+msgstr "실패"
+
+msgid "Theme"
+msgstr "테마"
+
+msgid "No theme found"
+msgstr "테마가 없어요"
+
+msgid "Game lists refreshed"
+msgstr "게임 목록을 새로 고쳤어요"
+
+msgid "Game lists"
+msgstr "게임 목록"
+
+msgid "Favorites first"
+msgstr "즐겨찾기 먼저 보기"
+
+msgid "Favorites & last played pages"
+msgstr "즐겨찾기 및 최근 플레이 페이지"
+
+msgid "Refresh game lists"
+msgstr "게임 목록 새로 고침"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "물어보기"
+
+msgid "Always resume"
+msgstr "항상 이어하기"
+
+msgid "Always start fresh"
+msgstr "항상 처음부터"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "게임"
+
+msgid "Resume games"
+msgstr "이어하기"
+
+msgid "Auto-save on exit"
+msgstr "나갈 때 이어하기 저장"
+
+msgid "On launch"
+msgstr "게임 시작 시"
+
+msgid "Powering off in a game always saves it"
+msgstr "게임 중에 전원을 꺼도 항상 저장돼요"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "/boot/rsos.env를 업데이트하지 못했어요."
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "지금 다시 시작"
+
+msgid "LATER"
+msgstr "나중에"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "다시 시작해야 해요. 다음에 켤 때 적용돼요."
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "%2$s 중 %1$s 남음"
+
+msgid "Storage"
+msgstr "저장 공간"
+
+msgid "Game storage"
+msgstr "게임 저장 위치"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "USB 메모리"
+
+msgid "Import games"
+msgstr "게임 가져오기"
+
+msgid "Export games"
+msgstr "게임 내보내기"
+
+msgid "Back up saves"
+msgstr "세이브 데이터 백업"
+
+msgid "Eject USB drive"
+msgstr "USB 메모리 꺼내기"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "USB 메모리를 꽂으면 물어보기"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "고급: 끄면 빨리 켜져요 (다시 시작 필요)"
+
+msgid "Internal eMMC"
+msgstr "내장 eMMC"
+
+msgid "M.2 SATA drive"
+msgstr "M.2 SATA 드라이브"
+
+msgid "no battery"
+msgstr "배터리 없음"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%d%%, %d시간 %02d분 후 완충"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%d%%, 약 %d시간 %02d분"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%d%%, 충전 중"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%d%%, 완충"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%d%%"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "충전기, %s V"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "배터리, %s V"
+
+msgid "charger connected"
+msgstr "충전기 연결됨"
+
+msgid "battery"
+msgstr "배터리"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C (뜨거움)"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "연결 안 됨"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s, UI %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "게임기 %d종"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "게임 %d개 (%s)"
+
+msgid "System information"
+msgstr "시스템 정보"
+
+msgid "Version"
+msgstr "버전"
+
+msgid "Battery"
+msgstr "배터리"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "전원"
+
+msgid "Input devices"
+msgstr "입력 장치"
+
+msgid "CPU temperature"
+msgstr "CPU 온도"
+
+msgid "1 min"
+msgstr "1분"
+
+msgid "2 min"
+msgstr "2분"
+
+msgid "5 min"
+msgstr "5분"
+
+msgid "Voltage"
+msgstr "전압"
+
+msgid "AXP fuel gauge"
+msgstr "AXP 잔량계"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "예"
+
+msgid "NO"
+msgstr "아니요"
+
+msgid "Restart the console?"
+msgstr "기기를 다시 시작할까요?"
+
+msgid "Power off the console?"
+msgstr "기기 전원을 끌까요?"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "전원"
+
+msgid "Restart"
+msgstr "다시 시작"
+
+msgid "Power off"
+msgstr "전원 끄기"
+
+msgid "Battery saving"
+msgstr "배터리 절약"
+
+msgid "Dim the screen after"
+msgstr "화면 어둡게 하기"
+
+msgid "Screen off after"
+msgstr "화면 끄기"
+
+msgid "Battery gauge"
+msgstr "배터리 측정 방식"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "시간대: %s"
+
+msgid "Time zone"
+msgstr "시간대"
+
+msgid "That date is not valid."
+msgstr "올바르지 않은 날짜예요."
+
+msgid "The clock could not be set."
+msgstr "시계를 맞추지 못했어요."
+
+msgid "Date and time set"
+msgstr "날짜와 시간을 맞췄어요"
+
+msgid "Setting the clock needs the power module"
+msgstr "시계를 맞추려면 전원 모듈이 필요해요"
+
+msgid "Date & time"
+msgstr "날짜와 시간"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "현재"
+
+msgid "Set the clock"
+msgstr "시계 맞추기"
+
+msgid "Year"
+msgstr "연도"
+
+msgid "Month"
+msgstr "월"
+
+msgid "Day"
+msgstr "일"
+
+msgid "Hour"
+msgstr "시"
+
+msgid "Minute"
+msgstr "분"
+
+msgid "Set date and time"
+msgstr "날짜와 시간 설정"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "언어"
+
+msgid "Settings"
+msgstr "설정"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "%s: 설치되어 있지 않아요"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "언어를 골라 주세요"
+
+msgid "This game is not in the list any more"
+msgstr "이 게임은 이제 목록에 없어요"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "즐겨찾기"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "게임기 기본값"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s (실험적)"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "기본 (%s)"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "없음"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "이 게임의 코어"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "모든 %s 게임의 코어"
+
+msgid "Core"
+msgstr "코어"
+
+msgid "none installed"
+msgstr "설치 안 됨"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "게임 시작"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "파일"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr ""
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr ""
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr ""
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr ""
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr ""
+
+msgctxt "system"
+msgid "32X"
+msgstr ""
+
+msgctxt "system"
+msgid "Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr ""
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr "아케이드"
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr ""
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr "아케이드 (MAME 2003-Plus)"
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr "아케이드 (FinalBurn Neo)"
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "SD 카드가 가득 참"
+
+msgid "The USB drive was removed"
+msgstr "USB 메모리가 빠짐"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "읽기 오류: USB 메모리가 빠졌나요?"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "USB 메모리가 가득 참"
+
+msgid "The USB drive is read-only"
+msgstr "USB 메모리가 읽기 전용"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "쓰기 오류: USB 메모리가 빠졌나요?"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "오래 사용하지 않음"
+
+msgid "BIOS files"
+msgstr "BIOS 파일"
+
+msgid "Themes"
+msgstr "테마"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "USB 메모리를 사용 중이에요"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "USB 메모리를 뽑아도 돼요"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "꺼내기"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "USB 메모리 최상위"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s (백업)"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "라이브러리 %d개 모두"
+
+msgid "Another copy is already running."
+msgstr "다른 복사가 이미 진행 중이에요."
+
+msgid "The copy could not start."
+msgstr "복사를 시작하지 못했어요."
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "USB 메모리의 게임 라이브러리"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "게임 %d개"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s, %s, %s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "파일 %d개, %s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "모두 (라이브러리 %d개)"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "게임 %d개, %s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "꺼내기"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "USB 메모리에서 게임을 찾는 중…"
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "기기와 비교하는 중…"
+
+msgid "This drive could not be read."
+msgstr "이 USB 메모리를 읽지 못했어요."
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "가져올 곳"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "USB 메모리의 게임"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "새 게임 %d개 (전체 %d개), %s, 세이브 포함"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "새 게임 %d개 (전체 %d개), %s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d개, 이미 있음, 세이브 포함"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d개, 이미 있음"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "지원 안 됨: %s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "파일 %d개"
+
+msgid "Nothing new on this drive"
+msgstr "이 USB 메모리에 새로운 게 없어요"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "복사할 항목"
+
+msgid "Saves & save states"
+msgstr "세이브 데이터 및 상태 저장"
+
+msgid "Screenshots"
+msgstr "스크린샷"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "기기에 이미 있음"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "파일 %d개, 건너뜀"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "기기의 파일과 다름"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d개 (세이브 포함): 나중에 물어봐요"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d개: 나중에 물어봐요"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "복사할 양"
+
+msgid "Not enough space"
+msgstr "공간 부족"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "최대 %s, 남은 공간 %s"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "복사하기"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "%s에서 가져오기"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "이 USB 메모리는 사용 중이에요 (검색 또는 복사 중)."
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "USB 메모리에 쓸 수 없어요 (쓰기 금지 상태인가요?)."
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "USB 메모리와 비교하는 중…"
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "USB 메모리의 폴더"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s (새로 만듦)"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "기기의 게임"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "BIOS 파일도"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "게임"
+
+msgid "All games"
+msgstr "모든 게임"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "최근 플레이: %s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "설정도 (코어 옵션, 버튼 배치)"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "USB 메모리에 이미 있음"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "파일 %d개, %s (남은 공간 %s)"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "복사할 게 없어요: USB 메모리가 최신이에요"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "4 GB 넘는 파일 %d개: FAT32에 넣을 수 없어요"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "건너뜀"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "내보내기"
+
+msgid "Back up"
+msgstr "백업하기"
+
+msgid "The USB drive is not there any more."
+msgstr "USB 메모리가 없어졌어요."
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "게임 내보내기: %s"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "세이브 데이터 백업: %s"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "날짜 알 수 없음"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "건너뛰기"
+
+msgid "REPLACE"
+msgstr "바꾸기"
+
+msgid "SKIP ALL"
+msgstr "모두 건너뛰기"
+
+msgid "REPLACE ALL"
+msgstr "모두 바꾸기"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "이 설정 파일이 기기에 이미 있지만 내용이 달라요:"
+
+msgid "This save is already on the console, but different:"
+msgstr "이 세이브 데이터가 기기에 이미 있지만 내용이 달라요:"
+
+msgid "This game is already on the console, but different:"
+msgstr "이 게임이 기기에 이미 있지만 내용이 달라요:"
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "이 BIOS 파일이 기기에 이미 있지만 내용이 달라요:"
+
+msgid "This file is already on the console, but different:"
+msgstr "이 파일이 기기에 이미 있지만 내용이 달라요:"
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"USB 메모리: %s, %s\n"
+"기기: %s, %s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "세이브 데이터는 소중해요. 바꾸더라도 기기의 파일은 %s.bak으로 남겨 둬요."
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "복사 중: %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "게임 내보내는 중: %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "세이브 데이터 백업 중: %s"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s / %s  -  파일 %d / %d개"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s MB/s, 약 %d분 남음"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s MB/s"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "이미 있음: %d개"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "복사를 취소했어요."
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "복사가 멈췄어요: %s."
+
+msgid "error"
+msgstr "오류"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "가져옴 %d, 이미 있음 %d, 건너뜀 %d, 바꿈 %d."
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "일부 파일은 실패했어요."
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "취소했어요."
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "중지됨: %s. 덜 복사된 파일은 지웠어요."
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "파일 %d개 복사함 (%s), 이미 있음 %d개."
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "4 GB 넘는 파일 %d개는 건너뜀 (FAT32)."
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "%d개 실패."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "중지"
+
+msgid "CONTINUE"
+msgstr "계속"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "복사를 멈출까요? 이미 복사한 파일은 남아요."
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "멈출까요? 이미 복사한 파일은 USB 메모리에 남아요."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "게임 가져오기"
+
+msgid "EXPORT GAMES"
+msgstr "게임 내보내기"
+
+msgid "BACK UP SAVES"
+msgstr "세이브 백업"
+
+msgid "NOTHING"
+msgstr "아무것도 안 함"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "USB 메모리 %s 연결됨: 설정 > 저장 공간에서 쓸 수 있어요"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "USB 메모리 %s 연결됨"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "USB 메모리 \"%s\" 연결됨 (%s, %s). 무엇을 할까요?"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "USB 메모리가 빠져서 복사가 멈췄어요"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "USB 메모리가 빠졌어요"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "USB 메모리: 지원하지 않는 형식이에요 (FAT32 또는 exFAT 사용)"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "USB 메모리를 읽지 못했어요"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "게임을 가져올 곳"
+
+msgid "Export games to"
+msgstr "게임을 내보낼 곳"
+
+msgid "Back up saves to"
+msgstr "세이브 데이터를 백업할 곳"
+
+msgid "USB transfers are not available in this build."
+msgstr "이 빌드에서는 USB 전송을 쓸 수 없어요."
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "USB 메모리를 꽂아 주세요 (FAT32, exFAT 또는 NTFS)."
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "USB 메모리 없음"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "USB 메모리를 사용 중이에요"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "네트워크 꺼짐: 웹 전송이 멈췄어요"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "중지"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "브라우저에서 이 주소를 열어 주세요:"
+
+msgid "(no network address)"
+msgstr "(네트워크 주소 없음)"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "또는 %s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "PIN이 틀렸어요: %d초 동안 잠김"
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "받는 중: %s (%d%%)"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "중지됨: %s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "중지됨"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "파일을 기다리는 중…"
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "파일 %d개 받음"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "집 네트워크에서만 써 주세요. PIN을 아는 사람은 누구나 파일을 추가할 수 있어요."
+
+msgid "KEEP RECEIVING"
+msgstr "계속 받기"
+
+msgid "Keep receiving files in the background?"
+msgstr "백그라운드에서 파일을 계속 받을까요?"
+
+msgid "Network transfer is not available in this build."
+msgstr "이 빌드에서는 네트워크 전송을 쓸 수 없어요."
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "먼저 Wi-Fi나 유선 LAN을 켜 주세요 (네트워크 주소 없음)."
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "전송을 시작하지 못했어요 (오류 %d)."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "이어하기"
+
+msgid "START FRESH"
+msgstr "처음부터"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "%s, 이어서 할까요?"
+
+msgid "No emulator is installed for this system."
+msgstr "이 게임기용 에뮬레이터가 설치되어 있지 않아요."
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "파일을 복사하는 중이에요. 복사가 끝날 때까지 기다리거나 취소해 주세요."
+
+msgid "Resume where you left off?"
+msgstr "지난번에 멈춘 곳부터 이어서 할까요?"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "설정"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "컨트롤러 연결됨: %s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "컨트롤러 연결 끊김: %s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "새 컨트롤러: %s (설정 > 컨트롤러)"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "새 컨트롤러: %s. 설정 > 컨트롤러에서 설정할까요?"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "%s 게임을 읽는 중"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "기기를 준비하는 중…"
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "배터리 부족 (%d%%)"
+
+msgid "Battery empty, saving..."
+msgstr "배터리 없음, 저장 중…"
+
+msgid "Restarting..."
+msgstr "다시 시작하는 중…"
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "기기가 뜨거워서 속도를 낮춰요"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "충전 중"
+
+msgid "Fully charged"
+msgstr "충전 완료"
+
+msgid "Charger unplugged"
+msgstr "충전기가 분리됐어요"
+
+msgid "Not charging"
+msgstr "충전 안 됨"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%d%%"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "완충까지 %d시간 %02d분"
+
+msgid "Press the power button to start"
+msgstr "전원 버튼을 누르면 켜져요"
+
+msgid "Battery very low: plug in the charger"
+msgstr "배터리가 거의 없어요. 충전기를 연결해 주세요"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "평점: "
+
+msgid "Released: "
+msgstr "발매일: "
+
+msgid "Developer: "
+msgstr "개발사: "
+
+msgid "Publisher: "
+msgstr "퍼블리셔: "
+
+msgid "Genre: "
+msgstr "장르: "
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "플레이 인원: "
+
+msgid "Last played: "
+msgstr "마지막 플레이: "
+
+msgid "Times played: "
+msgstr "플레이 횟수: "
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "연도"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "장르"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "인원"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "평점"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "내가 좋아하는 게임"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "최근에 플레이한 게임"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "기기의 모든 게임"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "가정용 컴퓨터 · 1983년"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "아케이드 · MAME 2003-Plus"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "아케이드 · FinalBurn Neo"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "알 수 없음"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "게임 없음"
+
+msgid "launch"
+msgstr "시작"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "옵션"
+
+msgid "favorite"
+msgstr "즐겨찾기"
+
+msgid "menu"
+msgstr "메뉴"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "즐겨찾기에 추가했어요"
+
+msgid "Removed from favorites"
+msgstr "즐겨찾기에서 뺐어요"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "게임 %d개"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "즐겨찾기 %d개"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s, %s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "게임이 없어요. ROM을 /data/roms/<system>/에 복사해 주세요"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "플레이 안 함"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "알 수 없음"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "%d초 전"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d분 전"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d시간 전"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d일 전"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%Y.%m.%d."

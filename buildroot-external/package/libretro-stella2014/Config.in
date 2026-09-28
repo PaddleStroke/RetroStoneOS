@@ -1,0 +1,17 @@
+config BR2_PACKAGE_LIBRETRO_STELLA2014
+	bool "libretro-stella2014"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Stella 2014: Atari 2600 emulator (Stella 3.9.3), built as a
+	  libretro core (GPL-2.0).
+
+	  Installs /usr/lib/libretro/stella2014_libretro.so and
+	  /usr/share/rsos/cores/stella2014.ini.
+
+	  https://github.com/libretro/stella2014-libretro
+
+comment "libretro-stella2014 needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

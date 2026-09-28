@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 180" width="150" height="180">
+<!-- RetroStoneOS original art: a game cartridge with a pixel "8" label (PICO-8 system icon) -->
+<path fill="#ffffff" fill-rule="evenodd" d="M20 5H130A10 10 0 0 1 140 15V150L125 175H25L10 150V15A10 10 0 0 1 20 5Z
+M28 22H122V112H28Z
+M57 37H93V49H57Z
+M57 49H69V61H57Z M81 49H93V61H81Z
+M57 61H93V73H57Z
+M57 73H69V85H57Z M81 73H93V85H81Z
+M57 85H93V97H57Z
+M40 128H110V134H40Z
+M40 142H110V148H40Z"/>
+</svg>

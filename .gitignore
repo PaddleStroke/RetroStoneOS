@@ -1,0 +1,42 @@
+# --- Built images and update packages (published on GitHub Releases, never in git)
+/images/
+images/**/*.img
+images/**/*.xz
+images/**/*.rsu
+images/**/*.sha256
+*.img
+
+# --- Homebrew games: permission-only, fetched by CI from the private
+#     PaddleStroke/RetroStoneOS-homebrew repository (docs/homebrew.md)
+/homebrew/
+/*.gb
+/*.gbc
+/*.gba
+/*.nes
+/*.smc
+/*.sfc
+/*.bin
+/*.rar
+/*.GB
+/*.GBC
+
+# --- Private material
+/reference/permissions/
+reference/retrostone-rop/
+*.key
+*.sec
+*.pem
+# the update signing public key is the only key file in the tree
+!/frontend/assets/update.pub
+
+# --- Theme source archives (the themes are unpacked in frontend/themes/)
+es-theme*.zip
+
+# --- Build output
+/frontend/build*/
+*.o
+/output/
+/output-*/
+/buildroot-20*/
+/dl/
+/ci-test/

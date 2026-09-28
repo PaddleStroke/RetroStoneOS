@@ -1,0 +1,119 @@
+# Checks on every push and pull request (docs/ci.md): the frontend tests
+# (plain and under sanitizers), the frontend cross-compiled for 32- and
+# 64-bit ARM, the board script tests, the defconfigs, and linters.
+# The images themselves are built by images.yml.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run per branch or pull request: a new push cancels the previous run,
+# except on the default branch, where every commit keeps its result.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  frontend:
+    name: frontend make ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [check, check-asan]
+    env:
+      BUILDDIR: ${{ github.workspace }}/../frontend-build
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install dependencies
+        run: sh scripts/ci/install-deps.sh frontend
+      - name: Allow ASan on the runner kernel
+        if: matrix.target == 'check-asan'
+        # Ubuntu 24.04 kernels randomize with 32 bits, which the GCC 13
+        # sanitizer runtime cannot map around ("AddressSanitizer:DEADLYSIGNAL").
+        run: sudo sysctl -w vm.mmap_rnd_bits=28
+      - name: Build
+        if: matrix.target == 'check'
+        run: make -C frontend -j"$(nproc)" BUILDDIR="$BUILDDIR" all uipreview
+      - name: make ${{ matrix.target }}
+        # the checks themselves run one at a time: several use wall-clock waits
+        run: make -C frontend BUILDDIR="$BUILDDIR" ${{ matrix.target }}
+
+  frontend-cross:
+    name: frontend cross-compile (${{ matrix.triple }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        triple: [arm-linux-gnueabihf, aarch64-linux-gnu]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the cross compilers and the target libdrm/alsa-lib
+        run: sh scripts/ci/install-deps.sh cross
+      - name: make all for ${{ matrix.triple }}
+        run: sh scripts/ci/frontend-cross.sh ${{ matrix.triple }}
+
+  board-tests:
+    name: board script tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install dependencies
+        run: sh scripts/ci/install-deps.sh tests
+      - name: board/common/tests (U-Boot host tools built from source)
+        run: sh scripts/ci/run-tests.sh host
+
+  buildroot-config:
+    name: defconfigs and packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install dependencies
+        run: sh scripts/ci/install-deps.sh buildroot lint
+      - name: The board list of images.yml
+        run: |
+          sh scripts/ci/list-boards.sh release
+          sh scripts/ci/list-boards.sh all > /dev/null
+      - name: Every defconfig loads without dropping a symbol
+        run: sh scripts/ci/check-defconfigs.sh
+      - name: Buildroot check-package (report only)
+        run: sh scripts/ci/check-package.sh
+
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install dependencies
+        run: sh scripts/ci/install-deps.sh lint
+      - name: Scripts are executable in git
+        run: sh scripts/ci/check-modes.sh
+      - name: actionlint (workflows)
+        run: sh scripts/ci/actionlint.sh
+      - name: shellcheck (report only, except scripts/ci)
+        run: sh scripts/ci/shellcheck.sh

@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: atari7800 sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>b5651d</accent>
+		<icon>carbon/atari7800</icon>
+		<tagline>Atari · 1986</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

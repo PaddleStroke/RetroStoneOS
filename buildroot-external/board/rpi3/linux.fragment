@@ -1,0 +1,33 @@
+# Raspberry Pi 3 / 3B+ / Zero 2 W (64-bit) kernel options, merged on top of
+# bcm2711_defconfig (as Buildroot's raspberrypi3_64_defconfig) and
+# board/common/linux-rsos.fragment. Community-tested port (docs/boards.md).
+#
+# bcm2711_defconfig builds most drivers as modules; with no udev nothing
+# would load them, so what the menu needs is built in.
+
+# --- Display and GPU: vc4 (KMS on HDMI + the V3D 2.x 3D core of the Pi 0-3),
+# HDMI audio through ASoC. (The DRM_V3D driver is for the Pi 4/5 GPU only.)
+CONFIG_DRM_VC4=y
+CONFIG_SND_SOC=y
+
+# --- CPU frequency (firmware clock driver)
+CONFIG_ARM_RASPBERRYPI_CPUFREQ=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y
+
+# --- Watchdog (the frontend pets /dev/watchdog)
+CONFIG_BCM2835_WDT=y
+
+# --- Power key: a GPIO button overlay (gpio-shutdown, gpio-key) registers a
+# gpio-keys device reporting KEY_POWER; it must be built in (no udev)
+CONFIG_KEYBOARD_GPIO=y
+
+# --- USB host (dwc_otg) and the USB Ethernet chips (3B: SMSC9514, 3B+:
+# LAN7515) built in: rsos-net only brings eth0 up and down
+CONFIG_USB_NET_SMSC95XX=y
+CONFIG_USB_LAN78XX=y
+
+# --- WiFi / Bluetooth stay modules (rsos-net loads them)
+CONFIG_BRCMFMAC=m
+CONFIG_BT=m
+CONFIG_BT_HCIUART=m
+CONFIG_BT_HCIUART_BCM=y

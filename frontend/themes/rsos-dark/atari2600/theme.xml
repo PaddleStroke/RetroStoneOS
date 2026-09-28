@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: atari2600 sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>a0522d</accent>
+		<icon>carbon/atari2600</icon>
+		<tagline>Atari · 1977</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

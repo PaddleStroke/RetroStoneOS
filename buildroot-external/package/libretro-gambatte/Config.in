@@ -1,0 +1,17 @@
+config BR2_PACKAGE_LIBRETRO_GAMBATTE
+	bool "libretro-gambatte"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Gambatte: accurate Game Boy / Game Boy Color emulator, built
+	  as a libretro core.
+
+	  Installs /usr/lib/libretro/gambatte_libretro.so and
+	  /usr/share/rsos/cores/gambatte.ini.
+
+	  https://github.com/libretro/gambatte-libretro
+
+comment "libretro-gambatte needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

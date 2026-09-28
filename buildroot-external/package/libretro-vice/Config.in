@@ -1,0 +1,19 @@
+config BR2_PACKAGE_LIBRETRO_VICE
+	bool "libretro-vice (x64)"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP # reSID
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  VICE, the Versatile Commodore Emulator: its fast Commodore 64
+	  emulator "x64" (not the cycle-exact x64sc), built as a libretro
+	  core. The C64 and 1541 ROMs are built into the core by
+	  upstream. Has its own on-screen keyboard.
+
+	  Installs /usr/lib/libretro/vice_x64_libretro.so and
+	  /usr/share/rsos/cores/vice_x64.ini. ROM folder: c64.
+
+	  https://github.com/libretro/vice-libretro
+
+comment "libretro-vice needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

@@ -1,0 +1,126 @@
+[   10.397] frontend: starting (pid 220)
+[    10.412] display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[    10.423] display: plane 33: none
+[    10.424] display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[    10.449] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[    10.462] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[   10.462] frontend: output init: Unknown-1 640x480@78.571 Hz, UI 640x480
+[   10.472] frontend: splash: 11114 bytes, 640x480, shown 76 ms after start (read 237 us, decode + present 10050 us)
+[  10.474] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[  10.476] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[  10.620] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[  10.621] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[  10.672] ui I: ui: created in 50466 us, theme rsos-dark
+[  10.672] ui I: ui: logical size 640x480
+[  10.756] ui I: games: /data/roms/nes/gamelist.xml: 2 entries matched
+[  10.759] ui I: games: nes: scanned 2 games in 87520 us
+[   10.781] frontend: first frame 384 ms after start (ui_create 50466 us)
+[power] PEK force-off 6000 ms, power-on hold 1000 ms
+[power] battery 73 % 3864 mV discharging, charger off, boot key
+[   10.924] frontend: power: mode normal, battery 73 %
+[  11.104] ui I: games: fds: scanned 0 games in 178387 us
+[  11.111] ui I: games: snes: scanned 0 games in 1127 us
+[  11.159] ui I: games: n64: scanned 0 games in 48306 us
+[  11.195] ui I: games: /data/roms/gb/gamelist.xml: 5 entries matched
+[  11.196] ui I: games: gb: scanned 5 games in 31554 us
+[  11.309] ui I: games: /data/roms/gbc/gamelist.xml: 1 entries matched
+[  11.310] ui I: games: gbc: scanned 1 games in 108553 us
+[  11.425] ui I: games: gba: scanned 0 games in 109715 us
+[  11.431] ui I: games: sg1000: scanned 0 games in 1332 us
+[  11.540] ui I: games: mastersystem: scanned 0 games in 109146 us
+[  11.652] ui I: games: /data/roms/megadrive/gamelist.xml: 3 entries matched
+[  11.653] ui I: games: megadrive: scanned 3 games in 108245 us
+[  11.659] ui I: games: segacd: scanned 0 games in 1046 us
+[  11.660] ui I: games: sega32x: scanned 0 games in 932 us
+[  11.661] ui I: games: pico: scanned 0 games in 719 us
+[  11.771] ui I: games: gamegear: scanned 0 games in 110332 us
+[  11.777] ui I: games: psx: scanned 0 games in 978 us
+[  11.778] ui I: games: pcengine: scanned 0 games in 849 us
+[  11.779] ui I: games: pcenginecd: scanned 0 games in 708 us
+[  11.779] ui I: games: ngp: scanned 0 games in 673 us
+[  11.780] ui I: games: ngpc: scanned 0 games in 773 us
+[  11.781] ui I: games: wonderswan: scanned 0 games in 653 us
+[  11.782] ui I: games: wonderswancolor: scanned 0 games in 692 us
+[  11.892] ui I: games: atari2600: scanned 0 games in 109449 us
+[  12.005] ui I: games: atari7800: scanned 0 games in 109016 us
+[  12.120] ui I: games: atarilynx: scanned 0 games in 109798 us
+[  12.234] ui I: games: coleco: scanned 0 games in 109180 us
+[  12.348] ui I: games: msx: scanned 0 games in 109262 us
+[  12.482] ui I: games: arcade: scanned 0 games in 129255 us
+[  12.573] ui I: games: fbneo: scanned 0 games in 84814 us
+[  12.603] ui I: games: neogeo: scanned 0 games in 25294 us
+[  12.620] ui I: games: neocd: scanned 0 games in 17429 us
+[  12.633] ui I: ui: menu style bg fa1b1e23 dim 99000000 text ffeceef1 selector ff3d7bd9
+[  12.640] ui I: ui: 4 systems, 11 games loaded in 1966386 us
+[  13.347] ui I: ui: first frame in 706749 us (theme parsing 28007 us)
+[   13.351] frontend: menu up: running /usr/bin/rsos-boot-ok
+[   66.813] frontend: setting hdmi_mode = 720p
+[   67.246] frontend: setting hdmi_mode = 1080p
+[   67.645] frontend: setting hdmi_mode = auto
+[   67.909] frontend: setting hdmi_mode = 720p
+[   68.480] frontend: setting hdmi_mode = auto
+[  75.117] ui I: ui: launch "Retroid" (/data/roms/gb/Retroid.gb) with gambatte
+[    75.255] display: suspended: DRM master dropped
+[   75.255] frontend: launch Retroid (/data/roms/gb/Retroid.gb) with /usr/lib/libretro/gambatte_libretro.so
+[    75.258] host I: game process 1066 started: /usr/lib/libretro/gambatte_libretro.so /data/roms/gb/Retroid.gb
+[   115.313] host I: game process 1066 exited: 0
+[   115.321] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[   115.322] display: resumed on Unknown-1 in 9 ms
+[  115.323] frontend: game ended: status 0, exit 0
+[ 153.896] ui I: ui: launch "Liquid Space Dodger" (/data/roms/megadrive/Liquid Space Dodger Version 3.bin) with picodrive
+[ 153.994] ui I: input: remap /usr/share/rsos/remaps/megadrive.ini
+[   153.994] display: suspended: DRM master dropped
+[  153.994] frontend: launch Liquid Space Dodger (/data/roms/megadrive/Liquid Space Dodger Version 3.bin) with /usr/lib/libretro/picodrive_libretro.so
+[   153.997] host I: game process 2124 started: /usr/lib/libretro/picodrive_libretro.so /data/roms/megadrive/Liquid Space Dodger Version 3.bin
+[   192.413] host I: game process 2124 exited: 0
+[   192.423] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[   192.423] display: resumed on Unknown-1 in 10 ms
+[  192.424] frontend: game ended: status 0, exit 0
+[   216.460] display: hotplug uevent (connector 70), debounce 250 ms
+[   216.780] display: switching to HDMI-A-1 "LG HDR WQHD": 1280x720@60.00 on crtc 49 (index 0)
+[   216.801] display: plane 33: XR24 640x480 scaled to 960x720+160+0 (converted)
+[   216.801] display: output now HDMI-A-1 1280x720@60.00 (external) crtc 49 plane 33, path hw-scaled
+[   216.801] display: switch latency: uevent->probe 250 ms, probe->commit 91 ms, total 341 ms
+[   216.817] display: plane 33: XR24 854x480 scaled to 960x720+160+0 (converted)
+[   216.834] display: plane 33: XR24 854x480 scaled to 1280x719+0+0 (converted)
+[  216.834] frontend: output hotplug: HDMI-A-1 1280x720@60.000 Hz, UI 854x480, 341 ms after the uevent
+[ 216.834] ui I: ui: logical size 854x480
+[  218.616] frontend: re-opening the display for the new HDMI mode
+[   218.688] display: switching to HDMI-A-1 "LG HDR WQHD": 1280x720@60.00 on crtc 49 (index 0)
+[   218.701] display: plane 33: none
+[   218.701] display: output now HDMI-A-1 1280x720@60.00 (external) crtc 49 plane 33, path none
+[   218.717] display: plane 33: XR24 854x480 scaled to 1280x719+0+0 (converted)
+[   218.734] display: plane 33: XR24 854x480 scaled to 1280x719+0+0 (converted)
+[  218.734] frontend: output init: HDMI-A-1 1280x720@60.000 Hz, UI 854x480
+[ 232.532] ui I: ui: launch "Retroid" (/data/roms/gb/Retroid.gb) with gambatte
+[   232.622] display: suspended: DRM master dropped
+[  232.622] frontend: launch Retroid (/data/roms/gb/Retroid.gb) with /usr/lib/libretro/gambatte_libretro.so
+[   232.625] host I: game process 3182 started: /usr/lib/libretro/gambatte_libretro.so /data/roms/gb/Retroid.gb
+[   271.384] host I: game process 3182 exited: 0
+[   271.384] display: output changed during the game
+[   271.384] display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[   271.389] display: plane 33: XR24 854x480 scaled to 640x360+0+60 (converted)
+[   271.390] display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path hw-scaled
+[   271.402] display: plane 33: XR24 640x480 scaled to 640x360+0+60 (converted)
+[   271.415] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[  271.415] frontend: output hotplug: Unknown-1 640x480@78.571 Hz, UI 640x480
+[   271.415] display: resumed on Unknown-1 in 31 ms
+[  271.416] frontend: game ended: status 0, exit 0
+[ 271.464] ui I: ui: logical size 640x480
+[power] sleep (auto power-off in 15 min)
+[  276.210] frontend: sleep
+[   276.211] display: screen off (Unknown-1) in 1 ms
+[power] wake after 88 s
+[  364.484] frontend: wake
+[   364.500] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[   364.500] display: screen on (Unknown-1) in 16 ms
+[power] sleep (auto power-off in 15 min)
+[  378.260] frontend: sleep
+[   378.261] display: screen off (Unknown-1) in 1 ms
+[power] wake after 2 s
+[  380.604] frontend: wake
+[   380.620] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[   380.620] display: screen on (Unknown-1) in 16 ms
+[power] sleep (auto power-off in 15 min)
+[  384.920] frontend: sleep
+[   384.921] display: screen off (Unknown-1) in 1 ms

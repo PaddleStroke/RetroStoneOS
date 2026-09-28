@@ -1,0 +1,7 @@
+boot started (clock may be approximate): Sun Sep 27 08:35:41 UTC 2026
+cmdline: console=ttyS0,115200 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait ro quiet panic=10 consoleblank=0 driver_async_probe=dw-apb-uart,musb-sunxi,sun4i-ts rsos.slot=a 
+bootreason: key
+u-boot env: rsos_ok=1 rsos_p=2 rsos_part_a=2 rsos_part_b=3 rsos_slot=a rsos_tries=0 
+menu up: 362 ms after the frontend started (logger waited 0 s)
+data mount: /dev/mmcblk0p1 /data exfat rw,noatime,fmask=0022,dmask=0022,iocharset=utf8,errors=remount-ro 0 0
+io scheduler: none [mq-deadline] 

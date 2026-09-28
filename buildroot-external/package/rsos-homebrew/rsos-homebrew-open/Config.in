@@ -1,0 +1,12 @@
+config BR2_PACKAGE_RSOS_HOMEBREW_OPEN
+	bool "rsos-homebrew-open (open-licence supplement)"
+	depends on BR2_PACKAGE_RSOS_HOMEBREW # rsos-seed-homebrew
+	help
+	  Optional supplement of open-licence homebrew games for the
+	  systems that have no game in the approved set (SNES, GBA,
+	  Master System, Game Gear, PS1, arcade). Downloaded from the
+	  authors' releases and checked against
+	  rsos-homebrew-open.hash. Default off until the owner has
+	  reviewed the list in docs/homebrew.md.
+
+	  The game list is still empty: the research is not finished.

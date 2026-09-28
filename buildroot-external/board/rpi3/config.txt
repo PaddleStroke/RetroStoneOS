@@ -1,0 +1,29 @@
+# RetroStoneOS for the Raspberry Pi 3 / 3B+ / Zero 2 W (64-bit): firmware
+# configuration. Community-tested port (docs/boards.md): not tested on
+# hardware by the RetroStoneOS developers.
+# https://www.raspberrypi.com/documentation/computers/config_txt.html
+
+start_file=start.elf
+fixup_file=fixup.dat
+kernel=Image
+arm_64bit=1
+
+# The frontend drives the display with DRM/KMS: the vc4 driver does both the
+# HDMI output and the 3D (Mesa vc4, GLES 2.0 for the N64 cores) on the
+# Pi 0-3. Its buffers come from CMA (the overlay's default size).
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+disable_overscan=1
+
+# Faster boot: no rainbow splash, no boot delay.
+disable_splash=1
+boot_delay=0
+
+# Serial console on GPIO 14/15: the PL011 (ttyAMA0). Bluetooth moves to the
+# mini UART (miniuart-bt; enable_uart=1 keeps the core clock fixed for it).
+enable_uart=1
+dtoverlay=miniuart-bt
+
+# Sound goes to the TV (vc4 HDMI audio); the 3.5 mm jack is not used (the
+# frontend's audio follows the display, which is always HDMI here).
+dtparam=audio=off

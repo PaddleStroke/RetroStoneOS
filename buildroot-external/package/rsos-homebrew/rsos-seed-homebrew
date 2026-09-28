@@ -1,0 +1,173 @@
+#!/bin/sh
+# rsos-seed-homebrew - copy the bundled homebrew games to the data partition.
+#
+# Usage: rsos-seed-homebrew [--force] [DATA_DIR]      (DATA_DIR default: /data)
+#
+# Copies every system folder of /usr/share/rsos/homebrew/<system>/ (ROMs,
+# media/ and gamelist.xml) into DATA_DIR/roms/<system>/:
+#   - a file that already exists on the data partition is never overwritten;
+#   - gamelist.xml is merged: our <game> entries are appended to the user's
+#     gamelist.xml, except those whose <path> the user's file already has.
+#     The user's own entries are never changed.
+# Then it writes the marker DATA_DIR/rsos/homebrew-seeded, and from then on it
+# does nothing (unless --force: "restore the bundled games", which still
+# never overwrites or deletes anything).
+#
+# Called once by the first-boot code, right after the roms/ folders are
+# created (see docs/homebrew.md). Exit status: 0 on success or when there is
+# nothing to do, 1 on error (the marker is not written then, so the next
+# boot tries again).
+
+SRC=${RSOS_HOMEBREW_SRC:-/usr/share/rsos/homebrew}
+FORCE=0
+if [ "$1" = "--force" ]; then
+	FORCE=1
+	shift
+fi
+DATA=${1:-/data}
+MARKER=$DATA/rsos/homebrew-seeded
+
+msg() {
+	echo "rsos-seed-homebrew: $*"
+}
+
+[ "$FORCE" = 1 ] || [ ! -e "$MARKER" ] || exit 0
+[ -d "$SRC" ] || exit 0
+if [ ! -d "$DATA" ]; then
+	msg "$DATA does not exist"
+	exit 1
+fi
+
+err=0
+
+# copy_tree SRC_DIR DST_DIR: recursive copy that keeps existing files and
+# skips gamelist.xml (merged separately). exFAT has no owners or modes, so
+# plain cp (no -p). Names may contain spaces.
+copy_tree() {
+	mkdir -p "$2" || return 1
+	for f in "$1"/* "$1"/.[!.]*; do
+		[ -e "$f" ] || continue
+		b=${f##*/}
+		if [ -d "$f" ]; then
+			copy_tree "$f" "$2/$b" || return 1
+		elif [ "$b" = gamelist.xml ] && [ "$1" = "$3" ]; then
+			continue
+		elif [ ! -e "$2/$b" ]; then
+			cp "$f" "$2/$b.rsos-tmp" && mv -f "$2/$b.rsos-tmp" "$2/$b" ||
+				{ rm -f "$2/$b.rsos-tmp"; return 1; }
+		fi
+	done
+}
+
+# merge_gamelist OURS THEIRS: append to THEIRS the <game> blocks of OURS
+# whose <path> THEIRS does not list yet. Paths are compared without a
+# leading "./". THEIRS is replaced atomically. If THEIRS has no closing
+# </gameList> (or is a self-closing <gameList/>), it is left alone.
+merge_gamelist() {
+	if [ ! -e "$2" ]; then
+		cp "$1" "$2.rsos-tmp" && mv -f "$2.rsos-tmp" "$2"
+		return
+	fi
+	awk -v theirs="$2" '
+	function norm(p) {
+		gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", p)
+		sub(/^\.\//, "", p)
+		return p
+	}
+	# every <path>...</path> of a whole document
+	function paths(doc, set,    s, a, b) {
+		s = doc
+		while ((a = index(s, "<path>")) > 0) {
+			s = substr(s, a + 6)
+			b = index(s, "</path>")
+			if (b == 0)
+				break
+			set[norm(substr(s, 1, b - 1))] = 1
+			s = substr(s, b + 7)
+		}
+	}
+	BEGIN {
+		while ((getline line < theirs) > 0)
+			t = t line "\n"
+		close(theirs)
+		paths(t, have)
+	}
+	{ o = o $0 "\n" }
+	END {
+		# the <game> blocks of our (generated, well-formed) gamelist
+		s = o
+		add = ""
+		while ((a = index(s, "<game>")) > 0) {
+			s = substr(s, a)
+			b = index(s, "</game>")
+			if (b == 0)
+				break
+			blk = substr(s, 1, b + 6)
+			s = substr(s, b + 7)
+			p = blk
+			i = index(p, "<path>")
+			j = index(p, "</path>")
+			if (i == 0 || j <= i)
+				continue
+			p = norm(substr(p, i + 6, j - i - 6))
+			if (!(p in have))
+				add = add "\t" blk "\n"
+		}
+		if (add == "") {
+			print "same"
+			exit 0
+		}
+		# insert before the last </gameList>
+		s = t
+		pos = 0
+		while ((k = index(s, "</gameList>")) > 0) {
+			pos += k
+			s = substr(s, k + 1)
+		}
+		if (pos == 0) {
+			print "noclose"
+			exit 0
+		}
+		printf "%s%s%s", substr(t, 1, pos - 1), add, substr(t, pos) > (theirs ".rsos-tmp")
+		close(theirs ".rsos-tmp")
+		print "merged"
+	}' "$1" > "$2.rsos-res" || { rm -f "$2.rsos-res" "$2.rsos-tmp"; return 1; }
+	res=$(cat "$2.rsos-res")
+	rm -f "$2.rsos-res"
+	case "$res" in
+	merged)
+		mv -f "$2.rsos-tmp" "$2" ;;
+	noclose)
+		msg "$2 has no </gameList>, left unchanged"
+		rm -f "$2.rsos-tmp" ;;
+	same)
+		rm -f "$2.rsos-tmp" ;;
+	*)
+		rm -f "$2.rsos-tmp"
+		return 1 ;;
+	esac
+}
+
+for sysdir in "$SRC"/*/; do
+	[ -d "$sysdir" ] || continue
+	sysdir=${sysdir%/}
+	sys=${sysdir##*/}
+	dst=$DATA/roms/$sys
+	if ! copy_tree "$sysdir" "$dst" "$sysdir"; then
+		msg "copying $sys failed"
+		err=1
+		continue
+	fi
+	if [ -f "$sysdir/gamelist.xml" ] &&
+	   ! merge_gamelist "$sysdir/gamelist.xml" "$dst/gamelist.xml"; then
+		msg "merging $dst/gamelist.xml failed"
+		err=1
+	fi
+done
+
+sync
+if [ "$err" = 0 ]; then
+	mkdir -p "${MARKER%/*}" && date > "$MARKER" && sync
+	msg "bundled games copied to $DATA/roms"
+fi
+exit "$err"

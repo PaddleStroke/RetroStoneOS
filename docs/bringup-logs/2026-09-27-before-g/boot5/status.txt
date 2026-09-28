@@ -1,0 +1,24 @@
+uptime: 19.11 27.97  load: 0.13 0.03 0.01 1/87 473
+cpufreq /sys/devices/system/cpu/cpufreq/policy0: cur=960000 gov=performance min=720000 max=960000
+regulator vdd-cpu: 1400000 uV
+regulator vdd-int-dll: 1250000 uV
+temp /sys/class/thermal/thermal_zone0/temp: 40800
+battery %: 65
+battery uV: 3815900
+sd card (reads, merged, sectors, ms, writes, merged, sectors, ms, ...):      433     1627    45215     2547      100      266      713     3663        0        0     6210        0        0        0        0        0        0
+--- top
+Mem: 57096K used, 970956K free, 36K shrd, 7604K buff, 15304K cached
+CPU:   9% usr   4% sys   0% nic  86% idle   0% io   0% irq   0% sirq
+Load average: 0.13 0.03 0.01 1/88 498
+  PID  PPID USER     STAT   VSZ %VSZ %CPU COMMAND
+  447   104 root     S    26788   3%   9% /proc/self/exe --run --core /usr/lib/libretro/gambatte_libretro.so --rom /data/roms/gb/Espionage.gb --system gb --status-fd 3 --no-governor --load-state auto --hdmi 1280x720 --p1-device builtin
+  104     1 root     S    39244   4%   0% /usr/bin/rsos-frontend
+  108     1 root     S     2836   0%   0% {bootlog} /bin/sh /usr/libexec/rsos/bootlog
+    1     0 root     S     2836   0%   0% init
+  497   108 root     R     2836   0%   0% top -b -n 1
+  106     1 root     S     2836   0%   0% -/bin/sh
+  498   108 root     S     2836   0%   0% head -15
+   67     2 root     IW       0   0%   0% [kworker/1:3-eve]
+   44     2 root     IW       0   0%   0% [kworker/0:8-pm]
+   54     2 root     IW       0   0%   0% [kworker/0:18-pm]
+   14     2 root     IW       0   0%   0% [rcu_sched]

@@ -1,0 +1,59 @@
+# libretro emulator cores, installed to /usr/lib/libretro/ with their
+# RetroStoneOS metadata in /usr/share/rsos/cores/.
+# Sourced once from buildroot-external/Config.in:
+#   source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-cores.Config.in"
+# Each package's Config.in is self-contained; this file only groups them.
+
+menu "libretro cores"
+
+# The architectures the core packages know how to build for
+# (package/libretro-common.mk, docs/cores.md "Architectures"):
+config BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	bool
+	# the RetroStone2 (Allwinner A20): the rpi2 platforms force -mcpu=cortex-a7
+	default y if BR2_arm && BR2_cortex_a7 && BR2_ARM_EABIHF
+	# Raspberry Pi 3/4/5 in 64-bit mode, other arm64 boards
+	default y if BR2_aarch64
+	# PC / virtual machine test builds
+	default y if BR2_x86_64
+
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-fceumm/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-snes9x2005/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-snes9x2010/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-picodrive/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-gambatte/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-gpsp/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-pcsx-rearmed/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-mame2003-plus/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-fbneo/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-parallel-n64/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-mupen64plus-next/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-beetle-pce-fast/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-stella2014/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-prosystem/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-handy/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-beetle-ngp/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-beetle-wswan/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-gearsystem/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-smsplus-gx/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-gearboy/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-gearcoleco/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-bluemsx/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-beetle-supafaust/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-clownmdemu/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-geolith/Config.in"
+# Third batch: computers, fantasy consoles, game engines (docs/cores.md)
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-prboom/Config.in"
+# Freedoom, the free game for prboom (data only; seeded like rsos-homebrew)
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/rsos-freedoom/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-fake08/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-dosbox-pure/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-scummvm/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-nxengine/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-beetle-supergrafx/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-fuse/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-cap32/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-pokemini/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-vice/Config.in"
+
+endmenu

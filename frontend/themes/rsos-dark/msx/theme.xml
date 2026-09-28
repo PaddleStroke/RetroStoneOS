@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: msx sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>5d6d7e</accent>
+		<icon>carbon/msx</icon>
+		<tagline>Home computer · 1983</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

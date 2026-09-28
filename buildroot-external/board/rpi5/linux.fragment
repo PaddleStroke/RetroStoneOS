@@ -1,0 +1,41 @@
+# Raspberry Pi 5 kernel options, merged on top of bcm2712_defconfig,
+# Buildroot's board/raspberrypi/linux-4k-page-size.fragment and
+# board/common/linux-rsos.fragment. Community-tested port (docs/boards.md).
+#
+# 4 KiB pages (instead of bcm2712_defconfig's 16 KiB): the dynarecs of the
+# cores (pcsx_rearmed, gpsp, the N64 cores, ...) and some libraries assume
+# 4 KiB pages.
+#
+# bcm2712_defconfig builds most drivers as modules; with no udev nothing
+# would load them, so what the menu needs is built in.
+
+# --- Display (vc4 KMS, HDMI) and GPU (V3D 7.1), HDMI audio through ASoC
+CONFIG_DRM_VC4=y
+CONFIG_DRM_V3D=y
+CONFIG_SND_SOC=y
+
+# --- CPU frequency (firmware clock driver)
+CONFIG_ARM_RASPBERRYPI_CPUFREQ=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y
+
+# --- Watchdog (the frontend pets /dev/watchdog)
+CONFIG_BCM2835_WDT=y
+
+# --- The power button ("pwr_button" gpio-keys, KEY_POWER): the frontend's
+# power key. Built in (no udev).
+CONFIG_KEYBOARD_GPIO=y
+
+# --- USB, Ethernet, UARTs and GPIOs are behind the RP1 south bridge on
+# PCIe: all built in (the USB pads must work without module loading)
+CONFIG_PCIE_BRCMSTB=y
+CONFIG_MFD_RP1=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_USB_XHCI_PLATFORM=y
+CONFIG_USB_DWC3=y
+CONFIG_MACB=y
+
+# --- WiFi / Bluetooth stay modules (rsos-net loads them)
+CONFIG_BRCMFMAC=m
+CONFIG_BT=m
+CONFIG_BT_HCIUART=m
+CONFIG_BT_HCIUART_BCM=y

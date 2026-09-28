@@ -1,0 +1,122 @@
+
+=== [    3.038] launch: /usr/lib/libretro/gambatte_libretro.so /data/roms/gb/Into the Blue.gb system gb
+[     3.051] host I: game process: core gambatte, system gb, content /data/roms/gb/Into the Blue.gb
+[     3.222] host I: core: Gambatte v0.5.0 (need_fullpath 0, extensions gb|gbc|dmg)
+[     3.223] host I: core options: 0 package, 0 shipped, 0 system, 0 game overrides
+[   3.234] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   3.235] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[   3.235] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   3.236] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[     3.236] host I: input: launched by builtin (player 1 under the auto policy)
+[     3.236] host I: input: input layer, player 1 auto, C/Z buttons no
+[     3.236] host I: lcd refresh: the panel's own mode (78.6 Hz)
+[     3.240] host I: display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[     3.254] host I: display: plane 33: none
+[     3.254] host I: display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[     3.254] host I: output: Unknown-1 640x480@78.571 (reason 0)
+[     3.260] host I: core declared 17 options
+[     3.261] host I: core performance level: 4
+[     3.269] host I: content in memory: 131072 bytes
+[     3.269] host I: [gambatte] [Gambatte] Rumble environment supported.
+[     3.271] host I: pixel format RGB565
+[     3.271] host I: [gambatte] [Gambatte] MBC1 ROM loaded.
+[     3.271] host I: [gambatte] [Gambatte] rambanks: 0
+[     3.271] host I: [gambatte] [Gambatte] rombanks: 8
+[     3.276] host I: [gambatte] [Gambatte] Got internal game name: INTO THE BLUE.
+[     3.277] host I: retro_load_game: 8 ms
+[     3.277] host I: AV: 160x144 (max 160x144, aspect 1.111), 59.7275 fps, 32768.0 Hz
+[     3.279] host W: display: hw-scaled path rejected on Unknown-1/crtc 0: Invalid argument
+[     3.292] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[     3.292] host I: game surface 160x144 RGB565, hardware scaled
+[     3.305] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[     4.064] host I: audio: plughw:0,0 open, 48000 Hz, buffer 3072 frames (64.0 ms), period 768 (16.0 ms)
+[     4.068] host I: pacing: audio clock (core 59.7275 fps 32768.0 Hz, display 78.571 Hz, ratio 1.464844)
+[     4.074] host I: load state /data/states/gb/Into the Blue.state.auto (26861 bytes): ok
+[     4.074] host I: toast: Resumed
+[     4.075] host I: cpu: governor performance, 960 MHz (policy 720-960 MHz)
+[     4.107] host I: display: overlay: plane 37, 72x20 at 564,4
+[     5.048] host I: state /data/states/gb/Into the Blue.state.auto (26861 bytes)
+[     5.048] host I: auto state saved (exit): 27 KB in 326 ms
+[     5.048] host I: 39 frames, 38 presented, 2 skipped, 0 dupes
+[     5.065] host I: audio: plughw:0,0 closed (underruns 0, dropped 0 frames)
+
+=== [    8.488] launch: /usr/lib/libretro/gambatte_libretro.so /data/roms/gb/Espionage.gb system gb
+[     8.503] host I: game process: core gambatte, system gb, content /data/roms/gb/Espionage.gb
+[     8.521] host I: core: Gambatte v0.5.0 (need_fullpath 0, extensions gb|gbc|dmg)
+[     8.658] host I: core options: 0 package, 0 shipped, 0 system, 0 game overrides
+[   8.659] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   8.660] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[   8.660] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   8.661] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[     8.661] host I: input: launched by builtin (player 1 under the auto policy)
+[     8.661] host I: input: input layer, player 1 auto, C/Z buttons no
+[     8.661] host I: lcd refresh: the panel's own mode (78.6 Hz)
+[     8.665] host I: display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[     8.676] host I: display: plane 33: none
+[     8.676] host I: display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[     8.676] host I: output: Unknown-1 640x480@78.571 (reason 0)
+[     8.677] host I: core declared 17 options
+[     8.677] host I: core performance level: 4
+[     8.745] host I: content in memory: 65536 bytes
+[     8.745] host I: [gambatte] [Gambatte] Rumble environment supported.
+[     8.746] host I: pixel format RGB565
+[     8.746] host I: [gambatte] [Gambatte] MBC1 ROM loaded.
+[     8.746] host I: [gambatte] [Gambatte] rambanks: 0
+[     8.746] host I: [gambatte] [Gambatte] rombanks: 4
+[     8.746] host I: [gambatte] [Gambatte] Got internal game name: ESPIONAGE.
+[     8.747] host I: retro_load_game: 2 ms
+[     8.747] host I: AV: 160x144 (max 160x144, aspect 1.111), 59.7275 fps, 32768.0 Hz
+[     8.749] host W: display: hw-scaled path rejected on Unknown-1/crtc 0: Invalid argument
+[     8.765] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[     8.765] host I: game surface 160x144 RGB565, hardware scaled
+[     8.777] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[     8.789] host I: audio: plughw:0,0 open, 48000 Hz, buffer 3072 frames (64.0 ms), period 768 (16.0 ms)
+[     8.793] host I: pacing: audio clock (core 59.7275 fps 32768.0 Hz, display 78.571 Hz, ratio 1.464844)
+[     8.794] host I: cpu: governor performance, 960 MHz (policy 720-960 MHz)
+[     8.803] host I: display: overlay: plane 37, 72x20 at 564,4
+[    10.827] host I: display: refresh measured on Unknown-1: 78.571 Hz (159 vblanks in 2.023 s; mode 78.571 Hz)
+[    12.318] host I: state /data/states/gb/Espionage.state.auto (26861 bytes)
+[    12.318] host I: auto state saved (exit): 27 KB in 128 ms
+[    12.318] host I: 202 frames, 199 presented, 2 skipped, 1 dupes
+[    12.334] host I: audio: plughw:0,0 closed (underruns 0, dropped 0 frames)
+
+=== [   15.167] launch: /usr/lib/libretro/gambatte_libretro.so /data/roms/gb/Into the Blue.gb system gb
+[    15.182] host I: game process: core gambatte, system gb, content /data/roms/gb/Into the Blue.gb
+[    15.201] host I: core: Gambatte v0.5.0 (need_fullpath 0, extensions gb|gbc|dmg)
+[    15.201] host I: core options: 0 package, 0 shipped, 0 system, 0 game overrides
+[  15.203] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[  15.203] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[  15.204] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[  15.205] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[    15.205] host I: input: launched by builtin (player 1 under the auto policy)
+[    15.205] host I: input: input layer, player 1 auto, C/Z buttons no
+[    15.205] host I: lcd refresh: the panel's own mode (78.6 Hz)
+[    15.208] host I: display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[    15.218] host I: display: plane 33: none
+[    15.218] host I: display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[    15.218] host I: output: Unknown-1 640x480@78.571 (reason 0)
+[    15.219] host I: core declared 17 options
+[    15.219] host I: core performance level: 4
+[    15.221] host I: content in memory: 131072 bytes
+[    15.221] host I: [gambatte] [Gambatte] Rumble environment supported.
+[    15.221] host I: pixel format RGB565
+[    15.221] host I: [gambatte] [Gambatte] MBC1 ROM loaded.
+[    15.221] host I: [gambatte] [Gambatte] rambanks: 0
+[    15.221] host I: [gambatte] [Gambatte] rombanks: 8
+[    15.223] host I: [gambatte] [Gambatte] Got internal game name: INTO THE BLUE.
+[    15.223] host I: retro_load_game: 2 ms
+[    15.224] host I: AV: 160x144 (max 160x144, aspect 1.111), 59.7275 fps, 32768.0 Hz
+[    15.225] host W: display: hw-scaled path rejected on Unknown-1/crtc 0: Invalid argument
+[    15.230] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[    15.230] host I: game surface 160x144 RGB565, hardware scaled
+[    15.243] host I: display: plane 33: XR24 160x144 scaled to 533x480+53+0 (converted)
+[    15.254] host I: audio: plughw:0,0 open, 48000 Hz, buffer 3072 frames (64.0 ms), period 768 (16.0 ms)
+[    15.258] host I: pacing: audio clock (core 59.7275 fps 32768.0 Hz, display 78.571 Hz, ratio 1.464844)
+[    15.262] host I: load state /data/states/gb/Into the Blue.state.auto (26861 bytes): ok
+[    15.262] host I: toast: Resumed
+[    15.263] host I: cpu: governor performance, 960 MHz (policy 720-960 MHz)
+[    15.281] host I: display: overlay: plane 37, 72x20 at 564,4
+[    16.470] host I: state /data/states/gb/Into the Blue.state.auto (26861 bytes)
+[    16.470] host I: auto state saved (exit): 27 KB in 292 ms
+[    16.470] host I: 55 frames, 55 presented, 1 skipped, 0 dupes
+[    16.486] host I: audio: plughw:0,0 closed (underruns 0, dropped 0 frames)

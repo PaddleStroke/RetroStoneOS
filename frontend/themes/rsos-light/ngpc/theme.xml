@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: ngpc sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>2f86a6</accent>
+		<icon>carbon/ngp</icon>
+		<tagline>SNK · 1999</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

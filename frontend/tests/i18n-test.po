@@ -1,0 +1,56 @@
+# Test catalog for tests/test_i18n.c (make check-i18n compiles it as da.cat
+# in its own directory). Polish plural rule, contexts, escapes, a positional
+# format, and entries the compiler must drop.
+msgid ""
+msgstr ""
+"Language: da\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "Settings"
+msgstr "Indstillinger"
+
+msgctxt "settings"
+msgid "Power"
+msgstr "Tænd/sluk"
+
+msgctxt "power source"
+msgid "Power"
+msgstr "Strømkilde"
+
+msgid "Line one\nLine \"two\""
+msgstr "Linje et\nLinje \"to\""
+
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "%d spil i %s (one)"
+msgstr[1] "%d spil i %s (few)"
+msgstr[2] "%d spil i %s (many)"
+
+#, c-format
+msgid "Copied %d files to %s"
+msgstr "Til %2$s: %1$d filer"
+
+# a wrong type: must be dropped (English shown)
+#, c-format
+msgid "Slot %d is empty"
+msgstr "Plads %s er tom"
+
+# an extra conversion: must be dropped
+msgid "Hot, slowing down"
+msgstr "Varm %s"
+
+# fuzzy: ignored
+#, fuzzy
+msgid "Restart"
+msgstr "Genstart"
+
+# untranslated: English
+msgid "Power off"
+msgstr ""
+
+msgid "Unicode"
+msgstr "日本語 · Ελληνικά · Русский · ÆØÅ"

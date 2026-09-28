@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: pico sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>e06c9f</accent>
+		<icon>carbon/megadrive</icon>
+		<tagline>Sega · 1993</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

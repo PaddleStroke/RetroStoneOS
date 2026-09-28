@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: sega32x sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>b03a2e</accent>
+		<icon>carbon/sega32x</icon>
+		<tagline>Sega · 1994</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

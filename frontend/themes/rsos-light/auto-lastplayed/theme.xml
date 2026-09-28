@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: auto-lastplayed sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>16a085</accent>
+		<icon>carbon/auto-lastplayed</icon>
+		<tagline>Recently played</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

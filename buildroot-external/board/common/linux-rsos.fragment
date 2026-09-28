@@ -1,0 +1,96 @@
+# What RetroStoneOS needs from any board's kernel (docs/porting.md), merged
+# on top of the board's defconfig and before the board's own fragment.
+# (The RetroStone2 does not use this file: its linux.fragment already has
+# all of it, next to the A20 options and the boot-time trimming.)
+#
+# There is no udev/mdev: nothing loads a module when a device appears. What
+# the menu needs at boot, and every gamepad driver, is built in (=y).
+# Networking, USB mass storage, NTFS and the SMB server are loaded on demand
+# by rcS / rsos-net / the frontend with modprobe.
+
+# --- Boot: devtmpfs mounted by the kernel, no initramfs needed
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_TMPFS=y
+CONFIG_EXT4_FS=y
+# Modules uncompressed: BusyBox modprobe loads them directly
+# CONFIG_MODULE_COMPRESS is not set
+
+# --- Display: DRM/KMS (the board's driver is in its own fragment)
+CONFIG_DRM=y
+
+# --- Input: evdev, USB/Bluetooth HID and the common gamepads
+CONFIG_INPUT_EVDEV=y
+CONFIG_INPUT_JOYSTICK=y
+CONFIG_JOYSTICK_XPAD=y
+CONFIG_JOYSTICK_XPAD_FF=y
+CONFIG_JOYSTICK_XPAD_LEDS=y
+CONFIG_HID=y
+CONFIG_HID_GENERIC=y
+CONFIG_USB_HID=y
+CONFIG_UHID=y
+CONFIG_INPUT_FF_MEMLESS=y
+CONFIG_HID_SONY=y
+CONFIG_SONY_FF=y
+CONFIG_LEDS_CLASS_MULTICOLOR=y
+CONFIG_HID_PLAYSTATION=y
+CONFIG_PLAYSTATION_FF=y
+CONFIG_HID_NINTENDO=y
+CONFIG_NINTENDO_FF=y
+CONFIG_HID_MICROSOFT=y
+CONFIG_HID_LOGITECH=y
+CONFIG_LOGITECH_FF=y
+CONFIG_HID_DRAGONRISE=y
+CONFIG_DRAGONRISE_FF=y
+CONFIG_HID_GREENASIA=y
+CONFIG_GREENASIA_FF=y
+CONFIG_HID_SMARTJOYPLUS=y
+CONFIG_SMARTJOYPLUS_FF=y
+CONFIG_HID_STEAM=y
+CONFIG_HID_EMS_FF=y
+
+# --- Audio: ALSA (the board's codec / HDMI audio in its own fragment)
+CONFIG_SOUND=y
+CONFIG_SND=y
+
+# --- Data partition (exFAT, FAT32 seed), USB sticks, loop devices
+CONFIG_VFAT_FS=y
+CONFIG_EXFAT_FS=y
+CONFIG_NLS_UTF8=y
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_ISO8859_1=y
+CONFIG_NTFS3_FS=m
+CONFIG_BLK_DEV_LOOP=y
+
+# --- CPU governors the power module switches between (board.ini
+# cpu_governor_menu / cpu_governor_game)
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+
+# --- SMB share \\RETROSTONE (ksmbd): in the image, not wired yet (the
+# frontend will load it on demand; docs/build.md "Networking")
+CONFIG_SMB_SERVER=m
+
+# --- Robustness (review S7; the RetroStone2 has the same block in its
+# linux.fragment): a watchdog device for the frontend (the board fragment
+# builds its driver in), soft/hard lockups panic, a panic reboots after 10 s,
+# hung tasks are logged only (a slow card flushing a large copy can block
+# for minutes).
+CONFIG_WATCHDOG=y
+CONFIG_WATCHDOG_CORE=y
+CONFIG_WATCHDOG_HANDLE_BOOT_ENABLED=y
+CONFIG_WATCHDOG_OPEN_TIMEOUT=0
+CONFIG_PANIC_TIMEOUT=10
+CONFIG_SOFTLOCKUP_DETECTOR=y
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC=y
+CONFIG_HARDLOCKUP_DETECTOR=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC=y
+CONFIG_DETECT_HUNG_TASK=y
+CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
+# CONFIG_BOOTPARAM_HUNG_TASK_PANIC is not set
+CONFIG_THERMAL_EMERGENCY_POWEROFF_DELAY_MS=5000
+
+# --- Firmware straight from /lib/firmware (no udev helper)
+# CONFIG_FW_LOADER_USER_HELPER is not set

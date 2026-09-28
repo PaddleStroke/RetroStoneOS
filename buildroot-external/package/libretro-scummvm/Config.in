@@ -1,0 +1,26 @@
+config BR2_PACKAGE_LIBRETRO_SCUMMVM
+	bool "libretro-scummvm"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on BR2_TOOLCHAIN_GCC_AT_LEAST_8 # C++ 11/14 features
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  ScummVM's own libretro port: point-and-click adventure and RPG
+	  engines (SCUMM, AGI, SCI, Kyrandia, Broken Sword, Simon the
+	  Sorcerer, Beneath a Steel Sky, ...). Built with the upstream
+	  "lite" engine list (31 engines, docs/cores.md) and no OpenGL.
+	  The pad moves the mouse cursor.
+
+	  Installs /usr/lib/libretro/scummvm_libretro.so,
+	  /usr/share/rsos/cores/scummvm.ini and the engine data files and
+	  GUI theme in /usr/share/rsos/cores/scummvm/ (copied to the
+	  libretro system directory). ROM folder: scummvm.
+
+	  https://github.com/libretro/scummvm
+	  https://www.scummvm.org/
+
+comment "libretro-scummvm needs a toolchain w/ C++, threads, gcc >= 8, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || !BR2_TOOLCHAIN_HAS_THREADS || \
+		!BR2_TOOLCHAIN_GCC_AT_LEAST_8 || BR2_STATIC_LIBS

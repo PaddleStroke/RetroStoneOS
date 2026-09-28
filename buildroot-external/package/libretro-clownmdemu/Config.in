@@ -1,0 +1,19 @@
+config BR2_PACKAGE_LIBRETRO_CLOWNMDEMU
+	bool "libretro-clownmdemu (experimental)"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  ClownMDEmu: Sega Mega Drive / Genesis and Mega-CD / Sega CD
+	  emulator, built as a libretro core (AGPL-3.0+). Experimental
+	  licence-clean alternative to picodrive: an interpreter with no
+	  dynarec, speed on the 1 GHz A20 not measured yet. Needs no
+	  BIOS, also for Mega-CD.
+
+	  Installs /usr/lib/libretro/clownmdemu_libretro.so and
+	  /usr/share/rsos/cores/clownmdemu.ini.
+
+	  https://github.com/Clownacy/clownmdemu-libretro
+
+comment "libretro-clownmdemu needs a toolchain w/ dynamic library"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_STATIC_LIBS

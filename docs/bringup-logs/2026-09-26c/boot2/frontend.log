@@ -1,0 +1,33 @@
+[    1.546] frontend: starting (pid 121)
+[     1.561] display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[     1.577] display: plane 33: none
+[     1.577] display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[     1.601] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[     1.613] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[    1.614] frontend: output init: Unknown-1 640x480@78.571 Hz, UI 640x480
+[    1.625] frontend: splash: 11114 bytes, 640x480, shown 87 ms after start (read 3713 us, decode + present 7979 us)
+[   1.639] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   1.642] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[   1.800] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   1.801] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   1.984] ui I: ui: created in 182746 us, theme rsos-dark
+[   1.984] ui I: ui: logical size 640x480
+[     2.313] display: hotplug uevent (seq 1588), debounce 250 ms
+[    2.367] frontend: first frame 828 ms after start (ui_create 182746 us)
+[power] PEK force-off 6000 ms, power-on hold 1000 ms
+[power] battery 70 % 3851 mV discharging, charger off, boot key
+[    2.479] frontend: power: mode normal, battery 70 %
+[     2.670] display: hotplug: no change (Unknown-1 still 640x480@78.57)
+[   5.381] ui I: games: msx: scanned 0 games in 3956 us
+[   5.922] ui I: ui: menu style bg fa1b1e23 dim 99000000 text ffeceef1 selector ff3d7bd9
+[   5.925] ui I: ui: 5 systems, 11 games loaded in 3939057 us
+[   6.503] ui I: ui: first frame in 578089 us (theme parsing 35024 us)
+[    6.506] frontend: menu up: running /usr/bin/rsos-boot-ok
+[  14.856] ui I: ui: launch "Espionage" (/data/roms/gb/Espionage.gb) with gambatte
+[    15.077] display: suspended: DRM master dropped
+[   15.077] frontend: launch Espionage (/data/roms/gb/Espionage.gb) with /usr/lib/libretro/gambatte_libretro.so
+[    15.079] host I: game process 341 started: /usr/lib/libretro/gambatte_libretro.so /data/roms/gb/Espionage.gb
+[    17.372] host I: game process 341 exited: 0
+[    17.382] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[    17.382] display: resumed on Unknown-1 in 10 ms
+[   17.383] frontend: game ended: status 0, exit 0

@@ -1,0 +1,48 @@
+Homebrew games bundled with RetroStoneOS by permission of their authors
+======================================================================
+
+The games below are NOT under an open licence. Their authors gave 8BCraft,
+the maker of the RetroStone2, permission to ship them pre-installed with
+RetroStoneOS. The permission covers the RetroStoneOS images of every board
+(the RetroStone2 and the Raspberry Pi / Orange Pi images), and nothing else:
+
+  - the ROM files are not in the public RetroStoneOS git repository (they
+    are kept in a private repository and added to the images at build time);
+  - they must not be redistributed on their own, sold separately, or shipped
+    with any other product without asking the author again;
+  - all rights stay with the authors.
+
+8BCraft holds the correspondence. TODO(owner): store a copy of each
+permission e-mail in reference/permissions/ (keep that folder gitignored if
+the e-mails are private).
+
+Game Boy (gb)
+  Run to Databay (databay.gb), 2015, GBJAM 4
+      Game by Fredrik Brundin (Momeka). Story synopsis: Reggie Schildmeijer.
+      https://momeka.itch.io/run-to-databay - contact: fredrik@momeka.com
+      The author's ReadMe.txt is installed next to this file.
+  Espionage (Espionage.gb), v1.0, 2013, GBJAM
+      Game by Fredrik Brundin (Momeka). Additional art (title and game over
+      screens): Dominic Buchholz.
+      The author's "Read Me.txt" is installed next to this file.
+  Into the Blue (Into the Blue.gb, cover "Into the Blue.jpg"), 2018
+      Game by Jonas Fischbach. https://the-green-screen.com/
+  Retroid (Retroid.gb, cover "Retroid Cover Art.jpg"), 2016
+      Game by Jonas Fischbach. https://the-green-screen.com/
+  Rope & Bombs (ropeandbombs.gb), 2017
+      Game by Team Lampoil. https://teamlampoil.itch.io/rope-and-bombs
+
+NES (nes)
+  Nomolos: Storming the Catsle (nomolos.nes), 2012
+      Gradual Games. http://gradualgames.blogspot.com/
+  The Legends of Owlia (owlia.nes), 2016
+      Gradual Games. https://gradualgames.itch.io/the-legends-of-owlia
+
+Mega Drive / Genesis (megadrive)
+  Liquid Space Dodger, version 3 (Liquid Space Dodger Version 3.bin), 2015
+  Virtua Worm (Virtua Worm.bin), 2016
+  Virtua Worm 2 (Virtua Worm 2.bin), 2018
+      Games by ComradeOj (James L.), https://gendev.spritesmind.net/
+
+Also in the approved set, but under an open licence (no permission needed):
+  µCity (ucity.gbc), Game Boy Color - GPL-3.0+ / CC-BY-SA-4.0, see ucity/.

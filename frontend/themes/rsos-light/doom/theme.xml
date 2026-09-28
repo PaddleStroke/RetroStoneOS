@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: doom sets its accent color, console art (carbon/ports.svg: _art/carbon, CC BY-NC-SA: LICENSE.txt; an alias, Carbon has no doom art) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>b3432f</accent>
+		<icon>carbon/ports</icon>
+		<tagline>id Software engine · 1993</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

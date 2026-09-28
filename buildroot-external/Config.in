@@ -1,0 +1,85 @@
+config BR2_RETROSTONE_DTS_DIR
+	string "RetroStone2 device tree source directory"
+	help
+	  Directory holding sun7i-a20-retrostone2.dts (plus any .dtsi it
+	  includes, and overlays/*.dtso). They are copied into the
+	  kernel's arch/arm/boot/dts/allwinner/ before the kernel is
+	  built (see external.mk). Normally
+	  $(BR2_EXTERNAL_RETROSTONE_PATH)/board/retrostone2/dts.
+
+menu "RetroStoneOS build"
+
+config BR2_RETROSTONE_RELEASE
+	bool "Release build"
+	help
+	  Build a release image instead of a development image
+	  (docs/build.md, "Release build"; retrostone2_release_defconfig
+	  sets it):
+	  - boot.scr without "initcall_debug log_buf_len=1M" (RetroStone2);
+	  - the boot logger is light: one copy of the logs when the menu
+	    is up, one 10 s later, then every 10 minutes for an hour
+	    (rsos/logs/verbose on the card restores the development
+	    cadence, rsos/logs/disabled turns it off);
+	  - the shell on the debug UART stays open by default, as in
+	    development builds (below: a password or no shell are options);
+	  - no "-dev" in the version string.
+	  The release defconfig also makes U-Boot ignore the UART
+	  (bootdelay -2: board/retrostone2/uboot-release.fragment).
+
+config BR2_RETROSTONE_VERSION
+	string "OS version"
+	help
+	  The version this image reports (/etc/rsos-version, and
+	  /etc/rsos/version.env for the system updater, which compares it
+	  with the updates it finds: docs/updates.md), e.g. "0.2.0".
+	  Empty: the rsos-frontend package's version. CI sets it from the
+	  release tag (v0.2.0 -> 0.2.0; scripts/ci/build-board.sh).
+	  Development builds get "-dev" appended.
+
+choice
+	prompt "Shell on the debug UART"
+	default BR2_RETROSTONE_UART_SHELL_OPEN
+	help
+	  What init starts on the debug UART (board.ini serial_console,
+	  ttyS0 by default). Open by default in both development and
+	  release builds (owner's decision 2026-09-27: reaching the UART
+	  needs a cable and opening the case).
+
+config BR2_RETROSTONE_UART_SHELL_OPEN
+	bool "open: root shell, no login"
+
+config BR2_RETROSTONE_UART_SHELL_PASSWORD
+	bool "root login with a password"
+	select BR2_PACKAGE_HOST_MKPASSWD
+
+config BR2_RETROSTONE_UART_SHELL_DISABLED
+	bool "disabled: nothing on the UART"
+
+endchoice
+
+config BR2_RETROSTONE_UART_PASSWORD
+	string "Root password for the UART login"
+	depends on BR2_RETROSTONE_UART_SHELL_PASSWORD
+	default "CHANGE-ME"
+	help
+	  The root password (stored hashed, SHA-512, in /etc/shadow). The
+	  build stops while it is still the placeholder "CHANGE-ME": set
+	  your own with menuconfig, or with
+	    sed -i 's/^BR2_RETROSTONE_UART_PASSWORD=.*/BR2_RETROSTONE_UART_PASSWORD="..."/' .config
+	  in the output directory. No double quotes in the password.
+
+endmenu
+
+menu "RetroStoneOS packages"
+
+# Buildroot 2026.02 still ships the Linux 4.x kconfig: it has neither
+# "osource" nor wildcards in "source", so every package Config.in must be
+# listed by hand (external.mk picks up the .mk files automatically):
+#   source "$BR2_EXTERNAL_RETROSTONE_PATH/package/rsos-frontend/Config.in"
+# The libretro cores are grouped in package/libretro-cores.Config.in.
+
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/rsos-frontend/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-cores.Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/rsos-homebrew/Config.in"
+
+endmenu

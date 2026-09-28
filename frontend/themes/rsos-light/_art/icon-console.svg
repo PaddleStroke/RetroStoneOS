@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 150" width="240" height="150">
+<!-- RetroStoneOS original art: a generic gamepad silhouette (CC0 / same licence as the frontend) -->
+<path fill="#ffffff" fill-rule="evenodd" d="M60 25H180C215 25 235 50 235 80C235 112 212 132 188 132C170 132 160 122 152 110H88C80 122 70 132 52 132C28 132 5 112 5 80C5 50 25 25 60 25Z
+M55 57H69V71H83V85H69V99H55V85H41V71H55Z
+M169 60a9 9 0 1 0 18 0a9 9 0 1 0 -18 0Z
+M187 78a9 9 0 1 0 18 0a9 9 0 1 0 -18 0Z
+M169 96a9 9 0 1 0 18 0a9 9 0 1 0 -18 0Z
+M151 78a9 9 0 1 0 18 0a9 9 0 1 0 -18 0Z
+M98 74h18v7h-18Z M124 74h18v7h-18Z"/>
+</svg>

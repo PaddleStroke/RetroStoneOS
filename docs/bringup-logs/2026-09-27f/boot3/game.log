@@ -1,0 +1,150 @@
+
+=== [  386.841] launch: /usr/lib/libretro/parallel_n64_libretro.so /data/roms/n64/Super Mario 64.z64 system n64
+[   386.857] host I: game process: core parallel_n64, system n64, content /data/roms/n64/Super Mario 64.z64
+[   386.904] host I: system file /usr/share/rsos/cores/parallel_n64/gles2n64rom.conf -> /data/bios/gles2n64rom.conf: copied
+[   387.114] host I: core: ParaLLEl N64 1.0 git (need_fullpath 1, extensions n64|v64|z64|bin|u1|ndd|zip)
+[   387.122] host I: core options: 8 package, 8 shipped, 0 system, 0 game overrides
+[ 387.127] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[ 387.127] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[ 387.128] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[ 387.129] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   387.129] host I: input: launched by builtin (player 1 under the auto policy)
+[   387.129] host I: input: input layer, player 1 auto, C/Z buttons no
+[   387.132] host I: display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[   387.133] host I: display: plane 33: none
+[   387.133] host I: display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[   387.134] host I: output: Unknown-1 640x480@78.571 (reason 0)
+[   387.139] host I: core declared 100 options
+[   387.146] host I: pixel format XRGB8888
+[   387.146] host I: serialization quirks 0x2
+[   387.379] host I: core uses the audio buffer status callback (auto frameskip)
+[   387.414] host I: hw render: GLES2 requested (depth 1, stencil 0, bottom-left 1)
+[   387.811] host I: [parallel_n64] mupen64plus: Using full mem base
+[   387.871] host I: [parallel_n64] EmuThread: M64CMD_ROM_OPEN
+[   388.014] host I: [parallel_n64] mupen64plus: Goodname: Super Mario 64 (U) [!]
+[   388.014] host I: [parallel_n64] mupen64plus: Name: SUPER MARIO 64      
+[   388.014] host I: [parallel_n64] mupen64plus: MD5: 20B854B239203BAF6C961B850A4A51A2
+[   388.014] host I: [parallel_n64] mupen64plus: CRC: 635A2BFF 8B022326
+[   388.014] host I: [parallel_n64] mupen64plus: Imagetype: .z64 (native)
+[   388.014] host I: [parallel_n64] mupen64plus: Rom size: 8388608 bytes (or 8 Mb or 64 Megabits)
+[   388.014] host I: [parallel_n64] mupen64plus: Version: 1444
+[   388.014] host I: [parallel_n64] mupen64plus: Manufacturer: Nintendo
+[   388.014] host I: [parallel_n64] mupen64plus: Country: USA
+[   388.017] host I: [parallel_n64] EmuThread: M64CMD_ROM_GET_HEADER
+[   388.017] host I: retro_load_game: 871 ms
+[   388.022] host I: AV: 320x240 (max 320x240, aspect 1.333), 60.0176 fps, 32040.0 Hz
+Failed to create //.cache for shader cache (Read-only file system)---disabling.
+[   388.467] host I: hw render: zero-copy (GBM on the KMS device, EGL 1.5)
+[   388.657] host I: GL: Mali400 / OpenGL ES 2.0 Mesa 26.0.1
+[   388.664] host I: hw render: FBO 320x240 ready
+[   388.678] host I: [parallel_n64] EmuThread: M64CMD_EXECUTE.
+[   388.693] host I: [parallel_n64] mupen64plus: Game controller 0 (Standard controller) has nothing plugged in
+[   388.693] host I: [parallel_n64] mupen64plus: Game controller 1 (Standard controller) has nothing plugged in
+[   388.693] host I: [parallel_n64] mupen64plus: Game controller 2 (Standard controller) has nothing plugged in
+[   388.693] host I: [parallel_n64] mupen64plus: Game controller 3 (Standard controller) has nothing plugged in
+[   388.702] host I: [parallel_n64] mupen64plus: Using CIC type X102
+[   388.813] host I: [parallel_n64] mupen64plus: Initializing 4 RDRAM modules for a total of 8 MB
+[   388.848] host I: [parallel_n64] mupen64plus: Starting R4300 emulator: Dynamic Recompiler (Ari64)
+[   388.866] host I: [parallel_n64] mupen64plus: Init new dynarec
+[   388.883] host I: [parallel_n64] mupen64plus: ARM CPU Features:, Half, Thumb, FastMult, VFP, ESDP, NEON, VFPv3, TLS, VFPv4, IDIVa, IDIVt
+context_reset.
+plugin_start_gfx
+[   389.100] host I: option parallel-n64-cpucore = dynamic_recompiler (core default)
+[   389.101] host I: option parallel-n64-gfxplugin-accuracy = low
+[   389.101] host I: option parallel-n64-gfxplugin = rice
+[   389.101] host I: option parallel-n64-rspplugin = hle
+[   389.101] host I: option parallel-n64-screensize = 320x240
+[   389.101] host I: option parallel-n64-virefresh = auto (core default)
+[   389.101] host I: option parallel-n64-CountPerOp = 0 (core default)
+[   389.101] host I: option parallel-n64-frameskip = auto
+[   389.101] host I: option parallel-n64-gliden64-EnableFBEmulation = True (core default)
+[   389.106] host I: display: plane 33: XR24 320x240 scaled to 640x480+0+0 (zero-copy)
+[   389.106] host I: game surface 320x240 XRGB8888, hardware scaled, zero-copy
+[   389.118] host I: display: plane 33: XR24 320x240 scaled to 640x480+0+0 (zero-copy)
+[   389.856] host I: audio: plughw:0,0 open, 48000 Hz, buffer 3072 frames (64.0 ms), period 768 (16.0 ms)
+[   389.859] host I: pacing: audio clock (core 60.0176 fps 32040.0 Hz, display 78.571 Hz, ratio 1.498127)
+[   389.860] host I: Super Mario 64: no srm file yet (296960 bytes)
+[   389.881] host I: display: overlay: plane 37, 72x20 at 564,4
+[   389.998] host I: AV info: 320x240 (max 320x240) 60.0201 fps 32006.5 Hz
+[   390.009] host I: display: plane 33: XR24 320x240 scaled to 640x480+0+0 (zero-copy)
+[   390.009] host I: pacing: audio clock (core 60.0201 fps 32006.5 Hz, display 78.571 Hz, ratio 1.499698)
+[   392.295] host I: hw render: first zero-copy frame 320x240 shown
+[   394.293] host I: saved /data/saves/n64/Super Mario 64.srm (296960 bytes)
+[   399.908] host I: perf: 10.0 s: speed 75.3 % (45.18 VI/s), 32.6 fps (shown 19.4, effective 32.6), skipped 132, dropped 0, dupes 126, core 12.40 ms (max 398.01), gl swap 1.47 ms, present 0.34 ms, readback 0.00 ms, cpu 42/38 %, process 58 %, underruns 24
+[   409.919] host I: perf: 10.0 s: speed 60.4 % (36.26 VI/s), 36.2 fps (shown 22.6, effective 36.2), skipped 136, dropped 0, dupes 1, core 19.79 ms (max 616.51), gl swap 1.35 ms, present 0.34 ms, readback 0.00 ms, cpu 46/51 %, process 73 %, underruns 68
+[   414.774] host I: perf session: 24.9 s: speed 67.2 % (40.34 VI/s), 35.2 fps (shown 21.8, effective 35.2), skipped 336, dropped 0, dupes 127, core 16.15 ms (max 616.51), gl swap 1.40 ms, present 0.34 ms, readback 0.00 ms, cpu 44/46 %, process 67 %, underruns 128
+[   414.774] host I: 1005 frames, 542 presented, 336 skipped, 127 dupes
+[   414.819] host I: audio: plughw:0,0 closed (underruns 128, dropped 0 frames)
+[   414.841] host I: hw render: 542 zero-copy frames
+
+=== [  416.014] launch: /usr/lib/libretro/parallel_n64_libretro.so /data/roms/n64/Super Smash Bros. (USA).n64 system n64
+[   416.029] host I: game process: core parallel_n64, system n64, content /data/roms/n64/Super Smash Bros. (USA).n64
+[   416.053] host I: core: ParaLLEl N64 1.0 git (need_fullpath 1, extensions n64|v64|z64|bin|u1|ndd|zip)
+[   416.053] host I: core options: 8 package, 8 shipped, 0 system, 0 game overrides
+[ 416.055] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[ 416.056] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[ 416.056] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[ 416.057] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   416.057] host I: input: launched by builtin (player 1 under the auto policy)
+[   416.057] host I: input: input layer, player 1 auto, C/Z buttons no
+[   416.060] host I: display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[   416.062] host I: display: plane 33: none
+[   416.062] host I: display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[   416.062] host I: output: Unknown-1 640x480@78.571 (reason 0)
+[   416.064] host I: core declared 100 options
+[   416.064] host I: pixel format XRGB8888
+[   416.064] host I: serialization quirks 0x2
+[   416.291] host I: core uses the audio buffer status callback (auto frameskip)
+[   416.295] host I: hw render: GLES2 requested (depth 1, stencil 0, bottom-left 1)
+[   417.048] host I: [parallel_n64] mupen64plus: Using full mem base
+[   417.100] host I: [parallel_n64] EmuThread: M64CMD_ROM_OPEN
+[   417.372] host I: [parallel_n64] mupen64plus: Goodname: Super Smash Bros. (U) [!]
+[   417.372] host I: [parallel_n64] mupen64plus: Name: SMASH BROTHERS      
+[   417.372] host I: [parallel_n64] mupen64plus: MD5: F7C52568A31AADF26E14DC2B6416B2ED
+[   417.372] host I: [parallel_n64] mupen64plus: CRC: 916B8B5B 780B85A4
+[   417.372] host I: [parallel_n64] mupen64plus: Imagetype: .v64 (byteswapped)
+[   417.372] host I: [parallel_n64] mupen64plus: Rom size: 16777216 bytes (or 16 Mb or 128 Megabits)
+[   417.372] host I: [parallel_n64] mupen64plus: Version: 1449
+[   417.372] host I: [parallel_n64] mupen64plus: Manufacturer: Nintendo
+[   417.372] host I: [parallel_n64] mupen64plus: Country: USA
+[   417.377] host I: [parallel_n64] EmuThread: M64CMD_ROM_GET_HEADER
+[   417.377] host I: retro_load_game: 1312 ms
+[   417.377] host I: AV: 320x240 (max 320x240, aspect 1.333), 60.0176 fps, 32040.0 Hz
+Failed to create //.cache for shader cache (Read-only file system)---disabling.
+[   417.508] host I: hw render: zero-copy (GBM on the KMS device, EGL 1.5)
+[   417.558] host I: GL: Mali400 / OpenGL ES 2.0 Mesa 26.0.1
+[   417.561] host I: hw render: FBO 320x240 ready
+[   417.562] host I: [parallel_n64] EmuThread: M64CMD_EXECUTE.
+[   417.593] host I: [parallel_n64] mupen64plus: Game controller 0 (Standard controller) has nothing plugged in
+[   417.593] host I: [parallel_n64] mupen64plus: Game controller 1 (Standard controller) has nothing plugged in
+[   417.593] host I: [parallel_n64] mupen64plus: Game controller 2 (Standard controller) has nothing plugged in
+[   417.593] host I: [parallel_n64] mupen64plus: Game controller 3 (Standard controller) has nothing plugged in
+[   417.596] host I: [parallel_n64] mupen64plus: Using CIC type X103
+[   417.647] host I: [parallel_n64] mupen64plus: Initializing 4 RDRAM modules for a total of 8 MB
+[   417.675] host I: [parallel_n64] mupen64plus: Starting R4300 emulator: Dynamic Recompiler (Ari64)
+[   417.690] host I: [parallel_n64] mupen64plus: Init new dynarec
+[   417.707] host I: [parallel_n64] mupen64plus: ARM CPU Features:, Half, Thumb, FastMult, VFP, ESDP, NEON, VFPv3, TLS, VFPv4, IDIVa, IDIVt
+context_reset.
+plugin_start_gfx
+[   418.025] host I: option parallel-n64-cpucore = dynamic_recompiler (core default)
+[   418.026] host I: option parallel-n64-gfxplugin-accuracy = low
+[   418.026] host I: option parallel-n64-gfxplugin = rice
+[   418.026] host I: option parallel-n64-rspplugin = hle
+[   418.026] host I: option parallel-n64-screensize = 320x240
+[   418.026] host I: option parallel-n64-virefresh = auto (core default)
+[   418.026] host I: option parallel-n64-CountPerOp = 0 (core default)
+[   418.026] host I: option parallel-n64-frameskip = auto
+[   418.026] host I: option parallel-n64-gliden64-EnableFBEmulation = True (core default)
+[   418.035] host I: display: plane 33: XR24 320x240 scaled to 640x480+0+0 (zero-copy)
+[   418.035] host I: game surface 320x240 XRGB8888, hardware scaled, zero-copy
+[   418.047] host I: display: plane 33: XR24 320x240 scaled to 640x480+0+0 (zero-copy)
+[   418.059] host I: audio: plughw:0,0 open, 48000 Hz, buffer 3072 frames (64.0 ms), period 768 (16.0 ms)
+[   418.063] host I: pacing: audio clock (core 60.0176 fps 32040.0 Hz, display 78.571 Hz, ratio 1.498127)
+[   418.064] host I: Super Smash Bros. (USA): no srm file yet (296960 bytes)
+[   418.109] host I: display: overlay: plane 37, 72x20 at 564,4
+[   418.124] host I: AV info: 320x240 (max 320x240) 60.0201 fps 32006.5 Hz
+[   418.137] host I: display: plane 33: XR24 320x240 scaled to 640x480+0+0 (zero-copy)
+[   418.137] host I: pacing: audio clock (core 60.0201 fps 32006.5 Hz, display 78.571 Hz, ratio 1.499698)
+[   419.757] host I: hw render: first zero-copy frame 320x240 shown
+[   422.165] host I: saved /data/saves/n64/Super Smash Bros. (USA).srm (296960 bytes)
+[   428.247] host I: perf: 10.1 s: speed 60.0 % (36.01 VI/s), 29.3 fps (shown 16.5, effective 29.3), skipped 130, dropped 0, dupes 68, core 21.22 ms (max 549.40), gl swap 1.54 ms, present 0.34 ms, readback 0.00 ms, cpu 47/54 %, process 77 %, underruns 56

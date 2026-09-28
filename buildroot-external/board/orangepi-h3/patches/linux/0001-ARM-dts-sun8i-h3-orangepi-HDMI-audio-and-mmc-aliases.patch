@@ -1,0 +1,119 @@
+From: RetroStoneOS <noreply@retrostone.invalid>
+Subject: [PATCH] ARM: dts: sun8i-h3: Orange Pi HDMI audio and fixed mmc
+ numbering
+
+Add the HDMI sound card of the H3 (I2S2 feeding the DesignWare HDMI
+controller's I2S input, as in the LibreELEC/Armbian kernels) to
+sunxi-h3-h5.dtsi, disabled, and enable it on the Orange Pi PC, PC Plus,
+One and Lite. Also add mmc aliases so that the SD card is always
+/dev/mmcblk0 (the PC Plus eMMC probes in parallel).
+
+TODO(hw): not tested on hardware.
+---
+diff -urN a/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-lite.dts b/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-lite.dts
+--- a/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-lite.dts	2026-09-27 20:39:41.487431845 +0200
++++ b/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-lite.dts	2026-09-27 20:39:41.488445303 +0200
+@@ -166,3 +166,12 @@
+ 	/* USB VBUS is always on */
+ 	status = "okay";
+ };
++
++/* RetroStoneOS: HDMI audio (I2S2 -> DesignWare HDMI) */
++&i2s2 {
++	status = "okay";
++};
++
++&sound_hdmi {
++	status = "okay";
++};
+diff -urN a/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-one.dts b/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-one.dts
+--- a/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-one.dts	2026-09-27 20:39:41.485602812 +0200
++++ b/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-one.dts	2026-09-27 20:39:41.486514289 +0200
+@@ -201,3 +201,12 @@
+ 	usb0_vbus-supply = <&reg_usb0_vbus>;
+ 	status = "okay";
+ };
++
++/* RetroStoneOS: HDMI audio (I2S2 -> DesignWare HDMI) */
++&i2s2 {
++	status = "okay";
++};
++
++&sound_hdmi {
++	status = "okay";
++};
+diff -urN a/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-pc-plus.dts b/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-pc-plus.dts
+--- a/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-pc-plus.dts	2026-09-27 20:39:41.483731849 +0200
++++ b/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-pc-plus.dts	2026-09-27 20:39:41.484658300 +0200
+@@ -84,3 +84,12 @@
+ 	/* eMMC is missing pull-ups */
+ 	bias-pull-up;
+ };
++
++/* RetroStoneOS: HDMI audio (I2S2 -> DesignWare HDMI) */
++&i2s2 {
++	status = "okay";
++};
++
++&sound_hdmi {
++	status = "okay";
++};
+diff -urN a/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-pc.dts b/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-pc.dts
+--- a/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-pc.dts	2026-09-27 20:39:41.481407967 +0200
++++ b/arch/arm/boot/dts/allwinner/sun8i-h3-orangepi-pc.dts	2026-09-27 20:39:41.482791016 +0200
+@@ -240,3 +240,12 @@
+ 	/* VBUS on USB host ports are always on */
+ 	status = "okay";
+ };
++
++/* RetroStoneOS: HDMI audio (I2S2 -> DesignWare HDMI) */
++&i2s2 {
++	status = "okay";
++};
++
++&sound_hdmi {
++	status = "okay";
++};
+diff -urN a/arch/arm/boot/dts/allwinner/sunxi-h3-h5.dtsi b/arch/arm/boot/dts/allwinner/sunxi-h3-h5.dtsi
+--- a/arch/arm/boot/dts/allwinner/sunxi-h3-h5.dtsi	2026-09-27 20:39:41.473069493 +0200
++++ b/arch/arm/boot/dts/allwinner/sunxi-h3-h5.dtsi	2026-09-27 20:39:41.478474853 +0200
+@@ -818,6 +818,7 @@
+ 		};
+ 
+ 		hdmi: hdmi@1ee0000 {
++			#sound-dai-cells = <0>;
+ 			compatible = "allwinner,sun8i-h3-dw-hdmi",
+ 				     "allwinner,sun8i-a83t-dw-hdmi";
+ 			reg = <0x01ee0000 0x10000>;
+@@ -977,3 +978,31 @@
+ 		};
+ 	};
+ };
++
++/ {
++	aliases {
++		/* The SD card is mmc0 (/dev/mmcblk0) whatever the probe order */
++		mmc0 = &mmc0;
++		mmc1 = &mmc1;
++		mmc2 = &mmc2;
++	};
++
++	sound_hdmi: sound-hdmi {
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,name = "allwinner-hdmi";
++		simple-audio-card,mclk-fs = <128>;
++		simple-audio-card,frame-inversion;
++		status = "disabled";
++
++		simple-audio-card,codec {
++			sound-dai = <&hdmi>;
++		};
++
++		simple-audio-card,cpu {
++			sound-dai = <&i2s2>;
++			dai-tdm-slot-num = <2>;
++			dai-tdm-slot-width = <32>;
++		};
++	};
++};

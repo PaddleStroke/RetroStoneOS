@@ -1,0 +1,4 @@
+0.85 started (pid 108, session 108)
+1.55 writing to /data/rsos/logs/boot2
+5.95 SIGTERM (rcK: shutdown)
+5.95 exit (status 0)

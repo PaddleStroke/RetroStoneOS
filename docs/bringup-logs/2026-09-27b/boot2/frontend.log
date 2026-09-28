@@ -1,0 +1,65 @@
+[    1.047] frontend: starting (pid 115)
+[     1.056] display: switching to Unknown-1: 640x480@78.57 on crtc 49 (index 0)
+[     1.070] display: plane 33: none
+[     1.070] display: output now Unknown-1 640x480@78.57 (internal) crtc 49 plane 33, path none
+[     1.095] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[     1.108] display: plane 33: XR24 640x480 scaled to 640x480+0+0 (converted)
+[    1.108] frontend: output init: Unknown-1 640x480@78.571 Hz, UI 640x480
+[    1.117] frontend: splash: 11114 bytes, 640x480, shown 75 ms after start (read 2909 us, decode + present 6750 us)
+[   1.127] ui I: input: /dev/input/event5 "RetroStone2 Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   1.129] ui I: input: /dev/input/event4 "analog-stick" 0000:0000 guid 19000000616e616c6f672d737469636b -> built-in (analog stick)
+[   1.131] ui I: input: /dev/input/event1 "RetroStone2 Brightness Keys" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   1.131] ui I: input: /dev/input/event0 "RetroStone2 Shoulder Buttons" 0001:0001 guid 19000000010000000100000000010000 -> built-in
+[   1.160] ui I: ui: warm-up: 7 folders, 6 reads, 1024 KiB, 27765 us
+[   1.187] ui I: ui: created in 55352 us, theme rsos-dark (io 1 reads, 0 KiB)
+[   1.187] ui I: ui: logical size 640x480
+[   1.257] ui I: ui: menu style bg fa1b1e23 dim 99000000 text ffeceef1 selector ff3d7bd9
+[   1.259] ui I: ui: menu from the snapshot: 4 entries, 11 games, in 56336 us (warm-up 12 folders, 10 reads, 41808 us; io 4 reads); checking 30 systems in the background
+[     1.259] display: hotplug uevent (seq 1588), debounce 250 ms
+[   1.353] ui I: ui: first frame in 93957 us (theme parsing 16876 us, images: 0 decoded in 0 us, 0 from the cache in 0 us, 0 shared; backdrops: 1 from the cache, 0 composited, 16097 us; io 1 reads, 69 KiB)
+[    1.356] frontend: frame 0: 96968 us (wait for a buffer 247, render 94389, present 2332)
+[    1.356] frontend: first frame 313 ms after start (ui_create 55352 us)
+[power] PEK force-off 6000 ms, power-on hold 1000 ms
+[power] battery 70 % 3842 mV discharging, charger off, boot key
+[    1.469] frontend: power: mode normal, battery 70 %
+[    1.470] frontend: menu up 428 ms after start (game lists still loading): running /usr/bin/rsos-boot-ok
+[    1.496] frontend: frame 1: 19313 us (wait for a buffer 6, render 16227, present 3080)
+[     1.509] display: hotplug: no change (Unknown-1 still 640x480@78.57)
+[   1.725] ui I: games: gb: 5 games from the cache in 17254 us (folder 123, read 16345, stat 516 x1, parse 192)
+[   1.726] ui I: games: gbc: 1 games from the cache in 2207 us (folder 75, read 1766, stat 243 x1, parse 107)
+[   1.726] ui I: games: nes: 2 games from the cache in 6878 us (folder 49, read 6224, stat 284 x1, parse 299)
+[   1.726] ui I: games: megadrive: 3 games from the cache in 3141 us (folder 59, read 1477, stat 1239 x1, parse 346)
+[   1.726] ui I: games: fds: still an empty folder (same mtime), 5871 us
+[   1.726] ui I: games: snes: still an empty folder (same mtime), 1117 us
+[    1.736] frontend: frame 2: 10187 us (wait for a buffer 5, render 7850, present 2332)
+[   1.785] ui I: games: n64: scanned 0 games in 59482 us (folder 991, cache read 959, readdir 181 x1, gamelist 126, cache write 56951)
+[   1.786] ui I: games: gba: scanned 0 games in 3415 us (folder 1024, cache read 1203, readdir 150 x1, gamelist 96, cache write 723)
+[    1.815] frontend: frame 3: 29750 us (wait for a buffer 5, render 27150, present 2595)
+[   1.821] ui I: games: sg1000: still an empty folder (same mtime), 6357 us
+[   1.822] ui I: games: mastersystem: still an empty folder (same mtime), 2174 us
+[   1.822] ui I: games: segacd: still an empty folder (same mtime), 2330 us
+[   1.822] ui I: games: sega32x: still an empty folder (same mtime), 1096 us
+[   1.823] ui I: games: pico: still an empty folder (same mtime), 849 us
+[   1.824] ui I: games: gamegear: still an empty folder (same mtime), 868 us
+[   1.825] ui I: games: psx: scanned 0 games in 6238 us (folder 913, cache read 4140, readdir 204 x1, gamelist 92, cache write 683)
+[   1.825] ui I: games: pcengine: still an empty folder (same mtime), 999 us
+[   1.827] ui I: games: pcenginecd: still an empty folder (same mtime), 855 us
+[   1.835] ui I: games: ngp: still an empty folder (same mtime), 865 us
+[   1.835] ui I: games: ngpc: still an empty folder (same mtime), 832 us
+[   1.835] ui I: games: wonderswan: still an empty folder (same mtime), 907 us
+[   1.835] ui I: games: wonderswancolor: still an empty folder (same mtime), 765 us
+[   1.835] ui I: games: atari2600: still an empty folder (same mtime), 7991 us
+[   1.835] ui I: games: atari7800: still an empty folder (same mtime), 1511 us
+[   1.853] ui I: games: atarilynx: still an empty folder (same mtime), 8644 us
+[   1.853] ui I: games: coleco: still an empty folder (same mtime), 2527 us
+[   1.854] ui I: games: msx: still an empty folder (same mtime), 902 us
+[   1.854] ui I: games: arcade: still an empty folder (same mtime), 992 us
+[   1.854] ui I: games: fbneo: still an empty folder (same mtime), 806 us
+[   1.854] ui I: games: neogeo: still an empty folder (same mtime), 886 us
+[   1.854] ui I: games: neocd: still an empty folder (same mtime), 955 us
+[   1.854] ui I: ui: menu style bg fa1b1e23 dim 99000000 text ffeceef1 selector ff3d7bd9
+[   1.856] ui I: ui: game lists complete: 30 systems checked, 4 with games, 11 games, in 651 ms (worker 357 ms; warm-up 38 folders, 12 reads, 4864 KiB, 207 ms); carousel updated, 0 lists replaced; io 22 reads, 5453 KiB; digest d34afe2035b8aef8
+[   1.856] ui I: ui: game list time by step: folder 3234 us, cache read 32114 us, validation stat 53571 us, decode 1298 us, readdir 535 us, gamelist.xml 314 us, cache write 58357 us; slowest n64 59482 us
+[   1.857] ui I: ui: carousel snapshot saved (5 entries)
+[    1.913] frontend: frame 5: 55182 us (wait for a buffer 2112, render 50456, present 2614) slow
+[    1.913] frontend: game lists complete 871 ms after start

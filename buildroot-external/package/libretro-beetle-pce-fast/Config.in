@@ -1,0 +1,18 @@
+config BR2_PACKAGE_LIBRETRO_BEETLE_PCE_FAST
+	bool "libretro-beetle-pce-fast"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP # linked with g++ (libstdc++ NEEDED)
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Beetle PCE Fast: Mednafen's fast PC Engine / TurboGrafx-16 /
+	  PC Engine CD emulator, built as a libretro core (GPL-2.0+).
+	  CD games need the syscard3.pce BIOS.
+
+	  Installs /usr/lib/libretro/mednafen_pce_fast_libretro.so and
+	  /usr/share/rsos/cores/mednafen_pce_fast.ini.
+
+	  https://github.com/libretro/beetle-pce-fast-libretro
+
+comment "libretro-beetle-pce-fast needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

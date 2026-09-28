@@ -1,0 +1,143 @@
+From 25a0964ed38bbc5240eddca19addee76c0df1b0b Mon Sep 17 00:00:00 2001
+From: RetroStoneOS <pierrelouis.boyer@gmail.com>
+Date: Fri, 25 Sep 2026 23:01:47 +0200
+Subject: [PATCH 1/3] drm/sun4i: hdmi: poll the HPD line every 500 ms from a
+ private work
+
+The A10/A20 HDMI controller has no hotplug interrupt, so the connector
+was flagged DRM_CONNECTOR_POLL_CONNECT | DRM_CONNECTOR_POLL_DISCONNECT
+and relied on the drm_kms_helper output poll worker. That worker runs
+every 10 seconds (DRM_OUTPUT_POLL_PERIOD), so a plugged or unplugged
+HDMI cable is noticed up to 10 seconds late.
+
+Sample the HPD register from a private delayed work instead, every
+500 ms by default (module parameter hpd_poll_ms, 20 to 10000 ms,
+settable on the kernel command line as sun4i_drm_hdmi.hpd_poll_ms).
+The common case costs a single MMIO read: no lock is taken and no EDID
+is read. Only when the HPD line disagrees with connector->status does
+the work call drm_connector_helper_hpd_irq_event(), which runs detect()
+(itself only an HPD register read) under the mode_config mutex and
+sends a connector hotplug uevent (HOTPLUG=1 CONNECTOR=<id>). The EDID
+is read over DDC only when userspace probes the connector afterwards.
+
+The connector is now flagged DRM_CONNECTOR_POLL_HPD, so the core output
+poll worker ignores it and is no longer scheduled at all when no other
+connector needs polling.
+
+The work runs on system_freezable_power_efficient_wq, so it is frozen
+across system suspend, and it is cancelled on unbind.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/gpu/drm/sun4i/sun4i_hdmi.h     |  4 ++
+ drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c | 55 ++++++++++++++++++++++++--
+ 2 files changed, 56 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/sun4i/sun4i_hdmi.h b/drivers/gpu/drm/sun4i/sun4i_hdmi.h
+index 65c801cd6..9dbbd4594 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_hdmi.h
++++ b/drivers/gpu/drm/sun4i/sun4i_hdmi.h
+@@ -11,6 +11,7 @@
+ #include <drm/drm_connector.h>
+ #include <drm/drm_encoder.h>
+ #include <linux/regmap.h>
++#include <linux/workqueue.h>
+ 
+ #include <media/cec-pin.h>
+ 
+@@ -285,6 +286,9 @@ struct sun4i_hdmi {
+ 
+ 	struct sun4i_drv	*drv;
+ 
++	/* Hotplug detection: the controller has no HPD interrupt */
++	struct delayed_work	hpd_work;
++
+ 	struct cec_adapter	*cec_adap;
+ 
+ 	const struct sun4i_hdmi_variant	*variant;
+diff --git a/drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c b/drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c
+index c7b539b34..85184127b 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c
++++ b/drivers/gpu/drm/sun4i/sun4i_hdmi_enc.c
+@@ -260,6 +260,48 @@ sun4i_hdmi_connector_detect(struct drm_connector *connector, bool force)
+ 	return connector_status_connected;
+ }
+ 
++/*
++ * The controller has no hotplug interrupt. Instead of relying on the
++ * drm_kms_helper output poll worker, which only runs every 10 seconds,
++ * sample the HPD line from a private delayed work. The common case (no
++ * change) costs a single MMIO read: no lock is taken and no EDID is read.
++ * On a change, drm_connector_helper_hpd_irq_event() runs a detect cycle
++ * (again only the HPD register read) and sends the hotplug uevent. The
++ * EDID is only read when userspace probes the connector afterwards.
++ */
++static unsigned int hpd_poll_ms = 500;
++module_param(hpd_poll_ms, uint, 0644);
++MODULE_PARM_DESC(hpd_poll_ms,
++		 "HDMI hotplug detection poll period in ms (20-10000, default 500)");
++
++static void sun4i_hdmi_hpd_schedule(struct sun4i_hdmi *hdmi)
++{
++	unsigned int ms = clamp(READ_ONCE(hpd_poll_ms), 20U, 10000U);
++
++	queue_delayed_work(system_freezable_power_efficient_wq,
++			   &hdmi->hpd_work, msecs_to_jiffies(ms));
++}
++
++static void sun4i_hdmi_hpd_work(struct work_struct *work)
++{
++	struct sun4i_hdmi *hdmi = container_of(to_delayed_work(work),
++					       struct sun4i_hdmi, hpd_work);
++	struct drm_connector *connector = &hdmi->connector;
++	enum drm_connector_status status;
++
++	if (readl(hdmi->base + SUN4I_HDMI_HPD_REG) & SUN4I_HDMI_HPD_HIGH)
++		status = connector_status_connected;
++	else
++		status = connector_status_disconnected;
++
++	/* Forced connectors are ignored, like in the core poll worker */
++	if (connector->dev->registered && !connector->force &&
++	    status != READ_ONCE(connector->status))
++		drm_connector_helper_hpd_irq_event(connector);
++
++	sun4i_hdmi_hpd_schedule(hdmi);
++}
++
+ static void sun4i_hdmi_connector_reset(struct drm_connector *connector)
+ {
+ 	drm_atomic_helper_connector_reset(connector);
+@@ -649,15 +691,21 @@ static int sun4i_hdmi_bind(struct device *dev, struct device *master,
+ 	cec_fill_conn_info_from_drm(&conn_info, &hdmi->connector);
+ 	cec_s_conn_info(hdmi->cec_adap, &conn_info);
+ 
+-	/* There is no HPD interrupt, so we need to poll the controller */
+-	hdmi->connector.polled = DRM_CONNECTOR_POLL_CONNECT |
+-		DRM_CONNECTOR_POLL_DISCONNECT;
++	/*
++	 * There is no HPD interrupt, so the HPD line is polled by our own
++	 * hpd_work. Flag the connector as HPD capable so that the (much
++	 * slower) drm_kms_helper output poll worker leaves it alone.
++	 */
++	hdmi->connector.polled = DRM_CONNECTOR_POLL_HPD;
+ 
+ 	ret = cec_register_adapter(hdmi->cec_adap, dev);
+ 	if (ret < 0)
+ 		goto err_cleanup_connector;
+ 	drm_connector_attach_encoder(&hdmi->connector, &hdmi->encoder);
+ 
++	INIT_DELAYED_WORK(&hdmi->hpd_work, sun4i_hdmi_hpd_work);
++	sun4i_hdmi_hpd_schedule(hdmi);
++
+ 	return 0;
+ 
+ err_cleanup_connector:
+@@ -681,6 +729,7 @@ static void sun4i_hdmi_unbind(struct device *dev, struct device *master,
+ {
+ 	struct sun4i_hdmi *hdmi = dev_get_drvdata(dev);
+ 
++	cancel_delayed_work_sync(&hdmi->hpd_work);
+ 	cec_unregister_adapter(hdmi->cec_adap);
+ 	i2c_del_adapter(hdmi->i2c);
+ 	i2c_put_adapter(hdmi->ddc_i2c);

@@ -1,0 +1,12 @@
+# Orange Pi 5 U-Boot options, merged after orangepi-5-rk3588s_defconfig and
+# board/sbc-uboot/uboot.fragment.
+
+# Environment (A/B boot state): two 64 KiB copies at 14 MiB and
+# 14 MiB + 64 KiB, after u-boot-rockchip.bin (idbloader at 32 KiB, u-boot.itb
+# at 8 MiB) and before the first partition (16 MiB). Must match
+# /etc/fw_env.config.
+CONFIG_ENV_OFFSET=0xE00000
+CONFIG_ENV_OFFSET_REDUND=0xE10000
+
+# The defconfig turns setexpr off; boot.scr counts the boots with it.
+CONFIG_CMD_SETEXPR=y

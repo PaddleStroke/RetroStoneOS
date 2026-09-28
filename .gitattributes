@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.png binary
+*.brd binary
+*.sch binary
+*.pdf binary
+*.zip binary
+*.xls binary
+*.jpg binary
+*.ttf binary
+*.otf binary

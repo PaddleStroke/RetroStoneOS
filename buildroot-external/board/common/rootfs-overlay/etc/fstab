@@ -1,0 +1,12 @@
+# RetroStoneOS: everything is mounted explicitly by /etc/init.d/rcS and
+# /usr/libexec/rsos/data-partition. This file is only for reference/tools
+# (rcS mounts the pseudo filesystems below with "mount -a -t ...").
+# A board's rootfs overlay may replace it to document its data partition.
+# <file system>	<mount pt>	<type>	<options>			<dump>	<pass>
+/dev/root	/		ext4	ro,noatime			0	0
+proc		/proc		proc	nosuid,nodev,noexec		0	0
+sysfs		/sys		sysfs	nosuid,nodev,noexec		0	0
+devpts		/dev/pts	devpts	gid=5,mode=620			0	0
+tmpfs		/dev/shm	tmpfs	nosuid,nodev,mode=1777		0	0
+tmpfs		/run		tmpfs	nosuid,nodev,mode=0755		0	0
+tmpfs		/tmp		tmpfs	nosuid,nodev,mode=1777		0	0

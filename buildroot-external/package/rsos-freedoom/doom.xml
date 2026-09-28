@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<gameList>
+	<game>
+		<path>./freedoom1.wad</path>
+		<name>Freedoom: Phase 1</name>
+		<desc>Four episodes of fast first-person shooting through bases, labs and hellish ruins. Freedoom is a complete game made by the community under a free licence; Phase 1 also plays custom levels made for Doom and The Ultimate Doom.</desc>
+		<releasedate>20240130T000000</releasedate>
+		<developer>Freedoom project</developer>
+		<publisher>Freedoom project</publisher>
+		<genre>Shooter</genre>
+		<players>1</players>
+	</game>
+	<game>
+		<path>./freedoom2.wad</path>
+		<name>Freedoom: Phase 2</name>
+		<desc>A 32-level campaign with the double-barrelled shotgun and the larger bestiary of the Doom II engine. Freedoom is a complete game made by the community under a free licence; Phase 2 also plays custom levels made for Doom II and Final Doom.</desc>
+		<releasedate>20240130T000000</releasedate>
+		<developer>Freedoom project</developer>
+		<publisher>Freedoom project</publisher>
+		<genre>Shooter</genre>
+		<players>1</players>
+	</game>
+</gameList>

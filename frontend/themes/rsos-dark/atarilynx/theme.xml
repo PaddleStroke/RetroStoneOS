@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: atarilynx sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>c0762b</accent>
+		<icon>carbon/atarilynx</icon>
+		<tagline>Atari · 1989</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

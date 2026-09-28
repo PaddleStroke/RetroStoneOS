@@ -1,0 +1,719 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * 8BCraft RetroStone2 handheld (Allwinner A20), device tree for RetroStoneOS.
+ * Target: mainline Linux 6.18 (arch/arm/boot/dts/allwinner/).
+ *
+ * Pin assignments are verified against the RetroStone2 schematic v1.15
+ * (hardware/retrostoneA20-1.15.sch). The old RetrOrangePi files in
+ * reference/retrostone-rop/ contradict the schematic in several places; the
+ * full pin table, the sources and the conflicts are in docs/hardware-pinmap.md.
+ *
+ * Opt-in hardware (the "Pro" variant parts) is described here but disabled:
+ * eMMC on mmc2 and the M.2 SATA slot. Enable them with the overlays in
+ * dts/overlays/ (the base DTB must be built with symbols, dtc -@).
+ */
+
+/dts-v1/;
+#include "sun7i-a20.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/leds/common.h>
+
+/ {
+	model = "8BCraft RetroStone2";
+	compatible = "8bcraft,retrostone2", "allwinner,sun7i-a20";
+
+	aliases {
+		ethernet0 = &gmac;	/* U-Boot derives the MAC from the SID */
+		/* Stable block device numbers: the microSD is always mmcblk0 */
+		mmc0 = &mmc0;
+		mmc1 = &mmc2;
+		mmc2 = &mmc3;
+		serial0 = &uart0;
+		serial1 = &uart2;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	/*
+	 * Optional analog stick U$33 (FPC CN1, "Pro" part), read through the
+	 * AXP209 ADC. The pots are fed from the 1.5 V net, the wipers go to AXP
+	 * GPIO0 (X) and GPIO1 (Y). axp20x_adc raw unit is 0.5 mV, so full scale
+	 * is ~3000. io-channels indexes are positions in axp20x_adc_channels[]:
+	 * 5 = gpio0_v, 6 = gpio1_v (the old kernel exposed them as in_voltage3/4).
+	 * X is inverted, like the production script (ABS_X = VREF - raw).
+	 * With no stick fitted the inputs float at ~2000 mV (raw ~4000), outside
+	 * abs-range: userspace must treat out-of-range values as "not connected".
+	 * TODO(hw): calibrate range/center on a unit with the stick fitted.
+	 */
+	analog-stick {
+		compatible = "adc-joystick";
+		io-channels = <&axp_adc 5>, <&axp_adc 6>;
+		poll-interval = <10>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		axis@0 {
+			reg = <0>;
+			linux,code = <ABS_X>;
+			abs-range = <3000 0>;
+			abs-fuzz = <8>;
+			abs-flat = <400>;
+		};
+
+		axis@1 {
+			reg = <1>;
+			linux,code = <ABS_Y>;
+			abs-range = <0 3000>;
+			abs-fuzz = <8>;
+			abs-flat = <400>;
+		};
+	};
+
+	/*
+	 * PB2/PWM0 -> R22 -> CE of U14 (KA2707 LED boost), R23 pulls CE low.
+	 * The boost runs from IPSOUT: there is no backlight enable GPIO and no
+	 * backlight supply to switch (schematic v1.15).
+	 */
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&pwm 0 50000 0>;
+		/* Gamma 1.8 table from the production RetrOrangePi DTS */
+		brightness-levels = <  0   1   1   1   1   1   2   2
+				       3   3   4   5   6   6   7   8
+				       9  11  12  13  14  15  17  18
+				      20  21  23  24  26  27  29  31
+				      33  35  37  39  41  43  45  47
+				      49  51  54  56  58  61  63  66
+				      68  71  73  76  79  81  84  87
+				      90  93  96  99 102 105 108 111
+				     114 117 121 124 127 131 134 138
+				     141 145 148 152 156 159 163 167
+				     171 175 178 182 186 190 194 198
+				     203 207 211 215 219 224 228 233
+				     237 241 246 250 255>;
+		default-brightness-level = <50>;
+	};
+
+	/*
+	 * Power management (docs/power.md): the Li-ion cell on U$18, used by
+	 * axp20x-battery through monitored-battery. The 6.18 AXP209 driver
+	 * applies two of these values at probe:
+	 *  - voltage-min-design -> REG31 V_OFF, the AXP hardware cut-off
+	 *    (2.6-3.3 V, reset default 2.9 V). 3.0 V is the last line of
+	 *    defence; the frontend saves and powers off first, at 3.45 V
+	 *    under load.
+	 *  - constant-charge-current-max -> REG33 charge current (300-1800 mA,
+	 *    100 mA steps). 1.0 A = 0.25 C for 4000 mAh, not above the AXP
+	 *    reset default, and within what a micro-USB cable on ACIN (no
+	 *    input current limit) delivers while the unit also runs.
+	 * The others describe the cell; the AXP209 charge target stays at its
+	 * 4.2 V reset default (the driver does not apply voltage-max-design).
+	 * TODO(hw): cell capacity and datasheet (max charge current, cut-off),
+	 * charge time and cable/charger heating at 1.0 A, and that REG33
+	 * reads 4.2 V (voltage_max in sysfs).
+	 */
+	battery: battery {
+		compatible = "simple-battery";
+		device-chemistry = "lithium-ion";
+		charge-full-design-microamp-hours = <4000000>;
+		voltage-min-design-microvolt = <3000000>;
+		voltage-max-design-microvolt = <4200000>;
+		constant-charge-current-max-microamp = <1000000>;
+		constant-charge-voltage-max-microvolt = <4200000>;
+	};
+
+	/*
+	 * Face buttons, D-pad, START/SELECT. All switch to GND with an external
+	 * 10k pull-up (active low). Every pin here is PH0-PH21, which have an
+	 * external interrupt (EINTn) on the A20, so they are interrupt driven.
+	 *
+	 * Codes follow Documentation/input/gamepad.rst, which is positional:
+	 * the Nintendo-style labels A (right) and B (bottom) map to BTN_EAST and
+	 * BTN_SOUTH. This matches the production RetroArch autoconfig
+	 * (PH0 = RetroPad A, PH11 = RetroPad B, PH12 = X, PH20 = Y).
+	 * TODO(hw): confirm the physical A/B/X/Y positions on the case.
+	 */
+	gpio-keys {
+		compatible = "gpio-keys";
+		label = "RetroStone2 Buttons";
+
+		button-a {
+			label = "A";
+			linux,code = <BTN_EAST>;
+			gpios = <&pio 7 0 GPIO_ACTIVE_LOW>;	/* PH0, K2 */
+		};
+
+		button-b {
+			label = "B";
+			linux,code = <BTN_SOUTH>;
+			gpios = <&pio 7 11 GPIO_ACTIVE_LOW>;	/* PH11, K4 */
+		};
+
+		button-x {
+			label = "X";
+			linux,code = <BTN_NORTH>;
+			gpios = <&pio 7 12 GPIO_ACTIVE_LOW>;	/* PH12, K1 */
+		};
+
+		button-y {
+			label = "Y";
+			linux,code = <BTN_WEST>;
+			gpios = <&pio 7 20 GPIO_ACTIVE_LOW>;	/* PH20, K3 */
+		};
+
+		/* Optional buttons (pads SELECT3/SELECT4 on the PCB) */
+		button-c {
+			label = "C";
+			linux,code = <BTN_C>;
+			gpios = <&pio 7 3 GPIO_ACTIVE_LOW>;	/* PH3, K5 */
+		};
+
+		button-z {
+			label = "Z";
+			linux,code = <BTN_Z>;
+			gpios = <&pio 7 13 GPIO_ACTIVE_LOW>;	/* PH13, K6 */
+		};
+
+		button-start {
+			label = "Start";
+			linux,code = <BTN_START>;
+			gpios = <&pio 7 14 GPIO_ACTIVE_LOW>;	/* PH14 */
+		};
+
+		button-select {
+			label = "Select";
+			linux,code = <BTN_SELECT>;
+			gpios = <&pio 7 15 GPIO_ACTIVE_LOW>;	/* PH15 */
+		};
+
+		button-dpad-up {
+			label = "D-pad Up";
+			linux,code = <BTN_DPAD_UP>;
+			gpios = <&pio 7 19 GPIO_ACTIVE_LOW>;	/* PH19 */
+		};
+
+		button-dpad-down {
+			label = "D-pad Down";
+			linux,code = <BTN_DPAD_DOWN>;
+			gpios = <&pio 7 7 GPIO_ACTIVE_LOW>;	/* PH7 */
+		};
+
+		button-dpad-left {
+			label = "D-pad Left";
+			linux,code = <BTN_DPAD_LEFT>;
+			gpios = <&pio 7 4 GPIO_ACTIVE_LOW>;	/* PH4 */
+		};
+
+		button-dpad-right {
+			label = "D-pad Right";
+			linux,code = <BTN_DPAD_RIGHT>;
+			gpios = <&pio 7 16 GPIO_ACTIVE_LOW>;	/* PH16 */
+		};
+	};
+
+	/*
+	 * Shoulder buttons on the 5-pin JST connector U$4. PH22-PH27 have no
+	 * EINT on the A20, so they are polled. Active low, external 10k pull-ups.
+	 */
+	gpio-keys-shoulder {
+		compatible = "gpio-keys-polled";
+		label = "RetroStone2 Shoulder Buttons";
+		poll-interval = <5>;
+
+		button-l1 {
+			label = "L1";
+			linux,code = <BTN_TL>;
+			gpios = <&pio 7 23 GPIO_ACTIVE_LOW>;	/* PH23 */
+		};
+
+		button-r1 {
+			label = "R1";
+			linux,code = <BTN_TR>;
+			gpios = <&pio 7 22 GPIO_ACTIVE_LOW>;	/* PH22 */
+		};
+
+		button-l2 {
+			label = "L2";
+			linux,code = <BTN_TL2>;
+			gpios = <&pio 7 27 GPIO_ACTIVE_LOW>;	/* PH27 */
+		};
+
+		button-r2 {
+			label = "R2";
+			linux,code = <BTN_TR2>;
+			gpios = <&pio 7 26 GPIO_ACTIVE_LOW>;	/* PH26 */
+		};
+	};
+
+	/*
+	 * Tact switches U$32 (PC18) and U$31 (PC22), active low with external
+	 * 10k pull-ups. Port C has no EINT, so they are polled. The production
+	 * firmware used them as brightness +/-; volume is an analog wheel, so
+	 * brightness codes are the right default. Kept in their own input
+	 * device so the gamepad device only reports gamepad codes.
+	 */
+	gpio-keys-brightness {
+		compatible = "gpio-keys-polled";
+		label = "RetroStone2 Brightness Keys";
+		poll-interval = <10>;
+
+		key-brightness-up {
+			label = "Brightness Up";
+			linux,code = <KEY_BRIGHTNESSUP>;
+			gpios = <&pio 2 18 GPIO_ACTIVE_LOW>;	/* PC18, U$32 */
+		};
+
+		key-brightness-down {
+			label = "Brightness Down";
+			linux,code = <KEY_BRIGHTNESSDOWN>;
+			gpios = <&pio 2 22 GPIO_ACTIVE_LOW>;	/* PC22, U$31 */
+		};
+	};
+
+	hdmi-connector {
+		compatible = "hdmi-connector";
+		type = "a";
+
+		port {
+			hdmi_con_in: endpoint {
+				remote-endpoint = <&hdmi_out_con>;
+			};
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		/* PH2 -> R110 (10k) -> LED3 (blue) -> GND: active high */
+		led-0 {
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_BLUE>;
+			gpios = <&pio 7 2 GPIO_ACTIVE_HIGH>;	/* PH2 */
+			default-state = "off";
+		};
+	};
+
+	/* eMMC U23 reset (RST_N, 10k pull-up R121). Enabled by the emmc overlay. */
+	mmc2_pwrseq: pwrseq-emmc {
+		compatible = "mmc-pwrseq-emmc";
+		reset-gpios = <&pio 2 16 GPIO_ACTIVE_LOW>;	/* PC16 */
+		status = "disabled";
+	};
+
+	/* AP6210 WL_REG_ON and the 32.768 kHz LPO from CLK_OUT_A (PI12) */
+	mmc3_pwrseq: pwrseq-wifi {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&pio 7 9 GPIO_ACTIVE_LOW>;	/* PH9 WL_REG_ON */
+		clocks = <&ccu CLK_OUT_A>;
+		clock-names = "ext_clock";
+		/* out-a resets to the 24 MHz parent: force 32.768 kHz from osc32k */
+		assigned-clocks = <&ccu CLK_OUT_A>;
+		assigned-clock-parents = <&osc32k>;
+		assigned-clock-rates = <32768>;
+	};
+
+	/*
+	 * 3.5" 640x480 parallel RGB panel on the FPC U$7. All 24 data lines
+	 * (PD0-PD23), CLK (PD24 via R24), DE (PD25), HSYNC (PD26) and VSYNC
+	 * (PD27) are wired, so the bus is RGB888 (the old U-Boot "depth:18" was
+	 * wrong). The panel's SPI and reset pins are not connected to the SoC.
+	 *
+	 * Timings are the ones the production kernel patched into panel-simple:
+	 * htotal 800, vtotal 525, 33 MHz, i.e. a ~78.6 Hz refresh.
+	 * TODO(hw): try clock-frequency = <25200000> for a true 60 Hz, which is
+	 * much better for emulator vsync, and check the panel datasheet.
+	 * Polarities: hsync/vsync active low (production kernel; the old U-Boot
+	 * forced them high, but that was a "VGA via LCD" leftover), DE active
+	 * high (the production patch removed DE_LOW), pixel data driven on the
+	 * rising edge: this is exactly what the production kernel programmed
+	 * (no DCLK_DRIVE_NEGEDGE bit). U-Boot's DCLK_PHASE=1 is a TCON phase
+	 * tweak that mainline cannot express; the kernel resets the TCON anyway.
+	 * TODO(hw): confirm the panel model, timings and polarities.
+	 */
+	panel: panel {
+		compatible = "8bcraft,retrostone2-panel", "panel-dpi";
+		/* The panel VCC is the 3.3 V rail directly: no power GPIO */
+		power-supply = <&reg_vcc3v3>;
+		backlight = <&backlight>;
+		width-mm = <70>;
+		height-mm = <52>;
+
+		panel-timing {
+			clock-frequency = <33000000>;
+			hactive = <640>;
+			vactive = <480>;
+			hfront-porch = <16>;
+			hsync-len = <30>;
+			hback-porch = <114>;
+			vfront-porch = <10>;
+			vsync-len = <3>;
+			vback-porch = <32>;
+			hsync-active = <0>;
+			vsync-active = <0>;
+			de-active = <1>;
+			pixelclk-active = <1>;
+		};
+
+		port {
+			panel_input: endpoint {
+				remote-endpoint = <&tcon0_out_panel>;
+			};
+		};
+	};
+
+	/*
+	 * Main 3.3 V rail (SY8009 buck U15, enabled by AXP LDO2). It also feeds
+	 * the LCD, the SD card, the eMMC and the AP6210. Not software controlled.
+	 */
+	reg_vcc3v3: regulator-vcc3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
+	/*
+	 * USB port power: all three ports get +5V_USB from U4 (SY6280) whose EN
+	 * is tied to +5V, so VBUS is always on and there is no VBUS GPIO.
+	 * Do NOT use sunxi-common-regulators.dtsi: its PH6/PH3/PB8/PB9 GPIOs are
+	 * the ethernet PHY reset option, button K5 and BT PCM lines here.
+	 */
+};
+
+/* M.2 NGFF M-key SATA slot J1 ("Pro" part). Enabled by the sata overlay. */
+&ahci {
+	status = "disabled";
+};
+
+/*
+ * Speaker amp U1-A (PAM8302A) /SD is driven by the AXP209 EXTEN output
+ * (which also enables the 5 V boost U16): there is no amplifier GPIO.
+ * HPL/HPR -> analog volume wheel U$27 -> headphone jack U$24, whose switch
+ * contacts feed the speaker amp. Volume and speaker/headphone switching are
+ * fully analog: keep the codec headphone volume fixed near maximum.
+ */
+&codec {
+	status = "okay";
+};
+
+&cpu0 {
+	cpu-supply = <&reg_dcdc2>;
+};
+
+&de {
+	status = "okay";
+};
+
+/* USB1 (EHCI0/OHCI0): lower connector of the stacked USB-A USB2 */
+&ehci0 {
+	status = "okay";
+};
+
+/* USB2 (EHCI1/OHCI1): USB-A connector U$1 */
+&ehci1 {
+	status = "okay";
+};
+
+/*
+ * LAN8710A (U10), MII. Straps: PHYAD0 (RXER) pulled up by R12, PHYAD1
+ * (RXCLK) and PHYAD2 (RXD3) pulled down by R15/R16, so the address is 1.
+ * RMIISEL (RXD2) pulled down by R17: MII. The PHY NRST is on the system
+ * reset; the PH6 option (R54) is not fitted.
+ */
+&gmac {
+	pinctrl-names = "default";
+	pinctrl-0 = <&gmac_mii_pins>;
+	phy-handle = <&phy1>;
+	phy-mode = "mii";
+	status = "okay";
+};
+
+&gmac_mdio {
+	phy1: ethernet-phy@1 {
+		reg = <1>;
+	};
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&hdmi_out {
+	hdmi_out_con: endpoint {
+		remote-endpoint = <&hdmi_con_in>;
+	};
+};
+
+/*
+ * AXP209 bus at 400 kHz (the default is 100 kHz): the PMIC probe (MFD cells,
+ * regulators, ADC, battery) is ~150 register accesses and took 74 ms at boot
+ * at 100 kHz. U-Boot's SPL already talks to this AXP209 at 400 kHz
+ * (CONFIG_SYS_I2C_SPEED) on every boot. TODO(hw): check that the kernel log
+ * shows no "mv64xxx: I2C bus locked" or AXP read errors.
+ */
+&i2c0 {
+	clock-frequency = <400000>;
+	status = "okay";
+
+	axp209: pmic@34 {
+		reg = <0x34>;
+		interrupt-parent = <&nmi_intc>;
+		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
+	};
+};
+
+#include "axp209.dtsi"
+
+/*
+ * Charging input: the micro-USB U$17 VBUS feeds the AXP209 ACIN. The AXP
+ * VBUS pin only has a capacitor, so the AXP USB power supply stays disabled.
+ */
+&ac_power_supply {
+	status = "okay";
+};
+
+/* Battery on U$18 with its NTC on the AXP TS pin */
+&battery_power_supply {
+	monitored-battery = <&battery>;	/* V_OFF and charge current, see &battery */
+	status = "okay";
+};
+
+/* Analog stick wipers: put AXP GPIO0/GPIO1 in ADC mode (pinctrl hog) */
+&axp_gpio {
+	pinctrl-names = "default";
+	pinctrl-0 = <&axp_gpio0_adc_pin>, <&axp_gpio1_adc_pin>;
+
+	axp_gpio0_adc_pin: gpio0-adc-pin {
+		pins = "GPIO0";
+		function = "adc";
+	};
+
+	axp_gpio1_adc_pin: gpio1-adc-pin {
+		pins = "GPIO1";
+		function = "adc";
+	};
+};
+
+/* The DVFS range covers the A20 OPP table (1.0 V @ 144 MHz .. 1.4 V @ 960 MHz) */
+/*
+ * CPU core supply (DVFS through cpu-supply). The first real boot (2026-09-26)
+ * froze the whole system each time the CPU went idle, right after the menu
+ * loaded; RetrOrangePi never scaled the voltage (no cpu-supply: fixed 1.4 V
+ * from U-Boot). Suspects: instability at the 1.0 V OPPs (144/312 MHz) on this
+ * board, or the frequency rising before the AXP209 output has settled (the
+ * driver declares no ramp time). So, until measured on hardware:
+ * - floor at 1.2 V: OPPs below 720 MHz are dropped by the OPP core;
+ * - ramp-delay: DCDC2 slews at 1.6 mV/us and the kernel waits for it.
+ * The overlay "cpu-lowvolt" restores the 1.0 V floor for testing.
+ * TODO(hw): find the lowest stable voltage and restore the low OPPs.
+ */
+&reg_dcdc2 {
+	regulator-always-on;
+	regulator-min-microvolt = <1200000>;
+	regulator-max-microvolt = <1400000>;
+	regulator-ramp-delay = <1600>;
+	regulator-name = "vdd-cpu";
+};
+
+&reg_dcdc3 {
+	regulator-always-on;
+	regulator-min-microvolt = <1000000>;
+	regulator-max-microvolt = <1400000>;
+	regulator-name = "vdd-int-dll";
+};
+
+&reg_ldo1 {
+	regulator-name = "vdd-rtc";
+};
+
+/* AVCC, and the enable of the 3.3 V buck U15: must never be turned off */
+&reg_ldo2 {
+	regulator-always-on;
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
+	regulator-name = "avcc";
+};
+
+/*
+ * LDO3 = VCC-PE, LDO4 = VCC-PG (I/O banks only broken out to the SV2/SV6
+ * headers and test pads). No consumer, so Linux turns them off after boot,
+ * as the production kernel did.
+ */
+&reg_ldo3 {
+	regulator-min-microvolt = <2800000>;
+	regulator-max-microvolt = <2800000>;
+	regulator-name = "vcc-pe";
+	regulator-soft-start;
+	regulator-ramp-delay = <1600>;
+};
+
+&reg_ldo4 {
+	regulator-min-microvolt = <2800000>;
+	regulator-max-microvolt = <2800000>;
+	regulator-name = "vcc-pg";
+};
+
+/*
+ * AT24C16 EEPROM U5 on TWI1 (PB18/PB19). Disabled: on the first hardware
+ * boot (2026-09-26) the bus was stuck ("i2c i2c-1: mv64xxx: I2C bus locked",
+ * twice, 2 s each), which cost 4.2 s of boot time, and nothing uses the EEPROM.
+ * TODO(hw): check whether U5 and the pull-ups R42/R44 are fitted.
+ */
+&i2c1 {
+	status = "disabled";
+
+	eeprom: eeprom@50 {
+		compatible = "atmel,24c16";
+		reg = <0x50>;
+		pagesize = <16>;
+	};
+};
+
+/*
+ * microSD, card detect PH1 with the external 47k pull-up R41.
+ * post-power-on-delay-ms: the MMC core waits this long twice while "powering
+ * up" the card before its first command (default 10 ms each, on the path to
+ * the root filesystem). The card supply is the always-on 3.3 V rail, powered
+ * since the boot ROM read the card, so nothing ramps; 1 ms still covers the
+ * 74 clocks the SD spec asks for at 400 kHz.
+ */
+&mmc0 {
+	vmmc-supply = <&reg_vcc3v3>;
+	bus-width = <4>;
+	cd-gpios = <&pio 7 1 GPIO_ACTIVE_LOW>;	/* PH1 */
+	post-power-on-delay-ms = <1>;
+	status = "okay";
+};
+
+/*
+ * eMMC U23 (KLMAG2GEND, 16 GB, "Pro" part). Its DAT4-DAT7 are wired to
+ * PC12-PC15, but the A20 has no SDC2 function on those pins (the 6.18
+ * pinctrl driver only offers it on the R40), so the bus is 4-bit.
+ * Enabled by the emmc overlay.
+ */
+&mmc2 {
+	vmmc-supply = <&reg_vcc3v3>;
+	vqmmc-supply = <&reg_vcc3v3>;
+	bus-width = <4>;
+	non-removable;
+	mmc-pwrseq = <&mmc2_pwrseq>;
+	status = "disabled";
+};
+
+/*
+ * WiFi/BT module U$2: AP6210 (BCM43362 WiFi + BCM20710 BT). The schematic
+ * symbol says AP6212 but its value field says AP6210, and RetrOrangePi used
+ * the AP6210 firmware successfully. WiFi needs brcmfmac43362-sdio firmware.
+ * Some units might carry an AP6212 (BCM43430, brcmfmac43430-sdio firmware);
+ * the WiFi node is the same for both.
+ */
+&mmc3 {
+	vmmc-supply = <&reg_vcc3v3>;
+	mmc-pwrseq = <&mmc3_pwrseq>;
+	bus-width = <4>;
+	non-removable;
+	status = "okay";
+
+	brcmf: wifi@1 {
+		reg = <1>;
+		compatible = "brcm,bcm4329-fmac";
+		interrupt-parent = <&pio>;
+		interrupts = <7 10 IRQ_TYPE_LEVEL_LOW>;	/* PH10 / EINT10 WL_HOST_WAKE */
+		interrupt-names = "host-wake";
+	};
+};
+
+/* USB0: upper connector of the stacked USB-A USB2, host only */
+&ohci0 {
+	status = "okay";
+};
+
+&ohci1 {
+	status = "okay";
+};
+
+&otg_sram {
+	status = "okay";
+};
+
+&pio {
+	/* 32.768 kHz LPO for the AP6210 WiFi and BT (PI12 = CLK_OUT_A) */
+	pinctrl-names = "default";
+	pinctrl-0 = <&clk_out_a_pin>;
+
+	lcd0_rgb888_pins: lcd0-rgb888-pins {
+		pins = "PD0", "PD1", "PD2", "PD3", "PD4", "PD5",
+		       "PD6", "PD7", "PD8", "PD9", "PD10", "PD11",
+		       "PD12", "PD13", "PD14", "PD15", "PD16", "PD17",
+		       "PD18", "PD19", "PD20", "PD21", "PD22", "PD23",
+		       "PD24", "PD25", "PD26", "PD27";
+		function = "lcd0";
+	};
+};
+
+&pwm {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm0_pin>;
+	status = "okay";
+};
+
+&tcon0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&lcd0_rgb888_pins>;
+};
+
+/* LCD on TCON0 channel 0; HDMI is reachable from TCON0 and TCON1 (dtsi) */
+&tcon0_out {
+	tcon0_out_panel: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&panel_input>;
+	};
+};
+
+/* Debug console, header "UART0" (PB22 TX, PB23 RX) */
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pb_pins>;
+	status = "okay";
+};
+
+/* AP6210 Bluetooth: UART2 on PI16-PI19 with RTS/CTS */
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart2_pi_pins>, <&uart2_cts_rts_pi_pins>;
+	uart-has-rtscts;
+	status = "okay";
+
+	/*
+	 * AP6210 BT (BCM20710), modelled like sun7i-a20-cubietruck.dts; the
+	 * RetrOrangePi image loaded ap6210/bcm20710a1.hcd and BT worked.
+	 * Units with an AP6212 would need "brcm,bcm43430a1-bt" instead.
+	 * PH25 has no EINT, so host wake cannot be an interrupt (as on the
+	 * Cubietruck).
+	 */
+	bluetooth {
+		compatible = "brcm,bcm20702a1";
+		clocks = <&ccu CLK_OUT_A>;
+		clock-names = "lpo";
+		device-wakeup-gpios = <&pio 7 24 GPIO_ACTIVE_LOW>;	/* PH24 BT_WAKE */
+		host-wakeup-gpios = <&pio 7 25 GPIO_ACTIVE_LOW>;	/* PH25 BT_HOST_WAKE */
+		shutdown-gpios = <&pio 7 18 GPIO_ACTIVE_HIGH>;	/* PH18 BT_RST_N */
+		max-speed = <1500000>;
+	};
+};
+
+/* No VBUS control on any port (always on), and no ID/VBUS detect pins */
+&usb_otg {
+	dr_mode = "host";
+	status = "okay";
+};
+
+&usbphy {
+	status = "okay";
+};

@@ -1,0 +1,8 @@
+0.67 rcS start
+0.77 mounts
+0.78 bootreason
+4.00 data-partition
+4.01 clock
+4.01 rcS done
+5.04 bg: menu up (waited 0 s)
+5.15 bg: mixer

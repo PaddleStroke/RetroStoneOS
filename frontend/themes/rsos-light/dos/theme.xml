@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: dos sets its accent color, console art (carbon/pc.svg: _art/carbon, CC BY-NC-SA: LICENSE.txt; an alias, Carbon has no dos art) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>2f6db5</accent>
+		<icon>carbon/pc</icon>
+		<tagline>MS-DOS · 1981</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

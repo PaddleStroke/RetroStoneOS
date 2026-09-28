@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: RetroStoneOS <noreply@8bcraft.com>
+Date: Sun, 27 Sep 2026 12:00:00 +0200
+Subject: [PATCH] clk: sunxi-ng: a10: register the CCU driver at subsys_initcall
+
+The A10/A20 CCU became a platform driver (module_platform_driver, i.e.
+device_initcall), but drivers/pinctrl is linked before drivers/clk. So
+at device_initcall time the A20 pin controller is probed first, fw_devlink
+sees that its "apb" clock supplier (the CCU) is not bound yet and defers
+it, and deferred probes are only retried from late_initcall on
+(deferred_probe_initcall). Everything that needs pins (the SD card, I2C
+and the PMIC, the UARTs, the display) then probes from the late_initcall
+flush onwards: on the RetroStone2 the pin controller probed at 0.199 s and
+the SD host at 0.309 s instead of about 0.1 s, which delayed the root
+filesystem mount and /sbin/init.
+
+Register the driver at subsys_initcall. The platform devices exist since
+arch_initcall_sync (of_platform_default_populate_init), and the CCU's own
+suppliers are the fixed 24 MHz and 32 kHz oscillators (CLK_OF_DECLARE), so
+it binds at once and every consumer finds it bound at device_initcall.
+---
+ drivers/clk/sunxi-ng/ccu-sun4i-a10.c | 13 ++++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/clk/sunxi-ng/ccu-sun4i-a10.c b/drivers/clk/sunxi-ng/ccu-sun4i-a10.c
+--- a/drivers/clk/sunxi-ng/ccu-sun4i-a10.c
++++ b/drivers/clk/sunxi-ng/ccu-sun4i-a10.c
+@@ -1491,7 +1491,17 @@
+ 		.of_match_table		= sun4i_a10_ccu_ids,
+ 	},
+ };
+-module_platform_driver(sun4i_a10_ccu_driver);
++
++/*
++ * Before device_initcall: the pin controller (drivers/pinctrl is linked
++ * before drivers/clk) and every other consumer must find the CCU bound,
++ * or fw_devlink defers them until late_initcall.
++ */
++static int __init sun4i_a10_ccu_init(void)
++{
++	return platform_driver_register(&sun4i_a10_ccu_driver);
++}
++subsys_initcall(sun4i_a10_ccu_init);
+
+ MODULE_IMPORT_NS("SUNXI_CCU");
+ MODULE_DESCRIPTION("Support for the Allwinner A10/A20 CCU");
+--
+2.43.0

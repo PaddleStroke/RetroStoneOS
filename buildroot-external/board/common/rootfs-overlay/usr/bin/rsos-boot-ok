@@ -1,0 +1,178 @@
+#!/bin/sh
+# rsos-boot-ok: confirm the running A/B slot (board/retrostone2/boot.cmd,
+# docs/build.md "A/B slots and the boot state").
+#
+#   rsos-boot-ok          the frontend runs it (detached) once its menu is up,
+#                         outside charge mode: wait until the boot is stable,
+#                         then confirm the slot
+#   rsos-boot-ok now      confirm at once (UART shell)
+#   rsos-boot-ok refund   rcK, on an orderly shutdown or reboot that comes
+#                         before the confirmation: give back the try that
+#                         U-Boot counted for this boot (the boot did not fail)
+#   rsos-boot-ok status   print the boot state
+#
+# U-Boot counts every boot before the kernel starts (rsos_tries - 1 for a
+# slot on trial, rsos_fails + 1 for a confirmed one) and says so with
+# rsos.boot=pending on the kernel command line; rcS copies that to
+# /run/rsos/boot-state. Confirming sets rsos_ok=1 rsos_tries=0 rsos_fails=0
+# and clears rsos_fallback (one fw_setenv, a single write of one of the two
+# redundant copies; nothing is written when there is nothing to change).
+#
+# "Stable" (review S5): the network drivers that the settings ask for are
+# loaded and the Ethernet PHY parked (/run/rsos/net-applied, written at the
+# end of "rsos-net apply", which does not run in charge mode), then 30 s
+# without a panic, a hang (hardware watchdog) or a frontend restart. In
+# charge mode it keeps waiting: "rsos-net apply" runs when the user leaves
+# charge mode. Only one waiter runs at a time (a respawned frontend starts a
+# new one when the first gives up).
+# RSOS_BOOT_OK_DELAY (30), RSOS_RUN (/run/rsos), RSOS_CMDLINE
+# (/proc/cmdline), RSOS_FW_CONFIG and RSOS_TEST_PATH (a PATH prefix) are for
+# tests (board/common/tests/boot-ok-test.sh).
+#
+# /run/rsos/boot-state: pending | confirmed | refunded | ok (nothing to do).
+# /run/rsos/boot-fallback: the slot this boot fell back from, if U-Boot fell
+# back (for the UI: "the previous system was restored").
+
+PATH=${RSOS_TEST_PATH:+$RSOS_TEST_PATH:}/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+RUN=${RSOS_RUN:-/run/rsos}
+DELAY=${RSOS_BOOT_OK_DELAY:-30}
+FW_CONFIG=${RSOS_FW_CONFIG:-/etc/fw_env.config}
+
+get() {
+	fw_printenv -n "$1" 2> /dev/null
+}
+
+msg() {
+	echo "rsos-boot-ok: $*" >&2
+}
+
+read -r CMDLINE < "${RSOS_CMDLINE:-/proc/cmdline}"
+BOOTED=
+BOOTST=
+for w in $CMDLINE; do
+	case "$w" in
+	rsos.slot=*) BOOTED=${w#rsos.slot=} ;;
+	rsos.boot=*) BOOTST=${w#rsos.boot=} ;;
+	esac
+done
+
+state() {
+	if [ -r "$RUN/boot-state" ]; then
+		read -r _s _ < "$RUN/boot-state"
+		echo "$_s"
+	elif [ "$BOOTST" = pending ]; then
+		echo pending
+	else
+		echo ok
+	fi
+}
+
+if [ "$1" = "status" ]; then
+	echo "slot=$(get rsos_slot) ok=$(get rsos_ok) tries=$(get rsos_tries) fails=$(get rsos_fails) fallback=$(get rsos_fallback) maxfails=$(get rsos_maxfails)"
+	echo "booted=$BOOTED boot=$(state)"
+	exit 0
+fi
+
+# No A/B boot state on this board (no U-Boot environment).
+[ -f "$FW_CONFIG" ] || exit 0
+mkdir -p "$RUN"
+
+# Only the slot that is actually running, and only when it was booted by
+# boot.scr (U-Boot may have fallen back; a boot through bootcmd's last-resort
+# "bootflow scan" has no rsos.slot=).
+slot_check() {
+	if [ -z "$BOOTED" ]; then
+		msg "no rsos.slot= on the kernel command line (not booted by boot.scr), not marking"
+		return 1
+	fi
+	if [ "$BOOTED" != "$(get rsos_slot)" ]; then
+		msg "running slot $BOOTED is not the selected slot, not marking"
+		return 1
+	fi
+	return 0
+}
+
+lock() {
+	exec 9> "$RUN/boot-ok.lock"
+	flock 9
+}
+
+confirm() {
+	lock
+	case "$(state)" in
+	confirmed | refunded) return 0 ;;
+	esac
+	slot_check || return 1
+	_fb=$(get rsos_fallback)
+	[ -n "$_fb" ] && echo "$_fb" > "$RUN/boot-fallback"
+	if [ "$(get rsos_ok)" = 1 ] && [ "$(get rsos_tries)" = 0 ] &&
+		[ "$(get rsos_fails)" = 0 ] && [ -z "$_fb" ]; then
+		:
+	else
+		printf 'rsos_ok 1\nrsos_tries 0\nrsos_fails 0\nrsos_fallback\n' | fw_setenv -s - || return 1
+	fi
+	echo confirmed > "$RUN/boot-state"
+	msg "slot $BOOTED confirmed"
+}
+
+refund() {
+	lock
+	[ "$(state)" = pending ] || return 0
+	slot_check 2> /dev/null || return 0
+	if [ "$(get rsos_ok)" = 0 ]; then
+		_t=$(get rsos_tries)
+		case "$_t" in [0-8]) fw_setenv rsos_tries $((_t + 1)) ;; esac
+	else
+		_f=$(get rsos_fails)
+		case "$_f" in [1-9]) fw_setenv rsos_fails $((_f - 1)) ;; esac
+	fi
+	echo refunded > "$RUN/boot-state"
+}
+
+case "$1" in
+now)
+	confirm
+	exit $?
+	;;
+refund)
+	refund
+	exit $?
+	;;
+"") ;;
+*)
+	echo "usage: rsos-boot-ok [now|refund|status]" >&2
+	exit 2
+	;;
+esac
+
+# --- Wait for a stable boot (one waiter at a time).
+exec 8> "$RUN/boot-ok.wait"
+flock -n 8 || exit 0
+case "$(state)" in
+confirmed | refunded) exit 0 ;;
+esac
+# The menu is the oldest rsos-frontend process (a game or the splash would
+# be younger): a crash and respawn of the menu changes it.
+fe=
+for p in $(pidof rsos-frontend); do
+	[ -z "$fe" ] || [ "$p" -lt "$fe" ] && fe=$p
+done
+waited=0
+while [ ! -e "$RUN/net-applied" ]; do
+	_br=
+	[ -r "$RUN/bootreason" ] && read -r _br _ < "$RUN/bootreason"
+	if [ "$_br" != charger ] && [ $waited -ge 120 ]; then
+		msg "the network settings were not applied after 120 s, going on"
+		break
+	fi
+	sleep 2
+	waited=$((waited + 2))
+done
+sleep "$DELAY"
+if [ -n "$fe" ] && ! kill -0 "$fe" 2> /dev/null; then
+	msg "the frontend restarted, not confirming (its new instance starts over)"
+	exit 1
+fi
+confirm

@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: pico8 sets its accent color, icon (_art/icon-pico8.svg, RetroStoneOS original art) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>e0245a</accent>
+		<icon>icon-pico8</icon>
+		<tagline>Fantasy console · 2015</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

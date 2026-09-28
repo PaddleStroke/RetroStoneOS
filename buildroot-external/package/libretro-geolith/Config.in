@@ -1,0 +1,21 @@
+config BR2_PACKAGE_LIBRETRO_GEOLITH
+	bool "libretro-geolith (experimental)"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	select BR2_PACKAGE_ZLIB
+	help
+	  Geolith: accurate Neo Geo AES / MVS / CD emulator, built as a
+	  libretro core (BSD-3-Clause). Experimental licence-clean
+	  alternative to fbneo for Neo Geo: cartridges must be in the
+	  .neo format, and the BIOS zips of a recent MAME set are needed
+	  (aes.zip, neogeo.zip, neocdz.zip). Speed on the 1 GHz A20 not
+	  measured yet.
+
+	  Installs /usr/lib/libretro/geolith_libretro.so and
+	  /usr/share/rsos/cores/geolith.ini.
+
+	  https://github.com/libretro/geolith-libretro
+
+comment "libretro-geolith needs a toolchain w/ dynamic library"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_STATIC_LIBS

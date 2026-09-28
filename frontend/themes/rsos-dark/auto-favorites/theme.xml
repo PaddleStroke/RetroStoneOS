@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: auto-favorites sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>e0a800</accent>
+		<icon>carbon/auto-favorites</icon>
+		<tagline>Your favorite games</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

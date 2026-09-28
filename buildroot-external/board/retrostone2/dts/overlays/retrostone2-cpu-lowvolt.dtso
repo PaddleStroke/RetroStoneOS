@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * RetroStone2: allow the CPU core supply down to 1.0 V again, which restores
+ * the 144 and 312 MHz OPPs of sun7i-a20.dtsi (the base DTS floors it at 1.2 V
+ * after the idle freezes seen on the first boot, see the comment on reg_dcdc2).
+ *
+ * For testing only: `fw_setenv rsos_overlays cpu-lowvolt`, reboot, leave the
+ * menu idle for a few minutes. If it freezes, 1.0 V is not stable on this board.
+ */
+
+/dts-v1/;
+/plugin/;
+
+&reg_dcdc2 {
+	regulator-min-microvolt = <1000000>;
+};

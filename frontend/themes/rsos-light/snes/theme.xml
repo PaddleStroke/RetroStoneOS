@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: snes sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>7d5ba6</accent>
+		<icon>carbon/snes</icon>
+		<tagline>Nintendo · 1990</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

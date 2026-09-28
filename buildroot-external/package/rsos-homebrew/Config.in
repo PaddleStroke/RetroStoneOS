@@ -1,0 +1,36 @@
+config BR2_PACKAGE_RSOS_HOMEBREW
+	bool "rsos-homebrew"
+	help
+	  Free homebrew games pre-installed with RetroStoneOS, so the
+	  console is fun out of the box.
+
+	  The ROMs are the owner's approved set in
+	  homebrew/license ok/ at the top of the RetroStoneOS tree. Their
+	  authors gave 8BCraft permission to ship them in the
+	  RetroStoneOS images only, so they are not in git (homebrew/ is
+	  gitignored) and the package is never redistributed by
+	  "make legal-info". Every file is checked against
+	  rsos-homebrew.hash before it is installed.
+
+	  Installs:
+	  - /usr/share/rsos/homebrew/<system>/: ROMs, gamelist.xml and
+	    media/images/ (box art)
+	  - /usr/share/rsos/licenses/homebrew/: licences, permission
+	    notes and the authors' readme files
+	  - /usr/bin/rsos-seed-homebrew: copies the games to
+	    /data/roms/<system>/ on the first boot
+
+	  See docs/homebrew.md.
+
+# Defined even when the package is disabled: the .mk sets the local SITE from
+# it at parse time, and Buildroot parses every package .mk.
+config BR2_PACKAGE_RSOS_HOMEBREW_SOURCE_DIR
+	string "directory of the approved games"
+	default "$(BR2_EXTERNAL_RETROSTONE_PATH)/../homebrew/license ok"
+	help
+	  Local directory holding the approved ROMs listed in
+	  package/rsos-homebrew/games.txt. Spaces in the path are
+	  allowed. The build stops if a listed file is missing or does
+	  not match rsos-homebrew.hash.
+
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/rsos-homebrew/rsos-homebrew-open/Config.in"

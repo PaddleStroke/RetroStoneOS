@@ -1,0 +1,2406 @@
+# Greek translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "Δεν ανοίγει το αρχείο zip (%s)"
+
+msgid "No playable file in this zip"
+msgstr "Δεν υπάρχει παιχνίδι σε αυτό το zip"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "Το αρχείο σε αυτό το zip είναι πολύ μεγάλο (%llu MB)"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "Δεν γίνεται εξαγωγή του %s από το zip (%s)"
+
+msgid "Game file not found"
+msgstr "Το αρχείο του παιχνιδιού δεν βρέθηκε"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "Τα αρχεία 7z δεν υποστηρίζονται εδώ: χρησιμοποίησε .zip ή αποσυμπίεσέ το"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "Δεν διαβάζεται το αρχείο του παιχνιδιού (%s)"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "Αυτό το σύστημα"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s: το %s δεν είναι το σωστό BIOS"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%s ή %s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "%s: χρειάζεται %s στον φάκελο %s"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "Απενεργοποίηση..."
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "Το χειριστήριο του παίκτη 1 αποσυνδέθηκε: παύση"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "Παίκτης 1: %s"
+
+msgid "Saving..."
+msgstr "Αποθήκευση..."
+
+msgid "This game cannot save a state now"
+msgstr "Αυτό το παιχνίδι δεν μπορεί να αποθηκεύσει κατάσταση τώρα"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "Η κατάσταση ΔΕΝ αποθηκεύτηκε: %s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "Η κατάσταση φορτώθηκε, θέση %d"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "Καμία κατάσταση στη θέση %d"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "Δεν φορτώνεται η κατάσταση της θέσης %d"
+
+#, c-format
+msgid "State slot %d"
+msgstr "Θέση κατάστασης %d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "Θέση κατάστασης %d (κενή)"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "Το παιχνίδι ξεκίνησε από την αρχή"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "Συνδέθηκε: %s"
+
+msgid "Battery empty: game saved"
+msgstr "Η μπαταρία άδειασε: το παιχνίδι αποθηκεύτηκε"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "Χαμηλή μπαταρία (%d%%)"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "%d ρύθμιση, ~%d λεπτά"
+msgstr[1] "%d ρυθμίσεις, ~%d λεπτά"
+
+msgid "No benchmark for this system"
+msgstr "Δεν υπάρχει τεστ ταχύτητας για αυτό το σύστημα"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "Τεστ: το παιχνίδι δεν μπορεί να αποθηκεύσει κατάσταση τώρα"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "Τεστ: δεν γίνεται εγγραφή του %s"
+
+msgid "No result to use"
+msgstr "Κανένα αποτέλεσμα για χρήση"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "Άγνωστη διαμόρφωση %s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "Δεν αποθηκεύτηκε: %s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "Το «%s» αποθηκεύτηκε για αυτό το παιχνίδι (από την επόμενη έναρξη)"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "Το «%s» αποθηκεύτηκε: την επόμενη φορά με %s"
+
+msgid "The emulator stopped responding"
+msgstr "Ο εξομοιωτής δεν αποκρίνεται"
+
+msgid "Cannot load the emulator core"
+msgstr "Δεν φορτώνεται ο πυρήνας του εξομοιωτή"
+
+msgid "Benchmark: bad plan"
+msgstr "Τεστ: λάθος πλάνο"
+
+msgid "Cannot start the save thread"
+msgstr "Δεν ξεκινά η διεργασία αποθήκευσης"
+
+msgid "Cannot open the display"
+msgstr "Δεν ανοίγει η οθόνη"
+
+msgid "This core needs a game file"
+msgstr "Αυτός ο πυρήνας χρειάζεται αρχείο παιχνιδιού"
+
+msgid "The emulator could not load this game"
+msgstr "Ο εξομοιωτής δεν μπόρεσε να φορτώσει αυτό το παιχνίδι"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "Συνεχίζουμε!"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "Αποτυχία εκκίνησης GPU (framebuffer 0x%x)"
+
+msgid "This build cannot run GLES games"
+msgstr "Αυτή η έκδοση δεν τρέχει παιχνίδια GLES"
+
+msgid "No GPU found (lima)"
+msgstr "Δεν βρέθηκε GPU (lima)"
+
+msgid "The game was stopped"
+msgstr "Το παιχνίδι σταμάτησε"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "Ο εξομοιωτής κράσαρε (%s). Οι αποθηκεύσεις του παιχνιδιού, εκτός από τα τελευταία δευτερόλεπτα, είναι ασφαλείς."
+
+msgid "Could not start the game"
+msgstr "Το παιχνίδι δεν ξεκίνησε"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "Ο εξομοιωτής σταμάτησε να αποκρίνεται. Οι αποθηκεύσεις του παιχνιδιού, εκτός από τα τελευταία δευτερόλεπτα, είναι ασφαλείς."
+
+msgid "Cannot start the game process"
+msgstr "Δεν ξεκινά η διεργασία του παιχνιδιού"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "Ο εξομοιωτής απέτυχε (κωδικός %d)"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "Ακέραιο"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "Πλήρης οθόνη"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "Αναλογία"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "Ενεργό"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "Ανενεργό"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "(παιχν.)"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "(όλα)"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "(τεστ)"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "κράσαρε"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "κόλλησε"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "σταμάτησε"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "απέτυχε"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "Συνέχεια"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "Θέση %d"
+
+msgid "Save state"
+msgstr "Αποθήκευση κατάστασης"
+
+msgid "Load state"
+msgstr "Φόρτωση κατάστασης"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "Δίσκος"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "Επανεκκίνηση"
+
+msgid "Core options"
+msgstr "Ρυθμίσεις πυρήνα"
+
+msgid "Scaling"
+msgstr "Κλιμάκωση"
+
+msgid "Show FPS"
+msgstr "Εμφάνιση FPS"
+
+msgid "Fast-forward"
+msgstr "Γρήγορα μπροστά"
+
+msgid "Benchmark this game"
+msgstr "Τεστ ταχύτητας παιχνιδιού"
+
+msgid "Controls"
+msgstr "Χειρισμός"
+
+msgid "Exit game"
+msgstr "Έξοδος από το παιχνίδι"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "Αποθήκευση για αυτό το παιχνίδι"
+
+msgid "Save for all games (this core)"
+msgstr "Αποθήκευση για όλα (αυτός ο πυρήνας)"
+
+msgid "Reset to defaults"
+msgstr "Επαναφορά προεπιλογών"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "Παίκτης %d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s (μοχλός)"
+
+msgid "D-pad as left stick (P1)"
+msgstr "Σταυρός ως αριστερός μοχλός (P1)"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "Πάνω"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "Κάτω"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "Αριστερά"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "Δεξιά"
+
+msgid "Left stick"
+msgstr "Αριστερός μοχλός"
+
+msgid "Right stick"
+msgstr "Δεξιός μοχλός"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "Δοκιμές"
+
+msgid "Each run"
+msgstr "Κάθε δοκιμή"
+
+msgid "from now, no input"
+msgstr "από εδώ, χωρίς πάτημα"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "Διακοπή"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs (κάρτα SD)"
+
+msgid "Results"
+msgstr "Αποτελέσματα"
+
+msgid "Start benchmark"
+msgstr "Έναρξη τεστ"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "εκτός κατάταξης"
+
+msgid "blank?"
+msgstr "κενή οθόνη;"
+
+msgid "Use this for this game"
+msgstr "Χρήση για αυτό το παιχνίδι"
+
+msgid "Resume game"
+msgstr "Συνέχεια παιχνιδιού"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "Τεστ ταχύτητας"
+
+msgid "Benchmark results"
+msgstr "Αποτελέσματα τεστ"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "Κενή"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "(παιχν.) για αυτό το παιχνίδι, (όλα) για όλα τα παιχνίδια, * στην έξοδο"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A: επιλογή  B: συνέχεια  </>: αλλαγή"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A: επιλογή  B: πίσω  </>: αλλαγή"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "Αποθήκευση στη θέση %d..."
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "Η θέση %d είναι κενή"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "Μπήκε ο δίσκος %d"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "Δεν γίνεται αλλαγή στον δίσκο %d"
+
+msgid "Could not save the options"
+msgstr "Οι ρυθμίσεις δεν αποθηκεύτηκαν"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "Αποθηκεύτηκε για: %s"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "Αποθηκεύτηκε για όλα τα παιχνίδια του %s"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "Επαναφορά προεπιλογών (αποθηκεύεται στην έξοδο)"
+
+msgid "Options saved for this game"
+msgstr "Οι ρυθμίσεις αποθηκεύτηκαν για αυτό το παιχνίδι"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "Πίνακας: %s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "Η αποθήκευση απέτυχε: %s (ξαναδοκιμάζω)"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "Το παιχνίδι αποθηκεύτηκε"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "Η αυτόματη κατάσταση ΔΕΝ αποθηκεύτηκε: %s"
+
+msgid "Auto state saved"
+msgstr "Η αυτόματη κατάσταση αποθηκεύτηκε"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "Η κατάσταση %d ΔΕΝ αποθηκεύτηκε: %s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "Η κατάσταση αποθηκεύτηκε, θέση %d"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "Το αρχείο αποθήκευσης δεν διαβάζεται: η αποθήκευση απενεργοποιήθηκε"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr ","
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr "."
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "GB"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "MB"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "KB"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%d/%m/%Y"
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%d/%m/%Y %H:%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "Η οθόνη δεν δέχτηκε αυτή τη συχνότητα"
+
+msgid "No emulator is installed for this game."
+msgstr "Δεν υπάρχει εξομοιωτής για αυτό το παιχνίδι."
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "Αυτό το παιχνίδι δεν ξεκινά (λείπει το BIOS;)."
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "Δεν ξεκινά η διεργασία του παιχνιδιού (%s)."
+
+msgid "The game could not be started."
+msgstr "Το παιχνίδι δεν ξεκίνησε."
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "Το διαμέρισμα δεδομένων δεν επανήλθε. Ίσως χρειαστεί να αντιγράψεις ξανά τα παιχνίδια και τις αποθηκεύσεις σου."
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "Το διαμέρισμα δεδομένων δεν διαβαζόταν και διαμορφώθηκε ξανά."
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "Το διαμέρισμα δεδομένων έχει σφάλματα: η αποθήκευση μπορεί να αποτύχει. Κάνε αντίγραφο των αποθηκεύσεών σου."
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "Η τελευταία ενημέρωση δεν ξεκίνησε, οπότε επανήλθε η προηγούμενη έκδοση."
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "Η κάρτα SD ελέγχθηκε μετά από απότομη διακοπή ρεύματος"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "Προετοιμασία της κάρτας SD, περίμενε..."
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "Έλεγχος της κάρτας SD, περίμενε..."
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "Αγαπημένα"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "Πρόσφατα"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "Δεν υπάρχουν πια παιχνίδια σε αυτόν τον φάκελο"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "διάλεξε"
+
+msgid "change"
+msgstr "άλλαξε"
+
+msgid "select"
+msgstr "OK"
+
+msgid "back"
+msgstr "πίσω"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "γράψε"
+
+msgid "delete"
+msgstr "σβήσε"
+
+msgid "space"
+msgstr "κενό"
+
+msgid "shift"
+msgstr "κεφαλαία"
+
+msgid "ok"
+msgstr "OK"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "άκυρο"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "ΚΕΦ"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "ΚΕΝΟ"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "ΣΒΗΣΕ"
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "OK"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "Αυτόματο"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "Αναλογία"
+
+msgid "Integer"
+msgstr "Ακέραιο"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "Αυτόματο"
+
+msgid "Basic"
+msgstr "Απλή"
+
+msgid "Detailed"
+msgstr "Αναλυτική"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "Πάνω δεξιά"
+
+msgid "Top left"
+msgstr "Πάνω αριστερά"
+
+msgid "Bottom right"
+msgstr "Κάτω δεξιά"
+
+msgid "Bottom left"
+msgstr "Κάτω αριστερά"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Hz (παλιά)"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "Αυτόματο (όποιο ξεκινά)"
+
+msgid "Built-in"
+msgstr "Ενσωματωμένο"
+
+msgid "External"
+msgstr "Εξωτερικό"
+
+msgid "Could not save the settings"
+msgstr "Οι ρυθμίσεις δεν αποθηκεύτηκαν"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "Τηλεόραση"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "Συχνότητα οθόνης: 60 Hz"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "Συχνότητα οθόνης: πάλι 78 Hz"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "ΝΑ ΜΕΙΝΕΙ"
+
+msgid "REVERT"
+msgstr "ΕΠΑΝΑΦΟΡΑ"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"Η οθόνη ανανεώνεται τώρα στα 60 Hz.\n"
+"Να μείνει έτσι; Επαναφορά σε %d δευτ."
+
+msgid "Display"
+msgstr "Οθόνη"
+
+msgid "Brightness"
+msgstr "Φωτεινότητα"
+
+msgid "LCD refresh rate"
+msgstr "Συχνότητα οθόνης"
+
+msgid "HDMI resolution"
+msgstr "Ανάλυση HDMI"
+
+msgid "Game scaling"
+msgstr "Κλιμάκωση παιχνιδιών"
+
+msgid "Game list style"
+msgstr "Εμφάνιση λίστας παιχνιδιών"
+
+msgid "Battery in games"
+msgstr "Μπαταρία στα παιχνίδια"
+
+msgid "Battery position"
+msgstr "Θέση μπαταρίας"
+
+msgid "Button test"
+msgstr "Τεστ κουμπιών"
+
+msgid "no stick"
+msgstr "χωρίς μοχλό"
+
+msgid "Hold SELECT + START to exit"
+msgstr "Κράτα SELECT + START για έξοδο"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "Πάτα τον σταυρό ΠΑΝΩ"
+
+msgid "Press D-pad DOWN"
+msgstr "Πάτα τον σταυρό ΚΑΤΩ"
+
+msgid "Press D-pad LEFT"
+msgstr "Πάτα τον σταυρό ΑΡΙΣΤΕΡΑ"
+
+msgid "Press D-pad RIGHT"
+msgstr "Πάτα τον σταυρό ΔΕΞΙΑ"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "Πάτα το ΔΕΞΙ κουμπί (A)"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "Πάτα το ΚΑΤΩ κουμπί (B)"
+
+msgid "Press the TOP face button (X)"
+msgstr "Πάτα το ΠΑΝΩ κουμπί (X)"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "Πάτα το ΑΡΙΣΤΕΡΟ κουμπί (Y)"
+
+msgid "Press L1"
+msgstr "Πάτα L1"
+
+msgid "Press R1"
+msgstr "Πάτα R1"
+
+msgid "Press L2"
+msgstr "Πάτα L2"
+
+msgid "Press R2"
+msgstr "Πάτα R2"
+
+msgid "Press SELECT"
+msgstr "Πάτα SELECT"
+
+msgid "Press START"
+msgstr "Πάτα START"
+
+msgid "Press the left stick (L3)"
+msgstr "Πάτα τον αριστερό μοχλό (L3)"
+
+msgid "Press the right stick (R3)"
+msgstr "Πάτα τον δεξιό μοχλό (R3)"
+
+msgid "Push the left stick RIGHT"
+msgstr "Σπρώξε τον αριστερό μοχλό ΔΕΞΙΑ"
+
+msgid "Push the left stick DOWN"
+msgstr "Σπρώξε τον αριστερό μοχλό ΚΑΤΩ"
+
+msgid "Push the right stick RIGHT"
+msgstr "Σπρώξε τον δεξιό μοχλό ΔΕΞΙΑ"
+
+msgid "Push the right stick DOWN"
+msgstr "Σπρώξε τον δεξιό μοχλό ΚΑΤΩ"
+
+msgid "Configure controller"
+msgstr "Ρύθμιση χειριστηρίου"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "Βήμα %d από %d"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "Δεν υπάρχει; Περίμενε %d δευτ. για παράλειψη"
+
+msgid "Controller saved"
+msgstr "Το χειριστήριο αποθηκεύτηκε"
+
+msgid "The mapping could not be saved."
+msgstr "Η αντιστοίχιση δεν αποθηκεύτηκε."
+
+msgid "Configure a controller"
+msgstr "Ρύθμισε ένα χειριστήριο"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "δική σου"
+
+msgid "known pad"
+msgstr "γνωστό"
+
+msgid "standard"
+msgstr "τυπικό"
+
+msgid "keyboard"
+msgstr "πληκτρολόγιο"
+
+msgid "not configured"
+msgstr "χωρίς ρύθμιση"
+
+msgid "No external controller detected"
+msgstr "Δεν βρέθηκε εξωτερικό χειριστήριο"
+
+msgid "built-in"
+msgstr "ενσωματωμένο"
+
+msgid "Player 1"
+msgstr "Παίκτης 1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "Υπάρχουν κουμπιά C/Z"
+
+msgid "Players"
+msgstr "Παίκτες"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10 λεπτά"
+
+msgid "30 min"
+msgstr "30 λεπτά"
+
+msgid "1 hour"
+msgstr "1 ώρα"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "Ποτέ"
+
+msgid "please wait..."
+msgstr "περίμενε..."
+
+msgid "not set"
+msgstr "δεν ορίστηκε"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "σε λειτουργία"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi: απενεργοποίηση, περίμενε..."
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "Ethernet: απενεργοποίηση, περίμενε..."
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "Bluetooth: απενεργοποίηση, περίμενε..."
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi: ενεργοποίηση, περίμενε..."
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "Ethernet: ενεργοποίηση, περίμενε..."
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "Bluetooth: ενεργοποίηση, περίμενε..."
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "Δεν εκτελείται το %s"
+
+msgid "Could not save the WiFi settings"
+msgstr "Οι ρυθμίσεις Wi-Fi δεν αποθηκεύτηκαν"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "Ο κωδικός Wi-Fi έχει τουλάχιστον 8 χαρακτήρες."
+
+msgid "Set the network name first."
+msgstr "Όρισε πρώτα το όνομα δικτύου."
+
+msgid "WiFi password saved"
+msgstr "Ο κωδικός Wi-Fi αποθηκεύτηκε"
+
+msgid "WiFi network name"
+msgstr "Όνομα δικτύου Wi-Fi"
+
+msgid "WiFi password"
+msgstr "Κωδικός Wi-Fi"
+
+msgid "Console name"
+msgstr "Όνομα κονσόλας"
+
+msgid "Use letters, digits and dashes."
+msgstr "Χρησιμοποίησε γράμματα, αριθμούς και παύλες."
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "Όνομα κονσόλας: %s (στην επόμενη μεταφορά)"
+
+msgid "Network"
+msgstr "Δίκτυο"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Δίκτυο Wi-Fi"
+
+msgid "Transfer games from a computer or phone"
+msgstr "Παιχνίδια από υπολογιστή ή κινητό"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "Μεταφορά μέσω δικτύου"
+
+msgid "Stop when idle for"
+msgstr "Διακοπή μετά από αδράνεια"
+
+msgid "Keep receiving in the background"
+msgstr "Λήψη στο παρασκήνιο"
+
+msgid "WiFi off"
+msgstr "Wi-Fi ανενεργό"
+
+msgid "Ethernet off"
+msgstr "Ethernet ανενεργό"
+
+msgid "Bluetooth off"
+msgstr "Bluetooth ανενεργό"
+
+msgid "WiFi on"
+msgstr "Wi-Fi ενεργό"
+
+msgid "Ethernet on"
+msgstr "Ethernet ενεργό"
+
+msgid "Bluetooth on"
+msgstr "Bluetooth ενεργό"
+
+msgid "failed"
+msgstr "απέτυχε"
+
+msgid "Theme"
+msgstr "Θέμα"
+
+msgid "No theme found"
+msgstr "Δεν βρέθηκε θέμα"
+
+msgid "Game lists refreshed"
+msgstr "Οι λίστες παιχνιδιών ανανεώθηκαν"
+
+msgid "Game lists"
+msgstr "Λίστες παιχνιδιών"
+
+msgid "Favorites first"
+msgstr "Πρώτα τα αγαπημένα"
+
+msgid "Favorites & last played pages"
+msgstr "Σελίδες «Αγαπημένα» και «Πρόσφατα»"
+
+msgid "Refresh game lists"
+msgstr "Ανανέωση λιστών παιχνιδιών"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "Ερώτηση"
+
+msgid "Always resume"
+msgstr "Πάντα συνέχεια"
+
+msgid "Always start fresh"
+msgstr "Πάντα από την αρχή"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "Παιχνίδια"
+
+msgid "Resume games"
+msgstr "Συνέχεια παιχνιδιών"
+
+msgid "Auto-save on exit"
+msgstr "Αυτόματη αποθήκευση στην έξοδο"
+
+msgid "On launch"
+msgstr "Στην έναρξη"
+
+msgid "Powering off in a game always saves it"
+msgstr "Το κλείσιμο μέσα σε παιχνίδι το αποθηκεύει πάντα"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "Δεν ενημερώθηκε το /boot/rsos.env."
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "ΕΠΑΝΕΚΚΙΝΗΣΗ"
+
+msgid "LATER"
+msgstr "ΑΡΓΟΤΕΡΑ"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "Χρειάζεται επανεκκίνηση: η αλλαγή ισχύει από την επόμενη έναρξη."
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "%s ελεύθερα από %s"
+
+msgid "Storage"
+msgstr "Μνήμη"
+
+msgid "Game storage"
+msgstr "Μνήμη παιχνιδιών"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "Στικάκι USB"
+
+msgid "Import games"
+msgstr "Εισαγωγή παιχνιδιών"
+
+msgid "Export games"
+msgstr "Εξαγωγή παιχνιδιών"
+
+msgid "Back up saves"
+msgstr "Αντίγραφο αποθηκεύσεων"
+
+msgid "Eject USB drive"
+msgstr "Αφαίρεση στικακιού USB"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "Ερώτηση όταν μπαίνει στικάκι USB"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "Για προχωρημένους: κλειστό = γρήγορη εκκίνηση (επανεκκίνηση)"
+
+msgid "Internal eMMC"
+msgstr "Εσωτερική eMMC"
+
+msgid "M.2 SATA drive"
+msgstr "Δίσκος M.2 SATA"
+
+msgid "no battery"
+msgstr "χωρίς μπαταρία"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%d %%, γεμίζει σε %d ώ. %02d"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%d %%, διαρκεί ~%d ώ. %02d"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%d %%, φορτίζει"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%d %%, γεμάτη"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%d %%"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "φορτιστής, %s V"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "μπαταρία, %s V"
+
+msgid "charger connected"
+msgstr "φορτιστής συνδεδεμένος"
+
+msgid "battery"
+msgstr "μπαταρία"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C (ζεστό)"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "μη συνδεδεμένο"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s, μενού %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "%d σύστημα"
+msgstr[1] "%d συστήματα"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "%d παιχνίδι σε %s"
+msgstr[1] "%d παιχνίδια σε %s"
+
+msgid "System information"
+msgstr "Πληροφορίες κονσόλας"
+
+msgid "Version"
+msgstr "Έκδοση"
+
+msgid "Battery"
+msgstr "Μπαταρία"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "Τροφοδοσία"
+
+msgid "Input devices"
+msgstr "Συσκευές εισόδου"
+
+msgid "CPU temperature"
+msgstr "Θερμοκρασία CPU"
+
+msgid "1 min"
+msgstr "1 λεπτό"
+
+msgid "2 min"
+msgstr "2 λεπτά"
+
+msgid "5 min"
+msgstr "5 λεπτά"
+
+msgid "Voltage"
+msgstr "Τάση"
+
+msgid "AXP fuel gauge"
+msgstr "Μετρητής AXP"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "ΝΑΙ"
+
+msgid "NO"
+msgstr "ΟΧΙ"
+
+msgid "Restart the console?"
+msgstr "Επανεκκίνηση της κονσόλας;"
+
+msgid "Power off the console?"
+msgstr "Κλείσιμο της κονσόλας;"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "Ενέργεια"
+
+msgid "Restart"
+msgstr "Επανεκκίνηση"
+
+msgid "Power off"
+msgstr "Κλείσιμο"
+
+msgid "Battery saving"
+msgstr "Εξοικονόμηση μπαταρίας"
+
+msgid "Dim the screen after"
+msgstr "Χαμήλωμα οθόνης μετά από"
+
+msgid "Screen off after"
+msgstr "Σβήσιμο οθόνης μετά από"
+
+msgid "Battery gauge"
+msgstr "Μέτρηση μπαταρίας"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "Ζώνη ώρας: %s"
+
+msgid "Time zone"
+msgstr "Ζώνη ώρας"
+
+msgid "That date is not valid."
+msgstr "Αυτή η ημερομηνία δεν υπάρχει."
+
+msgid "The clock could not be set."
+msgstr "Το ρολόι δεν ρυθμίστηκε."
+
+msgid "Date and time set"
+msgstr "Η ημερομηνία και η ώρα ρυθμίστηκαν"
+
+msgid "Setting the clock needs the power module"
+msgstr "Το ρολόι χρειάζεται τη μονάδα τροφοδοσίας"
+
+msgid "Date & time"
+msgstr "Ημερομηνία και ώρα"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "Τώρα"
+
+msgid "Set the clock"
+msgstr "Ρύθμιση ρολογιού"
+
+msgid "Year"
+msgstr "Έτος"
+
+msgid "Month"
+msgstr "Μήνας"
+
+msgid "Day"
+msgstr "Ημέρα"
+
+msgid "Hour"
+msgstr "Ώρα"
+
+msgid "Minute"
+msgstr "Λεπτό"
+
+msgid "Set date and time"
+msgstr "Ορισμός ημερομηνίας και ώρας"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "Γλώσσα"
+
+msgid "Settings"
+msgstr "Ρυθμίσεις"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "Το %s δεν είναι εγκατεστημένο"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "Διάλεξε γλώσσα"
+
+msgid "This game is not in the list any more"
+msgstr "Αυτό το παιχνίδι δεν είναι πια στη λίστα"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "Αγαπημένο"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "Προεπιλογή συστήματος"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s (δοκιμαστικό)"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "Προεπιλογή (%s)"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "κανένας"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "Πυρήνας για αυτό το παιχνίδι"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "Πυρήνας για όλα τα παιχνίδια %s"
+
+msgid "Core"
+msgstr "Πυρήνας"
+
+msgid "none installed"
+msgstr "κανένας εγκατεστημένος"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "Παίξε"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "Αρχείο"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr ""
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr ""
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr ""
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr ""
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr ""
+
+msgctxt "system"
+msgid "32X"
+msgstr ""
+
+msgctxt "system"
+msgid "Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr ""
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr ""
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr ""
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr ""
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "Η κάρτα SD γέμισε"
+
+msgid "The USB drive was removed"
+msgstr "Το στικάκι USB αφαιρέθηκε"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "Σφάλμα ανάγνωσης: αφαιρέθηκε το στικάκι;"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "Το στικάκι USB γέμισε"
+
+msgid "The USB drive is read-only"
+msgstr "Το στικάκι USB είναι μόνο για ανάγνωση"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "Σφάλμα εγγραφής: αφαιρέθηκε το στικάκι;"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "αδράνεια"
+
+msgid "BIOS files"
+msgstr "Αρχεία BIOS"
+
+msgid "Themes"
+msgstr "Θέματα"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "Το στικάκι USB είναι απασχολημένο"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "Στικάκι USB έτοιμο: μπορείς να το βγάλεις"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "ΑΦΑΙΡΕΣΗ"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "Κεντρικός φάκελος"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s (αντίγραφο)"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "%d βιβλιοθήκη"
+msgstr[1] "όλες οι %d βιβλιοθήκες"
+
+msgid "Another copy is already running."
+msgstr "Ήδη γίνεται άλλη αντιγραφή."
+
+msgid "The copy could not start."
+msgstr "Η αντιγραφή δεν ξεκίνησε."
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "Βιβλιοθήκες παιχνιδιών στο στικάκι"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "%d παιχνίδι"
+msgstr[1] "%d παιχνίδια"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s, %s, %s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "%d αρχείο, %s"
+msgstr[1] "%d αρχεία, %s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "Όλες (%d βιβλιοθήκη)"
+msgstr[1] "Όλες (%d βιβλιοθήκες)"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "%d παιχνίδι, %s"
+msgstr[1] "%d παιχνίδια, %s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "Αφαίρεση"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "Αναζήτηση παιχνιδιών στο στικάκι..."
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "Σύγκριση με την κονσόλα..."
+
+msgid "This drive could not be read."
+msgstr "Αυτό το στικάκι δεν διαβάζεται."
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "Από"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "Παιχνίδια στο στικάκι"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "%d νέο από %d, %s, αποθηκεύσεις"
+msgstr[1] "%d νέα από %d, %s, αποθηκεύσεις"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "%d νέο από %d, %s"
+msgstr[1] "%d νέα από %d, %s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d, ήδη εδώ, αποθηκεύσεις"
+msgstr[1] "%d, ήδη εδώ, αποθηκεύσεις"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d, ήδη εδώ"
+msgstr[1] "%d, ήδη εδώ"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "Δεν υποστηρίζεται: %s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%d αρχείο"
+msgstr[1] "%d αρχεία"
+
+msgid "Nothing new on this drive"
+msgstr "Τίποτα καινούργιο σε αυτό το στικάκι"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "Τι θα αντιγραφεί"
+
+msgid "Saves & save states"
+msgstr "Αποθηκεύσεις και καταστάσεις"
+
+msgid "Screenshots"
+msgstr "Στιγμιότυπα οθόνης"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "Ήδη στην κονσόλα"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "%d αρχείο, παραλείπεται"
+msgstr[1] "%d αρχεία, παραλείπονται"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "Διαφορετικά στην κονσόλα"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d (+ αποθηκεύσεις): θα ρωτηθείς"
+msgstr[1] "%d (+ αποθηκεύσεις): θα ρωτηθείς"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d: θα ρωτηθείς"
+msgstr[1] "%d: θα ρωτηθείς"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "Για αντιγραφή"
+
+msgid "Not enough space"
+msgstr "Δεν υπάρχει αρκετός χώρος"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "έως %s, %s ελεύθερα"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "Αντιγραφή"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "Εισαγωγή από %s"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "Το στικάκι είναι απασχολημένο (γίνεται αναζήτηση ή αντιγραφή)."
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "Δεν γίνεται εγγραφή στο στικάκι USB (έχει προστασία εγγραφής;)."
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "Σύγκριση με το στικάκι..."
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "Φάκελος στο στικάκι"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s (νέος)"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "Παιχνίδια στην κονσόλα"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "Και τα αρχεία BIOS"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "Παιχνίδια"
+
+msgid "All games"
+msgstr "Όλα τα παιχνίδια"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "Τελευταίο: %s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "Και ρυθμίσεις (πυρήνα, κουμπιά)"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "Ήδη στο στικάκι"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "%d αρχείο, %s (%s ελεύθερα)"
+msgstr[1] "%d αρχεία, %s (%s ελεύθερα)"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "Τίποτα για αντιγραφή: το στικάκι είναι ενημερωμένο"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "%d αρχείο πάνω από 4 GB: δεν χωράει σε FAT32"
+msgstr[1] "%d αρχεία πάνω από 4 GB: δεν χωράνε σε FAT32"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "παραλείπεται"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "Εξαγωγή"
+
+msgid "Back up"
+msgstr "Δημιουργία αντιγράφου"
+
+msgid "The USB drive is not there any more."
+msgstr "Το στικάκι USB δεν είναι πια εδώ."
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "Εξαγωγή παιχνιδιών στο %s"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "Αντίγραφο αποθηκεύσεων στο %s"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "άγνωστη ημερομηνία"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "ΠΑΡΑΛΕΙΨΗ"
+
+msgid "REPLACE"
+msgstr "ΑΝΤΙΚΑΤΑΣΤΑΣΗ"
+
+msgid "SKIP ALL"
+msgstr "ΠΑΡΑΛΕΙΨΗ ΟΛΩΝ"
+
+msgid "REPLACE ALL"
+msgstr "ΑΝΤΙΚΑΤΑΣΤΑΣΗ ΟΛΩΝ"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "Αυτό το αρχείο ρυθμίσεων υπάρχει ήδη στην κονσόλα, αλλά είναι διαφορετικό:"
+
+msgid "This save is already on the console, but different:"
+msgstr "Αυτή η αποθήκευση υπάρχει ήδη στην κονσόλα, αλλά είναι διαφορετική:"
+
+msgid "This game is already on the console, but different:"
+msgstr "Αυτό το παιχνίδι υπάρχει ήδη στην κονσόλα, αλλά είναι διαφορετικό:"
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "Αυτό το αρχείο BIOS υπάρχει ήδη στην κονσόλα, αλλά είναι διαφορετικό:"
+
+msgid "This file is already on the console, but different:"
+msgstr "Αυτό το αρχείο υπάρχει ήδη στην κονσόλα, αλλά είναι διαφορετικό:"
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"Στικάκι USB: %s, %s\n"
+"Κονσόλα: %s, %s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "Οι αποθηκεύσεις είναι πολύτιμες: αν την αντικαταστήσεις, το αντίγραφο της κονσόλας κρατιέται ως %s.bak."
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "Αντιγραφή από %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "Εξαγωγή παιχνιδιών στο %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "Αντίγραφο αποθηκεύσεων στο %s"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s από %s  -  αρχείο %d από %d"
+msgstr[1] "%s από %s  -  αρχείο %d από %d"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s MB/s, απομένει ~%d λεπτό"
+msgstr[1] "%s MB/s, απομένουν ~%d λεπτά"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s MB/s"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "%d ήδη εκεί"
+msgstr[1] "%d ήδη εκεί"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "Η αντιγραφή ακυρώθηκε."
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "Η αντιγραφή σταμάτησε: %s."
+
+msgid "error"
+msgstr "σφάλμα"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "Εισαγωγή: %d, ήδη εκεί: %d, παράλειψη: %d, αντικατάσταση: %d."
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "Κάποια αρχεία απέτυχαν."
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "Ακυρώθηκε."
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "Σταμάτησε: %s. Το μισό αρχείο διαγράφηκε."
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "Αντιγράφηκε %d αρχείο (%s), ήδη εκεί %d."
+msgstr[1] "Αντιγράφηκαν %d αρχεία (%s), ήδη εκεί %d."
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "%d αρχείο πάνω από 4 GB παραλείφθηκε (FAT32)."
+msgstr[1] "%d αρχεία πάνω από 4 GB παραλείφθηκαν (FAT32)."
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "%d απέτυχε."
+msgstr[1] "%d απέτυχαν."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "ΔΙΑΚΟΠΗ"
+
+msgid "CONTINUE"
+msgstr "ΣΥΝΕΧΕΙΑ"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "Διακοπή αντιγραφής; Όσα αρχεία αντιγράφηκαν μένουν."
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "Διακοπή; Όσα αρχεία αντιγράφηκαν μένουν στο στικάκι."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "ΕΙΣΑΓΩΓΗ ΠΑΙΧΝΙΔΙΩΝ"
+
+msgid "EXPORT GAMES"
+msgstr "ΕΞΑΓΩΓΗ ΠΑΙΧΝΙΔΙΩΝ"
+
+msgid "BACK UP SAVES"
+msgstr "ΑΝΤΙΓΡΑΦΟ ΑΠΟΘΗΚΕΥΣΕΩΝ"
+
+msgid "NOTHING"
+msgstr "ΤΙΠΟΤΑ"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "Στικάκι %s συνδέθηκε: δες Ρυθμίσεις > Μνήμη"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "Συνδέθηκε στικάκι USB %s"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "Συνδέθηκε το στικάκι USB «%s» (%s, %s). Τι θέλεις να κάνεις;"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "Το στικάκι αφαιρέθηκε: η αντιγραφή σταμάτησε"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "Το στικάκι αφαιρέθηκε"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "Στικάκι USB: μη υποστηριζόμενη μορφή (χρησιμοποίησε FAT32 ή exFAT)"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "Το στικάκι USB δεν διαβάζεται"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "Εισαγωγή παιχνιδιών από"
+
+msgid "Export games to"
+msgstr "Εξαγωγή παιχνιδιών σε"
+
+msgid "Back up saves to"
+msgstr "Αντίγραφο αποθηκεύσεων σε"
+
+msgid "USB transfers are not available in this build."
+msgstr "Οι μεταφορές USB δεν είναι διαθέσιμες σε αυτή την έκδοση."
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "Σύνδεσε ένα στικάκι USB (FAT32, exFAT ή NTFS)."
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "Δεν υπάρχει στικάκι USB"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "Ένα στικάκι USB είναι απασχολημένο"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "Δίκτυο κλειστό: η μεταφορά σταμάτησε"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "σταμάτα"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "Άνοιξε αυτή τη διεύθυνση σε έναν browser:"
+
+msgid "(no network address)"
+msgstr "(χωρίς διεύθυνση δικτύου)"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "ή %s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "Λάθος PIN: κλείδωμα για %d δευτ."
+msgstr[1] "Λάθος PIN: κλείδωμα για %d δευτ."
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "Λήψη %s (%d%%)"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "Σταμάτησε: %s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "Σταματημένο"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "Αναμονή για αρχεία..."
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "Λήφθηκε %d αρχείο"
+msgstr[1] "Λήφθηκαν %d αρχεία"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "Μόνο στο δίκτυο του σπιτιού σου. Όποιος ξέρει το PIN μπορεί να προσθέσει αρχεία."
+
+msgid "KEEP RECEIVING"
+msgstr "ΣΥΝΕΧΕΙΑ ΛΗΨΗΣ"
+
+msgid "Keep receiving files in the background?"
+msgstr "Να συνεχιστεί η λήψη αρχείων στο παρασκήνιο;"
+
+msgid "Network transfer is not available in this build."
+msgstr "Η μεταφορά μέσω δικτύου δεν είναι διαθέσιμη σε αυτή την έκδοση."
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "Άνοιξε πρώτα το Wi-Fi ή το Ethernet (χωρίς διεύθυνση δικτύου)."
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "Η μεταφορά δεν ξεκίνησε (σφάλμα %d)."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "ΣΥΝΕΧΕΙΑ"
+
+msgid "START FRESH"
+msgstr "ΑΠΟ ΤΗΝ ΑΡΧΗ"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "Συνέχεια του %s;"
+
+msgid "No emulator is installed for this system."
+msgstr "Δεν υπάρχει εξομοιωτής για αυτό το σύστημα."
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "Γίνεται αντιγραφή αρχείων. Περίμενε να τελειώσει ή ακύρωσέ την."
+
+msgid "Resume where you left off?"
+msgstr "Συνέχεια από εκεί που σταμάτησες;"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "ΡΥΘΜΙΣΕΙΣ"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "Συνδέθηκε χειριστήριο: %s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "Αφαιρέθηκε χειριστήριο: %s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "Νέο χειριστήριο: %s (Ρυθμίσεις > Χειρισμός)"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "Νέο χειριστήριο: %s. Θέλεις να το ρυθμίσεις στο Ρυθμίσεις > Χειρισμός;"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "Διαβάζω παιχνίδια: %s"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "Προετοιμασία της κονσόλας σου..."
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "Χαμηλή μπαταρία (%d %%)"
+
+msgid "Battery empty, saving..."
+msgstr "Η μπαταρία άδειασε, αποθήκευση..."
+
+msgid "Restarting..."
+msgstr "Επανεκκίνηση..."
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "Ζέστη: πιο αργή λειτουργία"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "Φόρτιση"
+
+msgid "Fully charged"
+msgstr "Πλήρως φορτισμένη"
+
+msgid "Charger unplugged"
+msgstr "Ο φορτιστής αποσυνδέθηκε"
+
+msgid "Not charging"
+msgstr "Δεν φορτίζει"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%d%%"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "Γεμάτη σε %d ώ. %02d λεπ."
+
+msgid "Press the power button to start"
+msgstr "Πάτα το κουμπί λειτουργίας για να ξεκινήσεις"
+
+msgid "Battery very low: plug in the charger"
+msgstr "Πολύ χαμηλή μπαταρία: σύνδεσε τον φορτιστή"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "Βαθμολογία: "
+
+msgid "Released: "
+msgstr "Κυκλοφορία: "
+
+msgid "Developer: "
+msgstr "Δημιουργός: "
+
+msgid "Publisher: "
+msgstr "Εκδότης: "
+
+msgid "Genre: "
+msgstr "Είδος: "
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "Παίκτες: "
+
+msgid "Last played: "
+msgstr "Τελευταία φορά: "
+
+msgid "Times played: "
+msgstr "Φορές που παίχτηκε: "
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "ΕΤΟΣ"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "ΕΙΔΟΣ"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "ΠΑΙΚΤΕΣ"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "ΒΑΘΜΟΣ"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "ΤΑ ΑΓΑΠΗΜΕΝΑ ΣΟΥ ΠΑΙΧΝΙΔΙΑ"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "ΠΑΙΧΤΗΚΑΝ ΠΡΟΣΦΑΤΑ"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "ΟΛΑ ΤΑ ΠΑΙΧΝΙΔΙΑ ΤΗΣ ΚΟΝΣΟΛΑΣ"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "ΟΙΚΙΑΚΟΣ ΥΠΟΛΟΓΙΣΤΗΣ · 1983"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "ARCADE · MAME 2003-PLUS"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "ARCADE · FINALBURN NEO"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "άγνωστο"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "κανένα παιχνίδι"
+
+msgid "launch"
+msgstr "παίξε"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "επιλογές"
+
+msgid "favorite"
+msgstr "αγαπημένο"
+
+msgid "menu"
+msgstr "μενού"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "Προστέθηκε στα αγαπημένα"
+
+msgid "Removed from favorites"
+msgstr "Αφαιρέθηκε από τα αγαπημένα"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "%d παιχνίδι"
+msgstr[1] "%d παιχνίδια"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "%d αγαπημένο"
+msgstr[1] "%d αγαπημένα"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s, %s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "Δεν βρέθηκαν παιχνίδια. Αντίγραψε ROM στο /data/roms/<system>/"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "ποτέ"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "άγνωστη"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "πριν %d δευτ."
+msgstr[1] "πριν %d δευτ."
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "πριν %d λεπτό"
+msgstr[1] "πριν %d λεπτά"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "πριν %d ώρα"
+msgstr[1] "πριν %d ώρες"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "πριν %d μέρα"
+msgstr[1] "πριν %d μέρες"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%d/%m/%Y"

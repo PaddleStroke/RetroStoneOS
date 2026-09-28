@@ -1,0 +1,19 @@
+config BR2_PACKAGE_LIBRETRO_SNES9X2005
+	bool "libretro-snes9x2005"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Snes9x 2005 (Snes9x 1.43 based, formerly CATSFC): the fastest
+	  Super Nintendo / Super Famicom core, less accurate than
+	  snes9x2010 (older APU, no DSP-2/3/4 or MSU-1). Full speed on a
+	  ~1 GHz Cortex-A7 including SuperFX and SA-1 games, which is
+	  why it is the recommended default SNES core for RetroStoneOS.
+
+	  Installs /usr/lib/libretro/snes9x2005_libretro.so and
+	  /usr/share/rsos/cores/snes9x2005.ini.
+
+	  https://github.com/libretro/snes9x2005
+
+comment "libretro-snes9x2005 needs a toolchain w/ dynamic library"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_STATIC_LIBS

@@ -1,0 +1,23 @@
+# RetroStoneOS /etc/inittab (BusyBox init)
+#
+# Format: <tty>::<action>:<command>
+#
+# post-build.sh adds "::respawn:/usr/bin/rsos-frontend" right after the
+# ::sysinit line (so init starts it first) when the frontend is part of the
+# image.
+
+# Early init: mounts, /data, cpufreq, audio. Runs to completion first.
+::sysinit:/etc/init.d/rcS
+
+# Apply saved WiFi/Ethernet/Bluetooth settings in the background, after the
+# frontend has started (never delays the menu).
+::once:/bin/nice -n 10 /usr/bin/rsos-net apply
+
+# Bring-up: root shell on the debug UART (uart0, PB22/PB23, 115200 8N1). The
+# wrapper waits for the menu (at most 5 s) before starting the login shell,
+# so that the shell's start-up does not compete with the frontend's.
+ttyS0::respawn:/usr/libexec/rsos/uart-shell
+
+# Shutdown / reboot
+::ctrlaltdel:/sbin/reboot
+::shutdown:/etc/init.d/rcK

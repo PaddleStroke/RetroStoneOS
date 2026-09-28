@@ -1,0 +1,41 @@
+MIT License
+
+Copyright (c) 2026 Pierre-Louis Boyer (8BCraft) and the RetroStoneOS contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------------------------------------------------------------------
+This licence covers the RetroStoneOS sources written for this project (the
+frontend in frontend/, the Buildroot external tree in buildroot-external/, the
+scripts and the documentation). Third-party components keep their own licences:
+
+- Linux kernel, U-Boot, BusyBox and the other Buildroot packages: their own
+  licences (GPL-2.0 and others). `make legal-info` lists them with their sources.
+- The kernel and U-Boot patches in buildroot-external/board/retrostone2/patches/
+  are derived works of those projects and are GPL-2.0 like them.
+- The device tree files are (GPL-2.0+ OR MIT), as stated in their headers.
+- The libretro emulator cores: their own licences (GPL-2.0/3.0, zlib, BSD, and
+  some non-commercial ones such as snes9x, PicoDrive, MAME 2003-Plus, FBNeo).
+  See docs/cores.md and docs/requirements.md.
+- Bundled themes and theme art: frontend/themes/*/LICENSE.txt (gbz35 and the
+  Carbon system art are CC BY-NC-SA).
+- Vendored libraries and fonts: frontend/third_party/README.md.
+- Bundled homebrew games: not in this repository (see docs/homebrew.md).
+- The RetroStone2 hardware design files in hardware/ are open hardware under
+  the CERN-OHL-P-2.0 licence (hardware/LICENSE.txt), not under this one.

@@ -1,0 +1,41 @@
+Gameboy Zero 3.5" Dark theme for EmulationStation ("gbz35-dark"), version 1.14
+============================================================================
+
+Author:   Brad Miller (rxbrad) - https://github.com/rxbrad/es-theme-gbz35-dark
+Based on: "Carbon" by Rookervik, github.com/RetroPie/es-theme-carbon
+          (controller and system vector art; Carbon is itself based on
+          "simple" by Nils Bonenberger), CC BY-NC-SA;
+          "Spare" by Matt Kennedy, github.com/mattrixk/es-theme-spare
+          (preliminary layout);
+          "SimpleBigArt" by Ewzzy, github.com/robertybob/es-theme-simplebigart
+          (preliminary background art);
+          as credited in README.md and gbz35.xml.
+
+Licence:  Creative Commons Attribution-NonCommercial-ShareAlike 3.0
+          (CC BY-NC-SA 3.0) - https://creativecommons.org/licenses/by-nc-sa/3.0/
+          The licence text is at that address (section 4(a) of the licence
+          allows its URI to stand for the text).
+
+In short: you may share and adapt this theme, if you credit the authors
+above, indicate changes, do not use it for commercial purposes, and
+distribute adaptations under the same licence.
+
+Distribution in RetroStoneOS
+----------------------------
+This folder is the upstream theme, unmodified: the files of
+es-theme-gbz35-dark-master.zip (GitHub master, commit aefbbb2),
+minus the repository's .gitattributes, plus this LICENSE.txt. RetroStoneOS is
+free and open source with public builds, and the console is sold without
+firmware: the theme ships in the free firmware image, never in anything sold.
+
+The system logos in */system.svg are trademarks of their respective owners
+(Nintendo, Sega, Sony, NEC, SNK, Atari, Bandai...), used to identify the
+systems. The fonts in _inc/fonts are Roboto / Roboto Condensed (Google,
+Apache License 2.0).
+
+Changes: none. RetroStoneOS's theme engine replaces _inc/fonts/
+RobotoCondensed-Regular.ttf (a PostScript Type 1 file) with its own copy of
+Roboto Condensed at run time, and uses the folder of a related console for
+systems this theme has no folder for (pcenginecd -> pcengine, neocd ->
+neogeo, wonderswancolor -> wonderswan, pico -> megadrive); the files are
+untouched.

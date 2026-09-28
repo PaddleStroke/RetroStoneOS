@@ -1,0 +1,25 @@
+uptime: 1.99 1.66  load: 0.00 0.00 0.00 2/87 171
+cpufreq /sys/devices/system/cpu/cpufreq/policy0: cur=864000 gov=schedutil min=720000 max=960000
+regulator vdd-cpu: 1200000 uV
+regulator vdd-int-dll: 1250000 uV
+cat: read error: No data available
+temp /sys/class/thermal/thermal_zone0/temp: 
+battery %: 69
+battery uV: 3820300
+sd card (reads, merged, sectors, ms, writes, merged, sectors, ms, ...):      301     1115    23418     1177        1        0        1       59        0        0     1237        0        0        0        0        0        0
+--- top
+Mem: 37664K used, 989120K free, 24K shrd, 6536K buff, 5428K cached
+CPU:   0% usr   4% sys   0% nic  95% idle   0% io   0% irq   0% sirq
+Load average: 0.00 0.00 0.00 1/88 196
+  PID  PPID USER     STAT   VSZ %VSZ %CPU COMMAND
+  195   115 root     R     2840   0%   2% top -b -n 1
+  135     2 root     SW       0   0%   2% [sugov:0]
+  112     1 root     S    30580   3%   0% /usr/bin/rsos-frontend
+    1     0 root     S     2840   0%   0% init
+  115     1 root     S     2840   0%   0% {bootlog} /bin/sh /usr/libexec/rsos/bootlog
+  110     1 root     SN    2840   0%   0% {rsos-net} /bin/sh /usr/bin/rsos-net apply
+  111     1 root     S     2840   0%   0% -/bin/sh
+  196   115 root     S     2840   0%   0% head -15
+  144   110 root     SN    2708   0%   0% sleep 1
+   31     2 root     IW       0   0%   0% [kworker/u8:1-ev]
+    9     2 root     IW       0   0%   0% [kworker/0:0-eve]

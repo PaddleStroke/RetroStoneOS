@@ -1,0 +1,20 @@
+# Orange Pi H3 U-Boot options, merged after the board's U-Boot defconfig
+# (orangepi_pc / orangepi_one) and board/sbc-uboot/uboot.fragment.
+
+# Environment (A/B boot state) as on the RetroStone2: two 64 KiB copies at
+# 1 MiB and 1 MiB + 64 KiB, between u-boot-sunxi-with-spl.bin (8 KiB..1 MiB)
+# and the first partition (4 MiB). Must match /etc/fw_env.config.
+CONFIG_ENV_OFFSET=0x100000
+CONFIG_ENV_OFFSET_REDUND=0x110000
+
+# Hardware watchdog: U-Boot starts the H3 watchdog with its maximum timeout
+# (16 s) and services it until the kernel starts; the kernel's sunxi_wdt
+# finds it running and services it (CONFIG_WATCHDOG_HANDLE_BOOT_ENABLED)
+# until the frontend opens /dev/watchdog. A kernel that hangs anywhere
+# resets the board, and boot.scr counts that boot as failed.
+CONFIG_WATCHDOG_AUTOSTART=y
+CONFIG_WATCHDOG_TIMEOUT_MSECS=16000
+
+# No U-Boot video: the kernel brings up HDMI.
+# CONFIG_VIDEO is not set
+# CONFIG_VIDEO_DE2 is not set

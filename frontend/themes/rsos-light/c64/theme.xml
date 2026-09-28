@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: c64 sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>6c5eb5</accent>
+		<icon>carbon/c64</icon>
+		<tagline>Commodore · 1982</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

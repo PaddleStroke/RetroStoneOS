@@ -1,0 +1,18 @@
+config BR2_PACKAGE_LIBRETRO_GPSP
+	bool "libretro-gpsp"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP # a few .cc files (no libstdc++ at run time)
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  gpSP: Game Boy Advance emulator with an ARM dynamic recompiler,
+	  built as a libretro core. Ships an open-source replacement
+	  BIOS; the official gba_bios.bin is used when present.
+
+	  Installs /usr/lib/libretro/gpsp_libretro.so and
+	  /usr/share/rsos/cores/gpsp.ini.
+
+	  https://github.com/libretro/gpsp
+
+comment "libretro-gpsp needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

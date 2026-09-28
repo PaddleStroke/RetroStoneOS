@@ -1,0 +1,41 @@
+=== shutdown: poweroff
+7.96 frontend: shutdown requested
+8.01 frontend: init signalled
+8.02 rcK start
+8.05 bootlog stopped
+8.11 frontend stopped
+8.21 clock saved
+8.21 log written; next: sync, unmount /data
+8.26 sync done
+8.30 /data unmounted
+8.31 poweroff -f (last 3 lines: AXP209 registers, read at the next boot)
+=== shutdown: poweroff
+19.92 frontend: shutdown requested
+20.45 frontend: init signalled
+20.47 rcK start
+20.50 bootlog stopped
+20.54 frontend stopped
+20.64 clock saved
+20.64 log written; next: sync, unmount /data
+21.16 sync done
+21.18 /data unmounted
+21.19 poweroff -f (last 3 lines: AXP209 registers, read at the next boot)
+=== shutdown: poweroff
+14.20 frontend: shutdown requested
+14.68 frontend: init signalled
+14.69 rcK start
+14.72 bootlog stopped
+14.78 frontend stopped
+14.85 clock saved
+14.85 log written; next: sync, unmount /data
+15.08 sync done
+15.11 /data unmounted
+15.11 poweroff -f (last 3 lines: AXP209 registers, read at the next boot)
+=== shutdown: poweroff
+21.67 frontend: shutdown requested
+21.70 frontend: init signalled
+21.72 rcK start
+21.75 bootlog stopped
+21.82 frontend stopped
+21.96 clock saved
+21.97 log written; next: sync, unmount /data

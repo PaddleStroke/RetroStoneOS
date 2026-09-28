@@ -1,0 +1,225 @@
+From: RetroStoneOS <noreply@retrostoneos>
+Subject: [PATCH] libretro: Count Per Op and display-list frameskip core options
+
+parallel-n64 has no frameskip and no Count Per Op option; on a dual
+Cortex-A7 with a Mali-400 both are the main speed levers:
+
+- parallel-n64-CountPerOp: 0 (ROM database, as before) or 1-4, read at
+  startup into the existing CountPerOp global.
+- parallel-n64-frameskip: 0/1/2/3/auto. For glide64, gln64 and rice, the
+  display lists of a skipped game frame are not handed to the renderer
+  (the DP interrupt is raised instead) and its UpdateScreen is not
+  forwarded, so the frontend gets a dupe. Decided at each VI origin
+  change; auto follows the frontend's audio buffer status callback.
+- update_variables(startup): the "auto" GFX plugin test had no braces
+  and swallowed the gln64 test that follows it.
+
+Signed-off-by: RetroStoneOS
+---
+diff -ruN a/libretro/libretro.c b/libretro/libretro.c
+--- a/libretro/libretro.c	2026-09-27 09:12:21.946201377 +0200
++++ b/libretro/libretro.c	2026-09-27 09:12:21.946422370 +0200
+@@ -1596,6 +1596,18 @@
+    return 0; /* "None" or unrecognized */
+ }
+ 
++/* RetroStoneOS: frameskip state lives in plugin.c. */
++extern int rsos_frameskip_mode;
++extern unsigned rsos_audio_occupancy;
++extern int rsos_audio_active;
++
++static void rsos_audio_status(bool active, unsigned occupancy, bool underrun_likely)
++{
++   (void)underrun_likely;
++   rsos_audio_active    = active ? 1 : 0;
++   rsos_audio_occupancy = occupancy;
++}
++
+ void update_variables(bool startup)
+ {
+    struct retro_variable var;
+@@ -1676,8 +1688,32 @@
+ 	  goldeneye_tlb_hack = 1;
+ 	  if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &ddvar) && ddvar.value)
+ 		  goldeneye_tlb_hack = !strcmp(ddvar.value, "enabled");
++
++	  /* RetroStoneOS: Count Per Op override (0 = ROM database).
++	   * Startup only: main_run() hands it to the device once. */
++	  ddvar.key = "parallel-n64-CountPerOp";
++	  ddvar.value = NULL;
++	  CountPerOp = 0;
++	  if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &ddvar) && ddvar.value)
++		  CountPerOp = (uint32_t)strtoul(ddvar.value, NULL, 10);
++	  if (CountPerOp && log_cb)
++		  log_cb(RETRO_LOG_INFO, "CountPerOp override: %u\n", (unsigned)CountPerOp);
++
++	  /* RetroStoneOS: the frontend's audio buffer level drives the
++	   * automatic frameskip. */
++	  {
++		  struct retro_audio_buffer_status_callback abs_cb = { rsos_audio_status };
++		  environ_cb(RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK, &abs_cb);
++	  }
+   }
+ 
++  /* RetroStoneOS: display-list frameskip (plugin.c), may change live. */
++  var.key = "parallel-n64-frameskip";
++  var.value = NULL;
++  rsos_frameskip_mode = 0;
++  if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++     rsos_frameskip_mode = !strcmp(var.value, "auto") ? -1 : atoi(var.value);
++
+ #if defined(HAVE_PARALLEL)
+    var.key = "parallel-n64-parallel-rdp-synchronous";
+    var.value = NULL;
+@@ -1847,8 +1883,10 @@
+       if (var.value)
+       {
+ #if defined(HAVE_GLN64) || defined(HAVE_GLIDEN64) || defined(HAVE_RICE) || defined(HAVE_GLIDE64) || defined(HAVE_THR_AL) || defined(HAVE_PARALLEL)
+-         // TODO: This logic seems wrong?
++         /* RetroStoneOS: without braces, "auto" guarded the gln64 test
++          * below, so a gln64 choice was never applied here. */
+          if (!strcmp(var.value, "auto"))
++            core_settings_autoselect_gfx_plugin();
+ #ifdef HAVE_GLN64
+          if (!strcmp(var.value, "gln64"))
+             gfx_plugin = GFX_GLN64;
+diff -ruN a/libretro/libretro_core_options.h b/libretro/libretro_core_options.h
+--- a/libretro/libretro_core_options.h	2026-09-27 09:12:21.944809645 +0200
++++ b/libretro/libretro_core_options.h	2026-09-27 09:12:21.945993629 +0200
+@@ -1216,6 +1216,42 @@
+         "auto"
+     },
+     {
++        /* RetroStoneOS: the ROM database value was the only source. */
++        CORE_NAME "-CountPerOp",
++        "Count Per Op (restart)",
++        NULL,
++        "CPU cycles counted per emulated instruction. 0 uses the game database (2 for most games). 3 gives the game fewer cycles per frame, so the emulator does less work: faster on weak hardware, but a game that was already busy slows down in-game, and a few games break.",
++        NULL,
++        NULL,
++        {
++            { "0", "Database" },
++            { "1", NULL },
++            { "2", NULL },
++            { "3", NULL },
++            { "4", NULL },
++            { NULL, NULL },
++        },
++        "0"
++    },
++    {
++        /* RetroStoneOS: display-list frameskip for the GL renderers. */
++        CORE_NAME "-frameskip",
++        "Frameskip (Glide64, gln64, Rice)",
++        NULL,
++        "Skip whole game frames: their display lists are not drawn at all, which saves the renderer's CPU work and the GPU work. N skips N frames out of N+1. Auto skips (at most 3 in a row) while the frontend reports its audio buffer below 40 %. The screen keeps the previous frame; game speed and sound are unchanged.",
++        NULL,
++        NULL,
++        {
++            { "0", "Off" },
++            { "1", NULL },
++            { "2", NULL },
++            { "3", NULL },
++            { "auto", "Auto" },
++            { NULL, NULL },
++        },
++        "0"
++    },
++    {
+         CORE_NAME "-alt-map",
+         "Independent C-button Controls",
+         NULL,
+diff -ruN a/mupen64plus-core/src/plugin/plugin.c b/mupen64plus-core/src/plugin/plugin.c
+--- a/mupen64plus-core/src/plugin/plugin.c	2026-09-27 09:12:21.947917239 +0200
++++ b/mupen64plus-core/src/plugin/plugin.c	2026-09-27 09:12:21.949376331 +0200
+@@ -413,6 +413,73 @@
+ enum rdp_plugin_type current_rdp_type = RDP_PLUGIN_NONE;
+ enum rsp_plugin_type current_rsp_type = RSP_PLUGIN_NONE;
+ 
++/*
++ * RetroStoneOS: display-list frameskip for the GL renderers (glide64,
++ * gln64, rice), in the manner of the standalone gles2n64's frame skipper.
++ * The decision is taken at each game frame boundary (the VI origin
++ * changes: the game swapped its buffers). While a frame is skipped, its
++ * display lists are not handed to the renderer at all (no vertex work on
++ * the CPU, nothing for the GPU); the DP interrupt the renderer would raise
++ * at the list's full sync is raised here instead. When the skipped frame
++ * reaches the VI, UpdateScreen is not forwarded, so the core presents a
++ * dupe and the screen keeps the previous picture. A game that stops
++ * swapping (single buffer, loading) stops skipping after 8 VIs.
++ */
++int rsos_frameskip_mode = 0;        /* 0 off, N > 0: N of N+1, -1 auto */
++unsigned rsos_audio_occupancy = 100; /* frontend audio buffer, percent */
++int rsos_audio_active = 0;
++static ptr_ProcessDList rsos_real_process_dlist;
++static ptr_UpdateScreen rsos_real_update_screen;
++static int rsos_skip_frame, rsos_skipped_any, rsos_consecutive, rsos_counter;
++static unsigned rsos_vis_since_swap;
++static uint32_t rsos_last_origin;
++
++static int rsos_decide(void)
++{
++    if (rsos_frameskip_mode > 0) {
++        rsos_counter = (rsos_counter + 1) % (rsos_frameskip_mode + 1);
++        return rsos_counter != 0;
++    }
++    if (rsos_frameskip_mode < 0) {
++        if (rsos_audio_active && rsos_audio_occupancy < 40 && rsos_consecutive < 3) {
++            rsos_consecutive++;
++            return 1;
++        }
++        rsos_consecutive = 0;
++    }
++    return 0;
++}
++
++static void rsos_process_dlist(void)
++{
++    if (rsos_skip_frame) {
++        rsos_skipped_any = 1;
++        *gfx_info.MI_INTR_REG |= MI_INTR_DP;
++        gfx_info.CheckInterrupts();
++        return;
++    }
++    rsos_real_process_dlist();
++}
++
++static void rsos_update_screen(void)
++{
++    uint32_t origin = g_dev.vi.regs[VI_ORIGIN_REG];
++    int show = 1;
++
++    if (origin != rsos_last_origin) {
++        rsos_last_origin = origin;
++        rsos_vis_since_swap = 0;
++        if (rsos_skip_frame && rsos_skipped_any)
++            show = 0;
++        rsos_skipped_any = 0;
++        rsos_skip_frame = rsos_decide();
++    } else if (++rsos_vis_since_swap > 8) {
++        rsos_skip_frame = 0;
++    }
++    if (show)
++        rsos_real_update_screen();
++}
++
+ /* global functions */
+ void plugin_connect_all()
+ {
+@@ -455,6 +522,16 @@
+          break;
+     }
+ 
++    /* RetroStoneOS: frameskip gate in front of the GL renderers. */
++    rsos_skip_frame = rsos_skipped_any = rsos_consecutive = rsos_counter = 0;
++    if (current_rdp_type == RDP_PLUGIN_GLIDE64 || current_rdp_type == RDP_PLUGIN_GLN64 ||
++        current_rdp_type == RDP_PLUGIN_RICE) {
++        rsos_real_process_dlist = gfx.processDList;
++        gfx.processDList = rsos_process_dlist;
++        rsos_real_update_screen = gfx.updateScreen;
++        gfx.updateScreen = rsos_update_screen;
++    }
++
+     l_GfxAttached = 1;
+     plugin_start_gfx();
+ 

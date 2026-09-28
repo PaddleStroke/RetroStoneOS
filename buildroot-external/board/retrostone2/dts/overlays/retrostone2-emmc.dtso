@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * RetroStone2: enable the on-board eMMC U23 (KLMAG2GEND, 16 GB), which is
+ * only fitted on some units ("Pro" part in schematic v1.15).
+ *
+ * mmc2 on PC6 (CMD), PC7 (CLK), PC8-PC11 (DAT0-DAT3), reset on PC16 through
+ * mmc-pwrseq-emmc. The eMMC DAT4-DAT7 are wired to PC12-PC15, but the A20 has
+ * no SDC2 function on those pins (Linux 6.18 pinctrl-sun4i-a10.c only offers
+ * it on the R40), so the bus stays 4-bit as described in the base DTS.
+ *
+ * Needs a base DTB built with symbols (dtc -@).
+ * TODO(hw): test on a unit that has the eMMC fitted.
+ */
+
+/dts-v1/;
+/plugin/;
+
+&mmc2_pwrseq {
+	status = "okay";
+};
+
+&mmc2 {
+	status = "okay";
+};

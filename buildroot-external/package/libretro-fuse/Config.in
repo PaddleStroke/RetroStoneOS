@@ -1,0 +1,14 @@
+config BR2_PACKAGE_LIBRETRO_FUSE
+	bool "libretro-fuse"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Fuse, the Free Unix Spectrum Emulator: ZX Spectrum 16K/48K/
+	  128K/+2/+2A/+3, Timex and Pentagon models, built as a libretro
+	  core. The Spectrum ROMs are built in (Amstrad allows their
+	  distribution with emulators). Has its own on-screen keyboard.
+
+	  Installs /usr/lib/libretro/fuse_libretro.so and
+	  /usr/share/rsos/cores/fuse.ini. ROM folder: zxspectrum.
+
+	  https://github.com/libretro/fuse-libretro

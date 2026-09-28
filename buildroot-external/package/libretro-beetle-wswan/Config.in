@@ -1,0 +1,17 @@
+config BR2_PACKAGE_LIBRETRO_BEETLE_WSWAN
+	bool "libretro-beetle-wswan"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Beetle Cygne: Mednafen's WonderSwan / WonderSwan Color / Pocket
+	  Challenge V2 emulator, built as a libretro core (GPL-2.0+).
+	  No BIOS needed.
+
+	  Installs /usr/lib/libretro/mednafen_wswan_libretro.so and
+	  /usr/share/rsos/cores/mednafen_wswan.ini.
+
+	  https://github.com/libretro/beetle-wswan-libretro
+
+comment "libretro-beetle-wswan needs a toolchain w/ dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_STATIC_LIBS

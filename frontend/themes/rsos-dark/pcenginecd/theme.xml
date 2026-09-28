@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: pcenginecd sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>c2367a</accent>
+		<icon>carbon/pcengine</icon>
+		<tagline>NEC · 1988</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

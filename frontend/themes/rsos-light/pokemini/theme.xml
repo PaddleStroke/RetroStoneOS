@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: pokemini sets its accent color, icon (_art/icon-pokemini.svg, RetroStoneOS original art) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>5b8fd6</accent>
+		<icon>icon-pokemini</icon>
+		<tagline>Nintendo · 2001</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

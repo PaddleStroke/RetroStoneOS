@@ -1,0 +1,17 @@
+config BR2_PACKAGE_LIBRETRO_BEETLE_NGP
+	bool "libretro-beetle-ngp"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Beetle NeoPop: Mednafen's Neo Geo Pocket / Neo Geo Pocket Color
+	  emulator, built as a libretro core (GPL-2.0+). No BIOS needed.
+
+	  Installs /usr/lib/libretro/mednafen_ngp_libretro.so and
+	  /usr/share/rsos/cores/mednafen_ngp.ini.
+
+	  https://github.com/libretro/beetle-ngp-libretro
+
+comment "libretro-beetle-ngp needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

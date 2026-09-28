@@ -1,0 +1,19 @@
+config BR2_PACKAGE_LIBRETRO_MAME2003_PLUS
+	bool "libretro-mame2003-plus"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  MAME 2003-Plus: arcade emulator based on MAME 0.78 with many
+	  later drivers and fixes backported, built as a libretro core.
+	  Uses its own romset (MAME 0.78 plus additions, see
+	  metadata/mame2003-plus.xml upstream). About 28 MB once
+	  stripped.
+
+	  Installs /usr/lib/libretro/mame2003_plus_libretro.so and
+	  /usr/share/rsos/cores/mame2003_plus.ini.
+
+	  https://github.com/libretro/mame2003-plus-libretro
+
+comment "libretro-mame2003-plus needs a toolchain w/ dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_STATIC_LIBS

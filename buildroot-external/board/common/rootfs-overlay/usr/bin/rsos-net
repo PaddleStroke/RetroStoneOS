@@ -1,0 +1,429 @@
+#!/bin/sh
+# rsos-net: switch WiFi, Ethernet and Bluetooth on and off at runtime.
+#
+#   rsos-net [-n] {wifi|eth|bt} {on|off|status}
+#       on/off change the hardware state and save it as wifi=0|1, eth=0|1 or
+#       bt=0|1 in /data/rsos/settings.ini (-n: do not save). status prints
+#       "on" or "off" (the current hardware state, not the saved setting).
+#   rsos-net apply-early
+#       Early boot (rcS, in the background): if WiFi is off, unbind the mmc3
+#       SDIO host so the pwrseq drops WL_REG_ON and the chip is unpowered.
+#   rsos-net apply
+#       Boot (inittab ::once, niced, after the frontend has started): turn on
+#       what the settings say, and park the Ethernet PHY in power-down if
+#       Ethernet is off. Then /run/rsos/net-applied (rsos-boot-ok waits for
+#       it before it confirms the A/B slot). Nothing in charge mode.
+#
+# Everything is off by default: no setting means off. All drivers involved
+# are modules that nothing else loads.
+#
+# Only one rsos-net changes the hardware at a time (flock on
+# /run/rsos-net/lock; "apply" takes it after its wait for the menu): the
+# frontend's switches wait for a running "apply". A caller that must not wait
+# long (rcK) sets RSOS_NET_LOCK_WAIT (seconds, default 60); after that it
+# goes on without the lock. The daemons started here (wpa_supplicant,
+# udhcpc, dbus-daemon, bluetoothd) do not inherit the lock.
+#
+# Not wired here: the SMB share (ksmbd, ksmbd-tools are in the image). The
+# frontend will start it on demand; see docs/build.md "Networking".
+
+SETTINGS=/data/rsos/settings.ini
+WPA_CONF=/data/rsos/wpa_supplicant.conf
+RUN_DIR=/run/rsos-net
+
+# The board's network hardware: /etc/rsos/board.ini (as RSOS_BOARD_* from
+# /etc/rsos/board.env, see /usr/libexec/rsos/board.sh):
+#   wifi_module       WiFi driver module (brcmfmac)
+#   wifi_sdio_host    SDIO host device of the WiFi chip, unbound to power the
+#                     chip down (RetroStone2: 1c12000.mmc, the A20 mmc3);
+#                     unset: the module is only loaded/unloaded
+#   wifi_sdio_driver  its platform driver (sunxi-mmc)
+#   eth_modules       Ethernet modules to load (RetroStone2: the A20 GMAC
+#                     dwmac-sunxi, and sun4i-emac in case the PHY is on the
+#                     EMAC); unset: none (a built-in driver)
+#   bt_module         Bluetooth UART driver module (hci_uart, + btbcm)
+#   wifi_mac          "sid": give the WiFi interface a stable, locally
+#                     administered MAC derived from the SoC's unique ID
+#                     (nvmem "sunxi-sid"; the AP6210 nvram carries the
+#                     Broadcom default MAC, for which brcmfmac picks a random
+#                     one at every load); unset: the driver's MAC
+[ -r /usr/libexec/rsos/board.sh ] && . /usr/libexec/rsos/board.sh
+WIFI_IF=wlan0
+WIFI_MODULE=${RSOS_BOARD_WIFI_MODULE:-brcmfmac}
+WIFI_MMC=$RSOS_BOARD_WIFI_SDIO_HOST
+MMC_DRV=/sys/bus/platform/drivers/${RSOS_BOARD_WIFI_SDIO_DRIVER:-sunxi-mmc}
+ETH_IF=eth0
+ETH_MODULES=$RSOS_BOARD_ETH_MODULES
+BT_MODULE=${RSOS_BOARD_BT_MODULE:-hci_uart}
+BT_HCI=hci0
+BLUETOOTHD=/usr/libexec/bluetooth/bluetoothd
+BT_STORE=/data/rsos/bluetooth.img
+BT_STORE_MNT=/var/lib/bluetooth
+
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+SAVE=1
+
+msg() {
+	echo "rsos-net: $*" >&2
+}
+
+nap() {
+	usleep 100000 2> /dev/null || sleep 1
+}
+
+# wait_for <path> <tenths of a second>
+wait_for() {
+	i=0
+	while [ ! -e "$1" ] && [ $i -lt "$2" ]; do
+		nap
+		i=$((i + 1))
+	done
+	[ -e "$1" ]
+}
+
+kill_pidfile() {
+	if [ -f "$1" ]; then
+		kill "$(cat "$1")" 2> /dev/null
+		rm -f "$1"
+	fi
+}
+
+setting_get() {
+	[ -f "$SETTINGS" ] || return 0
+	tr -d '\r' < "$SETTINGS" | sed -n "s/^$1=//p" | tail -n 1
+}
+
+# Data to the card before a rename publishes it: exFAT has no journal and no
+# ordering between data and metadata (BusyBox fsync; a global sync if the
+# applet is missing).
+sync_file() {
+	fsync "$1" 2> /dev/null || sync
+}
+
+setting_set() {
+	[ "$SAVE" = 1 ] || return 0
+	[ "$(setting_get "$1")" = "$2" ] && return 0
+	if ! grep -q ' /data ' /proc/mounts; then
+		msg "/data is not mounted, $1=$2 not saved"
+		return 1
+	fi
+	mkdir -p "${SETTINGS%/*}" || return 1
+	{
+		[ -f "$SETTINGS" ] && tr -d '\r' < "$SETTINGS" | grep -v "^$1="
+		echo "$1=$2"
+	} > "$SETTINGS.tmp" && sync_file "$SETTINGS.tmp" &&
+		mv -f "$SETTINGS.tmp" "$SETTINGS" && sync
+}
+
+# net_lock: serialize the commands that change the hardware (see the header)
+net_lock() {
+	mkdir -p "$RUN_DIR"
+	exec 9> "$RUN_DIR/lock"
+	_w=0
+	while ! flock -n 9; do
+		if [ $_w -ge $((${RSOS_NET_LOCK_WAIT:-60} * 10)) ]; then
+			msg "another rsos-net is still running, going on"
+			return 1
+		fi
+		nap
+		_w=$((_w + 1))
+	done
+	return 0
+}
+
+module_loaded() {
+	[ -d "/sys/module/$(echo "$1" | tr - _)" ]
+}
+
+udhcpc_start() {
+	udhcpc -b -i "$1" -p "$RUN_DIR/udhcpc.$1.pid" > /dev/null 2>&1 9>&-
+}
+
+# board.ini wifi_mac = sid (see the top): 02:xx:xx:xx:xx:xx from an MD5 of
+# the SoC ID and the interface name. Set while the interface is down.
+# TODO(hw): check that the SID is readable and that brcmfmac keeps the
+# address (ip link show wlan0; the router's lease list).
+wifi_mac() {
+	[ "$RSOS_BOARD_WIFI_MAC" = sid ] || return 0
+	for _n in /sys/bus/nvmem/devices/*sid*/nvmem; do
+		[ -r "$_n" ] && break
+	done
+	[ -r "$_n" ] || { msg "no SoC ID (nvmem sunxi-sid), keeping the driver's MAC"; return 0; }
+	_h=$({ dd if="$_n" bs=16 count=1 2> /dev/null; echo "$WIFI_IF"; } | md5sum)
+	_m=$(echo "$_h" | sed 's/^\(..\)\(..\)\(..\)\(..\)\(..\).*/02:\1:\2:\3:\4:\5/')
+	ip link set "$WIFI_IF" address "$_m" || msg "could not set the MAC address $_m"
+}
+
+# ---------------------------------------------------------------- WiFi
+wifi_on() {
+	mkdir -p "$RUN_DIR"
+	if [ -n "$WIFI_MMC" ] && [ ! -e "$MMC_DRV/$WIFI_MMC" ]; then
+		echo "$WIFI_MMC" > "$MMC_DRV/bind" || return 1
+	fi
+	modprobe "$WIFI_MODULE" || return 1
+	if ! wait_for "/sys/class/net/$WIFI_IF" 100; then
+		msg "$WIFI_IF did not appear (firmware? see dmesg)"
+		return 1
+	fi
+	wifi_mac
+	ip link set "$WIFI_IF" up
+	if [ -f "$WPA_CONF" ]; then
+		if [ ! -f "$RUN_DIR/wpa_supplicant.pid" ]; then
+			wpa_supplicant -B -i "$WIFI_IF" -c "$WPA_CONF" \
+				-P "$RUN_DIR/wpa_supplicant.pid" > /dev/null 9>&- || return 1
+		fi
+		[ -f "$RUN_DIR/udhcpc.$WIFI_IF.pid" ] || udhcpc_start "$WIFI_IF"
+	else
+		msg "no $WPA_CONF, $WIFI_IF is up but not connected"
+	fi
+}
+
+wifi_off() {
+	kill_pidfile "$RUN_DIR/udhcpc.$WIFI_IF.pid"
+	kill_pidfile "$RUN_DIR/wpa_supplicant.pid"
+	[ -e "/sys/class/net/$WIFI_IF" ] && ip link set "$WIFI_IF" down
+	module_loaded "$WIFI_MODULE" && modprobe -r "$WIFI_MODULE"
+	# Unbinding the SDIO host powers the module down (WL_REG_ON low).
+	if [ -n "$WIFI_MMC" ] && [ -e "$MMC_DRV/$WIFI_MMC" ]; then
+		echo "$WIFI_MMC" > "$MMC_DRV/unbind"
+	fi
+	return 0
+}
+
+wifi_status() {
+	if { [ -z "$WIFI_MMC" ] || [ -e "$MMC_DRV/$WIFI_MMC" ]; } && module_loaded "$WIFI_MODULE"; then
+		echo on
+	else
+		echo off
+	fi
+}
+
+# ------------------------------------------------------------ Ethernet
+eth_load() {
+	for m in $ETH_MODULES; do
+		modprobe "$m" 2> /dev/null
+	done
+	wait_for "/sys/class/net/$ETH_IF" 50
+}
+
+eth_unload() {
+	for m in $ETH_MODULES; do
+		module_loaded "$m" && modprobe -r "$m"
+	done
+	return 0
+}
+
+eth_on() {
+	mkdir -p "$RUN_DIR"
+	if ! eth_load; then
+		msg "$ETH_IF did not appear"
+		eth_unload
+		return 1
+	fi
+	ip link set "$ETH_IF" up
+	[ -f "$RUN_DIR/udhcpc.$ETH_IF.pid" ] || udhcpc_start "$ETH_IF"
+}
+
+# Closing the interface detaches the PHY (stmmac_release -> phylink ->
+# phy_detach -> phy_suspend -> genphy_suspend: BMCR power-down on the
+# LAN8710A). Removing dwmac-sunxi then also disables its optional
+# "phy-supply" regulator.
+eth_off() {
+	kill_pidfile "$RUN_DIR/udhcpc.$ETH_IF.pid"
+	[ -e "/sys/class/net/$ETH_IF" ] && ip link set "$ETH_IF" down
+	eth_unload
+}
+
+# The PHY comes out of reset powered up and nothing touches it while the MAC
+# driver is not loaded. Open and close the interface once so the PHY ends up
+# in BMCR power-down, then unload the driver again. Only run in the
+# background at boot.
+# TODO(hw): measure the PHY current with and without this; drop it if the
+# PHY supply is switchable (regulator) or the gain is negligible.
+eth_park() {
+	if eth_load; then
+		ip link set "$ETH_IF" up && ip link set "$ETH_IF" down
+	fi
+	eth_unload
+}
+
+eth_status() {
+	if [ -e "/sys/class/net/$ETH_IF" ] && ip link show "$ETH_IF" | grep -q '[<,]UP[,>]'; then
+		echo on
+	else
+		echo off
+	fi
+}
+
+# ----------------------------------------------------------- Bluetooth
+bt_on() {
+	mkdir -p "$RUN_DIR"
+	modprobe "$BT_MODULE" || return 1
+	if ! wait_for "/sys/class/bluetooth/$BT_HCI" 100; then
+		msg "$BT_HCI did not appear (firmware? see dmesg)"
+		return 1
+	fi
+	[ -x "$BLUETOOTHD" ] || return 0
+	bt_store_mount
+	# BlueZ needs the D-Bus system bus. /var/lib/dbus -> /tmp/dbus (read-only
+	# root).
+	if ! pidof dbus-daemon > /dev/null; then
+		mkdir -p /tmp/dbus /run/dbus
+		dbus-uuidgen --ensure
+		dbus-daemon --system 9>&- || return 1
+	fi
+	if [ ! -f "$RUN_DIR/bluetoothd.pid" ]; then
+		"$BLUETOOTHD" -n > /dev/null 2>&1 9>&- &
+		echo $! > "$RUN_DIR/bluetoothd.pid"
+	fi
+}
+
+# BlueZ keeps its pairings in /var/lib/bluetooth/<adapter>/<device>/, with
+# "AA:BB:CC:DD:EE:FF" directory names that exFAT cannot store. They live in a
+# small ext4 image on the data partition, loop-mounted while Bluetooth is on
+# (journalled: a power cut loses at most the last pairing). Without /data the
+# pairings go to tmpfs for this session only.
+bt_store_create() {
+	mkdir -p "${BT_STORE%/*}"
+	if dd if=/dev/zero of="$BT_STORE.tmp" bs=1M count=8 2> /dev/null &&
+		mkfs.ext4 -q -F -L rsos-bt "$BT_STORE.tmp" &&
+		sync_file "$BT_STORE.tmp" &&
+		mv -f "$BT_STORE.tmp" "$BT_STORE"; then
+		sync
+		return 0
+	fi
+	rm -f "$BT_STORE.tmp"
+	msg "cannot create $BT_STORE"
+	return 1
+}
+
+bt_store_mount() {
+	grep -q " $BT_STORE_MNT " /proc/mounts && return 0
+	if grep -q ' /data ' /proc/mounts; then
+		[ -f "$BT_STORE" ] || bt_store_create
+		if [ -f "$BT_STORE" ]; then
+			e2fsck -p "$BT_STORE" > /dev/null 2>&1
+			mount -t ext4 -o loop,noatime "$BT_STORE" "$BT_STORE_MNT" && return 0
+			# A damaged image (e.g. a power cut while an older version made
+			# it): set it aside (one copy) and start with an empty one.
+			msg "cannot mount $BT_STORE, replacing it (the old one is kept as ${BT_STORE##*/}.bad)"
+			mv -f "$BT_STORE" "$BT_STORE.bad"
+			bt_store_create &&
+				mount -t ext4 -o loop,noatime "$BT_STORE" "$BT_STORE_MNT" && return 0
+			msg "pairings will not be kept"
+		fi
+	fi
+	mount -t tmpfs -o mode=0700 tmpfs "$BT_STORE_MNT"
+}
+
+bt_store_umount() {
+	grep -q " $BT_STORE_MNT " /proc/mounts && umount "$BT_STORE_MNT"
+	return 0
+}
+
+bt_off() {
+	kill_pidfile "$RUN_DIR/bluetoothd.pid"
+	# Let bluetoothd write its state and exit before the store goes away.
+	i=0
+	while pidof bluetoothd > /dev/null && [ $i -lt 20 ]; do
+		nap
+		i=$((i + 1))
+	done
+	bt_store_umount
+	# Removing hci_uart closes the serdev device, which powers the chip down.
+	module_loaded "$BT_MODULE" && modprobe -r "$BT_MODULE"
+	module_loaded btbcm && modprobe -r btbcm
+	return 0
+}
+
+bt_status() {
+	if [ -e "/sys/class/bluetooth/$BT_HCI" ]; then
+		echo on
+	else
+		echo off
+	fi
+}
+
+# -------------------------------------------------------------- boot
+apply_early() {
+	[ "$(setting_get wifi)" = 1 ] && return 0
+	# The SDIO scan runs asynchronously; this only waits for it, in the
+	# background. TODO(hw): measure whether this is needed at all.
+	[ -n "$WIFI_MMC" ] && [ -e "$MMC_DRV/$WIFI_MMC" ] && echo "$WIFI_MMC" > "$MMC_DRV/unbind"
+	return 0
+}
+
+apply() {
+	# Charge mode (powered on by the charger): no networking at all. (A
+	# shell builtin: this runs while the frontend starts.)
+	_br=
+	[ -r /run/rsos/bootreason ] && read -r _br _ < /run/rsos/bootreason
+	[ "$_br" = charger ] && return 0
+	# Let the menu come up first: wait for the frontend's /run/rsos/menu-up
+	# (at most 20 s), then 1 s more so driver loading stays out of the way.
+	w=0
+	while [ ! -e /run/rsos/menu-up ] && [ $w -lt 100 ]; do
+		usleep 200000
+		w=$((w + 1))
+	done
+	sleep 1
+	net_lock
+	SAVE=0
+	[ "$(setting_get wifi)" = 1 ] && wifi_on
+	if [ "$(setting_get eth)" = 1 ]; then
+		eth_on
+	else
+		eth_park
+	fi
+	[ "$(setting_get bt)" = 1 ] && bt_on
+	# For rsos-boot-ok: the drivers are loaded, the boot can be judged.
+	mkdir -p /run/rsos && : > /run/rsos/net-applied
+	return 0
+}
+
+usage() {
+	echo "usage: rsos-net [-n] {wifi|eth|bt} {on|off|status}" >&2
+	echo "       rsos-net {apply-early|apply}" >&2
+	exit 2
+}
+
+# -------------------------------------------------------------- main
+if [ "$1" = "-n" ]; then
+	SAVE=0
+	shift
+fi
+
+case "$1" in
+apply-early) apply_early; exit $? ;;
+apply) apply; exit $? ;;
+wifi|eth|bt) ;;
+*) usage ;;
+esac
+
+dev=$1
+case "$2" in
+on | off) net_lock ;;
+esac
+case "$2" in
+on)
+	if "${dev}_on"; then
+		setting_set "$dev" 1
+	else
+		msg "$dev: could not switch on"
+		"${dev}_off"
+		exit 1
+	fi
+	;;
+off)
+	"${dev}_off"
+	setting_set "$dev" 0
+	;;
+status)
+	"${dev}_status"
+	;;
+*)
+	usage
+	;;
+esac

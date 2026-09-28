@@ -1,0 +1,18 @@
+config BR2_PACKAGE_LIBRETRO_HANDY
+	bool "libretro-handy"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Handy: Atari Lynx emulator, built as a libretro core (zlib
+	  licence, with LGPL/GPL Blip_Buffer sound code). The Lynx boot
+	  ROM is optional (HLE boot otherwise).
+
+	  Installs /usr/lib/libretro/handy_libretro.so and
+	  /usr/share/rsos/cores/handy.ini.
+
+	  https://github.com/libretro/libretro-handy
+
+comment "libretro-handy needs a toolchain w/ C++, dynamic library"
+	depends on (BR2_arm && BR2_ARM_EABIHF) || BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

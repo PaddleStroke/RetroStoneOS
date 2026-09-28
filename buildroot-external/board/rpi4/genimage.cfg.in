@@ -1,0 +1,61 @@
+# RetroStoneOS SD card image for the Raspberry Pi 4, also used by the other
+# Raspberry Pi ports (rpi2, rpi3_64, rpi5_64; docs/boards.md). post-image.sh
+# fills in #BOOT_FILES#: the firmware, config.txt, cmdline.txt, the kernel
+# and the device trees and overlays.
+#
+# Disk order                          MBR entry
+#   4 MiB    boot, FAT32, 128 MiB     1   (the Pi firmware boots from the first
+#                                          FAT partition)
+#   132 MiB  rootfs A, ext4, S MiB    2   (read-only; root=/dev/mmcblk0p2)
+#   132+S    rootfs B, ext4, S MiB    3   (empty: A/B updates are not
+#                                          implemented on the Pi yet)
+#   132+2S   data, FAT32 seed         4   "RETROSTONE", turned into a
+#            "RETROSTONE", 128 MiB         full-size exFAT by the first boot
+#                                          (board.ini: data_partition = 4)
+#
+# S = the slot size, BR2_TARGET_ROOTFS_EXT2_SIZE of the defconfig (512 MiB on
+# the Pi 2 and Pi 4, 768 MiB on the Pi 3 and Pi 5): post-image.sh fills in
+# #SLOT#, #B_OFFSET# and #DATA_OFFSET#.
+
+image boot.vfat {
+	vfat {
+		label = "RSOS-BOOT"
+		files = {
+#BOOT_FILES#
+		}
+	}
+
+	size = 128M
+}
+
+image sdcard.img {
+	hdimage {
+		partition-table-type = "mbr"
+	}
+
+	partition boot {
+		partition-type = 0x0c
+		bootable = true
+		image = "boot.vfat"
+		offset = 4M
+	}
+
+	partition rootfs-a {
+		partition-type = 0x83
+		image = "rootfs.ext4"
+		offset = 132M
+		size = #SLOT#M
+	}
+
+	partition rootfs-b {
+		partition-type = 0x83
+		offset = #B_OFFSET#M
+		size = #SLOT#M
+	}
+
+	partition data {
+		partition-type = 0x0c
+		image = "data.vfat"
+		offset = #DATA_OFFSET#M
+	}
+}

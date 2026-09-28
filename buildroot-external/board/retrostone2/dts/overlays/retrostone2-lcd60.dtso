@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * RetroStone2: run the LCD at a true 60 Hz.
+ *
+ * The base timing (from the old RetrOrangePi kernel) uses a 33 MHz pixel clock
+ * with htotal 800 x vtotal 525, which is 78.6 Hz. Emulators pace at ~60 Hz, so
+ * that mismatch causes judder or audio drift. The same porches at 25.2 MHz give
+ * 60.0 Hz (the standard VGA 640x480@60 clock).
+ *
+ * Enable with `overlays=lcd60` in /boot/rsos.env. If the panel accepts it, this
+ * becomes the default timing in the base DTS.
+ *
+ * TODO(hw): check that the panel shows a stable picture at 25.2 MHz.
+ * TODO(hw): check with `rsos-kmstest --list` that the reported refresh is ~60 Hz.
+ */
+
+/dts-v1/;
+/plugin/;
+
+&panel {
+	panel-timing {
+		clock-frequency = <25200000>;
+	};
+};

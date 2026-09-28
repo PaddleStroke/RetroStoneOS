@@ -1,0 +1,2438 @@
+# Ukrainian translation of RetroStoneOS.
+# Translated by AI, review welcome: see docs/translating.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: RetroStoneOS\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Translator: AI (Claude), review welcome\n"
+
+#. TRANSLATORS: game start error; %s is the zip library's English reason
+#, c-format
+msgid "Cannot open the zip file (%s)"
+msgstr "Не вдається відкрити zip-файл (%s)"
+
+msgid "No playable file in this zip"
+msgstr "У цьому zip немає файлу гри"
+
+#, c-format
+msgid "The file in this zip is too large (%llu MB)"
+msgstr "Файл у цьому zip завеликий (%llu МБ)"
+
+#. TRANSLATORS: game start error: file name, then the zip library's English reason
+#, c-format
+msgid "Cannot extract %s from the zip (%s)"
+msgstr "Не вдається видобути %s із zip (%s)"
+
+msgid "Game file not found"
+msgstr "Файл гри не знайдено"
+
+msgid "7z archives are not supported here: use .zip or unpack it"
+msgstr "Архіви 7z не підтримуються: використай .zip або розпакуй архів"
+
+#, c-format
+msgid "Cannot read the game file (%s)"
+msgstr "Не вдається прочитати файл гри (%s)"
+
+#. TRANSLATORS: start of "<system> needs <BIOS file> in /bios" when the system is unknown
+msgid "This system"
+msgstr "цієї системи"
+
+#. TRANSLATORS: warning shown by the menu before a game starts:
+#. "PS1: scph5501.bin is not the expected BIOS dump"
+#, c-format
+msgid "%s: %s is not the expected BIOS dump"
+msgstr "%s: %s — не той файл BIOS"
+
+#. TRANSLATORS: the last two of a list of BIOS files the user
+#. can choose from: "bios_CD_U.bin, bios_CD_E.bin or bios_CD_J.bin"
+#, c-format
+msgid "%s or %s"
+msgstr "%s або %s"
+
+#. TRANSLATORS: error shown by the menu instead of starting the game:
+#. "PS1 needs scph5501.bin in /bios" (system, BIOS file(s), folder)
+#, c-format
+msgid "%s needs %s in %s"
+msgstr "Для %s потрібен %s у папці %s"
+
+#. TRANSLATORS: toast over the last game picture while the saves are written
+msgid "Powering off..."
+msgstr "Вимкнення..."
+
+msgid "Player 1 controller disconnected: paused"
+msgstr "Геймпад гравця 1 від'єднано: пауза"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Player 1: %s"
+msgstr "Гравець 1: %s"
+
+msgid "Saving..."
+msgstr "Збереження..."
+
+msgid "This game cannot save a state now"
+msgstr "Зараз ця гра не може зберегти стан"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State NOT saved: %s"
+msgstr "Стан НЕ збережено: %s"
+
+#, c-format
+msgid "State loaded, slot %d"
+msgstr "Стан завантажено, слот %d"
+
+#, c-format
+msgid "No state in slot %d"
+msgstr "У слоті %d немає стану"
+
+#, c-format
+msgid "Cannot load the state of slot %d"
+msgstr "Не вдається завантажити стан зі слоту %d"
+
+#, c-format
+msgid "State slot %d"
+msgstr "Слот стану %d"
+
+#. TRANSLATORS: toast after Select+Left/Right: the slot holds no state
+#, c-format
+msgid "State slot %d (empty)"
+msgstr "Слот стану %d (порожній)"
+
+#. TRANSLATORS: toast: the game was reset (Select+B)
+msgctxt "toast"
+msgid "Reset"
+msgstr "Гру перезапущено"
+
+#. TRANSLATORS: toast; %s is the controller's name
+#, c-format
+msgid "Connected: %s"
+msgstr "Під'єднано: %s"
+
+msgid "Battery empty: game saved"
+msgstr "Батарея розряджена: гру збережено"
+
+#, c-format
+msgid "Battery low (%d%%)"
+msgstr "Низький заряд (%d %%)"
+
+#. TRANSLATORS: in-game menu > Benchmark, value of the "Runs" row
+#. (right half of a 640 px row: keep it short)
+#, c-format
+msgid "%d setting, about %d min"
+msgid_plural "%d settings, about %d min"
+msgstr[0] "%d варіант, ~%d хв"
+msgstr[1] "%d варіанти, ~%d хв"
+msgstr[2] "%d варіантів, ~%d хв"
+
+msgid "No benchmark for this system"
+msgstr "Для цієї системи немає тесту швидкості"
+
+msgid "Benchmark: this game cannot save a state now"
+msgstr "Тест: зараз ця гра не може зберегти стан"
+
+#, c-format
+msgid "Benchmark: cannot write %s"
+msgstr "Тест: не вдається записати %s"
+
+msgid "No result to use"
+msgstr "Немає результату для застосування"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Unknown configuration %s"
+msgstr "Невідома конфігурація %s"
+
+#. TRANSLATORS: %s is the system's English error text
+#, c-format
+msgid "Could not save: %s"
+msgstr "Не вдалося зберегти: %s"
+
+#. TRANSLATORS: %s is a benchmark configuration id ("glide-640")
+#, c-format
+msgid "Saved \"%s\" for this game (applies next start)"
+msgstr "«%s» збережено для цієї гри (з наступного запуску)"
+
+#. TRANSLATORS: configuration id, then the core's name ("mupen64plus_next")
+#, c-format
+msgid "Saved \"%s\": next start uses %s"
+msgstr "«%s» збережено: під час наступного запуску — %s"
+
+msgid "The emulator stopped responding"
+msgstr "Емулятор не відповідає"
+
+msgid "Cannot load the emulator core"
+msgstr "Не вдається завантажити ядро емулятора"
+
+msgid "Benchmark: bad plan"
+msgstr "Тест: хибний план"
+
+msgid "Cannot start the save thread"
+msgstr "Не вдається запустити потік збереження"
+
+msgid "Cannot open the display"
+msgstr "Не вдається відкрити екран"
+
+msgid "This core needs a game file"
+msgstr "Цьому ядру потрібен файл гри"
+
+msgid "The emulator could not load this game"
+msgstr "Емулятор не зміг завантажити цю гру"
+
+#. TRANSLATORS: toast: the game continues from the resume state
+msgid "Resumed"
+msgstr "Продовжуємо!"
+
+#, c-format
+msgid "GPU init failed (framebuffer 0x%x)"
+msgstr "Помилка запуску GPU (framebuffer 0x%x)"
+
+msgid "This build cannot run GLES games"
+msgstr "Ця збірка не запускає ігри GLES"
+
+msgid "No GPU found (lima)"
+msgstr "GPU не знайдено (lima)"
+
+msgid "The game was stopped"
+msgstr "Гру зупинено"
+
+#. TRANSLATORS: shown by the menu after a crash; %s is the
+#. signal name in English ("Segmentation fault")
+#, c-format
+msgid "The emulator crashed (%s). Game saves up to a few seconds ago are kept."
+msgstr "Емулятор аварійно завершився (%s). Збереження гри, крім останніх секунд, на місці."
+
+msgid "Could not start the game"
+msgstr "Не вдалося запустити гру"
+
+msgid "The emulator stopped responding. Game saves up to a few seconds ago are kept."
+msgstr "Емулятор перестав відповідати. Збереження гри, крім останніх секунд, на місці."
+
+msgid "Cannot start the game process"
+msgstr "Не вдається запустити процес гри"
+
+#, c-format
+msgid "The emulator failed (code %d)"
+msgstr "Помилка емулятора (код %d)"
+
+#. TRANSLATORS: in-game menu > Scaling values (right-aligned on a 640 px row)
+msgctxt "scaling"
+msgid "Integer"
+msgstr "Кратно"
+
+msgctxt "scaling"
+msgid "Stretch"
+msgstr "На весь екран"
+
+msgctxt "scaling"
+msgid "Aspect"
+msgstr "Пропорційно"
+
+#. TRANSLATORS: in-game menu switch values, shown as "< On >" / "< Off >"
+msgctxt "switch"
+msgid "On"
+msgstr "Увімк"
+
+msgctxt "switch"
+msgid "Off"
+msgstr "Вимк"
+
+#. TRANSLATORS: after a core option's value: saved for this game
+#. (keep it short; the help line of the page explains it)
+msgctxt "option source"
+msgid "(game)"
+msgstr "(гра)"
+
+#. TRANSLATORS: after a core option's value: saved for all games of this core
+msgctxt "option source"
+msgid "(all)"
+msgstr "(усі)"
+
+#. TRANSLATORS: after a core option's value: set by a benchmark run
+msgctxt "option source"
+msgid "(bench)"
+msgstr "(тест)"
+
+#. TRANSLATORS: benchmark results page: what happened to a run
+msgctxt "benchmark"
+msgid "crashed"
+msgstr "збій"
+
+msgctxt "benchmark"
+msgid "hung"
+msgstr "завис"
+
+msgctxt "benchmark"
+msgid "stopped"
+msgstr "зупинено"
+
+msgctxt "benchmark"
+msgid "failed"
+msgstr "помилка"
+
+#. TRANSLATORS: in-game menu (Select+X) rows: the label on the left
+#. of a 372 px row, a value like "< Slot 1 >" on the right; longer
+#. text is cut with "..."
+msgid "Resume"
+msgstr "Продовжити"
+
+#. TRANSLATORS: in-game menu value, shown as "< Slot 3 >"
+#. TRANSLATORS: in-game menu: under the preview (176 px)
+#, c-format
+msgid "Slot %d"
+msgstr "Слот %d"
+
+msgid "Save state"
+msgstr "Зберегти стан"
+
+msgid "Load state"
+msgstr "Завантажити стан"
+
+#. TRANSLATORS: in-game menu: the CD of a multi-disc game
+msgid "Disc"
+msgstr "Диск"
+
+#. TRANSLATORS: in-game menu: restart the game (as the console's reset button)
+msgid "Reset"
+msgstr "Перезапуск"
+
+msgid "Core options"
+msgstr "Налаштування ядра"
+
+msgid "Scaling"
+msgstr "Масштаб"
+
+msgid "Show FPS"
+msgstr "Показувати FPS"
+
+msgid "Fast-forward"
+msgstr "Прискорення"
+
+msgid "Benchmark this game"
+msgstr "Тест швидкості гри"
+
+msgid "Controls"
+msgstr "Керування"
+
+msgid "Exit game"
+msgstr "Вийти з гри"
+
+#. TRANSLATORS: in-game menu > Core options (640 px rows)
+msgid "Save for this game"
+msgstr "Зберегти для цієї гри"
+
+msgid "Save for all games (this core)"
+msgstr "Зберегти для всіх ігор ядра"
+
+msgid "Reset to defaults"
+msgstr "Скинути до типових"
+
+#. TRANSLATORS: in-game menu > Controls: the row of a player
+#, c-format
+msgid "Player %d"
+msgstr "Гравець %d"
+
+#. TRANSLATORS: in-game menu > Controls: a controller's name, and it has an analog stick
+#, c-format
+msgid "%s (stick)"
+msgstr "%s (стік)"
+
+msgid "D-pad as left stick (P1)"
+msgstr "Хрестовина як лівий стік (P1)"
+
+msgctxt "d-pad"
+msgid "Up"
+msgstr "Вгору"
+
+msgctxt "d-pad"
+msgid "Down"
+msgstr "Вниз"
+
+msgctxt "d-pad"
+msgid "Left"
+msgstr "Ліворуч"
+
+msgctxt "d-pad"
+msgid "Right"
+msgstr "Праворуч"
+
+msgid "Left stick"
+msgstr "Лівий стік"
+
+msgid "Right stick"
+msgstr "Правий стік"
+
+#. TRANSLATORS: in-game menu > Benchmark this game: info rows
+#. (label on the left, value on the right of a 640 px row)
+msgid "Runs"
+msgstr "Запуски"
+
+msgid "Each run"
+msgstr "Кожен запуск"
+
+msgid "from now, no input"
+msgstr "з цього місця, без натискань"
+
+#. TRANSLATORS: benchmark info row; its value is the key combination that stops it
+msgid "Stop"
+msgstr "Зупинити"
+
+#. TRANSLATORS: where the benchmark report is written: keep the path
+msgid "/rsos/logs (SD card)"
+msgstr "/rsos/logs (SD-картка)"
+
+msgid "Results"
+msgstr "Результати"
+
+msgid "Start benchmark"
+msgstr "Почати тест"
+
+#. TRANSLATORS: benchmark results: a run that started from
+#. the game's boot (not comparable), or whose last picture
+#. was one colour
+msgid "not ranked"
+msgstr "поза рейтингом"
+
+msgid "blank?"
+msgstr "порожній екран?"
+
+msgid "Use this for this game"
+msgstr "Використати для цієї гри"
+
+msgid "Resume game"
+msgstr "Продовжити гру"
+
+#. TRANSLATORS: in-game menu page titles (640 px, large text)
+msgid "Benchmark"
+msgstr "Тест швидкості"
+
+msgid "Benchmark results"
+msgstr "Результати тесту"
+
+#. TRANSLATORS: in-game menu: the save state slot holds nothing
+#. (centred in a 176 px preview box)
+msgid "Empty"
+msgstr "Порожньо"
+
+#. TRANSLATORS: in-game menu > Core options, help line (one 592 px
+#. line in small text): "(game)", "(all)" and "*" must match the
+#. tags shown after the values
+msgid "(game) saved for this game, (all) for all games, * saved on leaving"
+msgstr "(гра) — для цієї гри, (усі) — для всіх ігор, * — під час виходу"
+
+#. TRANSLATORS: in-game menu, button help (one 592 px line): A and B are
+#. the button names, "</>" the d-pad Left/Right
+msgid "A: select  B: resume  </>: change"
+msgstr "A: вибрати  B: продовжити  </>: змінити"
+
+msgid "A: select  B: back  </>: change"
+msgstr "A: вибрати  B: назад  </>: змінити"
+
+#. TRANSLATORS: in-game menu status line (one 592 px line, small text)
+#, c-format
+msgid "Saving slot %d..."
+msgstr "Збереження в слот %d..."
+
+#, c-format
+msgid "Slot %d is empty"
+msgstr "Слот %d порожній"
+
+#, c-format
+msgid "Disc %d inserted"
+msgstr "Вставлено диск %d"
+
+#, c-format
+msgid "Cannot change to disc %d"
+msgstr "Не вдається вставити диск %d"
+
+msgid "Could not save the options"
+msgstr "Не вдалося зберегти налаштування"
+
+#. TRANSLATORS: status line; %s is the game's name
+#, c-format
+msgid "Saved for %s"
+msgstr "Збережено для %s"
+
+#. TRANSLATORS: status line; %s is the emulator core's name ("snes9x")
+#, c-format
+msgid "Saved for all %s games"
+msgstr "Збережено для всіх ігор ядра %s"
+
+msgid "Defaults restored (saved when you leave)"
+msgstr "Скинуто (збережеться під час виходу)"
+
+msgid "Options saved for this game"
+msgstr "Налаштування збережено для цієї гри"
+
+#. TRANSLATORS: benchmark results page, status line: the report's path
+#, c-format
+msgid "Table: %s"
+msgstr "Таблиця: %s"
+
+#. TRANSLATORS: toast (one line at the bottom of the game
+#. picture); %s is the system's English error text
+#, c-format
+msgid "Game save failed: %s (retrying)"
+msgstr "Помилка збереження гри: %s (пробую ще)"
+
+#. TRANSLATORS: toast after a failed game save finally worked
+msgid "Game saved"
+msgstr "Гру збережено"
+
+#, c-format
+msgid "Auto state NOT saved: %s"
+msgstr "Автостан НЕ збережено: %s"
+
+msgid "Auto state saved"
+msgstr "Автостан збережено"
+
+#. TRANSLATORS: toast; %s is the system's English error text
+#, c-format
+msgid "State %d NOT saved: %s"
+msgstr "Стан %d НЕ збережено: %s"
+
+#, c-format
+msgid "State saved, slot %d"
+msgstr "Стан збережено, слот %d"
+
+msgid "Save file unreadable: saving disabled"
+msgstr "Файл збереження не читається: збереження вимкнено"
+
+#. TRANSLATORS: the decimal separator of numbers ("1.5 GB"): "," in French.
+msgctxt "decimal separator"
+msgid "."
+msgstr ","
+
+#. TRANSLATORS: the thousands separator ("12,345 games"): a (narrow) no-break
+#. space in French, "." in German. Empty: none.
+msgctxt "thousands separator"
+msgid ","
+msgstr " "
+
+#. TRANSLATORS: gigabytes ("Go" in French)
+msgctxt "unit"
+msgid "GB"
+msgstr "ГБ"
+
+#. TRANSLATORS: megabytes ("Mo" in French)
+msgctxt "unit"
+msgid "MB"
+msgstr "МБ"
+
+#. TRANSLATORS: kilobytes ("Ko" in French)
+msgctxt "unit"
+msgid "KB"
+msgstr "КБ"
+
+#. TRANSLATORS: a size: number, then unit ("1,5 Go").
+#, c-format
+msgctxt "unit"
+msgid "%s %s"
+msgstr "%s %s"
+
+#. TRANSLATORS: short date (strftime): "%d/%m/%Y" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d"
+msgstr "%d.%m.%Y"
+
+#. TRANSLATORS: date and time (strftime): "%d/%m/%Y %H:%M" in French.
+#, no-c-format
+msgctxt "strftime"
+msgid "%Y-%m-%d %H:%M"
+msgstr "%d.%m.%Y %H:%M"
+
+msgid "The screen refused this refresh rate"
+msgstr "Екран не прийняв цю частоту"
+
+msgid "No emulator is installed for this game."
+msgstr "Для цієї гри не встановлено емулятор."
+
+msgid "This game cannot start (missing BIOS?)."
+msgstr "Ця гра не запускається (немає BIOS?)."
+
+#. TRANSLATORS: %s is a system error message (in English)
+#, c-format
+msgid "Cannot start the game process (%s)."
+msgstr "Не вдається запустити процес гри (%s)."
+
+msgid "The game could not be started."
+msgstr "Не вдалося запустити гру."
+
+#. TRANSLATORS: boot message: the SD card's data partition (games, saves)
+msgid "The data partition could not be restored. Your games and saves may need to be copied again."
+msgstr "Не вдалося відновити розділ даних. Можливо, ігри та збереження доведеться скопіювати знову."
+
+msgid "The data partition was unreadable and was reformatted."
+msgstr "Розділ даних не читався, тому його відформатовано."
+
+msgid "The data partition has errors: saving may fail. Back up your saves."
+msgstr "У розділі даних є помилки: збереження можуть не записатися. Зроби копію збережень."
+
+msgid "The last update didn't start; the previous version was restored."
+msgstr "Останнє оновлення не запустилося, тому повернуто попередню версію."
+
+msgid "The SD card was checked after an unexpected power loss"
+msgstr "SD-картку перевірено після раптового вимкнення живлення"
+
+#. TRANSLATORS: boot screen under the logo (first start, or after an update)
+msgid "Preparing the SD card, please wait..."
+msgstr "Підготовка SD-картки, зачекай..."
+
+#. TRANSLATORS: boot screen under the logo, after the power was cut
+msgid "Checking the SD card, please wait..."
+msgstr "Перевірка SD-картки, зачекай..."
+
+#. TRANSLATORS: the favorite games collection in the system carousel
+#. (big text, uppercase in the built-in themes) and its list header
+msgid "Favorites"
+msgstr "Обране"
+
+#. TRANSLATORS: the recently played games collection in the system
+#. carousel (big text, uppercase in the built-in themes) and its list header
+msgid "Last played"
+msgstr "Нещодавні"
+
+#. TRANSLATORS: toast when a system opened from the carousel has no
+#. game any more (removed while the console was off)
+msgid "No games found any more in this folder"
+msgstr "У цій папці більше немає ігор"
+
+#. TRANSLATORS: help bar at the bottom of the screen: one short word each
+#. TRANSLATORS: first-boot language picker: help bar, one short word each
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "choose"
+msgstr "гортати"
+
+msgid "change"
+msgstr "змінити"
+
+msgid "select"
+msgstr "вибрати"
+
+msgid "back"
+msgstr "назад"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "OK"
+msgstr "ОК"
+
+#. TRANSLATORS: help bar of the on-screen keyboard: one short word each
+msgid "type"
+msgstr "ввести"
+
+msgid "delete"
+msgstr "стерти"
+
+msgid "space"
+msgstr "пробіл"
+
+msgid "shift"
+msgstr "шифт"
+
+msgid "ok"
+msgstr "готово"
+
+#. TRANSLATORS: help bar: B stops the copy
+msgid "cancel"
+msgstr "скасувати"
+
+#. TRANSLATORS: on-screen keyboard key (2 keys wide): at most ~6 letters
+msgctxt "keyboard"
+msgid "SHIFT"
+msgstr "ШИФТ"
+
+#. TRANSLATORS: on-screen keyboard key (3 keys wide)
+msgctxt "keyboard"
+msgid "SPACE"
+msgstr "ПРОБІЛ"
+
+#. TRANSLATORS: on-screen keyboard key, deletes a character (2 keys wide)
+msgctxt "keyboard"
+msgid "DEL"
+msgstr "СТЕР."
+
+#. TRANSLATORS: on-screen keyboard key, confirms (1 key wide: 2-3 letters)
+msgctxt "keyboard"
+msgid "OK"
+msgstr "ОК"
+
+#. TRANSLATORS: HDMI resolution choice: chosen by itself
+msgid "Auto"
+msgstr "Авто"
+
+#. TRANSLATORS: game scaling: keep the picture's shape / whole-pixel steps
+msgid "Aspect"
+msgstr "Пропорційно"
+
+msgid "Integer"
+msgstr "Кратно"
+
+#. TRANSLATORS: game list style: automatic, a plain list, list + picture and details
+#. TRANSLATORS: how the battery level is measured: automatic, from the voltage,
+#. or the power chip's (AXP) fuel gauge
+msgid "Automatic"
+msgstr "Автоматично"
+
+msgid "Basic"
+msgstr "Простий"
+
+msgid "Detailed"
+msgstr "Докладний"
+
+#. TRANSLATORS: corner of the screen
+msgid "Top right"
+msgstr "Праворуч угорі"
+
+msgid "Top left"
+msgstr "Ліворуч угорі"
+
+msgid "Bottom right"
+msgstr "Праворуч унизу"
+
+msgid "Bottom left"
+msgstr "Ліворуч унизу"
+
+#. TRANSLATORS: LCD refresh rate choice; "legacy" = the old, original setting
+msgid "78 Hz (legacy)"
+msgstr "78 Гц (попередня)"
+
+#. TRANSLATORS: who is player 1 (value shown right of "Player 1"): keep it short
+msgid "Auto (the controller that starts the game)"
+msgstr "Авто (хто запустив гру)"
+
+msgid "Built-in"
+msgstr "Вбудований"
+
+msgid "External"
+msgstr "Зовнішній"
+
+msgid "Could not save the settings"
+msgstr "Не вдалося зберегти налаштування"
+
+#. TRANSLATORS: brightness value while on HDMI (the TV sets it)
+msgid "TV"
+msgstr "ТБ"
+
+msgid "LCD refresh rate: 60 Hz"
+msgstr "Частота екрана: 60 Гц"
+
+msgid "LCD refresh rate: back to 78 Hz"
+msgstr "Частота екрана: знову 78 Гц"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "KEEP"
+msgstr "ЗАЛИШИТИ"
+
+msgid "REVERT"
+msgstr "ПОВЕРНУТИ"
+
+#. TRANSLATORS: %d is the number of seconds left (it counts down; keep "%d"
+#. exactly once)
+#, c-format
+msgid ""
+"The screen now refreshes at 60 Hz.\n"
+"Keep this setting? Reverting in %d s"
+msgstr ""
+"Тепер екран працює на 60 Гц.\n"
+"Залишити так? Повернення через %d с"
+
+msgid "Display"
+msgstr "Екран"
+
+msgid "Brightness"
+msgstr "Яскравість"
+
+msgid "LCD refresh rate"
+msgstr "Частота екрана"
+
+msgid "HDMI resolution"
+msgstr "Роздільність HDMI"
+
+msgid "Game scaling"
+msgstr "Масштаб в іграх"
+
+msgid "Game list style"
+msgstr "Вигляд списку ігор"
+
+msgid "Battery in games"
+msgstr "Батарея в іграх"
+
+msgid "Battery position"
+msgstr "Де показувати батарею"
+
+msgid "Button test"
+msgstr "Перевірка кнопок"
+
+msgid "no stick"
+msgstr "немає стіка"
+
+msgid "Hold SELECT + START to exit"
+msgstr "Щоб вийти, тримай SELECT + START"
+
+#. TRANSLATORS: controller set-up wizard: what to press now (big text, one line)
+msgid "Press D-pad UP"
+msgstr "Натисни хрестовину ВГОРУ"
+
+msgid "Press D-pad DOWN"
+msgstr "Натисни хрестовину ВНИЗ"
+
+msgid "Press D-pad LEFT"
+msgstr "Натисни хрестовину ЛІВОРУЧ"
+
+msgid "Press D-pad RIGHT"
+msgstr "Натисни хрестовину ПРАВОРУЧ"
+
+msgid "Press the RIGHT face button (A)"
+msgstr "Натисни ПРАВУ кнопку (A)"
+
+msgid "Press the BOTTOM face button (B)"
+msgstr "Натисни НИЖНЮ кнопку (B)"
+
+msgid "Press the TOP face button (X)"
+msgstr "Натисни ВЕРХНЮ кнопку (X)"
+
+msgid "Press the LEFT face button (Y)"
+msgstr "Натисни ЛІВУ кнопку (Y)"
+
+msgid "Press L1"
+msgstr "Натисни L1"
+
+msgid "Press R1"
+msgstr "Натисни R1"
+
+msgid "Press L2"
+msgstr "Натисни L2"
+
+msgid "Press R2"
+msgstr "Натисни R2"
+
+msgid "Press SELECT"
+msgstr "Натисни SELECT"
+
+msgid "Press START"
+msgstr "Натисни START"
+
+msgid "Press the left stick (L3)"
+msgstr "Натисни на лівий стік (L3)"
+
+msgid "Press the right stick (R3)"
+msgstr "Натисни на правий стік (R3)"
+
+msgid "Push the left stick RIGHT"
+msgstr "Нахили лівий стік ПРАВОРУЧ"
+
+msgid "Push the left stick DOWN"
+msgstr "Нахили лівий стік ВНИЗ"
+
+msgid "Push the right stick RIGHT"
+msgstr "Нахили правий стік ПРАВОРУЧ"
+
+msgid "Push the right stick DOWN"
+msgstr "Нахили правий стік ВНИЗ"
+
+msgid "Configure controller"
+msgstr "Налаштування геймпада"
+
+#, c-format
+msgid "Step %d of %d"
+msgstr "Крок %d з %d"
+
+#, c-format
+msgid "Not on this pad? Wait %d s to skip"
+msgstr "Немає такої кнопки? Зачекай %d с"
+
+msgid "Controller saved"
+msgstr "Геймпад збережено"
+
+msgid "The mapping could not be saved."
+msgstr "Не вдалося зберегти розкладку."
+
+msgid "Configure a controller"
+msgstr "Налаштувати геймпад"
+
+#. TRANSLATORS: how a controller is set up: your own mapping, from the
+#. database of known pads, the Linux standard, a keyboard, none
+msgid "custom"
+msgstr "власна"
+
+msgid "known pad"
+msgstr "з бази"
+
+msgid "standard"
+msgstr "стандарт"
+
+msgid "keyboard"
+msgstr "клавіатура"
+
+msgid "not configured"
+msgstr "не налаштовано"
+
+msgid "No external controller detected"
+msgstr "Зовнішній геймпад не знайдено"
+
+msgid "built-in"
+msgstr "вбудований"
+
+msgid "Player 1"
+msgstr "Гравець 1"
+
+msgid "Extra C/Z buttons fitted"
+msgstr "Є кнопки C/Z"
+
+msgid "Players"
+msgstr "Гравці"
+
+#. TRANSLATORS: "stop when idle for": durations, and never
+msgid "10 min"
+msgstr "10 хв"
+
+msgid "30 min"
+msgstr "30 хв"
+
+msgid "1 hour"
+msgstr "1 година"
+
+#. TRANSLATORS: dim / turn off the screen after: never, or minutes
+msgid "Never"
+msgstr "Ніколи"
+
+msgid "please wait..."
+msgstr "зачекай..."
+
+msgid "not set"
+msgstr "не задано"
+
+#. TRANSLATORS: the network transfer is on
+msgid "running"
+msgstr "працює"
+
+msgid "WiFi: turning off, please wait..."
+msgstr "Wi-Fi: вимикаю, зачекай..."
+
+msgid "Ethernet: turning off, please wait..."
+msgstr "Ethernet: вимикаю, зачекай..."
+
+msgid "Bluetooth: turning off, please wait..."
+msgstr "Bluetooth: вимикаю, зачекай..."
+
+msgid "WiFi: turning on, please wait..."
+msgstr "Wi-Fi: вмикаю, зачекай..."
+
+msgid "Ethernet: turning on, please wait..."
+msgstr "Ethernet: вмикаю, зачекай..."
+
+msgid "Bluetooth: turning on, please wait..."
+msgstr "Bluetooth: вмикаю, зачекай..."
+
+#, c-format
+msgid "Cannot run %s"
+msgstr "Не вдається запустити %s"
+
+msgid "Could not save the WiFi settings"
+msgstr "Не вдалося зберегти налаштування Wi-Fi"
+
+msgid "A WiFi password has at least 8 characters."
+msgstr "Пароль Wi-Fi — щонайменше 8 символів."
+
+msgid "Set the network name first."
+msgstr "Спершу вкажи назву мережі."
+
+msgid "WiFi password saved"
+msgstr "Пароль Wi-Fi збережено"
+
+msgid "WiFi network name"
+msgstr "Назва мережі Wi-Fi"
+
+msgid "WiFi password"
+msgstr "Пароль Wi-Fi"
+
+msgid "Console name"
+msgstr "Ім'я консолі"
+
+msgid "Use letters, digits and dashes."
+msgstr "Використовуй літери, цифри й дефіси."
+
+#, c-format
+msgid "Console name: %s (next transfer)"
+msgstr "Ім'я консолі: %s (з наступної передачі)"
+
+msgid "Network"
+msgstr "Мережа"
+
+#. TRANSLATORS: the wireless network ("Wi-Fi" in French, "WLAN" in German)
+msgid "WiFi"
+msgstr "Wi-Fi"
+
+msgid "WiFi network"
+msgstr "Мережа Wi-Fi"
+
+msgid "Transfer games from a computer or phone"
+msgstr "Ігри з комп'ютера або телефона"
+
+#. TRANSLATORS: screen title (the Settings > Network row of the same name)
+msgid "Transfer over network"
+msgstr "Передача через мережу"
+
+msgid "Stop when idle for"
+msgstr "Зупинка після простою"
+
+msgid "Keep receiving in the background"
+msgstr "Приймати у фоні"
+
+msgid "WiFi off"
+msgstr "Wi-Fi вимкнено"
+
+msgid "Ethernet off"
+msgstr "Ethernet вимкнено"
+
+msgid "Bluetooth off"
+msgstr "Bluetooth вимкнено"
+
+msgid "WiFi on"
+msgstr "Wi-Fi увімкнено"
+
+msgid "Ethernet on"
+msgstr "Ethernet увімкнено"
+
+msgid "Bluetooth on"
+msgstr "Bluetooth увімкнено"
+
+msgid "failed"
+msgstr "помилка"
+
+msgid "Theme"
+msgstr "Тема"
+
+msgid "No theme found"
+msgstr "Теми не знайдено"
+
+msgid "Game lists refreshed"
+msgstr "Списки ігор оновлено"
+
+msgid "Game lists"
+msgstr "Списки ігор"
+
+msgid "Favorites first"
+msgstr "Спершу обране"
+
+msgid "Favorites & last played pages"
+msgstr "Сторінки «Обране» і «Нещодавні»"
+
+msgid "Refresh game lists"
+msgstr "Оновити списки ігор"
+
+#. TRANSLATORS: what launching a game that has an automatic save does
+msgid "Ask"
+msgstr "Питати"
+
+msgid "Always resume"
+msgstr "Завжди продовжувати"
+
+msgid "Always start fresh"
+msgstr "Завжди спочатку"
+
+#. TRANSLATORS: toggle: copy the games
+msgid "Games"
+msgstr "Ігри"
+
+msgid "Resume games"
+msgstr "Продовження ігор"
+
+msgid "Auto-save on exit"
+msgstr "Автозбереження під час виходу"
+
+msgid "On launch"
+msgstr "Під час запуску"
+
+msgid "Powering off in a game always saves it"
+msgstr "Вимкнення під час гри завжди її зберігає"
+
+msgid "Could not update /boot/rsos.env."
+msgstr "Не вдалося оновити /boot/rsos.env."
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "REBOOT NOW"
+msgstr "ПЕРЕЗАВАНТАЖИТИ"
+
+msgid "LATER"
+msgstr "ПІЗНІШЕ"
+
+msgid "Reboot required: the change applies at the next start."
+msgstr "Потрібне перезавантаження: зміна запрацює під час наступного запуску."
+
+#. TRANSLATORS: storage: "12.5 GB free of 29.1 GB"
+#, c-format
+msgid "%s free of %s"
+msgstr "%s вільно з %s"
+
+msgid "Storage"
+msgstr "Пам'ять"
+
+msgid "Game storage"
+msgstr "Пам'ять для ігор"
+
+#. TRANSLATORS: a USB stick with no volume label and no vendor name
+msgid "USB drive"
+msgstr "Флешка"
+
+msgid "Import games"
+msgstr "Імпорт ігор"
+
+msgid "Export games"
+msgstr "Експорт ігор"
+
+msgid "Back up saves"
+msgstr "Копія збережень"
+
+msgid "Eject USB drive"
+msgstr "Вилучити флешку"
+
+msgid "Ask when a USB drive is plugged in"
+msgstr "Питати, коли вставлено флешку"
+
+msgid "Advanced: off for a fast boot, restart needed"
+msgstr "Для досвідчених: вимк. = швидкий старт (перезавантаження)"
+
+msgid "Internal eMMC"
+msgstr "Вбудована eMMC"
+
+msgid "M.2 SATA drive"
+msgstr "Диск M.2 SATA"
+
+msgid "no battery"
+msgstr "немає батареї"
+
+#. TRANSLATORS: battery: percent, then the time until full: hours, minutes
+#, c-format
+msgid "%d %%, full in %d h %02d"
+msgstr "%d %%, повна через %d год %02d"
+
+#. TRANSLATORS: battery: percent, then about how long it lasts: hours, minutes
+#, c-format
+msgid "%d %%, about %d h %02d"
+msgstr "%d %%, вистачить на ~%d год %02d"
+
+#, c-format
+msgid "%d %%, charging"
+msgstr "%d %%, заряджається"
+
+#, c-format
+msgid "%d %%, full"
+msgstr "%d %%, заряджена"
+
+#. TRANSLATORS: battery percent ("80 %")
+#, c-format
+msgid "%d %%"
+msgstr "%d %%"
+
+#. TRANSLATORS: power source and battery voltage ("charger, 4.12 V")
+#, c-format
+msgid "charger, %s V"
+msgstr "зарядка, %s В"
+
+#, c-format
+msgid "battery, %s V"
+msgstr "батарея, %s В"
+
+msgid "charger connected"
+msgstr "зарядку під'єднано"
+
+msgid "battery"
+msgstr "батарея"
+
+#, c-format
+msgid "%d °C (hot)"
+msgstr "%d °C (гаряче)"
+
+#, c-format
+msgid "%d °C"
+msgstr "%d °C"
+
+msgid "not mounted"
+msgstr "не підключено"
+
+#. TRANSLATORS: display: HDMI or LCD, then the menu's size in pixels
+#, c-format
+msgid "%s, UI %dx%d"
+msgstr "%s, меню %dx%d"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d system"
+msgid_plural "%d systems"
+msgstr[0] "%d система"
+msgstr[1] "%d системи"
+msgstr[2] "%d систем"
+
+#. TRANSLATORS: "25 games in 3 systems": %s is the "3 systems" part
+#, c-format
+msgid "%d game in %s"
+msgid_plural "%d games in %s"
+msgstr[0] "%d гра, %s"
+msgstr[1] "%d гри, %s"
+msgstr[2] "%d ігор, %s"
+
+msgid "System information"
+msgstr "Про консоль"
+
+msgid "Version"
+msgstr "Версія"
+
+msgid "Battery"
+msgstr "Батарея"
+
+#. TRANSLATORS: where the power comes from (charger or battery)
+msgctxt "power source"
+msgid "Power"
+msgstr "Живлення"
+
+msgid "Input devices"
+msgstr "Пристрої вводу"
+
+msgid "CPU temperature"
+msgstr "Температура процесора"
+
+msgid "1 min"
+msgstr "1 хв"
+
+msgid "2 min"
+msgstr "2 хв"
+
+msgid "5 min"
+msgstr "5 хв"
+
+msgid "Voltage"
+msgstr "Напруга"
+
+msgid "AXP fuel gauge"
+msgstr "Датчик AXP"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "YES"
+msgstr "ТАК"
+
+msgid "NO"
+msgstr "НІ"
+
+msgid "Restart the console?"
+msgstr "Перезапустити консоль?"
+
+msgid "Power off the console?"
+msgstr "Вимкнути консоль?"
+
+#. TRANSLATORS: Settings section: restart, power off, battery saving
+msgctxt "settings"
+msgid "Power"
+msgstr "Живлення"
+
+msgid "Restart"
+msgstr "Перезапустити"
+
+msgid "Power off"
+msgstr "Вимкнути"
+
+msgid "Battery saving"
+msgstr "Економія батареї"
+
+msgid "Dim the screen after"
+msgstr "Затемнювати екран через"
+
+msgid "Screen off after"
+msgstr "Вимикати екран через"
+
+msgid "Battery gauge"
+msgstr "Вимірювання заряду"
+
+#, c-format
+msgid "Time zone: %s"
+msgstr "Часовий пояс: %s"
+
+msgid "Time zone"
+msgstr "Часовий пояс"
+
+msgid "That date is not valid."
+msgstr "Такої дати немає."
+
+msgid "The clock could not be set."
+msgstr "Не вдалося встановити годинник."
+
+msgid "Date and time set"
+msgstr "Дату й час встановлено"
+
+msgid "Setting the clock needs the power module"
+msgstr "Для годинника потрібен модуль живлення"
+
+msgid "Date & time"
+msgstr "Дата й час"
+
+#. TRANSLATORS: the date and time now
+msgid "Now"
+msgstr "Зараз"
+
+msgid "Set the clock"
+msgstr "Налаштувати годинник"
+
+msgid "Year"
+msgstr "Рік"
+
+msgid "Month"
+msgstr "Місяць"
+
+msgid "Day"
+msgstr "День"
+
+msgid "Hour"
+msgstr "Година"
+
+msgid "Minute"
+msgstr "Хвилина"
+
+msgid "Set date and time"
+msgstr "Встановити дату й час"
+
+#. TRANSLATORS: Settings item that opens the list of languages
+msgid "Language"
+msgstr "Мова"
+
+msgid "Settings"
+msgstr "Налаштування"
+
+#, c-format
+msgid "%s is not installed"
+msgstr "%s не встановлено"
+
+#. TRANSLATORS: first-boot language picker title (shown in each language as
+#. the cursor moves: keep it short and simple, children read it)
+msgid "Choose your language"
+msgstr "Обери мову"
+
+msgid "This game is not in the list any more"
+msgstr "Цієї гри більше немає в списку"
+
+#. TRANSLATORS: the game is one of the favorites (on/off)
+msgid "Favorite"
+msgstr "В обраному"
+
+#. TRANSLATORS: core for this game: the one chosen for the whole system
+msgid "System default"
+msgstr "Типове для системи"
+
+#. TRANSLATORS: a core (emulator) name, marked as not finished
+#, c-format
+msgid "%s (experimental)"
+msgstr "%s (бета)"
+
+#. TRANSLATORS: the default core of a system, with its name
+#, c-format
+msgid "Default (%s)"
+msgstr "Типове (%s)"
+
+#. TRANSLATORS: no core
+msgid "none"
+msgstr "немає"
+
+#. TRANSLATORS: "core" = the emulator used to run the game
+msgid "Core for this game"
+msgstr "Ядро для цієї гри"
+
+#. TRANSLATORS: %s is a system name ("Core for all Game Boy games")
+#, c-format
+msgid "Core for all %s games"
+msgstr "Ядро для всіх ігор %s"
+
+msgid "Core"
+msgstr "Ядро"
+
+msgid "none installed"
+msgstr "не встановлено"
+
+#. TRANSLATORS: start the game
+msgid "Launch"
+msgstr "Грати"
+
+#. TRANSLATORS: the game's file name
+msgid "File"
+msgstr "Файл"
+
+msgctxt "system"
+msgid "Nintendo Entertainment System"
+msgstr ""
+
+msgctxt "system"
+msgid "Famicom Disk System"
+msgstr ""
+
+msgctxt "system"
+msgid "Super Nintendo"
+msgstr ""
+
+msgctxt "system"
+msgid "Nintendo 64"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Boy Advance"
+msgstr ""
+
+msgctxt "system"
+msgid "SG-1000"
+msgstr ""
+
+msgctxt "system"
+msgid "Master System"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD"
+msgstr ""
+
+msgctxt "system"
+msgid "32X"
+msgstr ""
+
+msgctxt "system"
+msgid "Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Game Gear"
+msgstr ""
+
+msgctxt "system"
+msgid "PlayStation"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine"
+msgstr ""
+
+msgctxt "system"
+msgid "PC Engine CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo Pocket Color"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan"
+msgstr ""
+
+msgctxt "system"
+msgid "WonderSwan Color"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 2600"
+msgstr ""
+
+msgctxt "system"
+msgid "Atari 7800"
+msgstr ""
+
+msgctxt "system"
+msgid "Lynx"
+msgstr ""
+
+msgctxt "system"
+msgid "ColecoVision"
+msgstr ""
+
+msgctxt "system"
+msgid "MSX"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade"
+msgstr "Аркади"
+
+msgctxt "system"
+msgid "FinalBurn Neo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo"
+msgstr ""
+
+msgctxt "system"
+msgid "Neo Geo CD"
+msgstr ""
+
+msgctxt "system"
+msgid "NES / Famicom"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega Drive / Genesis"
+msgstr ""
+
+msgctxt "system"
+msgid "Mega-CD / Sega CD"
+msgstr ""
+
+msgctxt "system"
+msgid "Sega Pico"
+msgstr ""
+
+msgctxt "system"
+msgid "Arcade (MAME 2003-Plus)"
+msgstr "Аркади (MAME 2003-Plus)"
+
+msgctxt "system"
+msgid "Arcade (FinalBurn Neo)"
+msgstr "Аркади (FinalBurn Neo)"
+
+#. TRANSLATORS: why an import stopped ("The copy stopped: ...").
+msgid "The SD card is full"
+msgstr "SD-картка заповнена"
+
+msgid "The USB drive was removed"
+msgstr "Флешку вийняли"
+
+msgid "Read error: was the USB drive removed?"
+msgstr "Помилка читання: флешку вийняли?"
+
+#. TRANSLATORS: why an export / saves backup stopped ("Stopped: ...").
+msgid "The USB drive is full"
+msgstr "Флешка заповнена"
+
+msgid "The USB drive is read-only"
+msgstr "Флешка лише для читання"
+
+msgid "Write error: was the USB drive removed?"
+msgstr "Помилка запису: флешку вийняли?"
+
+#. TRANSLATORS: why the network transfer stopped by itself ("Stopped: idle"):
+#. nothing was received for a while (src/transfer/webshare.c).
+msgctxt "webshare stop reason"
+msgid "idle"
+msgstr "немає активності"
+
+msgid "BIOS files"
+msgstr "Файли BIOS"
+
+msgid "Themes"
+msgstr "Теми"
+
+#. TRANSLATORS: toast, short
+msgid "The USB drive is busy"
+msgstr "Флешка зайнята"
+
+#. TRANSLATORS: toast
+msgid "USB drive ejected: you can unplug it"
+msgstr "Флешку вилучено: можна виймати"
+
+#. TRANSLATORS: dialog button, uppercase, short
+msgid "EJECT"
+msgstr "ВИЛУЧИТИ"
+
+#. TRANSLATORS: a game library found at the root of the USB stick
+msgid "Top of the drive"
+msgstr "Корінь флешки"
+
+#. TRANSLATORS: a folder name, then this: a RetroStone backup folder
+#, c-format
+msgid "%s (backup)"
+msgstr "%s (копія)"
+
+#. TRANSLATORS: "From: all 3 libraries" (game libraries on the USB stick)
+#, c-format
+msgid "all %d library"
+msgid_plural "all %d libraries"
+msgstr[0] "усі %d бібліотека"
+msgstr[1] "усі %d бібліотеки"
+msgstr[2] "усі %d бібліотек"
+
+msgid "Another copy is already running."
+msgstr "Уже триває інше копіювання."
+
+msgid "The copy could not start."
+msgstr "Копіювання не запустилося."
+
+#. TRANSLATORS: menu section header: the game libraries found on the USB stick
+msgid "Game libraries on the drive"
+msgstr "Бібліотеки ігор на флешці"
+
+#. TRANSLATORS: part of "3 systems, 120 games, 1.5 GB"
+#, c-format
+msgid "%d game"
+msgid_plural "%d games"
+msgstr[0] "%d гра"
+msgstr[1] "%d гри"
+msgstr[2] "%d ігор"
+
+#. TRANSLATORS: a game library: "3 systems", "120 games", its size ("1.5 GB")
+#, c-format
+msgctxt "library summary"
+msgid "%s, %s, %s"
+msgstr "%s, %s, %s"
+
+#. TRANSLATORS: a number of files and their size ("12 files, 40 MB")
+#, c-format
+msgid "%d file, %s"
+msgid_plural "%d files, %s"
+msgstr[0] "%d файл, %s"
+msgstr[1] "%d файли, %s"
+msgstr[2] "%d файлів, %s"
+
+#. TRANSLATORS: menu row: import every game library found on the USB stick
+#, c-format
+msgid "All (%d library)"
+msgid_plural "All (%d libraries)"
+msgstr[0] "Усі (%d бібліотека)"
+msgstr[1] "Усі (%d бібліотеки)"
+msgstr[2] "Усі (%d бібліотек)"
+
+#. TRANSLATORS: a number of games and their size ("120 games, 1.5 GB")
+#, c-format
+msgid "%d game, %s"
+msgid_plural "%d games, %s"
+msgstr[0] "%d гра, %s"
+msgstr[1] "%d гри, %s"
+msgstr[2] "%d ігор, %s"
+
+#. TRANSLATORS: menu row: unmount the USB stick so it can be unplugged
+msgid "Eject"
+msgstr "Вилучити"
+
+#. TRANSLATORS: menu row while the USB stick is scanned (the stick's name on the right)
+msgid "Looking for games on the drive..."
+msgstr "Шукаю ігри на флешці..."
+
+#. TRANSLATORS: menu row while the stick is compared with the console
+msgid "Comparing with the console..."
+msgstr "Порівнюю з консоллю..."
+
+msgid "This drive could not be read."
+msgstr "Не вдалося прочитати флешку."
+
+#. TRANSLATORS: menu row: where the import copies from (a folder of the USB stick on the right)
+msgid "From"
+msgstr "Звідки"
+
+#. TRANSLATORS: menu section header: the games found on the USB stick, per system
+msgid "Games on the drive"
+msgstr "Ігри на флешці"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB, saves"
+#, c-format
+msgid "%d new of %d, %s, saves"
+msgid_plural "%d new of %d, %s, saves"
+msgstr[0] "%d нова з %d, %s, збереження"
+msgstr[1] "%d нові з %d, %s, збереження"
+msgstr[2] "%d нових з %d, %s, збереження"
+
+#. TRANSLATORS: games of a system on the stick: "3 new of 10, 40 MB"
+#, c-format
+msgid "%d new of %d, %s"
+msgid_plural "%d new of %d, %s"
+msgstr[0] "%d нова з %d, %s"
+msgstr[1] "%d нові з %d, %s"
+msgstr[2] "%d нових з %d, %s"
+
+#. TRANSLATORS: "10 (games), already on the console, (and) saves"
+#, c-format
+msgid "%d, already here, saves"
+msgid_plural "%d, already here, saves"
+msgstr[0] "%d, уже є, збереження"
+msgstr[1] "%d, уже є, збереження"
+msgstr[2] "%d, уже є, збереження"
+
+#. TRANSLATORS: "10 (games), already on the console"
+#, c-format
+msgid "%d, already here"
+msgid_plural "%d, already here"
+msgstr[0] "%d, уже є"
+msgstr[1] "%d, уже є"
+msgstr[2] "%d, уже є"
+
+#. TRANSLATORS: menu row: a folder of the stick for no known system (its name)
+#, c-format
+msgid "Not supported: %s"
+msgstr "Не підтримується: %s"
+
+#, c-format
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%d файл"
+msgstr[1] "%d файли"
+msgstr[2] "%d файлів"
+
+msgid "Nothing new on this drive"
+msgstr "На флешці немає нічого нового"
+
+#. TRANSLATORS: menu section header: what to copy (toggles follow)
+msgctxt "import section"
+msgid "Copy"
+msgstr "Що копіювати"
+
+msgid "Saves & save states"
+msgstr "Збереження і стани"
+
+msgid "Screenshots"
+msgstr "Знімки екрана"
+
+#. TRANSLATORS: menu row: files of the stick that are already on the console
+msgid "Already on the console"
+msgstr "Уже є на консолі"
+
+#, c-format
+msgid "%d file, skipped"
+msgid_plural "%d files, skipped"
+msgstr[0] "%d файл, пропустимо"
+msgstr[1] "%d файли, пропустимо"
+msgstr[2] "%d файлів, пропустимо"
+
+#. TRANSLATORS: menu row: files of the stick that differ from the console's copy
+msgid "Different on the console"
+msgstr "На консолі інша версія"
+
+#. TRANSLATORS: "4 (files, saves among them): you will be asked (what to do)"
+#, c-format
+msgid "%d (saves too): you will be asked"
+msgid_plural "%d (saves too): you will be asked"
+msgstr[0] "%d (і збереження): запитаємо"
+msgstr[1] "%d (і збереження): запитаємо"
+msgstr[2] "%d (і збереження): запитаємо"
+
+#. TRANSLATORS: "4 (files): you will be asked (what to do with each)"
+#, c-format
+msgid "%d: you will be asked"
+msgid_plural "%d: you will be asked"
+msgstr[0] "%d: запитаємо"
+msgstr[1] "%d: запитаємо"
+msgstr[2] "%d: запитаємо"
+
+#. TRANSLATORS: menu row: how much the import will copy / there is not enough free space
+msgid "To copy"
+msgstr "Буде скопійовано"
+
+msgid "Not enough space"
+msgstr "Не вистачає місця"
+
+#. TRANSLATORS: "up to 1.5 GB, 12 GB free" (on the console's SD card)
+#, c-format
+msgid "up to %s, %s free"
+msgstr "до %s, вільно %s"
+
+#. TRANSLATORS: menu row: start the copy
+msgid "Copy"
+msgstr "Почати копіювання"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Import from %s"
+msgstr "Імпорт з %s"
+
+msgid "This drive is busy (a scan or a copy is running)."
+msgstr "Флешка зайнята (триває пошук або копіювання)."
+
+msgid "The USB drive cannot be written to (is it write-protected?)."
+msgstr "На флешку не можна записати (увімкнено захист від запису?)."
+
+#. TRANSLATORS: menu row while the console is compared with the USB stick
+msgid "Comparing with the drive..."
+msgstr "Порівнюю з флешкою..."
+
+#. TRANSLATORS: menu row: the folder of the USB stick the copy goes to (its name on the right)
+msgid "Folder on the drive"
+msgstr "Папка на флешці"
+
+#. TRANSLATORS: a folder name, then this: the folder will be created
+#, c-format
+msgid "%s (new)"
+msgstr "%s (нова)"
+
+#. TRANSLATORS: menu row: the games on the console ("120 files, 1.5 GB")
+msgid "Games on the console"
+msgstr "Ігри на консолі"
+
+#. TRANSLATORS: toggle: also copy the BIOS files
+msgid "BIOS files too"
+msgstr "І файли BIOS"
+
+#. TRANSLATORS: choice: the saves of which games (All games / Last played: <game>)
+msgctxt "saves of"
+msgid "Games"
+msgstr "Ігри"
+
+msgid "All games"
+msgstr "Усі ігри"
+
+#. TRANSLATORS: choice value: only the last played game (its name follows)
+#, c-format
+msgid "Last played: %s"
+msgstr "Остання: %s"
+
+#. TRANSLATORS: toggle: also copy the per-game settings
+msgid "Settings too (core options, remaps)"
+msgstr "І налаштування (ядра, розкладки)"
+
+#. TRANSLATORS: menu row: files already on the USB stick, not copied again
+msgid "Already on the drive"
+msgstr "Уже є на флешці"
+
+#. TRANSLATORS: "12 files, 1.5 GB (20 GB free)" (on the USB stick)
+#, c-format
+msgid "%d file, %s (%s free)"
+msgid_plural "%d files, %s (%s free)"
+msgstr[0] "%d файл, %s (вільно %s)"
+msgstr[1] "%d файли, %s (вільно %s)"
+msgstr[2] "%d файлів, %s (вільно %s)"
+
+msgid "Nothing to copy: the drive is up to date"
+msgstr "Нічого копіювати: усе вже на флешці"
+
+#. TRANSLATORS: menu row (FAT32 cannot store files of 4 GB or more), about 45 characters
+#, c-format
+msgid "%d file over 4 GB: FAT32 can't hold it"
+msgid_plural "%d files over 4 GB: FAT32 can't hold them"
+msgstr[0] "%d файл понад 4 ГБ: не влізе у FAT32"
+msgstr[1] "%d файли понад 4 ГБ: не влізуть у FAT32"
+msgstr[2] "%d файлів понад 4 ГБ: не влізуть у FAT32"
+
+#. TRANSLATORS: menu row: a file that is not copied (its name on the right)
+msgid "skipped"
+msgstr "пропущено"
+
+#. TRANSLATORS: menu row: start copying the games / the saves to the USB stick
+msgid "Export"
+msgstr "Почати експорт"
+
+msgid "Back up"
+msgstr "Зробити копію"
+
+msgid "The USB drive is not there any more."
+msgstr "Флешки більше немає."
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Export games to %s"
+msgstr "Експорт ігор на %s"
+
+#. TRANSLATORS: menu title, the USB stick's name follows
+#, c-format
+msgid "Back up saves to %s"
+msgstr "Копія збережень на %s"
+
+#. TRANSLATORS: a file's date is not known (duplicate file prompt)
+msgid "unknown date"
+msgstr "дата невідома"
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a file that is
+#. already on the console (this one / every next one)
+msgid "SKIP"
+msgstr "ПРОПУСТИТИ"
+
+msgid "REPLACE"
+msgstr "ЗАМІНИТИ"
+
+msgid "SKIP ALL"
+msgstr "ПРОПУСТИТИ ВСІ"
+
+msgid "REPLACE ALL"
+msgstr "ЗАМІНИТИ ВСІ"
+
+#. TRANSLATORS: the first line of the duplicate file prompt (the file name follows)
+msgid "This settings file is already on the console, but different:"
+msgstr "Цей файл налаштувань уже є на консолі, але інший:"
+
+msgid "This save is already on the console, but different:"
+msgstr "Це збереження вже є на консолі, але інше:"
+
+msgid "This game is already on the console, but different:"
+msgstr "Ця гра вже є на консолі, але інша:"
+
+msgid "This BIOS file is already on the console, but different:"
+msgstr "Цей файл BIOS уже є на консолі, але інший:"
+
+msgid "This file is already on the console, but different:"
+msgstr "Цей файл уже є на консолі, але інший:"
+
+#. TRANSLATORS: the two copies of a file: size, date ("USB drive: 2 MB, 2024-05-01 10:00")
+#, c-format
+msgid ""
+"USB drive: %s, %s\n"
+"Console: %s, %s"
+msgstr ""
+"Флешка: %s, %s\n"
+"Консоль: %s, %s"
+
+#. TRANSLATORS: %s is the save's file name ("Zelda.srm" -> "Zelda.srm.bak")
+#, c-format
+msgid "Saves are precious: if you replace it, the console's copy is kept as %s.bak."
+msgstr "Збереження дуже цінні: якщо замінити, копія з консолі залишиться як %s.bak."
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Copying from %s"
+msgstr "Копіюю з %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Exporting games to %s"
+msgstr "Копіюю ігри на %s"
+
+#. TRANSLATORS: progress title, the USB stick's name follows
+#, c-format
+msgid "Backing up saves to %s"
+msgstr "Копіюю збереження на %s"
+
+#. TRANSLATORS: copy progress: "120 MB of 1.5 GB  -  3 of 21 files"
+#, c-format
+msgid "%s of %s  -  %d of %d file"
+msgid_plural "%s of %s  -  %d of %d files"
+msgstr[0] "%s з %s  -  файл %d з %d"
+msgstr[1] "%s з %s  -  файл %d з %d"
+msgstr[2] "%s з %s  -  файл %d з %d"
+
+#. TRANSLATORS: copy speed and time left: "4.2 MB/s, about 3 min left"
+#, c-format
+msgid "%s MB/s, about %d min left"
+msgid_plural "%s MB/s, about %d min left"
+msgstr[0] "%s МБ/с, лишилося ~%d хв"
+msgstr[1] "%s МБ/с, лишилося ~%d хв"
+msgstr[2] "%s МБ/с, лишилося ~%d хв"
+
+#. TRANSLATORS: copy speed: "4.2 MB/s"
+#, c-format
+msgid "%s MB/s"
+msgstr "%s МБ/с"
+
+#. TRANSLATORS: files not copied because they are already there, "12 already there"
+#, c-format
+msgid "%d already there"
+msgid_plural "%d already there"
+msgstr[0] "уже є: %d"
+msgstr[1] "уже є: %d"
+msgstr[2] "уже є: %d"
+
+#. TRANSLATORS: import summary, first sentence (the counts follow)
+msgid "Copy cancelled."
+msgstr "Копіювання скасовано."
+
+#. TRANSLATORS: import summary, first sentence: %s is why ("The SD card is full")
+#, c-format
+msgid "The copy stopped: %s."
+msgstr "Копіювання зупинилося: %s."
+
+msgid "error"
+msgstr "помилка"
+
+#. TRANSLATORS: import summary: numbers of files imported, already on the console, skipped
+#. (a duplicate kept) and replaced (a duplicate overwritten)
+#, c-format
+msgid "Imported %d, already there %d, skipped %d, replaced %d."
+msgstr "Скопійовано: %d, уже були: %d, пропущено: %d, замінено: %d."
+
+#. TRANSLATORS: import summary, last sentence
+msgid "Some files failed."
+msgstr "Деякі файли не скопіювалися."
+
+#. TRANSLATORS: export / saves backup summary, first sentence (the counts follow)
+msgid "Cancelled."
+msgstr "Скасовано."
+
+#. TRANSLATORS: export / saves backup summary, first sentences: %s is why ("The USB drive is full")
+#, c-format
+msgid "Stopped: %s. The partial file was removed."
+msgstr "Зупинено: %s. Недокопійований файл видалено."
+
+#. TRANSLATORS: export / saves backup summary: files copied (their size), files already on the stick
+#, c-format
+msgid "Copied %d file (%s), already there %d."
+msgid_plural "Copied %d files (%s), already there %d."
+msgstr[0] "Скопійовано %d файл (%s), уже були: %d."
+msgstr[1] "Скопійовано %d файли (%s), уже були: %d."
+msgstr[2] "Скопійовано %d файлів (%s), уже були: %d."
+
+#. TRANSLATORS: export summary: files FAT32 cannot store were not copied
+#, c-format
+msgid "%d file over 4 GB skipped (FAT32)."
+msgid_plural "%d files over 4 GB skipped (FAT32)."
+msgstr[0] "%d файл понад 4 ГБ пропущено (FAT32)."
+msgstr[1] "%d файли понад 4 ГБ пропущено (FAT32)."
+msgstr[2] "%d файлів понад 4 ГБ пропущено (FAT32)."
+
+#. TRANSLATORS: export / saves backup summary: files that could not be copied
+#, c-format
+msgid "%d failed."
+msgid_plural "%d failed."
+msgstr[0] "Помилок: %d."
+msgstr[1] "Помилок: %d."
+msgstr[2] "Помилок: %d."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
+#. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
+msgid "STOP"
+msgstr "СТОП"
+
+msgid "CONTINUE"
+msgstr "ПРОДОВЖИТИ"
+
+#. TRANSLATORS: B during an import (USB stick -> console)
+msgid "Stop copying? Files already copied stay."
+msgstr "Зупинити копіювання? Скопійовані файли залишаться."
+
+#. TRANSLATORS: B during an export / saves backup (console -> USB stick)
+msgid "Stop? Files already copied stay on the drive."
+msgstr "Зупинити? Скопійовані файли залишаться на флешці."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: what to do with a USB stick just plugged in
+msgid "IMPORT GAMES"
+msgstr "ІМПОРТ ІГОР"
+
+msgid "EXPORT GAMES"
+msgstr "ЕКСПОРТ ІГОР"
+
+msgid "BACK UP SAVES"
+msgstr "КОПІЯ ЗБЕРЕЖЕНЬ"
+
+msgid "NOTHING"
+msgstr "НІЧОГО"
+
+#. TRANSLATORS: toast; %s is the stick's name. "Settings > Storage" must match those menus
+#, c-format
+msgid "USB drive %s connected: Settings > Storage to use it"
+msgstr "Флешку %s під'єднано: Налаштування > Пам'ять"
+
+#. TRANSLATORS: toast, short; %s is the stick's name
+#, c-format
+msgid "USB drive %s connected"
+msgstr "Флешку %s під'єднано"
+
+#. TRANSLATORS: %1$s the stick's name, %2$s its format ("exfat"), %3$s its size
+#, c-format
+msgid "USB drive \"%s\" connected (%s, %s). What do you want to do?"
+msgstr "Флешку «%s» під'єднано (%s, %s). Що робитимемо?"
+
+#. TRANSLATORS: toast
+msgid "USB drive removed: the copy stopped"
+msgstr "Флешку вийняли: копіювання зупинено"
+
+#. TRANSLATORS: toast, short
+msgid "USB drive removed"
+msgstr "Флешку вийняли"
+
+#. TRANSLATORS: toast
+msgid "USB drive: format not supported (use FAT32 or exFAT)"
+msgstr "Флешка: формат не підтримується (потрібен FAT32 або exFAT)"
+
+#. TRANSLATORS: toast
+msgid "The USB drive could not be read"
+msgstr "Не вдалося прочитати флешку"
+
+#. TRANSLATORS: menu titles over a list of the USB drives plugged in (pick one)
+msgid "Import games from"
+msgstr "Імпорт ігор з"
+
+msgid "Export games to"
+msgstr "Експорт ігор на"
+
+msgid "Back up saves to"
+msgstr "Копія збережень на"
+
+msgid "USB transfers are not available in this build."
+msgstr "Передача через USB недоступна в цій збірці."
+
+msgid "Plug in a USB drive (FAT32, exFAT or NTFS)."
+msgstr "Встав флешку (FAT32, exFAT або NTFS)."
+
+#. TRANSLATORS: toast, short (Eject USB drive with none plugged in)
+msgid "No USB drive"
+msgstr "Немає флешки"
+
+#. TRANSLATORS: toast, short
+msgid "A USB drive is busy"
+msgstr "Флешка зайнята"
+
+#. TRANSLATORS: toast
+msgid "Network off: web transfer stopped"
+msgstr "Мережу вимкнено: передачу зупинено"
+
+#. TRANSLATORS: help bar: A stops the network transfer, B goes back
+msgid "stop"
+msgstr "стоп"
+
+#. TRANSLATORS: above the web address (URL) to type in a computer's browser
+msgid "Open this address in a browser:"
+msgstr "Відкрий цю адресу в браузері:"
+
+msgid "(no network address)"
+msgstr "(немає адреси в мережі)"
+
+#. TRANSLATORS: a second web address ("or http://retrostone.local")
+#, c-format
+msgid "or %s"
+msgstr "або %s"
+
+#. TRANSLATORS: label above the 4-digit code the web page asks for, short
+msgid "PIN"
+msgstr "PIN"
+
+#. TRANSLATORS: status; %d is a number of seconds
+#, c-format
+msgid "Wrong PIN entered: locked for %d s"
+msgid_plural "Wrong PIN entered: locked for %d s"
+msgstr[0] "Неправильний PIN: блокування на %d с"
+msgstr[1] "Неправильний PIN: блокування на %d с"
+msgstr[2] "Неправильний PIN: блокування на %d с"
+
+#. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
+#, c-format
+msgid "Receiving %s (%d%%)"
+msgstr "Отримую %s (%d %%)"
+
+#. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
+#, c-format
+msgid "Stopped: %s"
+msgstr "Зупинено: %s"
+
+#. TRANSLATORS: status: the network transfer is stopped
+msgid "Stopped"
+msgstr "Зупинено"
+
+#. TRANSLATORS: status: the network transfer runs, nothing arrives yet
+msgid "Waiting for files..."
+msgstr "Чекаю на файли..."
+
+#, c-format
+msgid "%d file received"
+msgid_plural "%d files received"
+msgstr[0] "Отримано %d файл"
+msgstr[1] "Отримано %d файли"
+msgstr[2] "Отримано %d файлів"
+
+msgid "Only on your home network. Anyone with the PIN can add files."
+msgstr "Лише в домашній мережі. Будь-хто, хто знає PIN, може додавати файли."
+
+msgid "KEEP RECEIVING"
+msgstr "ПРИЙМАТИ"
+
+msgid "Keep receiving files in the background?"
+msgstr "Приймати файли у фоні?"
+
+msgid "Network transfer is not available in this build."
+msgstr "Передача через мережу недоступна в цій збірці."
+
+msgid "Turn on WiFi or Ethernet first (no network address)."
+msgstr "Спершу увімкни Wi-Fi або Ethernet (немає адреси в мережі)."
+
+#, c-format
+msgid "The transfer could not start (error %d)."
+msgstr "Передача не запустилася (помилка %d)."
+
+#. TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
+#. start the game from the beginning
+msgid "RESUME"
+msgstr "ПРОДОВЖИТИ"
+
+msgid "START FRESH"
+msgstr "СПОЧАТКУ"
+
+#. TRANSLATORS: %s is a game name: continue it where it was left?
+#, c-format
+msgid "Resume %s?"
+msgstr "Продовжити %s?"
+
+msgid "No emulator is installed for this system."
+msgstr "Для цієї системи не встановлено емулятор."
+
+msgid "Files are being copied. Wait for the copy to finish, or cancel it."
+msgstr "Триває копіювання файлів. Зачекай, поки воно завершиться, або скасуй його."
+
+msgid "Resume where you left off?"
+msgstr "Продовжити з того самого місця?"
+
+#. TRANSLATORS: dialog buttons, uppercase, short
+msgid "SETTINGS"
+msgstr "НАЛАШТУВАННЯ"
+
+#, c-format
+msgid "Controller connected: %s"
+msgstr "Геймпад під'єднано: %s"
+
+#, c-format
+msgid "Controller removed: %s"
+msgstr "Геймпад від'єднано: %s"
+
+#. TRANSLATORS: %s is the controller's name; "Settings > Controls" is
+#. the menu path: use your translations of "Settings" and "Controls"
+#, c-format
+msgid "New controller: %s (Settings > Controls)"
+msgstr "Новий геймпад: %s (Налаштування > Керування)"
+
+#, c-format
+msgid "New controller: %s. Configure it in Settings > Controls?"
+msgstr "Новий геймпад: %s. Налаштувати його в «Налаштування > Керування»?"
+
+#. TRANSLATORS: first boot, "Preparing your console": %s is a system name
+#, c-format
+msgid "Reading %s games"
+msgstr "Читаю ігри: %s"
+
+#. TRANSLATORS: first boot, while the game lists are read
+msgid "Preparing your console..."
+msgstr "Готую консоль..."
+
+#, c-format
+msgid "Battery low (%d %%)"
+msgstr "Низький заряд (%d %%)"
+
+msgid "Battery empty, saving..."
+msgstr "Батарея розряджена, зберігаю..."
+
+msgid "Restarting..."
+msgstr "Перезапуск..."
+
+#. TRANSLATORS: the console is hot and runs slower to cool down
+msgid "Hot, slowing down"
+msgstr "Перегрів: працюю повільніше"
+
+#. TRANSLATORS: charge screen (the console is off, on the charger)
+msgid "Charging"
+msgstr "Заряджання"
+
+msgid "Fully charged"
+msgstr "Повністю заряджено"
+
+msgid "Charger unplugged"
+msgstr "Зарядку від'єднано"
+
+msgid "Not charging"
+msgstr "Не заряджається"
+
+#. TRANSLATORS: the big battery percentage of the charge screen ("80%")
+#. TRANSLATORS: battery level in the help bar ("%d %%" in French)
+#, c-format
+msgctxt "battery"
+msgid "%d%%"
+msgstr "%d%%"
+
+#. TRANSLATORS: charge screen: time until the battery is full (hours, minutes)
+#, c-format
+msgid "Full in %d h %02d min"
+msgstr "Повна через %d год %02d хв"
+
+msgid "Press the power button to start"
+msgstr "Натисни кнопку живлення, щоб увімкнути"
+
+msgid "Battery very low: plug in the charger"
+msgstr "Батарея майже розряджена: під'єднай зарядку"
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Rating: "
+msgstr "Оцінка: "
+
+msgid "Released: "
+msgstr "Дата виходу: "
+
+msgid "Developer: "
+msgstr "Розробник: "
+
+msgid "Publisher: "
+msgstr "Видавець: "
+
+msgid "Genre: "
+msgstr "Жанр: "
+
+#. TRANSLATORS: game metadata labels of the game list, followed by the
+#. value on the same line: keep the trailing ": " (French " : ")
+msgid "Players: "
+msgstr "Гравці: "
+
+msgid "Last played: "
+msgstr "Останній запуск: "
+
+msgid "Times played: "
+msgstr "Запусків: "
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Year"
+msgstr "РІК"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Genre"
+msgstr "ЖАНР"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Players"
+msgstr "ГРАВЦІ"
+
+#. TRANSLATORS: game metadata label of the built-in themes, uppercase,
+#. ~7 characters wide (longer ones are cut with "...")
+msgctxt "theme"
+msgid "Rating"
+msgstr "ОЦІНКА"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Your favorite games"
+msgstr "ТВОЇ УЛЮБЛЕНІ ІГРИ"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Recently played"
+msgstr "НЕЩОДАВНІ ІГРИ"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Every game on the console"
+msgstr "УСІ ІГРИ НА КОНСОЛІ"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. MSX, a home computer of 1983 (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Home computer · 1983"
+msgstr "ДОМАШНІЙ КОМП'ЮТЕР · 1983"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · MAME 2003-Plus"
+msgstr "АРКАДИ · MAME 2003-PLUS"
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: an
+#. emulator name follows "Arcade" (uppercase, one line)
+msgctxt "theme"
+msgid "Arcade · FinalBurn Neo"
+msgstr "АРКАДИ · FINALBURN NEO"
+
+#. TRANSLATORS: a game metadata value missing from gamelist.xml
+#. (developer, publisher, genre)
+msgctxt "metadata"
+msgid "unknown"
+msgstr "невідомо"
+
+#. TRANSLATORS: an empty game list (one line, uppercase in some themes)
+msgid "no games"
+msgstr "немає ігор"
+
+msgid "launch"
+msgstr "грати"
+
+#. TRANSLATORS: help bar labels (uppercase, short: ~10 characters)
+msgid "options"
+msgstr "опції"
+
+msgid "favorite"
+msgstr "обране"
+
+msgid "menu"
+msgstr "меню"
+
+#. TRANSLATORS: toast after X in a game list
+msgid "Added to favorites"
+msgstr "Додано до обраного"
+
+msgid "Removed from favorites"
+msgstr "Прибрано з обраного"
+
+#. TRANSLATORS: system carousel info bar (uppercase in most themes);
+#. the whole bar is ~50 characters wide at 640x480
+#, c-format
+msgid "%d game available"
+msgid_plural "%d games available"
+msgstr[0] "%d гра"
+msgstr[1] "%d гри"
+msgstr[2] "%d ігор"
+
+#. TRANSLATORS: system carousel info bar, after "N games available, "
+#, c-format
+msgid "%d favorite"
+msgid_plural "%d favorites"
+msgstr[0] "%d в обраному"
+msgstr[1] "%d в обраному"
+msgstr[2] "%d в обраному"
+
+#. TRANSLATORS: system carousel info bar: "%1$s" is "N games
+#. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
+#, c-format
+msgctxt "system info"
+msgid "%s, %s"
+msgstr "%s, %s"
+
+#. TRANSLATORS: the carousel with no game at all; keep the path
+#. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
+msgid "No games found. Copy ROMs to /data/roms/<system>/"
+msgstr "Ігор не знайдено. Скопіюй ROM-файли в /data/roms/<system>/"
+
+#. TRANSLATORS: game metadata date: never played (last played) or no
+#. release date known. Short (~15 characters).
+msgctxt "date"
+msgid "never"
+msgstr "ніколи"
+
+msgctxt "date"
+msgid "unknown"
+msgstr "невідомо"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d sec ago"
+msgid_plural "%d secs ago"
+msgstr[0] "%d секунду тому"
+msgstr[1] "%d секунди тому"
+msgstr[2] "%d секунд тому"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d хвилину тому"
+msgstr[1] "%d хвилини тому"
+msgstr[2] "%d хвилин тому"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d годину тому"
+msgstr[1] "%d години тому"
+msgstr[2] "%d годин тому"
+
+#. TRANSLATORS: when a game was last played. Short (~15 characters).
+#, c-format
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d день тому"
+msgstr[1] "%d дні тому"
+msgstr[2] "%d днів тому"
+
+#. TRANSLATORS: default date of theme metadata (release date, last
+#. played) when the theme sets no format; strftime; French %d/%m/%Y
+#, no-c-format
+msgctxt "strftime"
+msgid "%m/%d/%Y"
+msgstr "%d.%m.%Y"

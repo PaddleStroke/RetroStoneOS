@@ -1,0 +1,25 @@
+#!/bin/sh
+# udhcpc hook (run by Buildroot's /usr/share/udhcpc/default.script with the
+# lease in the environment): once we have a lease, set the clock from NTP in
+# the background and store it (no RTC backup cell; docs/power.md §11).
+# Servers: the ones the DHCP server gives (option 42, $ntpsrv), then
+# pool.ntp.org. BusyBox ntpd (busybox.fragment), at most 30 s. Once per boot
+# (a renewal does not ask again once the clock has been set).
+case "$1" in
+bound | renew)
+	[ -x /usr/bin/rsos-clock ] || exit 0
+	[ -e /run/rsos/ntp-done ] && exit 0
+	peers=
+	for s in $ntpsrv; do
+		peers="$peers -p $s"
+	done
+	(
+		if timeout 30 ntpd -q -n $peers -p pool.ntp.org; then
+			mkdir -p /run/rsos && : > /run/rsos/ntp-done
+			rsos-clock systohc
+			rsos-clock save
+		fi
+	) < /dev/null > /dev/null 2>&1 &
+	;;
+esac
+exit 0

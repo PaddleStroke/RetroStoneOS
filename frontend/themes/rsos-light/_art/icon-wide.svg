@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 130" width="230" height="130">
+<!-- RetroStoneOS original art: a generic landscape handheld -->
+<path fill="#ffffff" fill-rule="evenodd" d="M50 12H180A45 45 0 0 1 225 57V73A45 45 0 0 1 180 118H50A45 45 0 0 1 5 73V57A45 45 0 0 1 50 12Z
+M72 28H158A5 5 0 0 1 163 33V97A5 5 0 0 1 158 102H72A5 5 0 0 1 67 97V33A5 5 0 0 1 72 28Z
+M30 52H40V60H48V70H40V78H30V70H22V60H30Z
+M181 72a8 8 0 1 0 16 0a8 8 0 1 0 -16 0Z
+M195 55a8 8 0 1 0 16 0a8 8 0 1 0 -16 0Z"/>
+</svg>

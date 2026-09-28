@@ -1,0 +1,39 @@
+config BR2_PACKAGE_LIBRETRO_NXENGINE
+	bool "libretro-nxengine"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  NXEngine: an open-source (GPL-3.0) re-implementation of the
+	  Cave Story engine, built as a libretro core. It runs the
+	  freeware Cave Story 1.0.0.6 with the Aeon Genesis English
+	  translation (Doukutsu.exe + data/).
+
+	  Installs /usr/lib/libretro/nxengine_libretro.so and
+	  /usr/share/rsos/cores/nxengine.ini. ROM folder: cavestory.
+
+	  https://github.com/libretro/nxengine-libretro
+
+config BR2_PACKAGE_LIBRETRO_NXENGINE_CAVESTORY
+	bool "pre-install the freeware Cave Story"
+	depends on BR2_PACKAGE_LIBRETRO_NXENGINE
+	depends on BR2_PACKAGE_RSOS_HOMEBREW # rsos-seed-homebrew copies it
+	help
+	  Pre-install Cave Story (Studio Pixel, 2004, freeware; English
+	  translation by Aeon Genesis), from the datafiles/ folder of
+	  the nxengine-libretro source. It goes to
+	  /usr/share/rsos/homebrew/cavestory/ (about 5 MB) and
+	  rsos-seed-homebrew copies it to /data/roms/cavestory/ on the
+	  first boot. The Windows tools shipped next to it (DoConfig.exe,
+	  OrgView.exe) are left out.
+
+	  Off by default: Cave Story is freeware, not free software. Its
+	  readme says "This program is freeware" and grants no written
+	  licence; it has been redistributed freely since 2004 and the
+	  libretro project ships these files with the core, but the
+	  bundled-games rule (docs/homebrew.md) asks for a licence or
+	  permission that covers a commercial product. Owner decision.
+
+comment "libretro-nxengine needs a toolchain w/ C++, dynamic library"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS
+	depends on !BR2_INSTALL_LIBSTDCPP || BR2_STATIC_LIBS

@@ -1,0 +1,13 @@
+config BR2_PACKAGE_LIBRETRO_CAP32
+	bool "libretro-cap32"
+	depends on BR2_PACKAGE_RSOS_LIBRETRO_ARCH_SUPPORTS # package/libretro-common.mk
+	depends on !BR2_STATIC_LIBS # shared object loaded with dlopen()
+	help
+	  Caprice32: Amstrad CPC 464/664/6128/6128+ emulator, built as a
+	  libretro core. The CPC ROMs are built in (Amstrad allows their
+	  distribution with emulators). Has its own on-screen keyboard.
+
+	  Installs /usr/lib/libretro/cap32_libretro.so and
+	  /usr/share/rsos/cores/cap32.ini. ROM folder: amstradcpc.
+
+	  https://github.com/libretro/libretro-cap32

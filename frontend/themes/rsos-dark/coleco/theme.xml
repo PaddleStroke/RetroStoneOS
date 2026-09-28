@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-dark: coleco sets its accent color, console art (_art/carbon, CC BY-NC-SA: LICENSE.txt) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>4a6fa5</accent>
+		<icon>carbon/colecovision</icon>
+		<tagline>Coleco · 1982</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

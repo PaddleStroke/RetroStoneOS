@@ -1,0 +1,164 @@
+# RetroStone2 U-Boot options, merged on top of A20-OLinuXino-Lime_defconfig.
+# Goal: get from SPL to the kernel as fast as possible.
+
+# Boot immediately. Hitting a key on the UART during the (zero) delay still
+# stops autoboot.
+CONFIG_BOOTDELAY=0
+
+# Load our boot script directly instead of scanning boot devices (bootstd):
+# /boot/boot.scr of the current A/B slot (rsos_slot: a = partition 2,
+# b = partition 3), else the other slot's copy (the script itself decides which
+# slot to boot), and the bootflow scan only as a last resort.
+# Console: silent on a normal boot (see SILENT_CONSOLE below) unless
+# rsos_verbose=1; the fallbacks after a failed boot.scr always print.
+# silent_linux=no: U-Boot must not append "console=" to the kernel command line.
+# Slot b: its boot.scr first; then slot a's (slot a, or slot b's script is
+# missing), then slot b's (slot a's is missing). The partitions are spelled
+# out: the former "for rsos_p in 2 3" loop did not work (review S6, found on
+# QEMU: with the environment variable rsos_p just set above, the loop
+# variable did not take the values 2 and 3). boot.scr does not return (it
+# boots, resets to the other slot or powers off).
+CONFIG_USE_BOOTCOMMAND=y
+CONFIG_BOOTCOMMAND="if test \"${rsos_verbose}\" = 1; then setenv silent; else setenv silent 1; fi; setenv silent_linux no; if test \"${rsos_slot}\" = b; then load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; fi; load mmc 0:2 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; setenv silent; load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; bootflow scan -lb"
+
+# Boot timing (docs/build.md, "Boot time"): bootstage records U-Boot's steps,
+# and boot.scr adds its own ("bootstage mark", patches/uboot/0001). The
+# timestamps come from the ARM generic counter, so they are microseconds since
+# power-on on the same clock as the kernel. BOOTSTAGE_FDT hands them to Linux
+# in /proc/device-tree/bootstage/; /usr/libexec/rsos/bootlog turns them into
+# rsos/logs/boot<N>/bootstage.txt on the SD card. No report on the UART.
+CONFIG_BOOTSTAGE=y
+CONFIG_BOOTSTAGE_FDT=y
+CONFIG_CMD_BOOTSTAGE=y
+# CONFIG_BOOTSTAGE_REPORT is not set
+# Boot round 3: the SPL records its own marks too (patches/uboot/0002: "SPL"
+# = end of the boot ROM, "spl: pmic", "spl: dram", "spl: cpu clock", "spl:
+# mmc init", "end phase" = U-Boot read) and stashes them in DRAM, where U-Boot
+# proper picks them up (initf_bootstage). The stash is below the (unused)
+# ramdisk area and above the kernel, the DTB, boot.scr and the overlays;
+# bootm also stashes there at the end, harmlessly.
+CONFIG_SPL_BOOTSTAGE=y
+CONFIG_SPL_BOOTSTAGE_RECORD_COUNT=12
+CONFIG_BOOTSTAGE_STASH=y
+CONFIG_BOOTSTAGE_STASH_ADDR=0x43f00000
+CONFIG_BOOTSTAGE_STASH_SIZE=0x1000
+
+# Boot round 3: no driver model scan before relocation. The pre-relocation
+# "dm_f" step took 100 ms on the device: it runs with the data cache off
+# (enabled only after relocation) and walks the whole device tree. Nothing
+# needs driver model that early on sunxi except the console, which is found
+# through /chosen/stdout-path and bound on demand (serial-uclass); it is
+# silent at that point anyway (SILENT_CONSOLE_UNTIL_ENV below). After the
+# relocation the full scan runs as before (dm_r, 9 ms with the caches on).
+CONFIG_SKIP_EARLY_DM=y
+
+# Silent console: every character U-Boot prints costs 87 us at 115200 baud,
+# and a normal boot printed ~1.2 KB (banner, DRAM, MMC, env, In/Out/Err, the
+# load sizes, the FDT relocation, "Starting kernel"): ~0.1 s. The console
+# stays silent until the environment is loaded, then follows the "silent"
+# variable, which bootcmd sets unless rsos_verbose=1. Everything prints again
+# with "fw_setenv rsos_verbose 1; fw_setenv silent" from Linux (the lines
+# printed before the environment is loaded are buffered and replayed then:
+# PRE_CONSOLE_BUFFER, at the sunxi default address 0x4f000000). Hitting a key
+# during the autoboot check still stops it and turns the console back on.
+# SPL keeps printing its few lines (DRAM size, boot device, and any error),
+# but not its banner since boot round 3 (~50 characters: the part beyond the
+# UART's 64-byte FIFO blocks the SPL at 87 us per character).
+# CONFIG_SPL_BANNER_PRINT is not set
+CONFIG_SILENT_CONSOLE=y
+CONFIG_SILENT_CONSOLE_UPDATE_ON_SET=y
+CONFIG_SILENT_CONSOLE_UNTIL_ENV=y
+CONFIG_PRE_CONSOLE_BUFFER=y
+# CONFIG_USE_PREBOOT is not set
+CONFIG_PREBOOT=""
+
+# DRAM clock: Lime default (384 MHz, same as the old RetroStone U-Boot).
+# TODO(hw): try higher DRAM clocks (e.g. 432/480 MHz) once the board is stable.
+CONFIG_DRAM_CLK=384
+
+# microSD card detect on PH1: U-Boot 2026.07 no longer has CONFIG_MMC0_CD_PIN;
+# card detect comes from the device tree, and the Lime DT already uses PH1
+# (cd-gpios = <&pio 7 1 GPIO_ACTIVE_LOW>). Nothing to set here.
+
+# Device tree overlays (applied by boot.scr, listed in rsos_overlays).
+CONFIG_OF_LIBFDT_OVERLAY=y
+
+# Environment = A/B boot state (rsos_slot, rsos_ok, rsos_tries), stored raw on
+# the SD card outside any partition, in two redundant 64 KiB copies at 1 MiB
+# and 1 MiB + 64 KiB: a power cut during saveenv/fw_setenv always leaves one
+# valid copy. Linux accesses it with fw_printenv/fw_setenv (/etc/fw_env.config).
+# It is only written when the boot state changes (update, fallback, mark-good).
+# CONFIG_ENV_IS_NOWHERE is not set
+# CONFIG_ENV_IS_IN_FAT is not set
+# CONFIG_ENV_IS_IN_EXT4 is not set
+CONFIG_ENV_IS_IN_MMC=y
+CONFIG_ENV_REDUNDANT=y
+CONFIG_ENV_SIZE=0x10000
+CONFIG_ENV_OFFSET=0x100000
+CONFIG_ENV_OFFSET_REDUND=0x110000
+CONFIG_ENV_MMC_DEVICE_INDEX=0
+CONFIG_ENV_MMC_EMMC_HW_PARTITION=0
+CONFIG_CMD_SAVEENV=y
+CONFIG_CMD_SETEXPR=y
+# boot.cmd: "test -e mmc 0:<part> /boot/zImage" before falling back to the
+# other slot, "poweroff" when no slot can be booted (AXP209 through the DM
+# PMIC's axp_sysreset; TODO(hw): check that it really cuts the power).
+CONFIG_CMD_FS_GENERIC=y
+CONFIG_CMD_POWEROFF=y
+
+# Hardware watchdog (review S7): U-Boot starts the A20 watchdog with its
+# maximum timeout (16 s) and services it until bootz. The kernel's sunxi_wdt
+# finds it running (WDOG_HW_RUNNING) and services it itself
+# (CONFIG_WATCHDOG_HANDLE_BOOT_ENABLED, no open timeout) until the frontend
+# opens /dev/watchdog and takes over. So a kernel that freezes anywhere
+# (including the early boot, before any user space) resets the board, and
+# boot.cmd counts that boot as failed; a long first boot (data partition
+# conversion) cannot trigger it, because the kernel keeps servicing it until
+# the menu opens the device.
+CONFIG_WATCHDOG_AUTOSTART=y
+CONFIG_WATCHDOG_TIMEOUT_MSECS=16000
+
+# No U-Boot video/LCD/HDMI: the kernel brings up the display.
+# CONFIG_VIDEO_SUNXI is not set
+# CONFIG_VIDEO is not set
+
+# No USB, network, SATA or EFI in U-Boot.
+# CONFIG_USB is not set
+# CONFIG_CMD_USB is not set
+# CONFIG_USB_GADGET is not set
+CONFIG_NO_NET=y
+# CONFIG_NET is not set
+# CONFIG_SCSI is not set
+# CONFIG_AHCI is not set
+# CONFIG_SCSI_AHCI is not set
+# CONFIG_EFI_LOADER is not set
+# CONFIG_CMD_BOOTEFI is not set
+# The Lime defconfig enables this host tool through EFI_LOADER; it needs a
+# PKCS#11-enabled gnutls that host-gnutls does not provide.
+# CONFIG_TOOLS_MKEFICAPSULE is not set
+
+# Boot round 3: a smaller U-Boot proper. The SPL reads it from the card and
+# it copies and fixes itself up with the data cache off (relocation), so
+# every KiB costs on every boot. Dropped: commands and boot methods that the
+# RetroStoneOS boot (bootcmd, boot.scr, the bootflow fallback with extlinux)
+# and a recovery session on the UART do not use, and the USB PHY / keyboard
+# drivers (no USB in U-Boot). (The long help texts stay: DISTRO_DEFAULTS
+# selects them, and it also provides the default environment's load
+# addresses.)
+# CONFIG_CMD_ELF is not set
+# CONFIG_BOOTM_PLAN9 is not set
+# CONFIG_BOOTM_RTEMS is not set
+# CONFIG_BOOTM_VXWORKS is not set
+# CONFIG_CMD_LOADB is not set
+# CONFIG_CMD_LOADS is not set
+# CONFIG_CMD_IMI is not set
+# CONFIG_CMD_XIMG is not set
+# CONFIG_CMD_BIND is not set
+# CONFIG_CMD_RANDOM is not set
+# CONFIG_CMD_GPT is not set
+# CONFIG_CMD_I2C is not set
+# CONFIG_CMD_GPIO is not set
+# CONFIG_ISO_PARTITION is not set
+# CONFIG_BOOTMETH_VBE is not set
+# CONFIG_PHY_SUN4I_USB is not set
+# CONFIG_DM_KEYBOARD is not set

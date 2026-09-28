@@ -1,0 +1,6 @@
+# Locally computed
+sha256  87c5355089ad3d60befd76c2227062e48d6db5a33ab46e4b3efd680cb55a9ee9  libretro-beetle-supergrafx-3c6fcd3deded54ebecd69408f108407ac03d11b5.tar.gz
+sha256  a6996dcf0c334281f734560926e079b2dbbd5b78e81c0ca00a413ec01e1cd2fb  COPYING
+sha256  e3989a7aee74a91b8cdbdfe204a6b8d03288863ec7533a21c51f1a987ba73539  deps/libchdr/LICENSE.txt
+sha256  06721414a6decad6d6677feb470f01f47126e154d895d85bc1e17628697715e5  deps/lzma-19.00/LICENSE
+sha256  d2ab5758336489da61c12cc5bb757da5339c4ae9001f9bb0562b4370249af814  mednafen/tremor/COPYING
