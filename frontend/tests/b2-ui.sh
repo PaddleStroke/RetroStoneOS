@@ -141,7 +141,7 @@ chmod +x "$W/slow-smb.sh"
 : > "$W/smb.log"
 rm -f "$W/go.png"
 shots=""
-for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
 	shots="$shots wait:100 shot:$W/later.png"
 done
 pv "start down down a wait:300 expect:menu:Network|WiFi down down down down down expect:|Transfer_over_network \

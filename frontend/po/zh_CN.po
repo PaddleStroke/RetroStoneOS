@@ -2400,6 +2400,8 @@ msgstr ""
 
 #, c-format
 msgid "User: retrostone, Password: %s"
+msgstr ""
+
 #. TRANSLATORS: after "Delete this game": the saves question is not asked, because
 #. another game file has the same name (the saves belong to both)
 msgid "Game deleted. Its saves were kept: another game uses the same save files."

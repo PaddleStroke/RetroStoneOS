@@ -2956,3 +2956,12 @@ msgstr "FORMATER"
 #. TRANSLATORS: the second question before formatting the storage
 msgid "Erase everything on the storage? All games, saves and settings on it are lost. This cannot be undone."
 msgstr "Tout effacer sur le stockage ? Tous les jeux, sauvegardes et paramètres qu’il contient seront perdus. Impossible de revenir en arrière."
+
+#. TRANSLATORS: system update error: a release console refuses a development build
+msgid "This update is a development build and cannot be installed on this console."
+msgstr "Cette mise à jour est une version de développement : elle ne peut pas être installée sur cette console."
+
+#. TRANSLATORS: boot toast: the SD card's data partition is mounted read-only
+#. (its first-boot setup finishes at the next start)
+msgid "Storage is read-only until the console restarts"
+msgstr "Stockage en lecture seule jusqu'au redémarrage de la console"

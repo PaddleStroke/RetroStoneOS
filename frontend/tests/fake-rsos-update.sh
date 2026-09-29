@@ -6,6 +6,7 @@
 #   noab       0.2.0 online, but this board has no A/B updates
 #   usb        a package on the USB drive given with --dir
 #   fail       as found, but apply fails (battery too low)
+#   variant    a development build 0.2.0 on the USB drive: refused (code variant)
 # FAKE_UPDATE_BOOT: the event of "boot" (default none).
 # Every call is appended to $FAKE_UPDATE_LOG (one line of arguments).
 [ -n "${FAKE_UPDATE_LOG:-}" ] && echo "$*" >> "$FAKE_UPDATE_LOG"
@@ -41,6 +42,10 @@ uptodate:check)
 	info
 	echo "local${T}status=none"
 	echo "net${T}status=uptodate${T}source=net${T}version=0.1.0${T}size=0${T}where=${T}name=${T}page=${T}signed=0${T}installable=0${T}verdict=ok${T}notes="
+	echo "best${T}status=none" ;;
+variant:check)
+	info
+	found local refused file 0 variant "$dir/RetroStoneOS/retrostoneos-0.2.0-retrostone2.rsu"
 	echo "best${T}status=none" ;;
 usb:check)
 	info

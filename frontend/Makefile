@@ -584,6 +584,13 @@ check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
 	$(FE_RUN) --script "wait:600 expect:toast=The_SD_card_was_checked term"
 	! grep -q 'EXPECT FAILED' $(FE_LOG)
 	rm -f $(FE_CHECK_DIR)/run/rsos/data-fsck
+	@echo "check-frontend: 3c. /data read-only until the next boot (unfinished conversion): a warning toast"
+	rm -f $(FE_LOG)
+	printf 'conversion unfinished\n' > $(FE_CHECK_DIR)/run/rsos/data-readonly
+	$(FE_RUN) --script "wait:600 expect:toast=Storage_is_read-only_until_the_console_restarts term"
+	! grep -q 'EXPECT FAILED' $(FE_LOG)
+	grep -q 'boot note: /data is read-only until the next boot' $(FE_LOG)
+	rm -f $(FE_CHECK_DIR)/run/rsos/data-readonly
 	@echo "check-frontend: 4. a USB stick already plugged at boot: its dialog comes once the menu is up (bug: never shown)"
 	rm -f $(FE_LOG)
 	printf 'key\n' > $(FE_CHECK_DIR)/run/rsos/bootreason
@@ -727,6 +734,25 @@ check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
 	$(FE_RUN) --script "wait:600 idlepoweroff:3 wait:6000"
 	grep -q 'ui: toast (warning): Powering off in 10 s' $(FE_LOG)
 	grep -q 'powering off (idle)' $(FE_LOG) && grep -q 'power-off requested: exiting' $(FE_LOG)
+	@echo "check-frontend: 5h. a core with savestates = false: the game's \"nostate\" status line holds the idle power-off"
+	rm -f $(FE_LOG) $(FE_GAME_LOG) $(FE_RESUME)
+	-mv -f $(FE_STATE) $(FE_STATE).keep 2> /dev/null
+	@# the game process reads the info of its library (rsos-testcore.ini; fceumm.ini is the menu's entry)
+	printf '[core]\nsavestates = false\n' > $(FE_CHECK_DIR)/usr/share/rsos/cores/rsos-testcore.ini
+	@# the test game lasts 120 frames of 20 ms: 1.5 s of it with a 1 s idle power-off (5f: powered off
+	@# after 1 s), then the setting is back to off before the menu
+	RSOS_TESTCORE=slow $(FE_RUN) --script "wait:300 a wait:500 a game:wait:100 game:idlepoweroff:1 \
+		game:wait:1500 game:idlepoweroff:0 wait:300 term"
+	rm -f $(FE_CHECK_DIR)/usr/share/rsos/cores/rsos-testcore.ini
+	-mv -f $(FE_STATE).keep $(FE_STATE) 2> /dev/null
+	grep -q 'save states unsupported (the core info says savestates = false)' $(FE_GAME_LOG)
+	grep -q "the game's core cannot save a state: no idle power-off during this game" $(FE_LOG)
+	grep -q 'idle power-off held: game-without-save-states' $(FE_LOG)
+	grep -q 'game ended: status 0, exit 0' $(FE_LOG)
+	! grep -q 'idle power-off: notice' $(FE_LOG)
+	! grep -q 'powering off (idle)' $(FE_LOG)
+	! grep -q 'auto state saved (power-off)' $(FE_GAME_LOG)
+	test ! -e $(FE_RESUME)
 	@echo "check-frontend: 6. LCD refresh 60 Hz: applied live, kept, the game child runs with it; the next boot too"
 	rm -f $(FE_LOG) $(FE_GAME_LOG)
 	$(FE_RUN) --script "wait:300 start a down expect:menu:Display|LCD_refresh_rate right wait:500 \

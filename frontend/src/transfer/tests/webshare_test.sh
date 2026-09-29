@@ -101,7 +101,7 @@ expect "state replace" 201 "$(upload 'target=states&sys=snes&path=Zelda.state1&o
 cmp -s "$T/a.sfc" "$ROOT/states/snes/Zelda.state1.bak" && ok "old state kept as .bak" || ko "state .bak"
 # a deleted save takes its backups along (the game would load the .bak back)
 expect "delete a save" 200 "$(acode -X DELETE "$URL/api/file?target=saves&sys=snes&path=Zelda.srm")"
-[ -z "$(ls "$ROOT/saves/snes/" | grep Zelda)" ] && ok "save and its .bak files deleted" ||
+! ls "$ROOT/saves/snes/"Zelda* > /dev/null 2>&1 && ok "save and its .bak files deleted" ||
 	ko "left: $(ls "$ROOT/saves/snes/")"
 expect "delete a state" 200 "$(acode -X DELETE "$URL/api/file?target=states&sys=snes&path=Zelda.state1")"
 [ -z "$(ls "$ROOT/states/snes/")" ] && ok "state and its .bak deleted" || ko "left: $(ls "$ROOT/states/snes/")"

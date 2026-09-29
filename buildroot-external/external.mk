@@ -88,3 +88,40 @@ define RSOS_ARMBIAN_FIRMWARE_INSTALL_BT
 		$(TARGET_DIR)/lib/firmware/brcm/BCM43430A1.hcd
 endef
 ARMBIAN_FIRMWARE_POST_INSTALL_TARGET_HOOKS += RSOS_ARMBIAN_FIRMWARE_INSTALL_BT
+
+################################################################################
+# The on-device licence notice: /usr/share/rsos/licenses.txt lists every
+# package of the image with its version and licence (its <pkg>_LICENSE, as
+# legal-info reports it), plus the toolchain's runtime libraries. Written at
+# target-finalize from what make already knows (no legal-info run, no
+# download); the boot never reads it (docs/build.md, "Licences").
+################################################################################
+RSOS_LICENSES_TXT = $(TARGET_DIR)/usr/share/rsos/licenses.txt
+# the image's packages: no host tools, no virtual or toolchain meta packages
+RSOS_LICENSE_PKGS = $(sort $(foreach p,$(filter-out host-% toolchain toolchain-external toolchain-external-%,$(PACKAGES)),\
+	$(if $(filter YES,$($(call UPPERCASE,$(p))_IS_VIRTUAL)),,$(p))))
+rsos_shq = '$(subst ','\'',$(1))'
+# no declared licence: Buildroot's own scripts and skeleton files (no
+# version, no source) are Buildroot's GPL-2.0+
+rsos_lic = $(if $(filter-out unknown,$($(call UPPERCASE,$(1))_LICENSE)),$($(call UPPERCASE,$(1))_LICENSE),$(if \
+	$($(call UPPERCASE,$(1))_VERSION),not declared (see the legal-info archive),GPL-2.0+ (files of Buildroot)))
+
+define RSOS_WRITE_LICENSES_TXT
+	mkdir -p $(dir $(RSOS_LICENSES_TXT))
+	{ \
+	printf '%s\n' 'The software in RetroStoneOS and its licences' '' \
+		'Each line: package version: licence (SPDX identifiers).' \
+		'The licence texts and the complete source code of these packages are' \
+		'published with every release (its legal-info archive):' \
+		'https://github.com/PaddleStroke/RetroStoneOS/releases' ''; \
+	$(if $(BR2_TOOLCHAIN_USES_GLIBC),printf '%s\n' 'C library (glibc, from the toolchain): LGPL-2.1+';) \
+	$(if $(BR2_TOOLCHAIN_USES_MUSL),printf '%s\n' 'C library (musl, from the toolchain): MIT';) \
+	$(if $(BR2_TOOLCHAIN_USES_UCLIBC),printf '%s\n' 'C library (uClibc-ng, from the toolchain): LGPL-2.1+';) \
+	printf '%s\n' 'GCC runtime libraries (from the toolchain): GPL-3.0+ with the GCC Runtime Library Exception'; \
+	$(foreach p,$(RSOS_LICENSE_PKGS),printf '%s %s: %s\n' $(call rsos_shq,$(p)) \
+		$(call rsos_shq,$(or $($(call UPPERCASE,$(p))_VERSION),-)) \
+		$(call rsos_shq,$(call rsos_lic,$(p)));) \
+	} > $(RSOS_LICENSES_TXT)
+	chmod 0644 $(RSOS_LICENSES_TXT)
+endef
+TARGET_FINALIZE_HOOKS += RSOS_WRITE_LICENSES_TXT

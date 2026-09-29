@@ -425,6 +425,67 @@ the SPL's few lines still print, then nothing until the kernel's warnings. For a
   the menu a few times, stopwatch key press -> screen/LED off, then send `rsos/logs/shutdown.txt` (the step times of
   the last 5 shutdowns). The next boot must not show a dirty-volume message for `/data` in `dmesg.txt`.
 
+## 11. Review fixes (2026-09-29, image `retrostoneos-dev-20260929-review.img`)
+The fixes of the broad review (boot recovery, watchdog, data partition, updater, saves/resume, menu/power, SMB and web
+share, USB), tested together. Send `rsos/logs/boot<N>/` (`frontend.log`, `dmesg.txt`, `rcS.times`), `game.log` and the
+UART log for each failure.
+
+Boot and recovery:
+- [ ] **U-Boot AXP209 power-off really cuts power** (boot.cmd's failure budget): on the UART, `fw_setenv rsos_maxfails
+  1; fw_setenv rsos_maxrounds 1; fw_setenv rsos_fails 1`, then `reboot`: the slot counts as used up, the budget is
+  spent and U-Boot powers off. The LED and the screen go off and the unit **stays off** (no reboot loop; still off an
+  hour later). The next power-on boots normally (a fresh budget): `fw_setenv rsos_maxfails; fw_setenv
+  rsos_maxrounds` to go back. Also **after the bootcmd**: on a test card without `/boot/boot.scr` in both root
+  partitions (and nothing for `bootflow scan`), the last command of `bootcmd`, `poweroff`, cuts the power the same way.
+- [ ] **A slot that failed its update trial is never booted again**: install an update (9b), make its trial fail
+  (pull the power during its first 3 boots, before the menu has been up 30 s): the old slot boots and
+  `fw_printenv rsos_bad` names the updated slot. Then make the good slot fail 3 times the same way: it is retried
+  (or the unit powers off when the budget is spent), but the `rsos_bad` slot is **never** booted (UART log,
+  `fw_printenv` before and after).
+- [ ] **Crash loop**: make the menu crash repeatedly (`killall -SEGV rsos-frontend`, 5 times
+  within a minute): frontend-respawn stops restarting it and the watchdog resets the unit about **20 s** later
+  (`dmesg` of the next boot / `/run/rsos` reason); `touch /run/rsos/respawn-unlimited` disables it for development.
+- [ ] **rcS hang**: on a test card, add `sleep 600` near the top of `/etc/init.d/rcS` (remount the root read-write
+  first): the unit resets after about **120 s** (`CONFIG_WATCHDOG_OPEN_TIMEOUT=120`), and that boot is counted as
+  failed.
+- [ ] **First-boot conversion on a slow card** (a large, slow or old card, 64 GB or more): the first boot converts
+  the data partition to exFAT without a watchdog reset (it may take longer than 120 s: the conversion feeds the
+  watchdog); the menu comes up, `rsos/logs/boot1/` has the conversion times.
+- [ ] **rcK**: power off (power key or menu) during a game: the next start offers Resume and the in-game save is
+  there; if a shutdown step hangs, the deadline fires and the unit still powers off (`rsos/logs/shutdown.txt`).
+- [ ] **No usable data partition** (delete or corrupt partition 1 on a PC): the console shows the menu area on tmpfs
+  with the "The storage could not be read" screen; **Format** works and the console restarts into a normal menu.
+- [ ] **cpu-lowvolt is skipped after a freeze**: `fw_setenv rsos_overlays cpu-lowvolt`, reboot; if it freezes (or
+  simulate it: pull the power before the menu has been up 30 s, while `fw_printenv rsos_lowvolt` says `trial`), the
+  next boot skips the overlay and `fw_printenv rsos_lowvolt` says `failed` (docs/build.md, overlays);
+  `fw_setenv rsos_lowvolt; fw_setenv rsos_overlays` to go back.
+- [ ] **RetroStone1** (if available): after a power-off it stays off (PL8 held low); no restart after a few seconds.
+- [ ] **Screen-off with board.ini missing** (rename `/etc/rsos/board.ini` on a test copy): idle screen-off then a
+  button: the panel keeps scanning (no white/grey screen, no stuck image), the menu comes back.
+- [ ] **No-display power-off**: on a panel board with the panel disconnected, the unit powers itself off after
+  **60 s** (the log says why).
+
+Saves, resume, benchmark:
+- [ ] **Battery-save game, Resume keeps a newer in-game save**: play a game with a battery save (e.g. a Pokemon or
+  Zelda cartridge), exit; choose **Start fresh**, save in-game, exit; then **Resume**: the in-game save survives.
+  `game.log` says the save "is newer than the auto state", and a `.srm.bak` exists next to the `.srm`.
+- [ ] **N64 benchmark with the shortest idle power-off** (Settings > Power, 5 min): the benchmark finishes (it holds
+  the idle power-off); pressing the power key mid-benchmark records `resume.ini` (`rsos/resume.ini`).
+- [ ] **A core without save states** (`savestates = false` in its `/usr/share/rsos/cores/<id>.ini`) holds the idle
+  power-off for the whole game (`frontend.log`: "the game's core cannot save a state").
+
+Network and USB:
+- [ ] **SMB**: Windows 10 and 11 connect to `\\RETROSTONE` with user `retrostone` and the `XXXX-XXXX` password shown on
+  the screen, and see **5 folders**; a 9th client is refused; after `killall rsos-frontend`, `ksmbd` is gone once
+  the menu has respawned; **STOP** pressed while the share starts leaves it stopped; the password never appears in
+  `frontend.log`, `dmesg.txt` or the other logs (`grep -r` the logs folder for it).
+- [ ] **Web share**: upload files with Polish (`Zażółć gęślą jaźń.nes`) and CJK (`ゼルダの伝説.nes`, `塞尔达.sfc`) names:
+  they arrive with the right names.
+- [ ] **USB**: an **ntfs3** stick and a failing stick (bad sectors, or pulled during the scan) mount or are refused
+  without a watchdog reset.
+- [ ] **Update check with DNS down** (WiFi on, router without internet or a wrong DNS): Check for updates fails with
+  a message and the unit is never reset.
+
 ## What to send back
 The UART log from power-on to the prompt, the output of `rsos-kmstest --list`, `dmesg`, and a ✓/✗ for each checkbox,
 plus a photo if the display looks wrong. For boot time: section 10 (`bootstage.txt`, `rcS.times`, `frontend.log`,

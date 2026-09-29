@@ -133,6 +133,10 @@ check-update-ui: $(UI_BUILD)/rsos-uipreview
 	printf 'x' > /tmp/rsos-upd-stick/RetroStoneOS/retrostoneos-0.2.0-retrostone2.rsu
 	RSOS_FAKE_USB_MP=/tmp/rsos-upd-stick FAKE_UPDATE=usb $(UPD_PREVIEW) --fake-transfer --keys "usb wait:300 \
 		expect:dialog:USB_drive down right expect:|INSTALL_UPDATE a wait:300 expect:update:0.2.0|installable|file b b"
+	@echo "check-update-ui: a development build on the USB drive of a release console: refused, said so (code variant)"
+	RSOS_FAKE_USB_MP=/tmp/rsos-upd-stick FAKE_UPDATE=variant $(UPD_PREVIEW) --fake-transfer --keys "usb wait:300 \
+		expect:dialog:USB_drive down right expect:|INSTALL_UPDATE a wait:300 \
+		expect:dialog:RetroStoneOS_0.2.0_was_found,_but:_This_update_is_a_development_build_and_cannot_be_installed a b"
 	grep -q -- '--machine check --local-only --dir /tmp/rsos-upd-stick$$' $(UPD_UI_DIR)/calls
 	RSOS_FAKE_USB_MP=/tmp/rsos-upd-stick-none $(UPD_PREVIEW) --fake-transfer --keys "usb wait:300 \
 		expect:dialog:USB_drive down expect:|BACK_UP_SAVES right expect:|NOTHING b"

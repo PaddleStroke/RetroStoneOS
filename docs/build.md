@@ -915,6 +915,21 @@ by the kernel and installed as `/boot/overlays/<name>.dtbo` (glob in
 is in the image: `post-build.sh` adds the line when it exists. Otherwise the
 system just boots to the root shell on the UART.
 
+### Licences
+
+Every image carries `/usr/share/rsos/licenses.txt`: each package of the image
+with its version and licence (the package's `_LICENSE`, what `legal-info`
+reports; Buildroot's own skeleton/script packages, which declare none, are
+listed as Buildroot's GPL-2.0+), the toolchain's C and GCC runtime libraries, and where the licence texts
+and the complete source code are (the legal-info archive of each release). It
+is written by a `TARGET_FINALIZE_HOOKS` entry in `external.mk` from what make
+already knows (no `legal-info` run, a few KB, never read at boot), so a new
+package appears in it without any change there. Read it on the UART (`cat
+/usr/share/rsos/licenses.txt`) or on the SD card image; the menu has no text
+viewer for it yet (TODO: a Settings > System information > Licences entry once
+there is a generic scrollable text screen; `ui/update_ui.c`'s notes screen is
+the model).
+
 ### Round 3 (2026-09-27, image `…b3`, estimates to confirm on hardware)
 Baseline measured on hardware (image f): power-on → logo 2090 ms (SPL 468, U-Boot 240, zImage read 231, LZ4 188, kernel 427,
 init → frontend 435). Changes:

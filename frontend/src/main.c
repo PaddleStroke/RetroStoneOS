@@ -98,6 +98,8 @@
 #define DATA_REFORMAT_PATH  "/run/rsos/data-reformatted"
 #define DATA_ERROR_PATH     "/run/rsos/data-error"
 #define DATA_RESTORE_PATH   "/run/rsos/data-restore-failed"
+/* data-partition: a conversion to finish at the next boot, /data mounted read-only */
+#define DATA_READONLY_PATH  "/run/rsos/data-readonly"
 /* /data could not be mounted and was left alone (a tmpfs stands in):
  * "unmountable <fs|unknown>", "readerror" or "foreign <fs>" (system layer) */
 #define DATA_PROBLEM_PATH   "/run/rsos/data-problem"
@@ -2624,6 +2626,13 @@ static void boot_notes(void)
 	} else if (access(P(DATA_ERROR_PATH), F_OK) == 0) {
 		snprintf(msg, sizeof(msg), "%s", _("The data partition has errors: saving may fail. Back up your saves."));
 		warn = true;
+	} else if (access(P(DATA_READONLY_PATH), F_OK) == 0) {
+		/* the seed stays mounted read-only while its conversion is
+		 * unfinished: nothing written now would be kept */
+		mlog("boot note: /data is read-only until the next boot");
+		/* TRANSLATORS: boot toast: the SD card's data partition is mounted read-only
+		 * (its first-boot setup finishes at the next start) */
+		ui_toast(M.ui, _("Storage is read-only until the console restarts"), UI_SEV_WARNING);
 	}
 	if (access(P(BOOT_FALLBACK_PATH), F_OK) == 0) {
 		mlog("boot note: fallback from slot %s", read_word(P(BOOT_FALLBACK_PATH), w, sizeof(w)) ? w : "?");

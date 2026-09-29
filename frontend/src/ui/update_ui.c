@@ -393,6 +393,8 @@ static const char *reason_text(const char *code)
 		{ "badsig", N_("This update is not signed by RetroStoneOS, or it was modified: it cannot be installed.") },
 		{ "nokey", N_("This system cannot check updates (no update key).") },
 		{ "board", N_("This update is for another console.") },
+		/* TRANSLATORS: system update error: a release console refuses a development build */
+		{ "variant", N_("This update is a development build and cannot be installed on this console.") },
 		{ "bootloader", N_("This update needs a newer bootloader: flash the new image to the SD card instead "
 				   "(back up your saves first).") },
 		{ "same", N_("This version is already installed.") },
