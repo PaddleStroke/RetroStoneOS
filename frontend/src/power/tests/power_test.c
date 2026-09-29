@@ -826,6 +826,95 @@ static void test_idle_poweroff(void)
 	printf("idle power-off: order, equal timers, notice and cancel, busy, charge mode, sticks\n");
 }
 
+/* Review (batch B2): a game that ends during the 10 s notice. The notice
+ * must go (its cancel reaches the menu), and the menu's dim and screen-off
+ * stages must come back: never a silent power-off after it. */
+static void test_review_game_exit_during_notice(void)
+{
+	make_tree();
+	fake_now = 1000000;
+	init_power();
+	power_set_setting("idle_dim_min", "1");
+	power_set_setting("idle_off_min", "2");
+	power_set_setting("idle_poweroff_min", "5");
+	power_set_game_running(true);
+	advance(290000, 1000);
+	CHECK(R.idle_warn == 1 && R.shutdown == 0, "notice in the game at 4:50");
+	power_set_game_running(false);           /* the game ends during the notice */
+	CHECK(R.idle_cancel == 1, "the game's end cancels the notice (%d)", R.idle_cancel);
+	advance(15000, 1000);
+	CHECK(R.shutdown == 0, "no power-off 10 s later");
+	advance(50000, 1000);
+	CHECK(power_get_status()->screen == POWER_SCREEN_DIM, "dimmed 1 min after the game (%d)",
+	      power_get_status()->screen);
+	advance(60000, 1000);
+	CHECK(power_get_status()->screen == POWER_SCREEN_OFF, "screen off 2 min after the game");
+	CHECK(R.idle_warn == 1 && R.shutdown == 0, "no notice yet");
+	advance(180000, 1000);
+	CHECK(R.idle_warn == 2 && power_get_status()->screen == POWER_SCREEN_ON, "a new notice, the screen lit");
+	advance(10000, 1000);
+	CHECK(R.shutdown == 1 && R.last_why == POWER_REASON_IDLE, "then the power-off, after its notice");
+	power_exit();
+
+	/* a game that starts during the menu's notice: cancelled the same way */
+	make_tree();
+	init_power();
+	power_set_setting("idle_poweroff_min", "5");
+	advance(290000, 1000);
+	CHECK(R.idle_warn == 1, "menu notice");
+	power_set_game_running(true);
+	CHECK(R.idle_cancel == 1, "a game start cancels it");
+	advance(20000, 1000);
+	CHECK(R.shutdown == 0, "no power-off");
+	power_exit();
+	printf("review: a game ending (or starting) during the notice cancels it; dim and screen-off come back\n");
+}
+
+/* Review (batch B2): a game that cannot save its state ("nostate" on the
+ * status pipe) or a benchmark ("busy"): the menu holds the idle power-off
+ * with power_set_busy() while that game runs. The unit never powers off
+ * then; it counts again from the game's end. */
+static void test_review_game_busy(void)
+{
+	make_tree();
+	fake_now = 1000000;
+	init_power();
+	power_set_setting("idle_off_min", "2");
+	power_set_setting("idle_poweroff_min", "5");
+	power_set_game_running(true);
+	power_set_busy(true, "game-nostate");
+	advance(3 * 3600000, 10000);
+	CHECK(R.idle_warn == 0 && R.shutdown == 0, "3 h idle in a game without save states: no notice, on");
+	CHECK(power_get_status()->screen == POWER_SCREEN_ON, "in a game: the menu never dims it");
+	power_set_busy(false, NULL);
+	power_set_game_running(false);
+	advance(119000, 1000);
+	CHECK(power_get_status()->screen != POWER_SCREEN_OFF, "back in the menu: not off at 1:59");
+	advance(2000, 1000);
+	CHECK(power_get_status()->screen == POWER_SCREEN_OFF, "screen off 2 min after the game");
+	advance(168000, 1000);
+	CHECK(R.idle_warn == 0, "no notice at 4:49");
+	advance(1000, 1000);
+	CHECK(R.idle_warn == 1 && R.shutdown == 0, "notice 4:50 after the game");
+	advance(10000, 1000);
+	CHECK(R.shutdown == 1 && R.last_why == POWER_REASON_IDLE, "off at 5 min");
+	power_exit();
+
+	/* busy set during the notice (a "busy" line when a benchmark starts) */
+	make_tree();
+	init_power();
+	power_set_setting("idle_poweroff_min", "5");
+	power_set_game_running(true);
+	advance(290000, 1000);
+	CHECK(R.idle_warn == 1, "notice in the game");
+	power_set_busy(true, "game-benchmark");
+	CHECK(R.idle_cancel == 1, "the benchmark cancels the notice");
+	advance(3600000, 10000);
+	CHECK(R.shutdown == 0 && R.idle_warn == 1, "an hour of benchmark: on");
+	power_exit();
+	printf("review: a game without save states / a benchmark holds the idle power-off\n");
+}
+
 static void test_sleep(void)
 {
 	char clk[PSYS_PATH_MAX];
@@ -1299,6 +1388,8 @@ int main(void)
 	test_init_policy();
 	test_idle();
 	test_idle_poweroff();
+	test_review_game_exit_during_notice();
+	test_review_game_busy();
 	test_sleep();
 	test_power_key();
 	test_powersave_fallback();

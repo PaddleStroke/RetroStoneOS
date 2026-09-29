@@ -54,6 +54,15 @@ struct gfx_image *render_text_image(struct font *f, const char *text, int max_w,
 		w = max_w;
 	h = MAX(1, n) * lh;
 	img = gfx_image_new(MAX(1, w), MAX(1, h));
+	if (!img) {
+		/* an absurd size (gfx_image_new refuses it): nothing to draw */
+		if (out_w)
+			*out_w = 0;
+		if (out_h)
+			*out_h = 0;
+		ui_cost_end(&cs);
+		return NULL;
+	}
 	gfx_surface_from_image(&s, img);
 	for (int i = 0; i < n; i++) {
 		int x = align == AL_CENTER ? (w - lines[i].width) / 2 :
@@ -417,6 +426,8 @@ static void layout_text(struct ui *ui, struct elem *e)
 		bw = MAX(1, font_text_width(f, text, -1));
 		bh = lh;
 		e->cache = gfx_image_new(bw, bh);
+		if (!e->cache)
+			goto out;           /* an absurd size: nothing drawn */
 		gfx_surface_from_image(&s, e->cache);
 		if (e->bg >> 24)
 			gfx_fill(&s, 0, 0, bw, bh, e->bg);
@@ -432,6 +443,8 @@ static void layout_text(struct ui *ui, struct elem *e)
 		tw = font_text_width(f, buf, -1);
 		x = e->align == AL_CENTER ? (bw - tw) / 2 : e->align == AL_RIGHT ? bw - tw : 0;
 		e->cache = gfx_image_new(bw, bh);
+		if (!e->cache)
+			goto out;
 		gfx_surface_from_image(&s, e->cache);
 		if (e->bg >> 24)
 			gfx_fill(&s, 0, 0, bw, bh, e->bg);
@@ -449,6 +462,8 @@ static void layout_text(struct ui *ui, struct elem *e)
 		/* vertically centred, top aligned when it overflows */
 		y0 = th < bh ? (bh - th) / 2 : 0;
 		e->cache = gfx_image_new(bw, bh);
+		if (!e->cache)
+			goto out;
 		gfx_surface_from_image(&s, e->cache);
 		if (e->bg >> 24)
 			gfx_fill(&s, 0, 0, bw, bh, e->bg);
@@ -463,7 +478,9 @@ static void layout_text(struct ui *ui, struct elem *e)
 				  lines[i].len, e->fg);
 		}
 	}
-	gfx_image_update_flags(e->cache);
+out:
+	if (e->cache)
+		gfx_image_update_flags(e->cache);
 	place(ui, e, bw, bh);
 }
 
@@ -629,6 +646,8 @@ struct gfx_image *icon_render(const char *name, int px, gfx_color c)
 			r = px / 2;
 		}
 		img = gfx_image_new(w, px);
+		if (!img)
+			return NULL;        /* an absurd size: no icon (callers skip it) */
 		gfx_surface_from_image(&s, img);
 		gfx_fill_round(&s, 0, 0, w, px, r, c);
 		font_erase(&s, f, (w - tw) / 2, font_baseline_in_box(f, 0, px), upper, -1);

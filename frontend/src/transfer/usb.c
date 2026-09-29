@@ -15,11 +15,21 @@
  *
  * Read-only means pulling the stick out is always safe for the stick. A
  * pulled stick is lazily unmounted (MNT_DETACH) and reported as REMOVED.
+ *
+ * The probe (a read of the boot sector) and the mount run in a worker
+ * thread, one disk at a time (review): a failing stick or a slow ntfs3
+ * mount can block in D state for 30 s and more, and the menu's main loop,
+ * which calls transfer_usb_poll(), pets the hardware watchdog. The main
+ * thread picks the partitions and reserves their usbN slots, the worker
+ * probes and mounts with its own copies, and transfer_usb_poll() installs
+ * the results (events, drives) once it is done; a disk pulled meanwhile
+ * has its new mounts undone. The worker touches nothing else of U.
  */
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/netlink.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -346,12 +356,13 @@ out:
 
 /* ------------------------------------------------------------ mount */
 
-static int do_mount(const char *src, const char *dst, const char *fs, const char *data)
+/* (the worker thread: fn is its copy of U.mount_fn) */
+static int do_mount(transfer_mount_fn fn, const char *src, const char *dst, const char *fs, const char *data)
 {
 	/* MS_NOSYMFOLLOW (Linux 5.10): symlinks on the stick (NTFS reparse
 	 * points, "bios -> ../../..") are never followed out of it (F-M16) */
 	unsigned long fl = MS_RDONLY | MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_NOATIME | MS_NOSYMFOLLOW;
-	int r = U.mount_fn ? U.mount_fn(src, dst, fs, fl, data) : mount(src, dst, fs, fl, data);
+	int r = fn ? fn(src, dst, fs, fl, data) : mount(src, dst, fs, fl, data);
 
 	return r < 0 ? -errno : 0;
 }
@@ -384,34 +395,71 @@ static int mkdir_p(const char *path)
 
 /* Tries the mount variants for a probed type; sets fstype and data to what
  * worked. */
-static int mount_fs(const char *dev, const char *mnt, const char *probed, char *fstype, size_t fn,
-		    char *data, size_t dn)
+static int mount_fs(transfer_mount_fn mfn, const char *dev, const char *mnt, const char *probed, char *fstype,
+		    size_t fn, char *data, size_t dn)
 {
 	int r = -ENODEV;
 	const char *opt = NULL;
 
 	if (!strcmp(probed, "vfat")) {
 		/* utf8=1: UTF-8 names without the "iocharset=utf8" case warning */
-		r = do_mount(dev, mnt, "vfat", opt = "utf8=1,shortname=mixed");
+		r = do_mount(mfn, dev, mnt, "vfat", opt = "utf8=1,shortname=mixed");
 		if (r == -EINVAL)
-			r = do_mount(dev, mnt, "vfat", opt = NULL);
+			r = do_mount(mfn, dev, mnt, "vfat", opt = NULL);
 		tr_strlcpy(fstype, "vfat", fn);
 	} else if (!strcmp(probed, "exfat")) {
-		r = do_mount(dev, mnt, "exfat", opt = "iocharset=utf8");
+		r = do_mount(mfn, dev, mnt, "exfat", opt = "iocharset=utf8");
 		if (r == -EINVAL)
-			r = do_mount(dev, mnt, "exfat", opt = NULL);
+			r = do_mount(mfn, dev, mnt, "exfat", opt = NULL);
 		tr_strlcpy(fstype, "exfat", fn);
 	} else if (!strcmp(probed, "ntfs")) {
 		/* ntfs3 (module, auto-loaded by the kernel through modprobe on the
 		 * first mount); "ntfs" is its legacy alias on 6.9+ kernels. */
-		r = do_mount(dev, mnt, "ntfs3", opt = "iocharset=utf8");
+		r = do_mount(mfn, dev, mnt, "ntfs3", opt = "iocharset=utf8");
 		tr_strlcpy(fstype, "ntfs3", fn);
 		if (r == -ENODEV) {
-			r = do_mount(dev, mnt, "ntfs", opt = NULL);
+			r = do_mount(mfn, dev, mnt, "ntfs", opt = NULL);
 			tr_strlcpy(fstype, "ntfs", fn);
 		}
 	}
 	tr_strlcpy(data, opt ? opt : "", dn);
+	return r;
+}
+
+/* ------------------------------------------------------ the mount worker */
+struct mpart {
+	char name[32];
+	uint64_t size;
+	int idx;                 /* the reserved usbN, -1: not probed (mounted already, empty) */
+	bool full;               /* not probed: no usbN left */
+	/* results (worker) */
+	const char *probed;      /* NULL: no FAT/exFAT/NTFS */
+	char label[64], fstype[16], data[48];
+	int r;                   /* the mount: 0 or -errno */
+};
+
+static struct {
+	pthread_mutex_t lock;
+	bool running;            /* a job is out (the worker, or its results not taken yet) */
+	bool done;               /* the worker has finished */
+	bool abandon;            /* transfer_usb_shutdown() meanwhile: the worker undoes its mounts */
+	char disk[32];
+	uint64_t sig;
+	struct transfer_usb_drive info;   /* disk, vendor */
+	int np;
+	struct mpart parts[MAX_PARTS];
+	char dev_dir[64], mount_base[58];
+	transfer_mount_fn mount_fn;
+	transfer_umount_fn umount_fn;
+} J = { .lock = PTHREAD_MUTEX_INITIALIZER };
+
+static bool job_running(void)
+{
+	bool r;
+
+	pthread_mutex_lock(&J.lock);
+	r = J.running;
+	pthread_mutex_unlock(&J.lock);
 	return r;
 }
 
@@ -422,6 +470,10 @@ static int free_index(void)
 
 		for (int i = 0; i < MAX_DRIVES; i++)
 			if (U.drives[i].used && U.drives[i].d.index == idx)
+				taken = true;
+		/* reserved by the job being prepared (the main thread only) */
+		for (int i = 0; i < J.np; i++)
+			if (J.parts[i].idx == idx)
 				taken = true;
 		if (!taken)
 			return idx;
@@ -457,84 +509,203 @@ static bool part_mounted(const char *dev)
 	return false;
 }
 
+static void mountpoint_of(char *out, size_t n, const char *base, int idx)
+{
+	/* fits: transfer_usb_init() limits mount_base to 57 characters */
+	if (tr_snprintf(out, n, "%s/usb%d", base, idx) < 0)
+		out[0] = 0;
+}
+
+/* The worker: probe and mount every reserved partition of J (its own copies
+ * of the paths and hooks), then hand the results back. */
+static void *mount_worker(void *arg)
+{
+	(void)arg;
+	for (int i = 0; i < J.np; i++) {
+		struct mpart *p = &J.parts[i];
+		char dev[128], mnt[64];
+
+		if (p->idx < 0)
+			continue;
+		p->probed = NULL;
+		p->r = -ENODEV;
+		if (tr_snprintf(dev, sizeof(dev), "%s/%s", J.dev_dir, p->name) < 0)
+			continue;
+		p->probed = transfer_fs_probe(dev, p->label, sizeof(p->label));
+		if (!p->probed)
+			continue;
+		mountpoint_of(mnt, sizeof(mnt), J.mount_base, p->idx);
+		if ((p->r = mkdir_p(mnt)) == 0)
+			p->r = mount_fs(J.mount_fn, dev, mnt, p->probed, p->fstype, sizeof(p->fstype), p->data,
+					sizeof(p->data));
+		if (p->r < 0)
+			rmdir(mnt);
+	}
+	pthread_mutex_lock(&J.lock);
+	if (J.abandon) {
+		/* nobody takes the results any more: leave nothing mounted */
+		for (int i = 0; i < J.np; i++) {
+			char mnt[64];
+
+			if (J.parts[i].idx < 0 || !J.parts[i].probed || J.parts[i].r < 0)
+				continue;
+			mountpoint_of(mnt, sizeof(mnt), J.mount_base, J.parts[i].idx);
+			if (J.umount_fn ? J.umount_fn(mnt, MNT_DETACH) : umount2(mnt, MNT_DETACH)) {
+				/* best effort */
+			}
+			rmdir(mnt);
+		}
+		J.running = false;
+		J.abandon = false;
+		J.np = 0;
+	}
+	J.done = true;
+	pthread_mutex_unlock(&J.lock);
+	return NULL;
+}
+
+/* A disk to handle: log it, pick its partitions and their usbN, start the
+ * worker (in this thread if no thread can be made). */
 static void handle_disk(struct disk *dk, const struct part *parts, int np)
 {
-	bool any_media = false, any_supported = false;
-	struct transfer_usb_drive info;
+	pthread_t th;
+	pthread_attr_t at;
+	bool started = false;
 
-	memset(&info, 0, sizeof(info));
-	tr_strlcpy(info.disk, dk->name, sizeof(info.disk));
-	read_vendor(dk->name, info.vendor, sizeof(info.vendor));
+	memset(&J.info, 0, sizeof(J.info));
+	tr_strlcpy(J.info.disk, dk->name, sizeof(J.info.disk));
+	read_vendor(dk->name, J.info.vendor, sizeof(J.info.vendor));
 	{
 		char sz[32], disk_sz[512];
 
 		tr_snprintf(disk_sz, sizeof(disk_sz), "%s/%s/size", U.sys_block, dk->name);
 		tr_fmt_bytes(read_u64(disk_sz) * 512, sz, sizeof(sz));
-		tr_log("usb: disk %s: \"%s\", %s, %d partition%s%s", dk->name, info.vendor, sz, np,
+		tr_log("usb: disk %s: \"%s\", %s, %d partition%s%s", dk->name, J.info.vendor, sz, np,
 		       np == 1 ? "" : "s", np == 1 && !strcmp(parts[0].name, dk->name) ? " (no table)" : "");
 	}
+	tr_strlcpy(J.disk, dk->name, sizeof(J.disk));
+	J.sig = dk->sig;
+	J.np = 0;
+	for (int i = 0; i < np && J.np < MAX_PARTS; i++) {
+		struct mpart *p = &J.parts[J.np];
 
-	for (int i = 0; i < np; i++) {
-		char dev[128], label[64], fstype[16], data[48], sz[32];
-		const char *probed;
+		memset(p, 0, sizeof(*p));
+		tr_strlcpy(p->name, parts[i].name, sizeof(p->name));
+		p->size = parts[i].size;
+		p->idx = -1;
+		J.np++;
+		if (parts[i].size == 0 || part_mounted(parts[i].name))
+			continue;
+		p->idx = free_index();
+		p->full = p->idx < 0;
+		if (p->full)
+			tr_log("usb: %s: too many drives, not mounted", parts[i].name);
+	}
+	tr_strlcpy(J.dev_dir, U.dev_dir, sizeof(J.dev_dir));
+	tr_strlcpy(J.mount_base, U.mount_base, sizeof(J.mount_base));
+	J.mount_fn = U.mount_fn;
+	J.umount_fn = U.umount_fn;
+	pthread_mutex_lock(&J.lock);
+	J.running = true;
+	J.done = false;
+	J.abandon = false;
+	pthread_mutex_unlock(&J.lock);
+	if (pthread_attr_init(&at) == 0) {
+		pthread_attr_setdetachstate(&at, PTHREAD_CREATE_DETACHED);
+		started = pthread_create(&th, &at, mount_worker, NULL) == 0;
+		pthread_attr_destroy(&at);
+	}
+	if (!started) {
+		tr_log("usb: no mount thread: probing %s here", dk->name);
+		mount_worker(NULL);
+	}
+}
+
+/* The worker's results, in the main thread: events and drives. A disk
+ * pulled during the mount has its new mounts undone. */
+static void job_apply(void)
+{
+	bool any_media = false, any_supported = false, present = false;
+	struct transfer_usb_drive info;
+	struct disk *dk = NULL;
+
+	pthread_mutex_lock(&J.lock);
+	if (!J.running || !J.done) {
+		pthread_mutex_unlock(&J.lock);
+		return;
+	}
+	pthread_mutex_unlock(&J.lock);
+	for (int i = 0; i < MAX_DISKS; i++)
+		if (U.disks[i].used && !strcmp(U.disks[i].name, J.disk))
+			dk = &U.disks[i];
+	present = dk && dk->sig == J.sig;
+	info = J.info;
+	for (int i = 0; i < J.np; i++) {
+		struct mpart *p = &J.parts[i];
 		struct drive *slot;
-		int idx, r;
+		char sz[32];
 
-		if (parts[i].size == 0)
+		if (p->size == 0)
 			continue;
 		any_media = true;
-		if (part_mounted(parts[i].name)) {
-			any_supported = true;
+		if (p->idx < 0) {
+			any_supported |= p->full || part_mounted(p->name);
 			continue;
 		}
-		if (tr_snprintf(dev, sizeof(dev), "%s/%s", U.dev_dir, parts[i].name) < 0)
-			continue;
-		tr_fmt_bytes(parts[i].size, sz, sizeof(sz));
-		probed = transfer_fs_probe(dev, label, sizeof(label));
-		if (!probed) {
-			tr_log("usb: %s (%s): no FAT, exFAT or NTFS filesystem, not mounted", parts[i].name, sz);
+		tr_fmt_bytes(p->size, sz, sizeof(sz));
+		if (!p->probed) {
+			tr_log("usb: %s (%s): no FAT, exFAT or NTFS filesystem, not mounted", p->name, sz);
 			continue;
 		}
 		any_supported = true;
-		idx = free_index();
-		slot = drive_slot();
-		if (idx < 0 || !slot) {
-			tr_log("usb: %s: too many drives, not mounted", parts[i].name);
-			break;
-		}
-		tr_strlcpy(info.dev, parts[i].name, sizeof(info.dev));
-		tr_strlcpy(info.label, label, sizeof(info.label));
-		info.size_bytes = parts[i].size;
-		info.index = idx;
-		snprintf(info.mountpoint, sizeof(info.mountpoint), "%s/usb%d", U.mount_base, idx);
-		if ((r = mkdir_p(info.mountpoint)) == 0)
-			r = mount_fs(dev, info.mountpoint, probed, fstype, sizeof(fstype), data, sizeof(data));
-		if (r < 0) {
-			tr_strlcpy(info.fstype, probed, sizeof(info.fstype));
-			tr_log("usb: %s (%s, \"%s\", %s): mount on %s failed: %s", parts[i].name, probed,
-			       label, sz, info.mountpoint, strerror(-r));
-			rmdir(info.mountpoint);
-			push(TRANSFER_USB_MOUNT_FAILED, &info, r);
+		tr_strlcpy(info.dev, p->name, sizeof(info.dev));
+		tr_strlcpy(info.label, p->label, sizeof(info.label));
+		info.size_bytes = p->size;
+		info.index = p->idx;
+		mountpoint_of(info.mountpoint, sizeof(info.mountpoint), U.mount_base, p->idx);
+		if (p->r < 0) {
+			tr_strlcpy(info.fstype, p->probed, sizeof(info.fstype));
+			tr_log("usb: %s (%s, \"%s\", %s): mount on %s failed: %s", p->name, p->probed,
+			       p->label, sz, info.mountpoint, strerror(-p->r));
+			if (present)
+				push(TRANSFER_USB_MOUNT_FAILED, &info, p->r);
 			continue;
 		}
-		tr_strlcpy(info.fstype, fstype, sizeof(info.fstype));
+		slot = drive_slot();
+		if (!present || !slot) {
+			/* pulled (or replaced) during the mount, or no slot left */
+			tr_log("usb: %s: %s: unmounting %s", p->name, present ? "too many drives" :
+			       "the disk went away during the mount", info.mountpoint);
+			do_umount(info.mountpoint, MNT_DETACH);
+			rmdir(info.mountpoint);
+			continue;
+		}
+		tr_strlcpy(info.fstype, p->fstype, sizeof(info.fstype));
 		slot->used = true;
 		slot->rw = false;
-		tr_strlcpy(slot->data, data, sizeof(slot->data));
+		tr_strlcpy(slot->data, p->data, sizeof(slot->data));
 		slot->d = info;
-		tr_log("usb: %s (%s, \"%s\", %s) mounted read-only on %s", parts[i].name, fstype, label, sz,
+		tr_log("usb: %s (%s, \"%s\", %s) mounted read-only on %s", p->name, p->fstype, p->label, sz,
 		       info.mountpoint);
 		push(TRANSFER_USB_MOUNTED, &info, 0);
 	}
-	if (any_media && !any_supported) {
-		tr_log("usb: disk %s: no supported partition (use FAT32 or exFAT)", dk->name);
-		push(TRANSFER_USB_UNSUPPORTED, &info, 0);
-	} else if (!any_media) {
-		tr_log("usb: disk %s: no media (card reader?), waiting for a card", dk->name);
+	if (present) {
+		if (any_media && !any_supported) {
+			tr_log("usb: disk %s: no supported partition (use FAT32 or exFAT)", dk->name);
+			push(TRANSFER_USB_UNSUPPORTED, &info, 0);
+		} else if (!any_media) {
+			tr_log("usb: disk %s: no media (card reader?), waiting for a card", dk->name);
+		}
+		/* No media (empty card reader): stay unhandled, a "change" uevent
+		 * comes with the card. */
+		dk->handled = any_media;
 	}
-	/* No media (empty card reader): stay unhandled, a "change" uevent comes
-	 * with the card. */
-	dk->handled = any_media;
+	pthread_mutex_lock(&J.lock);
+	J.running = false;
+	J.done = false;
+	J.np = 0;
+	pthread_mutex_unlock(&J.lock);
+	U.dirty = true;         /* the other disks, and this one again if it changed */
 }
 
 static void drop_drive(struct drive *dr, enum transfer_usb_event_type why)
@@ -619,6 +790,10 @@ static void scan(void)
 		if (dk->handled && sig == dk->sig)
 			continue;
 		if (dk->ejected && sig == dk->sig)
+			continue;
+		/* one disk at a time: the next one once the worker is done
+		 * (job_apply() asks for a new scan) */
+		if (job_running())
 			continue;
 		dk->sig = sig;
 		dk->ejected = false;
@@ -765,6 +940,8 @@ int transfer_usb_timeout_ms(void)
 		return -1;
 	if (U.dirty || U.qlen)
 		return 0;
+	if (job_running())
+		return 50;                         /* the mount worker's results */
 	now = tr_now_ms();
 	if (U.nlfd < 0) {
 		int64_t d = U.last_scan + U.rescan_ms - now;
@@ -785,6 +962,7 @@ int transfer_usb_poll(struct transfer_usb_event *ev)
 		return 0;
 	if (U.nlfd >= 0)
 		nl_drain();
+	job_apply();
 	if (!U.qlen) {
 		int64_t now = tr_now_ms();
 		bool periodic;
@@ -868,6 +1046,25 @@ void transfer_usb_shutdown(void)
 {
 	if (!U.init)
 		return;
+	/* a mount in progress is never waited for (it may hang): the worker
+	 * undoes it when it returns; finished results nobody took are undone */
+	pthread_mutex_lock(&J.lock);
+	if (J.running && !J.done) {
+		J.abandon = true;
+	} else if (J.running) {
+		for (int i = 0; i < J.np; i++) {
+			char mnt[64];
+
+			if (J.parts[i].idx < 0 || !J.parts[i].probed || J.parts[i].r < 0)
+				continue;
+			mountpoint_of(mnt, sizeof(mnt), J.mount_base, J.parts[i].idx);
+			do_umount(mnt, MNT_DETACH);
+			rmdir(mnt);
+		}
+		J.running = J.done = false;
+		J.np = 0;
+	}
+	pthread_mutex_unlock(&J.lock);
 	for (int i = 0; i < MAX_DRIVES; i++)
 		if (U.drives[i].used) {
 			do_umount(U.drives[i].d.mountpoint, MNT_DETACH);

@@ -641,20 +641,22 @@ check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
 	grep -q 'launch Smoke Test .*, resuming (boot offer)' $(FE_LOG)
 	grep -q 'load state .*Smoke Test.state.auto (.*): ok' $(FE_GAME_LOG)
 	test ! -e $(FE_RESUME)
-	@echo "check-frontend: 5b. Start fresh (and B): the menu, the auto state kept, the offer gone"
+	@echo "check-frontend: 5b. Start fresh (and B): the menu, the auto state moved aside (.state.auto.old), the offer gone"
 	cp $(FE_CHECK_DIR)/resume.saved $(FE_RESUME)
 	rm -f $(FE_LOG) $(FE_GAME_LOG)
 	$(FE_RUN) --script "wait:400 expect:dialog:Resume_Smoke_Test? right expect:|START_FRESH a wait:300 \
 		expect:carousel term"
 	! grep -q 'EXPECT FAILED' $(FE_LOG)
-	grep -q 'resume: start fresh (auto state kept)' $(FE_LOG)
+	grep -q 'resume: start fresh' $(FE_LOG) && grep -q 'start fresh: .* moved aside' $(FE_LOG)
 	! grep -q 'launch Smoke Test' $(FE_LOG)
-	test -s $(FE_STATE) && test ! -e $(FE_RESUME)
+	test ! -e $(FE_STATE) && test -s $(FE_STATE).old && test ! -e $(FE_RESUME)
+	mv $(FE_STATE).old $(FE_STATE) && if [ -e $(FE_STATE).old.png ]; then mv $(FE_STATE).old.png $(FE_STATE).png; fi
 	cp $(FE_CHECK_DIR)/resume.saved $(FE_RESUME)
 	rm -f $(FE_LOG)
 	$(FE_RUN) --script "wait:400 expect:dialog:Resume_Smoke_Test? b wait:300 expect:carousel term"
 	! grep -q 'EXPECT FAILED' $(FE_LOG)
-	test -s $(FE_STATE) && test ! -e $(FE_RESUME)
+	test ! -e $(FE_STATE) && test -s $(FE_STATE).old && test ! -e $(FE_RESUME)
+	mv $(FE_STATE).old $(FE_STATE) && if [ -e $(FE_STATE).old.png ]; then mv $(FE_STATE).old.png $(FE_STATE).png; fi
 	@echo "check-frontend: 5c. the ROM is gone: no dialog, the file dropped"
 	sed 's#^rom = .*#rom = /nonexistent/Gone.nes#' $(FE_CHECK_DIR)/resume.saved > $(FE_RESUME)
 	rm -f $(FE_LOG)

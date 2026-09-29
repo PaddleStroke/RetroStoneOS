@@ -1003,14 +1003,20 @@ struct progress {
 	int last_q;                  /* the last question shown */
 };
 
+/* The progress screen may be gone when this answers (transfer_poll()
+ * finalizes a copy that ended under the dialog): no pointer to it. */
 static void cancel_choice(struct ui *ui, int choice, void *user)
 {
-	struct progress *p = user;
+	int j;
 
+	(void)user;
 	if (choice != 0 || !TR(ui))
 		return;
+	j = job_running(ui);
+	if (!j)
+		return;                   /* it ended meanwhile */
 	LOGI("usb: copy cancelled by the user");
-	if (p->kind == 0)
+	if (j == 1)
 		TR(ui)->import_cancel();
 	else
 		TR(ui)->backup_cancel();
@@ -1222,13 +1228,32 @@ static void log_summary(struct progress *p, enum transfer_state st)
 	     r->identical, r->kept, r->skipped, r->failed);
 }
 
+/* The copy has ended: its thread joined, the stick read-only again, the
+ * summary in msg. */
+static void pr_finish(struct ui *ui, struct progress *p, enum transfer_state st, char *msg, size_t msgn)
+{
+	char changed[TRANSFER_SYS_MAX][TRANSFER_SYSID_MAX];
+	int n;
+
+	if (p->kind == 0) {
+		n = TR(ui)->import_finish(changed, TRANSFER_SYS_MAX);
+		invalidate(ui, changed, n);
+		import_summary(p, st, msg, msgn);
+	} else {
+		TR(ui)->backup_finish();
+		/* read-only again: always safe to pull */
+		if (TR(ui)->usb_remount(p->mp, false) < 0)
+			LOGW("usb: %s stays read-write: eject it before unplugging", p->mp);
+		backup_summary(p, st, msg, msgn);
+	}
+	log_summary(p, st);
+}
+
 static bool pr_update(struct ui *ui, struct screen *scr)
 {
 	struct progress *p = (struct progress *)scr;
 	enum transfer_state st;
-	char changed[TRANSFER_SYS_MAX][TRANSFER_SYSID_MAX];
 	char msg[512], mp[64];
-	int n;
 
 	if (ui->now < p->next_poll)
 		return false;
@@ -1242,18 +1267,7 @@ static bool pr_update(struct ui *ui, struct screen *scr)
 		return true;
 	}
 	strlcpy_(mp, p->mp, sizeof(mp));
-	if (p->kind == 0) {
-		n = TR(ui)->import_finish(changed, TRANSFER_SYS_MAX);
-		invalidate(ui, changed, n);
-		import_summary(p, st, msg, sizeof(msg));
-	} else {
-		TR(ui)->backup_finish();
-		/* read-only again: always safe to pull */
-		if (TR(ui)->usb_remount(mp, false) < 0)
-			LOGW("usb: %s stays read-write: eject it before unplugging", mp);
-		backup_summary(p, st, msg, sizeof(msg));
-	}
-	log_summary(p, st);
+	pr_finish(ui, p, st, msg, sizeof(msg));
 	ui_pop(ui); /* frees p */
 	reload_if_needed(ui);
 	summary_open(ui, mp, msg);
@@ -1271,7 +1285,7 @@ static void pr_button(struct ui *ui, struct screen *scr, enum input_btn b, enum 
 		/* TRANSLATORS: B during an import (USB stick -> console) */
 		dialog_open(ui, p->kind == 0 ? _("Stop copying? Files already copied stay.") :
 			    /* TRANSLATORS: B during an export / saves backup (console -> USB stick) */
-			    _("Stop? Files already copied stay on the drive."), buttons, cancel_choice, p);
+			    _("Stop? Files already copied stay on the drive."), buttons, cancel_choice, NULL);
 	}
 }
 
@@ -1744,20 +1758,43 @@ void transfer_poll(struct ui *ui)
 	}
 	offer_pending(ui);
 	/* a copy that waits for an answer, or has ended, with no progress screen
-	 * (a reload closed it): reopen it, it asks / finishes and remounts */
+	 * (a reload closed it): reopen it, it asks / finishes and remounts. One
+	 * that has ended under another screen (a dialog over its progress screen)
+	 * is finished here whatever is on top (review: it stayed DONE, the stick
+	 * read-write, until its screen came back to the top). */
+	ui->transfer_watch = false;
 	if (ui->loaded && !ui->in_game) {
 		struct transfer_progress pr;
 		int j = job_running(ui);
-		bool shown = false;
+		int at = -1;
 
 		for (int i = 0; i < ui->nstack; i++)
-			shown |= ui->stack[i]->ops == &pr_ops;
-		if (j && !shown) {
+			if (ui->stack[i]->ops == &pr_ops)
+				at = i;
+		/* its screen is not on top: ui_timeout_ms() polls for its end */
+		ui->transfer_watch = j && at != ui->nstack - 1;
+		/* on top, its screen does it (pr_update) */
+		if (j && at != ui->nstack - 1) {
 			enum transfer_state st = j == 1 ? TR(ui)->import_status(&pr) : TR(ui)->backup_status(&pr);
 
-			if (st >= TRANSFER_DONE || pr.asking) {
+			if (at < 0 && (st >= TRANSFER_DONE || pr.asking)) {
 				LOGI("usb: reopening the progress screen of the running copy");
 				progress_open(ui, j == 1 ? 0 : g_backup_kind, g_job_mp, g_job_label);
+			} else if (at >= 0 && at < ui->nstack - 1 && st >= TRANSFER_DONE) {
+				struct progress *p = (struct progress *)ui->stack[at];
+				char msg[512], mp[64];
+
+				LOGI("usb: the copy ended under another screen: finishing it now");
+				p->pr = pr;
+				strlcpy_(mp, p->mp, sizeof(mp));
+				pr_finish(ui, p, st, msg, sizeof(msg));
+				/* out of the stack (not the top: no ui_pop) */
+				memmove(&ui->stack[at], &ui->stack[at + 1],
+					sizeof(ui->stack[0]) * (size_t)(ui->nstack - at - 1));
+				ui->nstack--;
+				pr_destroy(ui, &p->base);
+				ui_invalidate_snapshot(ui);
+				summary_open(ui, mp, msg);
 			}
 		}
 	}

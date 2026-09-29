@@ -242,12 +242,23 @@ shutdown (the same path as the power key: saves, then rcK and `poweroff -f`).
   powers off. **Never without saving**: if the game did not write its resume state (no save-state support, a write
   error, no exit within 8 s), the idle power-off is cancelled (`power_cancel_shutdown()`): the menu comes back with
   "Automatic power-off cancelled: the game could not be saved.", the unit stays on and the countdown starts over. The
-  module's own 15 s shutdown watchdog never forces an idle power-off either: it cancels it.
+  module's own 15 s shutdown watchdog never forces an idle power-off either: it cancels it. A game whose core cannot
+  save a state says so at its start (status line `nostate`, host-design.md): the menu then holds the idle power-off
+  for that whole game (below), so it never quits it unsaved (review, batch B2).
+- **A game that ends or starts during the notice** cancels it (`power_set_game_running()` -> `POWER_IDLE_CANCEL`,
+  review B2): before, the notice state stuck, the menu's dim and screen-off stages were skipped and the unit powered
+  off later without a notice.
 - **Never while busy** (`power_set_busy()`, checked by the menu once a second and whenever a power deadline is due): a
-  USB import, a USB export or saves backup (`transfer_*_status()`), the web share with a client connected or an upload
-  running, the SMB share with a client (an established TCP connection on port 445 in `/proc/net/tcp{,6}`: ksmbd has
-  no client count), an OS update download or install (`ui_update_busy()`), the game list still loading. A job that
-  starts cancels a pending notice; when the last one ends, the countdown **starts over** from that moment.
+  USB import, a USB export or saves backup while it **copies** (`TRANSFER_RUNNING`; not while it waits for the player:
+  a duplicate question, or a finished copy whose summary is not read yet, review B2), the web share with a client
+  connected or an upload running, the SMB share with a client (an established TCP connection on port 445 in
+  `/proc/net/tcp{,6}`: ksmbd has no client count), an OS update download or install (`ui_update_busy()`), the storage
+  being formatted (`ui_data_problem_busy()`), the game list still loading, and in a game: a core without save states
+  (`nostate`) or a benchmark (`busy bench` ... `busy off`; the child's exit also ends both). A job that starts cancels
+  a pending notice; when the last one ends, the countdown **starts over** from that moment. The dim and screen-off
+  stages go on meanwhile (in the menu). During a benchmark, the `autostate` of a power-off (the start state copied
+  to the game's `.state.auto`) records `resume.ini` as it arrives: the driver may not exit within the grace time; a
+  game killed after the grace time that had sent `autostate` is recorded too.
 - **Never in charge mode** (the charge screen has its own rules, §9), nor while asleep or already shutting down.
 - `idle_poweroff_s` (seconds) for development and tests (`idlepoweroff:N` in the headless scripts, in the menu and
   as `game:idlepoweroff:N`).
@@ -411,7 +422,11 @@ reboots after 10 s; `boot.cmd` counts every such boot until `rsos-boot-ok` confi
 slots"). **Frontend part (to do):** open `/dev/watchdog` in the menu process (`O_WRONLY|O_CLOEXEC`, never in
 `--splash` or `--run`), pet it (`WDIOC_KEEPALIVE`) from the main loop at least every 4 s, also while a game runs, in
 fake sleep and in charge mode, and stop it with the magic close (write `V`, then close) on every orderly exit; a
-menu that hangs for 16 s then resets the board. rcK also writes `V` after the frontend has stopped. TODO(hw): on the
+menu that hangs for 16 s then resets the board. rcK also writes `V` after the frontend has stopped. Nothing in the
+menu loop may block that long (review B2): the probe and mount of a USB drive run in usb.c's worker thread, a
+stopped update check is SIGKILLed and reaped with `WNOHANG` (its resolver gets `RES_OPTIONS=timeout:2 attempts:1`),
+the storage format runs in a child polled with `WNOHANG`, and the exit paths (SIGTERM, power-off) pet it before each
+step. A menu that has no display for 60 s on a board whose panel keeps scanning powers off cleanly. TODO(hw): on the
 first boot with this U-Boot, check that the board does not reset after 16 s and that `dmesg | grep -i wdt` shows no
 error (the node `watchdog@1c20c90` is enabled in the DTB and the driver is built in; QEMU shows U-Boot starting it).
 
@@ -484,7 +499,9 @@ double), hovering around the threshold, short dips, emergency collapse, charger 
 fake sysfs trees with a fake clock: PEK force-off raised to 6 s, V_OFF, governors per state and per core, idle dim/off
 (the idle power-off, §7.1: the order dim, screen off, power off; equal timers and a shorter power-off; the
 notice, lit screen and cancel by a UI input, a built-in key, the power key and game activity; the busy hold and the
-restart after it; the cancel of a power-off that cannot save and the watchdog that never forces it; charge mode),
+restart after it; the cancel of a power-off that cannot save and the watchdog that never forces it; charge mode;
+review B2: a game ending or starting during the notice cancels it and the dim/off stages come back, a game without
+save states or a benchmark held busy for hours),
 and key swallowing (including the wake regression: the waking press and release as the evdev read sees them, then
 the next presses, repeats and releases must pass, after idle-off, dim and fake sleep), the power key (start-up guard,
 a lone release, short press in the menu and in a game = one shutdown request even if pressed again, screen off =

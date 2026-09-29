@@ -61,6 +61,67 @@ static struct {
 	size_t len;
 } P = { .fd = -1 };
 
+/* Helpers stopped without waiting (a background check sitting in
+ * getaddrinfo() for 10-30 s: a blocking waitpid() let the hardware watchdog
+ * reset the unit, review): SIGKILL, then reaped with WNOHANG from
+ * helper_poll(). */
+#define ORPHANS_MAX 4
+static pid_t g_orphans[ORPHANS_MAX];
+
+static void orphans_reap(void)
+{
+	for (int i = 0; i < ORPHANS_MAX; i++)
+		if (g_orphans[i] > 0) {
+			pid_t r = waitpid(g_orphans[i], NULL, WNOHANG);
+
+			if (r == g_orphans[i] || (r < 0 && errno == ECHILD))
+				g_orphans[i] = 0;
+		}
+}
+
+static void helper_abandon(void)
+{
+	if (P.pid > 0) {
+		kill(P.pid, SIGKILL);
+		orphans_reap();
+		for (int i = 0; i < ORPHANS_MAX; i++)
+			if (g_orphans[i] <= 0) {
+				g_orphans[i] = P.pid;
+				break;
+			}
+		/* all slots taken (never: one helper at a time): a zombie until exit */
+	}
+	if (P.fd >= 0)
+		close(P.fd);
+	P.pid = 0;
+	P.fd = -1;
+	P.len = 0;
+	P.kind = P_NONE;
+}
+
+/* The helper's resolver: 2 s per server, one try (glibc's RES_OPTIONS),
+ * instead of 5 s x 2 tries x each server; built before fork() (no malloc
+ * after it: the menu has threads). */
+static char **helper_env(void)
+{
+	extern char **environ;
+	static char res_opt[] = "RES_OPTIONS=timeout:2 attempts:1";
+	size_t n = 0;
+	char **env;
+	bool has = false;
+
+	for (char **e = environ; e && *e; e++, n++)
+		has |= !strncmp(*e, "RES_OPTIONS=", 12);
+	env = calloc(n + 2, sizeof(*env));
+	if (!env)
+		return NULL;
+	for (size_t i = 0; i < n; i++)
+		env[i] = environ[i];
+	if (!has)
+		env[n] = res_opt;
+	return env;
+}
+
 /* what the helper told us */
 static struct {
 	bool have_info;
@@ -142,6 +203,7 @@ static bool helper_start(struct ui *ui, int kind, const char *const *args, bool 
 	const char *argv[16];
 	int n = 0, pfd[2];
 	pid_t pid;
+	char **env;
 
 	if (P.pid > 0 || !update_available(ui))
 		return false;
@@ -152,10 +214,12 @@ static bool helper_start(struct ui *ui, int kind, const char *const *args, bool 
 	argv[n] = NULL;
 	if (pipe2(pfd, O_CLOEXEC) < 0)
 		return false;
+	env = helper_env();
 	pid = fork();
 	if (pid < 0) {
 		close(pfd[0]);
 		close(pfd[1]);
+		free(env);
 		return false;
 	}
 	if (pid == 0) {
@@ -177,9 +241,13 @@ static bool helper_start(struct ui *ui, int kind, const char *const *args, bool 
 		if (low_priority && nice(10) < 0) {
 			/* not fatal */
 		}
-		execv(argv[0], (char *const *)argv);
+		if (env)
+			execve(argv[0], (char *const *)argv, env);
+		else
+			execv(argv[0], (char *const *)argv);
 		_exit(127);
 	}
+	free(env);
 	close(pfd[1]);
 	fcntl(pfd[0], F_SETFL, O_NONBLOCK);
 	P.pid = pid;
@@ -761,12 +829,10 @@ static void install_start(struct ui *ui, const struct found *from, bool allow_un
 			ui_toastf(ui, "%s", _("Please wait..."));
 			return;
 		}
-		/* a background check is not worth waiting for */
-		kill(P.pid, SIGTERM);
-		waitpid(P.pid, NULL, 0);
-		close(P.fd);
-		P.pid = 0;
-		P.fd = -1;
+		/* a background check is not worth waiting for: killed, reaped
+		 * later (never a blocking waitpid: it can sit in getaddrinfo) */
+		LOGI("update: background check %d stopped for the install", (int)P.pid);
+		helper_abandon();
 	}
 	if (allow_unsigned)
 		args[n++] = "--allow-unsigned";
@@ -1025,6 +1091,7 @@ static void helper_poll(struct ui *ui)
 {
 	int st;
 
+	orphans_reap();
 	if (P.pid <= 0)
 		return;
 	while (P.fd >= 0) {

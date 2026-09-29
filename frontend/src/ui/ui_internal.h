@@ -297,8 +297,19 @@ struct ui {
 		bool active;               /* the dialog is up */
 		char name[128], rom[1024], system[32], core[64], core_path[1024];
 		void (*answered)(bool resume, void *user);
+		void (*start_fresh)(const struct ui_resume_offer *offer, void *user);
 		void *user;
 	} boot_resume;
+	/* /data unreadable (ui_data_problem, screens.c): the storage screen */
+	struct {
+		bool active;
+		char problem[128];
+		struct screen *scr;        /* on the stack (re-pushed if something closed it) */
+		int state;                 /* DP_ASK, DP_FORMATTING, DP_FAILED, DP_DONE */
+		int sel;                   /* 0 turn off, 1 format */
+		int pid;                   /* the format helper, while it runs */
+		int status;                /* its exit status (DP_FAILED) */
+	} data_problem;
 	/* the game switcher's choice (ui_switch_to), launched at the next
 	 * ui_update() once the launch callback has returned */
 	struct {
@@ -334,6 +345,7 @@ struct ui {
 	char usb_dialog_mp[64];        /* the drive the USB dialog is about ("" = none) */
 	bool reload_pending;           /* game folders changed by a transfer */
 	unsigned scan_orphan;          /* USB scans whose screen was closed (transfer_ui.c) */
+	bool transfer_watch;           /* a copy runs under another screen: poll it (transfer_poll) */
 	struct screen *usb_dialog;     /* the USB dialog, while it is open */
 	int64_t next_share_poll;
 	/* language: the first-boot picker is due (no language in settings.ini)
@@ -533,6 +545,9 @@ void transfer_after_game(struct ui *ui);
 void transfer_before_game(struct ui *ui);
 void transfer_network_off(struct ui *ui);
 void transfer_poll(struct ui *ui);
+/* screens.c: the storage problem screen kept up, its format helper polled
+ * (every ui_update) */
+void data_problem_poll(struct ui *ui);
 void webshare_open(struct ui *ui);
 /* The Windows file share (ui->cfg.smb_helper), next to the network
  * transfer: available (the helper is installed), start (with the transfer's

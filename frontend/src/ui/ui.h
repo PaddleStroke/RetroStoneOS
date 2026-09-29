@@ -69,6 +69,10 @@ struct ui_launch {
 	const char *cpu;
 	/* true: launched by the game switcher (the game before asked for it) */
 	bool switched;
+	/* true: the player chose "Start fresh" in "Resume where you left off?":
+	 * the old auto state is moved aside (.state.auto.old) before the game
+	 * starts, so nothing resumes it automatically later (review). */
+	bool start_fresh;
 };
 
 /* A recently played game (ui_recent_games), for the game switcher. */
@@ -95,6 +99,11 @@ struct ui_resume_offer {
 	 * true) or with the menu left as it is (false: "Start fresh" or B). The
 	 * caller forgets the offer there (resume.ini deleted). */
 	void (*answered)(bool resume, void *user);
+	/* Optional: the player chose START FRESH (or B) in the dialog (not
+	 * NEVER ASK, not resume_boot = never: those keep the state for the
+	 * launch prompt). The caller moves the auto state aside (review: a
+	 * later automatic resume must not restore it over newer progress). */
+	void (*start_fresh)(const struct ui_resume_offer *offer, void *user);
 	void *user;
 };
 
@@ -126,7 +135,10 @@ struct ui_callbacks {
 	/* Optional (Delete this game): the game's saves and save states (its
 	 * .srm/.rtc and .state* files, the names the game process uses);
 	 * remove = false counts them, true deletes them. Returns the number of
-	 * files. NULL: the UI looks for <ROM stem>.* in <data>/saves|states. */
+	 * files, or -EEXIST when another ROM uses the same save name (Game.zip
+	 * next to Game.sfc...): its saves are the same files, nothing is
+	 * deleted and the UI says so. NULL: the UI looks for <ROM stem>.* in
+	 * <data>/saves|states. */
 	int (*game_saves)(const struct ui_launch *req, bool remove, void *user);
 	void *user;
 };
@@ -265,6 +277,10 @@ struct ui_config {
 	 * share is on; missing / NULL / "": the item is hidden. The string must
 	 * outlive the UI. */
 	const char *smb_helper;      /* "/usr/bin/rsos-smb" */
+	/* formats an unreadable /data after the player confirmed it on the
+	 * storage screen (ui_data_problem): run with --format-confirmed. The
+	 * string must outlive the UI. */
+	const char *data_partition_helper; /* "/usr/libexec/rsos/data-partition" */
 	const char *wpa_conf;        /* "/data/rsos/wpa_supplicant.conf" */
 	const char *version;         /* fallback version string */
 	const char *default_theme;   /* "rsos-dark" (RSOS_DEFAULT_THEME) */
@@ -377,10 +393,27 @@ void ui_debug_screen(struct ui *ui, char *buf, size_t n);
  * RESUME] [NEVER ASK] (B = start fresh): the last two also save
  * resume_boot. Resume launches the game through the normal launch flow
  * (launch callback, player 1 = the pad that pressed A) with req->resume and
- * the offer's core; Start fresh leaves the menu (the auto state stays, so
- * the game's own "Resume where you left off?" still works).
+ * the offer's core; Start fresh (or B) leaves the menu and calls
+ * offer->start_fresh (the caller moves the auto state aside); NEVER ASK and
+ * "never" keep the state, so the game's own "Resume where you left off?"
+ * still offers it.
  */
 void ui_offer_resume(struct ui *ui, const struct ui_resume_offer *offer);
+
+/*
+ * /data could not be mounted (the system layer left it alone and put a
+ * tmpfs there): problem is the first line of /run/rsos/data-problem,
+ * "unmountable <fs|unknown>", "readerror" or "foreign <fs>". A blocking
+ * screen replaces the menu (B does nothing; it comes back if anything
+ * closes it): what happened, that the games and saves may still be
+ * recoverable on a PC, and two choices: "Turn off (to back up on a PC)"
+ * (power off) and "Format the storage (erases everything)" (a second
+ * confirmation, CANCEL selected; then cfg.data_partition_helper
+ * --format-confirmed with a progress message, then a reboot).
+ * ui_data_problem_busy(): the format runs (no idle power-off meanwhile).
+ */
+void ui_data_problem(struct ui *ui, const char *problem);
+bool ui_data_problem_busy(const struct ui *ui);
 
 /*
  * Batch 2, for the launch callback (main.c):
