@@ -23,10 +23,11 @@ qemu-user with the board's profile), but the RetroStoneOS developers have not bo
 | Orange Pi 5 | `orangepi5_defconfig` | `retrostoneos-<version>-orangepi5.img.xz` | Rockchip RK3588S, 4x Cortex-A76 2.4 GHz + 4x A55 | Mali-G610 MP4 (panfrost, Panthor kernel driver) | builds, community-tested |
 
 The single-board computer images are **only produced by the CI** (the release workflow builds every defconfig
-without a `# ci: skip` line, `scripts/ci/list-boards.sh`); local builds of these boards are compile and
-configuration checks. The images are xz-compressed (`xz -dk`, or let balenaEtcher decompress them). Flash them like
-the RetroStone2 image (docs/build.md, "Flashing"): the first boot grows the `RETROSTONE` data partition to the whole
-card.
+without a `# ci: skip` line, `scripts/ci/list-boards.sh`; on a tag they are release builds, with the tag's version);
+local builds of these boards are compile and configuration checks. The images are xz-compressed (`xz -dk`, or let
+balenaEtcher decompress them). Flash them like the RetroStone2 image (docs/build.md, "Flashing") on a card of
+**2 GB or more (4 GB for the Orange Pi 5**, whose image is about 2.2 GB): the first boot grows the `RETROSTONE` data
+partition to the whole card.
 
 Apart from the RetroStone handhelds (the RetroStone1 has its built-in buttons and its composite-fed screen, see its
 notes), every board here is an **HDMI box**: `internal_display = none`, no battery, no built-in pad
@@ -243,7 +244,12 @@ The reference port, unchanged in its layout (porting.md, section 6). Review note
   with mesa-clc): the build compiles LLVM and Clang for the host and the target (about an hour more on the first
   build) and installs them; `board/orangepi5/post-build.sh` removes everything but `libLLVM` (which `libgallium`
   links), about 200 MiB. Root file system slots: **1 GiB** (about 490 MiB used), room for the heavier cores this
-  class can run.
+  class can run. Panfrost cannot be built without LLVM in this Buildroot (`depends on BR2_PACKAGE_MESA3D_LLVM`,
+  and its precompiled shaders select OpenCL, hence Clang and libclc); llvmpipe is not enabled.
+- **CI**: a cold build took 86 min on 16 cores (39 of them for LLVM and Clang) with 26 GB of output, which does not
+  fit the 300-minute build step of a 4-vCPU runner. `scripts/ci/board-info.sh` marks it **heavy**: it runs on the
+  `IMAGES_RUNNER_HEAVY` runner when that variable is set, keeps its ccache, and a failure never blocks a release
+  (the release then goes out without it; docs/ci.md, "Build times").
 - **The SPI flash must be empty**: the RK3588 boot ROM tries it before the SD card, and a boot loader there
   (Orange Pi's NVMe images write one) would not run RetroStoneOS's boot command. TODO(hw).
 - Console: UART2 (the 3-pin header), `ttyS2`, **1500000** baud. No on-board WiFi/Bluetooth.

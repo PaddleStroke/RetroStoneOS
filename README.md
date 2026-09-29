@@ -18,6 +18,7 @@ layer cake, and every setting lives in one menu.
 
 **Fast**
 - About 2 s from power-on to the logo, and the menu about 0.3 s later. The menu is drawn from a snapshot while game lists load in the background.
+- Theme art is prefetched in the background, so a system's first visit in the carousel does not stutter.
 - Shutdown in about a second. Powering off during a game saves it; at the next boot the game resumes **Always**, **Ask** or **Never** (your choice).
 
 **Plays well**
@@ -53,7 +54,10 @@ layer cake, and every setting lives in one menu.
 
 **Handheld care**
 - Battery gauge and warnings, a clean save and shutdown at critical battery, a charge-only mode, and idle dimming.
+- **Idle power-off**: after 5 minutes without input (Settings > Power > "Power off after", or Never) the console saves the game and powers off, after a 10 s notice that any button cancels.
+- Panel care on the RetroStone2: the LCD keeps receiving a picture whenever it is powered (its "screen off" is backlight off plus a black frame), which protects the panel.
 - The SD card is checked after an unexpected power loss, and a hardware watchdog guards against hangs.
+- The first boot can't hang on its "Preparing the SD card" screen, and it leaves a step-by-step trace (`rsos/logs/firstboot.txt` on the card) for bug reports.
 - WiFi, Bluetooth and Ethernet are **off by default**, so they cost no boot time or battery.
 
 **Looks**
@@ -89,7 +93,7 @@ BIOS files go in `RETROSTONE/bios/` (see [docs/cores.md](docs/cores.md)). No com
 | Board | Defconfig | Status |
 |---|---|---|
 | **RetroStone2** (8BCraft, Allwinner A20) | `retrostone2` | Primary target, tested |
-| RetroStone1 (8BCraft, Allwinner H3) | `retrostone1` | Untested, built by CI; built-in screen not supported yet (HDMI only) |
+| RetroStone1 (8BCraft, Allwinner H3) | `retrostone1` | Untested, built by CI; built-in screen (composite) compile-tested only |
 | Raspberry Pi 2 (and Pi 3 / Zero 2 W in 32-bit mode) | `rpi2` | Untested, built by CI |
 | Raspberry Pi 3 / Zero 2 W (64-bit) | `rpi3_64` | Untested, built by CI |
 | Raspberry Pi 4 / 400 / CM4 | `rpi4_64` | Untested, built by CI |
@@ -105,7 +109,7 @@ adding a board takes one folder and a `board.ini` profile ([docs/porting.md](doc
 ## Install
 
 1. Download the image for your board from [**Releases**](https://github.com/PaddleStroke/RetroStoneOS/releases).
-2. Flash it to a microSD card (2 GB or more) with [balenaEtcher](https://etcher.balena.io/) or [Rufus](https://rufus.ie/).
+2. Flash it to a microSD card of 2 GB or more (4 GB for the Orange Pi 5) with [balenaEtcher](https://etcher.balena.io/) or [Rufus](https://rufus.ie/).
 3. Copy your games into `RETROSTONE/roms/<system>/`, from the PC (the drive appears right after flashing), from a USB stick, or over WiFi later.
 4. Boot. The first start prepares the SD card and asks for your language, then the menu appears.
 
@@ -145,7 +149,7 @@ program also builds and tests on a PC: `cd frontend && make check`. Details: [do
 | [ci.md](docs/ci.md) | CI, releases and the repository secrets |
 | [hardware-pinmap.md](docs/hardware-pinmap.md) · [kernel-patches.md](docs/kernel-patches.md) | RetroStone2 hardware and kernel patches |
 | [bringup.md](docs/bringup.md) | Hardware test script ([bring-up logs](docs/bringup-logs/)) |
-| [hardware/](hardware/) | RetroStone2 schematic, PCB and Gerber files |
+| [hardware/](hardware/) | RetroStone2 schematic, PCB and Gerber files; RetroStone1 schematic and PCB |
 | [CONVENTIONS.md](docs/CONVENTIONS.md) · [requirements.md](docs/requirements.md) · [review/](docs/review/) | Project conventions, requirements and reviews |
 
 ## License
@@ -153,8 +157,13 @@ program also builds and tests on a PC: `cd frontend && make check`. Details: [do
 The RetroStoneOS code is under the [MIT License](LICENSE). Bundled third-party components keep their own licences (the
 Linux kernel and U-Boot under GPL-2.0, the emulator cores under various licences including some non-commercial ones,
 and the Carbon/gbz35 theme art under CC BY-NC-SA). See [LICENSE](LICENSE) for the details, and each release's
-`legal-info` archive for the full sources and licence texts. The RetroStone2 hardware files in `hardware/` are open
-hardware under the [CERN-OHL-P-2.0](hardware/LICENSE.txt) (see [hardware/README.md](hardware/README.md)).
+`legal-info` archive for the full sources and licence texts. The hardware files in `hardware/` (RetroStone2 and
+RetroStone1) are open hardware under the [CERN-OHL-P-2.0](hardware/LICENSE.txt) (see [hardware/README.md](hardware/README.md)).
+
+**The images are free, for non-commercial use.** RetroStoneOS is a free download and is not sold with any hardware.
+Its images include non-commercial emulator cores (snes9x2005/2010, PicoDrive, MAME 2003-Plus, FBNeo) and CC BY-NC-SA
+theme art, so an image must not be sold, and must not be preloaded on hardware that is sold (a console, an SD card
+or a kit). Sharing the images for free is fine.
 
 ## Credits
 

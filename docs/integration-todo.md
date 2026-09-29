@@ -26,7 +26,8 @@ What's left to assemble the modules into the `rsos-frontend` binary and the imag
       gamecontrollerdb.txt, data-README.txt, `/etc/rsos-version`; depends on libdrm, alsa-lib, and the EGL/GLES/GBM headers
       (mesa3d, dlopen()ed at run time: the binary links only libdrm, libasound, libm, libc; verified with readelf).
 - [x] `post-build.sh` then adds the inittab respawn line automatically when `/usr/bin/rsos-frontend` exists (checked in rootfs.ext2).
-- [x] Image: `images/retrostoneos-dev-20260926.img` (900 MiB), boots straight into the menu (TODO(hw): first boot on a unit).
+- [x] Image: `images/retrostoneos-dev-20260926.img` (900 MiB then; the A/B image is now 1.16 GB), boots straight into
+      the menu (first boot on a unit: done, bringup.md).
 
 - [x] Boot logo (2026-09-26): `frontend/assets/splash/retrostone2-logo.png` → build-time `mksplash` (host compiler) →
       `/usr/share/rsos/splash.rle` (640x480, RLE, 11 114 bytes, background `SPLASH_BG` = `2a2a35` dark slate,
@@ -49,11 +50,13 @@ What's left to assemble the modules into the `rsos-frontend` binary and the imag
 - Not testable off-hardware: DRM/KMS, evdev, the power key, ALSA, a real game launch on ARM (qemu-user cannot re-exec
   `/proc/self/exe`).
 
-### Remaining gaps (for other owners)
-- Host: the game child does not apply `cz_buttons` (the `-cz` remap lookup) or the `p1` policy from settings.ini.
-- UI: no "Resume where you left off?" prompt (`host_has_resume_state()`): games always start fresh unless the in-game menu loads.
-- Host `warn` status lines (e.g. an optional BIOS missing) are only logged: the UI has no public toast API.
-- build.md still says rsos-frontend installs "for now the display tools".
+### Gaps found at that point (all closed since)
+- [x] Host: the game child applies `cz_buttons` (the `-cz` remap lookup) and the `p1` policy from settings.ini
+      (2026-09-26 01:12, below).
+- [x] UI: the "Resume where you left off?" prompt (`host_has_resume_state()`), and later the "Resume on boot"
+      setting (below).
+- [x] The UI has a public toast API, `ui_toast()` (below), for notes such as the host's `warn` status lines.
+- [x] build.md no longer says rsos-frontend installs "for now the display tools".
 
 ## Build and board
 - [x] 11 more GPL cores in the defconfig (22 cores in the image, verified 2026-09-26).
@@ -125,7 +128,7 @@ menu). Details: ui-design.md §4.1.
 - [x] UI resume prompt ("Resume where you left off?") + public `ui_toast()`; main.c wires `cb.has_resume` → `host_has_resume_state`, `o.resume = req->resume`.
 - [x] Game child honours `p1` and `cz_buttons` from settings.ini.
 - [x] Full verification: host build 0 warnings, `make check` passes, Buildroot `rsos-frontend-rebuild all` passes with 0 warnings.
-      Image: `images/retrostoneos-dev-20260926.img` (900 MiB).
+      Image: `images/retrostoneos-dev-20260926.img` (900 MiB then; 1.16 GB since the A/B layout).
 - [ ] Next: the hardware bring-up per docs/bringup.md. Then fix what the device reveals (display timing, 60 Hz, HDMI CRTC, audio levels, battery curve…).
 
 ## Batch 2 (after the updater): features decided with the owner

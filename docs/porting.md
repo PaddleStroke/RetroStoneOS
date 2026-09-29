@@ -163,6 +163,12 @@ to `/etc/rsos/version.env` by the rsos-frontend package; update packages are mad
 The build variant is not a board key: `BR2_RETROSTONE_RELEASE` and the UART shell choice (open / password /
 disabled) are Buildroot options of this tree (docs/build.md, "Release build"). `board/common/post-build.sh` writes
 them to `/etc/rsos/build.env` (`RSOS_RELEASE`, `RSOS_UART_SHELL`) for the boot logger and the UART shell wrapper.
+A new port needs no release defconfig: on a version tag, CI builds a board that has none as a release
+(`BR2_RETROSTONE_RELEASE=y`, the tag's version, no `-dev`), and as a development build otherwise
+(`scripts/ci/build-board.sh`, docs/ci.md). Add a `<board>_release_defconfig` only when the release needs other
+options than the development build (as the RetroStone2's U-Boot without a boot delay). Two defconfigs that share a
+board folder can get their own names in the release notes with a `# ci: name=<text>` line; a port whose first CI
+build is very long (it compiles LLVM, for example) gets `# ci: heavy` (docs/ci.md, "Build times").
 
 ### Board hooks: `/etc/rsos/board-hooks.sh`
 
