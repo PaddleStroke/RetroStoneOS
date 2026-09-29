@@ -19,7 +19,8 @@ Check a download against `SHA256SUMS`:
 
 ## Flashing the SD card
 
-Flashing erases the whole card. Any card of 1 GB or more works; 8 GB or more leaves room for games.
+Flashing erases the whole card. The card must be **2 GB or more (4 GB or more for the Orange Pi 5)**: the images
+are about 1.2 GB (2.2 GB for the Orange Pi 5) once written. 8 GB or more leaves room for games.
 
 - **balenaEtcher** (Windows, macOS, Linux): "Flash from file", pick the `.img.xz` as it is (no need to extract it),
   select the card, "Flash". It verifies the card afterwards.
@@ -40,23 +41,27 @@ Flashing erases the whole card. Any card of 1 GB or more works; 8 GB or more lea
 
 ## Updating without reflashing
 
-Consoles with A/B system slots (the RetroStone2) update themselves: **Settings > System update > Check for
-updates** (WiFi on), or copy the `.rsu` file of your board to a USB drive (at its root or in a `RetroStoneOS`
-folder) or to the `update` folder of the RETROSTONE drive, then plug it in. Games, saves and settings are kept; if
-the new version does not start, the console goes back to the previous one by itself. The packages are signed; the
-console checks the signature before writing anything. Other boards: flash the new image.
+The boards with A/B system slots (the RetroStone2, the RetroStone1 and the Orange Pi boards: those with a `.rsu`
+file below) update themselves: **Settings > System update > Check for updates** (network on), or copy the `.rsu`
+file of your board to a USB drive (at its root or in a `RetroStoneOS` folder) or to the `update` folder of the
+RETROSTONE drive, then plug it in. Games, saves and settings are kept; if the new version does not start, the
+console goes back to the previous one by itself. The packages are signed; the console checks the signature before
+writing anything. Other boards (Raspberry Pi): flash the new image.
 
 {{UPDATES}}
 
 ## Licences
 
+**Free, non-commercial distribution only.** RetroStoneOS is a free download; it is not sold, and it does not come
+with the hardware. The images contain emulator cores and theme art whose licences forbid commercial use: Snes9x
+(snes9x2005, snes9x2010), PicoDrive, MAME 2003-Plus and FBNeo, and the gbz35 themes and the Carbon system art (CC
+BY-NC-SA). So **these images must not be sold, and must not be preloaded on hardware that is sold** (a console, an
+SD card or a kit). Sharing them for free, unchanged, is fine.
+
 - The RetroStoneOS code (frontend, build tree, scripts) is under the MIT licence
   ([LICENSE]({{REPO_URL}}/blob/{{TAG}}/LICENSE)).
 - The Linux kernel, U-Boot, BusyBox and the other system packages keep their own licences (GPL-2.0 and others).
-- The emulator cores keep their own licences. Several are **non-commercial**: Snes9x (snes9x2005, snes9x2010),
-  PicoDrive, MAME 2003-Plus and FBNeo. The gbz35 themes and the Carbon system art are CC BY-NC-SA. These images are
-  free to download and use, but must not be sold, or bundled with a product that is sold, without checking those
-  licences.
+- The other emulator cores keep their own licences (GPL, zlib, BSD and others).
 - The bundled homebrew games are shipped with their authors' permission (µCity under GPL-3.0+ / CC BY-SA 4.0). Do
   not redistribute them separately from these images.
 - Per-package licences: `legal-info/manifest.csv` in the archives below.
@@ -64,7 +69,9 @@ console checks the signature before writing anything. Other boards: flash the ne
 ### Source code (GPL)
 
 The complete corresponding source of the GPL and LGPL software in these images, with the licence texts, the
-Buildroot configuration and the patches, is attached to this release (`make legal-info`, one archive per board):
+Buildroot configuration and the patches, is attached to this release (`make legal-info`, one archive per board;
+the NXEngine source there leaves out the Cave Story game data of the upstream tarball, which is not GPL software
+and not in the images):
 
 {{LEGAL_FILES}}
 

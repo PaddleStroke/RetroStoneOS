@@ -2,8 +2,10 @@
 #   - a version tag v* builds every release board and publishes a GitHub
 #     Release: the images (.img.xz), SHA256SUMS, the legal-info archives
 #     (GPL source offer) and notes from .github/release-notes.md;
+#     Only tag builds get the update signing key (the "release" environment)
+#     and they refuse to make an unsigned update package;
 #   - "Run workflow" (workflow_dispatch) builds any set of boards and keeps
-#     the files as workflow artifacts, without a release.
+#     the files as workflow artifacts, without a release and unsigned.
 # The boards come from buildroot-external/configs/*_defconfig
 # (scripts/ci/list-boards.sh: "# ci: skip" and development variants are
 # left out of "release").
@@ -61,12 +63,22 @@ jobs:
   build:
     name: ${{ matrix.board }}
     needs: boards
-    # Repository variable IMAGES_RUNNER: a larger runner or a self-hosted one
-    # (docs/ci.md, "Build times").
-    runs-on: ${{ vars.IMAGES_RUNNER || 'ubuntu-24.04' }}
-    # GitHub-hosted jobs stop at 6 h; the build step has its own, shorter
-    # limit so that the ccache and the logs are still saved when it hits it.
-    timeout-minutes: 355
+    # Repository variables (docs/ci.md, "Build times"): IMAGES_RUNNER, a
+    # larger or self-hosted runner for every board; IMAGES_RUNNER_HEAVY, one
+    # for the heavy boards only (board-info.sh HEAVY: the Orange Pi 5).
+    runs-on: ${{ matrix.heavy && vars.IMAGES_RUNNER_HEAVY || vars.IMAGES_RUNNER || 'ubuntu-24.04' }}
+    # A heavy board may not finish in time on a standard runner: its failure
+    # does not stop the release, which then goes out without it.
+    continue-on-error: ${{ matrix.heavy }}
+    # Tags only: the "release" environment holds the UPDATE_SIGNING_KEY
+    # secret and only admits v* tags (docs/ci.md, section 7). Manual runs
+    # use no environment, get no key and make unsigned packages.
+    environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
+    # GitHub-hosted jobs stop at 6 h: 300 min for the build step (its own
+    # limit, so that the ccache and the logs are still saved when it hits
+    # it), about 40-50 min for the rest (set-up, packaging, legal-info,
+    # tests, uploads; each with its own limit).
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.boards.outputs.matrix) }}
@@ -75,7 +87,8 @@ jobs:
       HAVE_HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN != '' }}
       # only used by a defconfig that selects the UART password login
       RSOS_UART_PASSWORD: ${{ secrets.UART_PASSWORD }}
-      CCACHE_MAXSIZE: 2500M
+      # LLVM and Clang (host and target) need more room than a plain board
+      CCACHE_MAXSIZE: ${{ matrix.heavy && '4G' || '2500M' }}
       LEGAL_INFO: ${{ github.ref_type == 'tag' || inputs.legal_info == true }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -101,22 +114,30 @@ jobs:
 
       - name: Free disk space
         if: runner.environment == 'github-hosted'
+        timeout-minutes: 15
         run: sh scripts/ci/free-disk.sh
 
       - name: Install the Buildroot host dependencies
+        timeout-minutes: 15
         run: sh scripts/ci/install-deps.sh buildroot tests
 
+      # The caches share GitHub's 10 GB per repository (docs/ci.md, "Caches"):
+      # one download cache, saved by the RetroStone2 build (the other boards
+      # start from it and fetch the rest), and a board's ccache only when it
+      # helps a re-run (the build failed or hit its limit), or always for a
+      # heavy board.
       - name: Restore the download cache
         id: dl-cache
+        timeout-minutes: 15
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.rsos-cache/dl
-          key: br-dl-${{ matrix.board }}-${{ hashFiles('buildroot-external/configs/**', 'buildroot-external/package/**/*.mk', 'buildroot-external/package/**/*.hash', 'buildroot-external/board/*/patches/**/*.hash', 'scripts/ci/buildroot.env') }}
+          key: br-dl-${{ hashFiles('buildroot-external/configs/**', 'buildroot-external/package/**/*.mk', 'buildroot-external/package/**/*.hash', 'buildroot-external/board/*/patches/**/*.hash', 'scripts/ci/buildroot.env') }}
           restore-keys: |
-            br-dl-${{ matrix.board }}-
             br-dl-
 
       - name: Restore the ccache
+        timeout-minutes: 15
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.rsos-cache/ccache
@@ -153,10 +174,12 @@ jobs:
 
       - name: Download the sources
         id: source
+        timeout-minutes: 45
         run: sh scripts/ci/build-board.sh "$BOARD" source
 
       - name: Save the download cache
-        if: steps.dl-cache.outputs.cache-hit != 'true' && steps.source.outcome == 'success'
+        if: steps.dl-cache.outputs.cache-hit != 'true' && steps.source.outcome == 'success' && startsWith(matrix.board, 'retrostone2')
+        timeout-minutes: 15
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.rsos-cache/dl
@@ -168,7 +191,8 @@ jobs:
         run: sh scripts/ci/build-board.sh "$BOARD" build
 
       - name: Save the ccache
-        if: always() && steps.configure.outcome == 'success'
+        if: always() && steps.configure.outcome == 'success' && (matrix.heavy || steps.build.outcome != 'success')
+        timeout-minutes: 15
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.rsos-cache/ccache
@@ -178,18 +202,24 @@ jobs:
       # since the previous tag (only the commits, no trees or files).
       - name: Fetch the history for the changelog
         if: github.ref_type == 'tag'
+        timeout-minutes: 10
         continue-on-error: true
         run: git fetch --quiet --filter=tree:0 --unshallow --tags origin
 
       # The image and, for boards with A/B slots, the system update package
-      # (.rsu, docs/updates.md), signed with the UPDATE_SIGNING_KEY secret
-      # (without it: *-unsigned.rsu, which release images refuse).
+      # (.rsu, docs/updates.md). On a tag it is signed with UPDATE_SIGNING_KEY
+      # (the "release" environment's secret) and the step fails without it:
+      # a release never carries an unsigned package. Manual runs are never
+      # signed: *-unsigned.rsu, which release images refuse.
       - name: Compress the image, make the update package
+        timeout-minutes: 30
         env:
-          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          UPDATE_SIGNING_KEY: ${{ github.ref_type == 'tag' && secrets.UPDATE_SIGNING_KEY || '' }}
+          RSOS_RSU_REQUIRE_SIGNED: ${{ github.ref_type == 'tag' && '1' || '0' }}
         run: sh scripts/ci/build-board.sh "$BOARD" package
 
       - name: Upload the image
+        timeout-minutes: 15
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: image-${{ matrix.board }}
@@ -203,19 +233,14 @@ jobs:
           compression-level: 0
           retention-days: ${{ github.ref_type == 'tag' && 7 || 30 }}
 
-      - name: Image tests
-        if: github.event_name != 'workflow_dispatch' || inputs.image_tests
-        # Not a gate yet: they need loop devices, exFAT and QEMU on the
-        # runner (docs/ci.md). Their result shows in the log and the summary.
-        continue-on-error: true
-        run: sh scripts/ci/run-tests.sh image "$BOARD" "$RSOS_CI_WORK/output-$BOARD"
-
       - name: legal-info (source offer)
         if: env.LEGAL_INFO == 'true'
+        timeout-minutes: 40
         run: sh scripts/ci/build-board.sh "$BOARD" legal-info
 
       - name: Upload the legal-info archive
         if: env.LEGAL_INFO == 'true'
+        timeout-minutes: 20
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: legal-${{ matrix.board }}
@@ -223,6 +248,16 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: ${{ github.ref_type == 'tag' && 7 || 30 }}
+
+      # After the files the release needs, so that a slow test cannot cost
+      # them the job's time.
+      - name: Image tests
+        if: github.event_name != 'workflow_dispatch' || inputs.image_tests
+        timeout-minutes: 20
+        # Not a gate yet: they need loop devices, exFAT and QEMU on the
+        # runner (docs/ci.md). Their result shows in the log and the summary.
+        continue-on-error: true
+        run: sh scripts/ci/run-tests.sh image "$BOARD" "$RSOS_CI_WORK/output-$BOARD"
 
       - name: Summary
         if: always()
@@ -254,10 +289,12 @@ jobs:
 
   release:
     name: GitHub Release
-    needs: build
+    # "build" succeeds when every board did, except the heavy ones
+    # (continue-on-error): the release then goes out without them.
+    needs: [boards, build]
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: write
     env:
@@ -270,41 +307,67 @@ jobs:
           fetch-depth: 0 # the changelog needs the previous tag
           persist-credentials: false
 
+      # The legal-info archives of all the boards are about 15 GB: the files
+      # go to the work directory free-disk.sh picks (RSOS_CI_WORK), not to
+      # the checkout on /.
+      - name: Free disk space
+        run: sh scripts/ci/free-disk.sh
+
       - name: Download the images
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: image-*
           merge-multiple: true
-          path: dist
+          path: ${{ env.RSOS_CI_WORK }}/dist
 
       - name: Download the legal-info archives
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: legal-*
           merge-multiple: true
-          path: dist
+          path: ${{ env.RSOS_CI_WORK }}/dist
+
+      - name: Boards missing from the release
+        env:
+          MATRIX: ${{ needs.boards.outputs.matrix }}
+        run: |
+          for img in $(printf '%s' "$MATRIX" | python3 -c 'import json, sys; print(" ".join(b["image"] for b in json.load(sys.stdin)["include"]))'); do
+            if ! ls "$RSOS_CI_WORK"/dist/retrostoneos-*-"$img".info > /dev/null 2>&1; then
+              echo "::warning::$img did not build (a heavy board, docs/ci.md): it is not in this release"
+            fi
+          done
+          df -h "$RSOS_CI_WORK" | tail -n 1
 
       - name: Source of the bundled GPL homebrew game
         # µCity is GPL-3.0+: its source goes next to the images that ship it
         # (docs/homebrew.md).
         run: |
-          if grep -qs "^HOMEBREW='y'" dist/*.info; then
-            wget -q -O dist/ucity-1.2-source.tar.gz https://github.com/AntonioND/ucity/archive/refs/tags/v1.2.tar.gz
-            echo "9ffdd325294ebbd8a4adcc5a5bb40a2ea4b981cb8e4889a5392ef4796cdb2dc1  dist/ucity-1.2-source.tar.gz" | sha256sum -c -
+          D=$RSOS_CI_WORK/dist
+          if grep -qs "^HOMEBREW='y'" "$D"/*.info; then
+            wget -q -O "$D/ucity-1.2-source.tar.gz" https://github.com/AntonioND/ucity/archive/refs/tags/v1.2.tar.gz
+            echo "9ffdd325294ebbd8a4adcc5a5bb40a2ea4b981cb8e4889a5392ef4796cdb2dc1  $D/ucity-1.2-source.tar.gz" | sha256sum -c -
           fi
 
       - name: Release notes and SHA256SUMS
         run: |
-          sh scripts/ci/release-notes.sh "$TAG" dist > "$RUNNER_TEMP/notes.md"
+          D=$RSOS_CI_WORK/dist
+          U=$RSOS_CI_WORK/upload
+          # the build jobs refuse to make one on a tag; never publish one
+          if ls "$D"/*-unsigned.rsu > /dev/null 2>&1; then
+            echo "::error::unsigned update packages in a release: $(cd "$D" && ls ./*-unsigned.rsu)"
+            exit 1
+          fi
+          sh scripts/ci/release-notes.sh "$TAG" "$D" > "$RUNNER_TEMP/notes.md"
           cat "$RUNNER_TEMP/notes.md"
-          mkdir -p upload
-          for f in dist/*.img.xz dist/*.rsu dist/legal-info-* dist/*-source.tar.gz; do
+          mkdir -p "$U"
+          for f in "$D"/*.img.xz "$D"/*.rsu "$D"/legal-info-* "$D"/*-source.tar.gz; do
             [ -f "$f" ] || continue
             case $f in *.sha256) continue ;; esac
-            mv "$f" upload/
+            mv "$f" "$U"/
           done
-          (cd upload && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
-          ls -l upload
+          (cd "$U" && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
+          ls -l "$U"
+          echo "UPLOAD_DIR=$U" >> "$GITHUB_ENV"
 
       - name: Publish the release
         run: |
@@ -322,7 +385,7 @@ jobs:
             gh release create "$TAG" --draft --verify-tag --title "RetroStoneOS ${TAG#v}" \
               --notes-file "$RUNNER_TEMP/notes.md" ${pre:+"$pre"}
           fi
-          gh release upload "$TAG" --clobber upload/*
+          gh release upload "$TAG" --clobber "$UPLOAD_DIR"/*
           if [ -n "$pre" ]; then
             gh release edit "$TAG" --draft=false
           else

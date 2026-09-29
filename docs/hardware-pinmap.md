@@ -124,15 +124,24 @@ panel-simple entry with `MEDIA_BUS_FMT_RGB888_1X24`, bpc 8 would silence them.
 | DCDC2 | VDD_CPU | `vdd-cpu` 1.0-1.4 V, `cpu0` `cpu-supply` (cpufreq/DVFS over the 144-960 MHz OPP table) | High |
 | DCDC3 | VDD_INT / DLL / SATA 1.2 V | `vdd-int-dll` 1.0-1.4 V, always on | High |
 | LDO1 | VDD_RTC | `vdd-rtc` | High |
-| LDO2 | AVCC 3.0 V, and the enable of the 3.3 V buck U15 | `avcc` 3.0 V, always on (must never turn off) | High |
+| LDO2 | AVCC 3.0 V, and the enable of buck U15 (the 1.5 V DRAM rail) | `avcc` 3.0 V, always on (must never turn off) | High |
 | LDO3 | VCC-PE (header SV2/SV6 bank) | `vcc-pe` 2.8 V, not always-on | High |
 | LDO4 | VCC-PG (test pads / SV6.13) | `vcc-pg` 2.8 V, not always-on | High |
 | GPIO0 / GPIO1 | analog stick ADC | pinctrl hog, function `adc` | High |
-| EXTEN | enables 5 V boost U16, buck U17 and the speaker amp /SD | not modelled (the 6.18 driver does not touch it; it stays on) | High |
+| EXTEN | enables buck U17 (**the 3.3 V rail**: SoC I/O, panel VCC, SD card, eMMC, AP6210), the 5 V boost U16 and the speaker amp /SD | not modelled (the 6.18 driver does not touch it; it stays on) | High |
 | ACIN | micro-USB U$17 VBUS (charging input) | `ac_power_supply` okay | High |
 | VBUS | only a capacitor | `usb_power_supply` left disabled | High |
 | BAT / TS | battery U$18 with NTC | `battery_power_supply` okay | High |
 | CHGLED | LED1 (blue, charge LED) | hardware only | High |
+
+Power tree (schematic 1.15, checked with `hardware/tools/eagle_nets.py`): the 3.3 V rail (net `VCC`) is buck **U17**
+from IPSOUT, enabled by the AXP209 **EXTEN** output (REG12 bit 0); the EXTEN net also enables the 5 V boost U16 and
+the PAM8302A /SD. Buck **U15**, enabled by LDO2, makes the **1.5 V DRAM** rail. Neither is software controlled.
+
+**Never touch EXTEN** (no `regulator` node for it, no write to REG12 bit 0, no `i2cset` on it while testing): turning
+it off cuts the 3.3 V rail, so the SoC I/O and the SD card (the root file system) lose power at once, together with
+the panel, and the unit hangs or corrupts the card. It cannot be used to mute the speaker. The same goes for LDO2
+(the DRAM rail).
 
 ## Storage
 

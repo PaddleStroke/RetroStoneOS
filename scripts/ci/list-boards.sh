@@ -7,7 +7,8 @@
 #   all                every defconfig
 #   <names>            a list separated by spaces or commas, with or without
 #                      "_defconfig" (e.g. "retrostone2 rpi4_64")
-# Output: {"include":[{"board":..,"image":..,"name":..,"status":..}, ...]}
+# Output: {"include":[{"board":..,"image":..,"name":..,"status":..,"heavy":true|false}, ...]}
+# (heavy: board-info.sh HEAVY, the runner choice and continue-on-error of images.yml)
 # With RSOS_CI_FORMAT=names: one board per line instead.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -46,8 +47,9 @@ for b in $CANDIDATES; do
 	[ "$SEL" = release ] && [ "$RELEASE" != yes ] && continue
 	names="$names$BOARD
 "
-	entry=$(printf '{"board":"%s","image":"%s","name":"%s","status":"%s"}' \
-		"$(json "$BOARD")" "$(json "$IMAGE")" "$(json "$NAME")" "$(json "$STATUS")")
+	case $HEAVY in yes) h=true ;; *) h=false ;; esac
+	entry=$(printf '{"board":"%s","image":"%s","name":"%s","status":"%s","heavy":%s}' \
+		"$(json "$BOARD")" "$(json "$IMAGE")" "$(json "$NAME")" "$(json "$STATUS")" "$h")
 	out=${out:+$out,}$entry
 done
 [ -n "$out" ] || { echo "list-boards: nothing to build for '$SEL'" >&2; exit 1; }

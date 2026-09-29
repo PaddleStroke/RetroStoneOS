@@ -27,8 +27,10 @@ scripts and the documentation). Third-party components keep their own licences:
 
 - Linux kernel, U-Boot, BusyBox and the other Buildroot packages: their own
   licences (GPL-2.0 and others). `make legal-info` lists them with their sources.
-- The kernel and U-Boot patches in buildroot-external/board/retrostone2/patches/
-  are derived works of those projects and are GPL-2.0 like them.
+- The kernel and U-Boot patches in buildroot-external/board/*/patches/ are
+  derived works of those projects and are GPL-2.0 like them (some come from
+  other projects, e.g. the RetroStone1 composite output patch from Armbian:
+  each patch names its source).
 - The device tree files are (GPL-2.0+ OR MIT), as stated in their headers.
 - The libretro emulator cores: their own licences (GPL-2.0/3.0, zlib, BSD, and
   some non-commercial ones such as snes9x, PicoDrive, MAME 2003-Plus, FBNeo).
@@ -37,5 +39,12 @@ scripts and the documentation). Third-party components keep their own licences:
   Carbon system art are CC BY-NC-SA).
 - Vendored libraries and fonts: frontend/third_party/README.md.
 - Bundled homebrew games: not in this repository (see docs/homebrew.md).
-- The RetroStone2 hardware design files in hardware/ are open hardware under
-  the CERN-OHL-P-2.0 licence (hardware/LICENSE.txt), not under this one.
+- The hardware design files in hardware/ (RetroStone2 and RetroStone1) are
+  open hardware under the CERN-OHL-P-2.0 licence (hardware/LICENSE.txt), not
+  under this one.
+
+Because of the non-commercial cores and theme art above, the RetroStoneOS
+images (the built SD card images and update packages) are distributed free of
+charge for non-commercial use only: they must not be sold, and must not be
+preloaded on hardware that is sold. This MIT licence still applies to the
+RetroStoneOS sources themselves.

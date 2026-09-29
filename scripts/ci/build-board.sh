@@ -28,8 +28,12 @@
 #                       there; no: BR2_PACKAGE_RSOS_HOMEBREW=n
 #   RSOS_CI_VERSION     version in the file names (default: git describe)
 #   RSOS_CI_OS_VERSION  a release tag's version (0.2.0): the version the
-#                       image reports (BR2_RETROSTONE_VERSION)
+#                       image reports (BR2_RETROSTONE_VERSION); it also makes a
+#                       board without a release defconfig a release build
+#                       (BR2_RETROSTONE_RELEASE=y, no "-dev")
 #   UPDATE_SIGNING_KEY  the update signing key (signify secret key text)
+#   RSOS_RSU_REQUIRE_SIGNED  1: no unsigned .rsu, the package step fails
+#                       without the key (images.yml sets it on tags)
 #   RSOS_UART_PASSWORD  root password, only for a defconfig that selects the
 #                       password login on the UART (BR2_RETROSTONE_UART_SHELL_PASSWORD)
 #   RSOS_CI_PER_PACKAGE 1: BR2_PER_PACKAGE_DIRECTORIES=y and a top-level
@@ -47,7 +51,9 @@ BOARD=${1:?usage: build-board.sh <board> [configure|source|build|package|legal-i
 BOARD=${BOARD%_defconfig}
 shift
 [ $# -gt 0 ] || set -- all
-eval "$(sh "$HERE/board-info.sh" "$BOARD")"
+# (board-info.sh names the known boards when this one does not exist)
+info=$(sh "$HERE/board-info.sh" "$BOARD") || exit 1
+eval "$info"
 
 WORK=${RSOS_CI_WORK:-$HOME/rsos-ci}
 BR_DIR=${RSOS_CI_BR_DIR:-$WORK/buildroot-$BR_VERSION}
@@ -123,23 +129,34 @@ step_configure() {
 		set_kconfig BR2_PER_PACKAGE_DIRECTORIES y
 	fi
 	# a release tag: the image reports the tag's version (/etc/rsos-version,
-	# /etc/rsos/version.env: what the system updater compares)
+	# /etc/rsos/version.env: what the system updater compares). A board
+	# without a separate release defconfig (VARIANT=default: the Raspberry Pi
+	# and Orange Pi boards) is a release build on a tag, like
+	# <x>_release_defconfig, and a development build ("-dev") otherwise; a
+	# development variant (<x>_defconfig next to <x>_release_defconfig) stays
+	# one.
 	if [ -n "${RSOS_CI_OS_VERSION:-}" ]; then
 		case $RSOS_CI_OS_VERSION in
 		*[!A-Za-z0-9._+-]* | [!0-9]*) error "RSOS_CI_OS_VERSION '$RSOS_CI_OS_VERSION' is not a version"; exit 1 ;;
 		esac
 		set_kconfig BR2_RETROSTONE_VERSION "\"$RSOS_CI_OS_VERSION\""
+		[ "$VARIANT" = default ] && set_kconfig BR2_RETROSTONE_RELEASE y
 	fi
 	brmake olddefconfig > /dev/null
 	kconfig_is BR2_PACKAGE_RSOS_HOMEBREW "$hb" || {
 		error "BR2_PACKAGE_RSOS_HOMEBREW=$hb did not survive olddefconfig"
 		exit 1
 	}
+	if [ -n "${RSOS_CI_OS_VERSION:-}" ] && [ "$VARIANT" != dev ] && ! kconfig_is BR2_RETROSTONE_RELEASE y; then
+		error "$BOARD on a tag: BR2_RETROSTONE_RELEASE=y did not survive olddefconfig"
+		exit 1
+	fi
+	if kconfig_is BR2_RETROSTONE_RELEASE y; then build=release; else build=development; fi
 	{
 		echo "HOMEBREW=$hb"
 		echo "CONFIGURED=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 	} > "$OUT/rsos-ci.env"
-	echo "board $BOARD -> $FILE, homebrew games: $hb, output $OUT"
+	echo "board $BOARD -> $FILE, $build build, version ${RSOS_CI_OS_VERSION:-(package default)}, homebrew games: $hb, output $OUT"
 	echo "downloads: $BR2_DL_DIR, ccache: $BR2_CCACHE_DIR"
 	endgroup
 }
@@ -197,8 +214,12 @@ step_package() {
 	xz -T0 -9 -c "$IMG" > "$ART/$FILE.img.xz.part"
 	mv "$ART/$FILE.img.xz.part" "$ART/$FILE.img.xz"
 	(cd "$ART" && sha256sum "$FILE.img.xz" > "$FILE.img.xz.sha256")
-	# the system update package (boards with A/B slots; docs/updates.md)
-	RSOS_CI_WORK=$WORK sh "$HERE/make-rsu.sh" "$OUT" "$ART" "$FILE"
+	# the system update package (boards with A/B slots; docs/updates.md). On
+	# a tag, make-rsu checks the version the image reports: the tag's, plus
+	# "-dev" for a development variant.
+	osv=${RSOS_CI_OS_VERSION:-}
+	if [ -n "$osv" ] && ! kconfig_is BR2_RETROSTONE_RELEASE y; then osv=$osv-dev; fi
+	RSOS_CI_WORK=$WORK RSOS_CI_OS_VERSION=$osv sh "$HERE/make-rsu.sh" "$OUT" "$ART" "$FILE"
 	rsu=
 	signed=no
 	if [ -f "$ART/$FILE.rsu" ]; then

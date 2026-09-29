@@ -367,8 +367,11 @@
 	};
 
 	/*
-	 * Main 3.3 V rail (SY8009 buck U15, enabled by AXP LDO2). It also feeds
-	 * the LCD, the SD card, the eMMC and the AP6210. Not software controlled.
+	 * Main 3.3 V rail (net VCC): buck U17 from IPSOUT, enabled by the AXP209
+	 * EXTEN output (REG12 bit 0; the same net enables the 5 V boost U16 and
+	 * the speaker amp's /SD). It feeds the SoC I/O, the panel VCC, the SD
+	 * card, the eMMC and the AP6210. Not modelled as switchable: EXTEN must
+	 * never be turned off while the system runs (docs/hardware-pinmap.md).
 	 */
 	reg_vcc3v3: regulator-vcc3v3 {
 		compatible = "regulator-fixed";
@@ -393,7 +396,8 @@
 
 /*
  * Speaker amp U1-A (PAM8302A) /SD is driven by the AXP209 EXTEN output
- * (which also enables the 5 V boost U16): there is no amplifier GPIO.
+ * (which also enables the 5 V boost U16 and the 3.3 V buck U17, so it can
+ * never be used to mute the speaker): there is no amplifier GPIO.
  * HPL/HPR -> analog volume wheel U$27 -> headphone jack U$24, whose switch
  * contacts feed the speaker amp. Volume and speaker/headphone switching are
  * fully analog: keep the codec headphone volume fixed near maximum.
@@ -532,7 +536,10 @@
 	regulator-name = "vdd-rtc";
 };
 
-/* AVCC, and the enable of the 3.3 V buck U15: must never be turned off */
+/*
+ * AVCC 3.0 V, and the enable of buck U15, the 1.5 V DRAM rail: must never be
+ * turned off. (The 3.3 V rail is U17, on EXTEN: see reg_vcc3v3.)
+ */
 &reg_ldo2 {
 	regulator-always-on;
 	regulator-min-microvolt = <3000000>;

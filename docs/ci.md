@@ -12,7 +12,8 @@ The workflows only call the scripts of `scripts/ci/`, which also run in WSL: wha
 (see "Running the CI scripts locally").
 
 Public repositories get GitHub-hosted runners for free, without a minute limit (ubuntu-24.04: 4 vCPU, 16 GB RAM,
-about 14 GB free disk before `free-disk.sh`, 6 h per job, 20 concurrent jobs, 10 GB of caches per repository).
+4 GB of swap, about 14 GB free disk before `free-disk.sh`, 6 h per job, 20 concurrent jobs, 10 GB of caches per
+repository).
 
 ## 1. `ci.yml`: the checks
 
@@ -40,49 +41,70 @@ defconfig is committed. `scripts/ci/board-info.sh <board>` shows what CI derives
 |---|---|
 | Release set (tags) | every defconfig, except those with a line `# ci: skip`, and except a development variant: `<x>_defconfig` when `<x>_release_defconfig` exists (`retrostone2_defconfig` is only built by hand; `retrostone2_release_defconfig` is the RetroStone2 release image) |
 | Image name | `retrostoneos-<version>-<image>.img.xz`, `<image>` = the defconfig name without `_defconfig` and `_release`, `_` -> `-` (`retrostone2`, `rpi4-64`), plus `-dev` for a development variant |
-| Board name (release notes) | `name =` of the board's `rootfs-overlay/etc/rsos/board.ini` |
+| Release or development build | on a tag, `<x>_release_defconfig` and every board without a release defconfig (`VARIANT=default`: the Raspberry Pi and Orange Pi boards) are **release builds** (`BR2_RETROSTONE_RELEASE=y`, set by `build-board.sh configure` for the latter), reporting the tag's version (`0.1.0`); a development variant stays one (`0.1.0-dev`). Manual runs are release builds only for `<x>_release_defconfig`, and report the package version (`RSOS_FRONTEND_VERSION`) |
+| Board name (release notes) | a line `# ci: name=<text>` in the defconfig, else `NAMES` in `scripts/ci/board-info.sh` (the two Orange Pi H3 images, which share one board folder: "Orange Pi PC / PC Plus", "Orange Pi One / Lite"), else `name =` of the board's `rootfs-overlay/etc/rsos/board.ini` |
 | Status (release notes) | "tested on hardware" for the boards listed in `HW_TESTED` in `scripts/ci/board-info.sh` (the RetroStone2), "community-tested" for the others; a line `# ci: status=<text>` in the defconfig overrides it |
+| Heavy | `HEAVY_BOARDS` in `board-info.sh` (the Orange Pi 5) or a line `# ci: heavy`: a cold build longer than the build step's 300 minutes on a standard runner (section 6). The job runs on `IMAGES_RUNNER_HEAVY` when set, always keeps its ccache, and is `continue-on-error`: if it fails, the release goes out without that board (the release job warns) |
 
 ### A build job, step by step
 
 1. `free-disk.sh`: removes the runner's Android SDK, .NET, Haskell, Swift, CodeQL, browsers and Docker images
-   (about 30 GB) and picks the work directory (`/mnt` when it has more room). A board needs about 20-25 GB: 11 GB of
-   output, 3 GB of downloads, 2 GB of ccache, the legal-info copy and the compressed files.
+   (about 30 GB) and picks the work directory (`/mnt` when it has more room). It keeps the runner's swap (and adds a
+   4 GiB swapfile on the work disk if there is less), for the LLVM links of the Orange Pi 5. A board needs about
+   20-25 GB: 11-13 GB of output, 3 GB of downloads, 2.5 GB of ccache, the legal-info copy and the compressed files;
+   the Orange Pi 5 about 35 GB (26 GB of output).
 2. `install-deps.sh buildroot tests`: the Buildroot host packages of docs/build.md, plus what the image tests need.
-3. Caches (`actions/cache`): the download directory (`BR2_DL_DIR`, key: the hash of the defconfigs, the packages'
-   `.mk`/`.hash` files and `buildroot.env`; a miss falls back to the newest cache of the board, then of any board) and
-   the ccache (`BR2_CCACHE_DIR`, a new key per run, restored from the board's newest; capped at 2.5 GB). The ccache
-   is saved even when the build fails or hits its time limit, so a re-run goes further.
+3. **Caches** (`actions/cache`), sized for GitHub's 10 GB per repository (9 boards x 2.5 GB of ccache would not fit,
+   and entries unused for 7 days are evicted anyway, so they rarely survive from one release to the next):
+   - one **download cache** for all boards (`BR2_DL_DIR`, key: the hash of the defconfigs, the packages'
+     `.mk`/`.hash` files, the patches' `.hash` files and `buildroot.env`; a miss falls back to the newest one), about
+     3 GB, saved only by the RetroStone2 build; the other boards start from it and download the rest;
+   - a **ccache** per board (`BR2_CCACHE_DIR`, a new key per run, restored from the board's newest; capped at
+     2.5 GB, 4 GB for a heavy board), saved only when the build failed or hit its time limit (so that "Re-run failed
+     jobs" goes further), and always for a heavy board.
+
+   Caches are scoped by ref: a tag's run reads those of the default branch, so a manual run on `main` before
+   tagging (section 7) warms the download cache and the heavy boards' ccache.
 4. Homebrew games: see section 4.
 5. `build-board.sh <board> configure`: downloads Buildroot 2026.02.3 and checks its sha256 (`scripts/ci/buildroot.env`,
    the value of docs/build.md), `make <board>_defconfig`, sets `BR2_PACKAGE_RSOS_HOMEBREW` in `.config` (never in the
-   defconfig), then `make olddefconfig`.
+   defconfig) and, on a tag, `BR2_RETROSTONE_VERSION` (and `BR2_RETROSTONE_RELEASE=y` for a board without a release
+   defconfig, see "Which boards"), then `make olddefconfig`. The log line says `release build` or
+   `development build`.
 6. `source`: `make source` (3 tries; every download is checked against the `.hash` files,
    `BR2_DOWNLOAD_FORCE_CHECK_HASHES`).
 7. `build`: `make`; the log shows the `>>>` lines with timestamps, the full log is uploaded as `build-log-<board>`
-   when the job fails. The step stops after 300 minutes (see "Build times").
-8. `package`: `xz -T0 -9` of `images/sdcard.img` (the 900 MiB RetroStone2 image becomes about 45 MB), its
+   when the job fails. The step stops after 300 minutes (see "Build times"); the job after 360 (GitHub's limit for
+   hosted runners), which leaves about an hour for the rest. Every other step has its own time limit.
+8. `package`: `xz -T0 -9` of `images/sdcard.img` (the 1.16 GB RetroStone2 image becomes about 45 MB), its
    `.sha256`, and a `.info` file for the release notes. For a board with A/B slots (its image has
    `/etc/fw_env.config`) also the **system update package** `retrostoneos-<version>-<image>.rsu` and its `.sha256`
    (`scripts/ci/make-rsu.sh`, docs/updates.md §5: `zstd -19` of `images/rootfs.ext4`, the manifest, a changelog
-   excerpt, signed with the `UPDATE_SIGNING_KEY` secret, which must match `frontend/assets/update.pub`; without the
-   secret the package is `<...>-unsigned.rsu`, which release images refuse and the consoles' online check ignores).
-   On a tag, a treeless `git fetch --unshallow` first gives the changelog its history, and the image reports the
-   tag's version (`RSOS_CI_OS_VERSION` -> `BR2_RETROSTONE_VERSION`), which `make-rsu.sh` checks. Uploaded as the
+   excerpt, and the signature). **Only tag builds are signed**: their job uses the `release` environment, whose
+   `UPDATE_SIGNING_KEY` secret must match `frontend/assets/update.pub`, and sets `RSOS_RSU_REQUIRE_SIGNED=1`, so the
+   step fails rather than make an unsigned package. Manual runs get no key and make `<...>-unsigned.rsu`, which
+   release images refuse and the consoles' online check ignores. On a tag, a treeless `git fetch --unshallow` first
+   gives the changelog its history, and the image reports the tag's version (`RSOS_CI_OS_VERSION` ->
+   `BR2_RETROSTONE_VERSION`), which `make-rsu.sh` checks (plus `-dev` for a development variant). Uploaded as the
    artifact `image-<board>`.
-9. Image tests (not a gate yet): `run-tests.sh image <board> <output>` runs the board/common tests and the board's
-   own `tests/*.sh` against the build, from a fake `$HOME` whose `rsos/output` is the CI output: for the RetroStone2
-   `data-partition-test.sh` (as root: loop devices and a private mount namespace; `modprobe exfat` first) and
-   `boot-ab-qemu-test.sh` (U-Boot for QEMU's cubieboard). They are `continue-on-error` until they have proved stable
-   on the runners: check their result in the log.
-10. `legal-info` (tags, or by hand): `make legal-info` -> `legal-info-<image>-<version>.tar.xz` (split into
-    1900 MiB parts if it exceeds GitHub's 2 GiB per file; the RetroStone2 one was 1.53 GiB when this was written,
-    mostly already-compressed source tarballs such as linux-firmware and the kernel). The permission-only homebrew ROMs are never in it
-    (`RSOS_HOMEBREW_REDISTRIBUTE = NO`).
+9. `legal-info` (tags, or by hand): `make legal-info` -> `legal-info-<image>-<version>.tar.xz` (split into
+   1900 MiB parts if it exceeds GitHub's 2 GiB per file; the RetroStone2 one was 1.53 GiB when this was written,
+   mostly already-compressed source tarballs such as linux-firmware and the kernel). The permission-only homebrew
+   ROMs are never in it (`RSOS_HOMEBREW_REDISTRIBUTE = NO`), and the NXEngine source is saved without the Cave Story
+   game data of its tarball (`libretro-nxengine.mk`: `REDISTRIBUTE = NO` and a hook that saves the tree without
+   `datafiles/`).
+10. Image tests (not a gate yet; last, so that a slow test cannot cost the release files their time):
+    `run-tests.sh image <board> <output>` runs the board/common tests and the board's own `tests/*.sh` against the
+    build, from a fake `$HOME` whose `rsos/output` is the CI output: for the RetroStone2 `data-partition-test.sh` (as
+    root: loop devices and a private mount namespace; `modprobe exfat` first) and `boot-ab-qemu-test.sh` (U-Boot for
+    QEMU's cubieboard). They are `continue-on-error` until they have proved stable on the runners: check their
+    result in the log.
 
 ### The release job (tags only)
 
-Once every board succeeded, it downloads the artifacts (images and `.rsu` update packages), adds
+Once every board succeeded (a heavy board may have failed: it is then left out, with a warning), it runs
+`free-disk.sh` (the legal-info archives of all the boards are about 15 GB) and downloads the artifacts (images,
+`.rsu` update packages, legal-info) to the work directory, refuses any `*-unsigned.rsu`, adds
 `ucity-1.2-source.tar.gz` (the GPL source of the
 bundled µCity, sha256-checked) when an image contains the homebrew games, writes `SHA256SUMS`, renders
 `.github/release-notes.md` (`scripts/ci/release-notes.sh`: the boards table with sizes and status, flashing with
@@ -97,18 +119,22 @@ stops with an error); a leftover draft is completed.
 
 ## 3. Making a release
 
-1. Check that `ci.yml` is green on the commit, and that the `UPDATE_SIGNING_KEY` secret is set (section 7). The
-   images report the tag's version (`BR2_RETROSTONE_VERSION`); raise `RSOS_FRONTEND_VERSION` in
-   `package/rsos-frontend/rsos-frontend.mk` too, for the development builds made afterwards.
+1. Check that `ci.yml` is green on the commit, and that the owner checklist (section 7) is done: in particular the
+   `UPDATE_SIGNING_KEY` secret of the `release` environment (without it every A/B board's job fails at "Compress the
+   image, make the update package", and there is no release). The images report the tag's version
+   (`BR2_RETROSTONE_VERSION`).
 2. Tag and push (the tag name is the version: `v0.1.0`, `v0.2.0-rc1`):
    ```sh
    git tag -a v0.1.0 -m "RetroStoneOS 0.1.0"
    git push origin v0.1.0
    ```
-3. Actions > Images: one job per board, then "GitHub Release". The release appears under Releases when every
-   board is done.
+3. Actions > Images: one job per board (if the `release` environment has a required reviewer, approve the waiting
+   jobs: "Review deployments"), then "GitHub Release". The release appears under Releases when every board is done.
 4. Edit the notes on GitHub if needed (text only: the files cannot change once published when release immutability
    is on).
+5. **After tagging**, raise `RSOS_FRONTEND_VERSION` in `buildroot-external/package/rsos-frontend/rsos-frontend.mk`
+   above the release (`0.1` -> `0.1.1` after `v0.1.0`, or the next planned version) and commit: development
+   builds report `<RSOS_FRONTEND_VERSION>-dev`, and must sort after the release they follow.
 
 ## 4. Homebrew games: the `HOMEBREW_TOKEN` secret
 
@@ -164,7 +190,9 @@ Actions > Images > "Run workflow", pick the branch, then:
 
 The files are in the run's page, "Artifacts": `image-<board>` (a zip holding the `.img.xz`, its `.sha256` and the
 `.info`), kept 30 days (7 days for tag builds, whose files are in the release). Their version is
-`<branch>-<commit>`, e.g. `retrostoneos-main-1a2b3c4d-retrostone2-dev.img.xz`. No release is made.
+`<branch>-<commit>`, e.g. `retrostoneos-main-1a2b3c4d-retrostone2-dev.img.xz`. No release is made, and nothing is
+signed: manual runs never get the signing key (their update packages are `*-unsigned.rsu`, which only development
+images install), so a branch build can never be installed on a console running a release.
 
 ## 6. Build times and costs
 
@@ -179,11 +207,19 @@ runner:
 | RetroStone2 (release or dev) | 1.5-2.5 h | 45-75 min | +15-25 min |
 | Raspberry Pi 4/5, 64-bit boards (big vendor kernel) | 2-3 h | 1-1.5 h | +15-25 min |
 | Other 32-bit boards | 1.5-2.5 h | 45-75 min | +15-25 min |
+| **Orange Pi 5 (heavy)** | **over 5 h** (86 min locally on 16 cores, 39 of them LLVM and Clang) | 2-3 h | +20-30 min |
 
 These are estimates: the first tag gives the real numbers (each job's log prints the build time; the ccache
 statistics follow). Boards build in parallel, so a release takes as long as the slowest board.
 
-**The 6 h limit.** The build step stops after 300 minutes and the job after 355. Plan, in order:
+**The Orange Pi 5.** Mesa's panfrost driver cannot be built without LLVM in Buildroot 2026.02 (docs/boards.md), so
+its cold build does not fit a standard runner. It is a **heavy** board (section 2): with the repository variable
+`IMAGES_RUNNER_HEAVY` set to a larger or self-hosted runner it builds there; otherwise it tries on the standard
+runner, keeps its ccache (4 GB) even when it succeeds, and a failure does not block the release, which goes out
+without it (the release job warns). A manual run on `main` before the tag (section 7) warms its ccache, so the
+tag's run usually fits.
+
+**The 6 h limit.** The build step stops after 300 minutes and the job after 360. Plan, in order:
 
 1. **Re-run the failed job.** The ccache is saved even after a timeout, so the second run compiles far less.
 2. `RSOS_CI_PER_PACKAGE=1` (an `env:` of the build job): `BR2_PER_PACKAGE_DIRECTORIES=y` and a top-level
@@ -192,37 +228,50 @@ statistics follow). Boards build in parallel, so a release takes as long as the 
 3. **A larger runner**: set the repository variable `IMAGES_RUNNER` (Settings > Secrets and variables > Actions >
    Variables) to a larger runner's label (Team/Enterprise plans, billed per minute), or to `self-hosted` for a
    self-hosted runner (e.g. the 16-core WSL build host: Settings > Actions > Runners > "New self-hosted runner";
-   `free-disk.sh` is skipped there). A public repository should only use a self-hosted runner for these trusted
-   triggers (tags and manual runs), which is the case: `images.yml` never runs on pull requests.
+   `free-disk.sh` is skipped there); `IMAGES_RUNNER_HEAVY` does the same for the heavy boards only. A public
+   repository should only use a self-hosted runner for these trusted triggers (tags and manual runs), which is the
+   case: `images.yml` never runs on pull requests.
 4. Last resort: build the heavy cores in a separate job and hand them over (not implemented: it needs the cores
    installed from a prebuilt archive).
 
 **Cost**: nothing for a public repository (minutes and artifact storage are free). The caches count towards the
 10 GB per repository (older entries are evicted first); a larger runner or more cache storage is paid.
 
-## 7. What the owner sets on GitHub
+## 7. Owner checklist (before the first tag)
 
-- **Settings > Actions > General**:
-  - "Actions permissions": allow actions created by GitHub (the workflows only use `actions/checkout`,
-    `actions/cache`, `actions/upload-artifact` and `actions/download-artifact`, pinned by commit), or "Allow all".
-    Optionally tick "Require actions to be pinned to a full-length commit SHA".
-  - "Workflow permissions": **Read repository contents** (the default for new repositories). The release job asks for
-    `contents: write` itself.
-  - "Fork pull request workflows": keep "Require approval for first-time contributors".
-- **Settings > Secrets and variables > Actions**: the secret **`UPDATE_SIGNING_KEY`**: the whole content (both lines)
-  of the update signing key, `RetroStoneOS-keys\update-signing.key` on the owner's PC (docs/updates.md §3; keep a
-  backup offline: consoles only accept packages signed with it). Without it, the releases' update packages are
-  unsigned and the consoles cannot install them. Then the secret `HOMEBREW_TOKEN` (section 4). Optional: the secret
-  `UART_PASSWORD`, only needed if a defconfig selects the UART password login
-  (`BR2_RETROSTONE_UART_SHELL_PASSWORD`; the build stops without it); the variable `IMAGES_RUNNER` (section 6).
-- **Settings > General > Releases: "Enable release immutability"** (recommended): once published, a release's files
-  and tag cannot be changed, so a downloaded image always matches `SHA256SUMS`. The workflow already publishes
-  through a draft, as immutability requires.
-- **Tag protection** (Settings > Rules > Rulesets > New tag ruleset, target `v*`): restrict creation and deletion of
-  release tags to the maintainers.
-- **Branch protection** of `main` (optional): require the `CI` checks before merging.
-- Dependabot for the pinned actions (optional): a `.github/dependabot.yml` with the `github-actions` ecosystem
-  proposes the SHA updates.
+On github.com, repository `PaddleStroke/RetroStoneOS`:
+
+1. **Actions settings** (Settings > Actions > General): "Actions permissions": allow actions created by GitHub (the
+   workflows only use `actions/checkout`, `cache`, `upload-artifact`, `download-artifact`, pinned by commit);
+   "Workflow permissions": **Read repository contents** (the release job asks for `contents: write` itself); "Fork
+   pull request workflows": keep "Require approval for first-time contributors".
+2. **The signing key in a `release` environment** (Settings > Environments > "New environment", name `release`):
+   - "Deployment branches and tags": **Selected branches and tags** > add a **tag** rule `v*` (only tag builds can
+     then use it);
+   - "Environment secrets" > `UPDATE_SIGNING_KEY` = the whole content (both lines) of
+     `RetroStoneOS-keys\update-signing.key` on the owner's PC (docs/updates.md §3; keep an offline backup). Its
+     public half must be `frontend/assets/update.pub`: `rsos-mkupdate pubkey -s update-signing.key` prints it, and
+     its last line must equal the last line of `update.pub`;
+   - optional: "Required reviewers" = yourself (each tag build then waits for your approval);
+   - delete any repository-level `UPDATE_SIGNING_KEY` secret (Settings > Secrets and variables > Actions), so that
+     only the environment holds the key.
+3. **Homebrew games** (section 4): the private repository `PaddleStroke/RetroStoneOS-homebrew`, a fine-grained PAT
+   (that repository only, Contents: read-only) and the repository secret `HOMEBREW_TOKEN`.
+4. **Release immutability** (Settings > General > Releases > "Enable release immutability"): a published release's
+   files and tag can no longer change, so a download always matches `SHA256SUMS` (the workflow publishes through a
+   draft, as immutability requires).
+5. **A `v*` tag ruleset** (Settings > Rules > Rulesets > New tag ruleset, target `v*`): restrict creation, update
+   and deletion of release tags to the maintainers.
+6. **A dry run**: Actions > Images > "Run workflow" on `main` with `boards` = `release` and `legal_info` = on. Every
+   board should build (the Orange Pi 5 may time out: section 6); the update packages are `*-unsigned.rsu` (manual
+   runs are never signed). Flash the `image-retrostone2_release` artifact and test it on the console (first boot,
+   menu, a game, an unsigned `.rsu` is refused).
+7. **After tagging**: raise `RSOS_FRONTEND_VERSION` (`buildroot-external/package/rsos-frontend/rsos-frontend.mk`)
+   above the release, so that later development builds sort after it (section 3).
+
+Optional: the secret `UART_PASSWORD` (only if a defconfig selects `BR2_RETROSTONE_UART_SHELL_PASSWORD`; the build
+stops without it); the variables `IMAGES_RUNNER` and `IMAGES_RUNNER_HEAVY` (section 6); branch protection of `main`
+(require the `CI` checks); a `.github/dependabot.yml` (`github-actions` ecosystem) for the pinned actions.
 
 ## 8. Executable bits
 
@@ -280,5 +329,8 @@ exists, as it does on the build host.
 | check-asan: "AddressSanitizer:DEADLYSIGNAL" at start-up | the `vm.mmap_rnd_bits` step did not run (only the ASan job sets it) |
 | Image tests fail (data partition) | often the runner kernel: no exFAT module, or no free loop device. They are not a gate; run `data-partition-test.sh` in WSL to confirm |
 | make-rsu: "UPDATE_SIGNING_KEY does not match the public key in the image" | the secret holds another key than `frontend/assets/update.pub`: put the right key in the secret (docs/updates.md §3), never change `update.pub` without a key rotation plan |
-| make-rsu: "the image reports version X, the tag says Y" | the tag is not a plain version (`v0.2.0`, `v0.2.0-rc1`), or `BR2_RETROSTONE_VERSION` did not reach the image: check the "configure" step |
-| The release has `*-unsigned.rsu` files | the `UPDATE_SIGNING_KEY` secret was missing: add it, then sign the packages by hand (`rsos-mkupdate sign`, docs/updates.md §3) or tag a new version |
+| make-rsu: "the image reports version X, the tag says Y" | the tag is not a plain version (`v0.2.0`, `v0.2.0-rc1`), or `BR2_RETROSTONE_VERSION` / `BR2_RETROSTONE_RELEASE` did not reach the image: check the "configure" step's `release build` line |
+| make-rsu: "UPDATE_SIGNING_KEY is not set: no unsigned package for a release" (tag builds) | the `release` environment has no `UPDATE_SIGNING_KEY` secret: add it (section 7), then "Re-run failed jobs" |
+| A tag build waits, or fails with "Tag ... is not allowed to deploy to release" | the `release` environment has a required reviewer (approve: "Review deployments"), or its tag rule does not match the tag (it must be `v*`) |
+| "<image> did not build (a heavy board)" in the release job | the Orange Pi 5 hit the build step's limit: the release went out without it. Build it by hand (`boards` = `orangepi5`, which re-uses its ccache) and set `IMAGES_RUNNER_HEAVY` for the next release (section 6) |
+| The release job: "unsigned update packages in a release" | a build job made a `*-unsigned.rsu` on a tag, which `RSOS_RSU_REQUIRE_SIGNED=1` should prevent: check the package step's environment in `images.yml` |
