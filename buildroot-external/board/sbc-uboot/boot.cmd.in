@@ -22,17 +22,29 @@
 #   rsos_fails     N    confirmed slot: boots in a row that did not reach
 #                       rsos-boot-ok
 #   rsos_fallback  a|b  the slot this one fell back from (no ping-pong)
+#   rsos_bad       a|b  an updated slot whose trial ran out: never fallen
+#                       back to; only the updater's next write clears it
+#   rsos_good      a|b  the last slot rsos-boot-ok confirmed
+#   rsos_rounds    N    slots exhausted (or unloadable) since the last
+#                       confirmed boot: the failure budget
 #   rsos_maxfails  N    fallback threshold for a confirmed slot (default 3;
 #                       0 = never count, no environment write on a normal boot)
+#   rsos_maxrounds N    failure budget (default 4): power off when
+#                       rsos_rounds reaches it
 # Every boot is counted here and confirmed by /usr/bin/rsos-boot-ok once the
 # menu has been stable; an orderly shutdown before that gives the try back.
-# Fall back = switch to the other slot if it has a kernel, mark it confirmed
-# and remember rsos_fallback. If the kernel or the device tree cannot be
-# loaded, or the boot command returns, switch to the other slot at once
-# (reset), or power off when no slot can be booted.
+# An exhausted slot counts one round; a trial slot is also marked rsos_bad.
+# Then: budget spent -> power off (the next power-on: a fresh budget on
+# rsos_good); else switch to the other slot if it has a kernel, is not
+# rsos_bad and did not fail before in this episode (or is rsos_good), mark
+# it confirmed and remember rsos_fallback; else stay. If the kernel or the
+# device tree cannot be loaded, or the boot command returns, switch to the
+# other slot at once (reset; one round) when it has a kernel and is not
+# rsos_bad, or power off. (board/retrostone2/boot.cmd has the details.)
 #
 # Updater contract: write the inactive slot, then in one "fw_setenv -s":
-#   rsos_slot <new>, rsos_ok 0, rsos_tries 3, rsos_fails 0, rsos_fallback (empty)
+#   rsos_slot <new>, rsos_ok 0, rsos_tries 3, rsos_fails 0, rsos_fallback,
+#   rsos_bad and rsos_rounds (empty)
 #
 # Optional settings (fw_setenv):
 #   rsos_overlays   /boot/overlays/<name>.dtbo to apply (none are shipped)
@@ -61,8 +73,16 @@ l_maxfails=3
 if test -n "${rsos_maxfails}"; then
 	l_maxfails=${rsos_maxfails}
 fi
+l_maxrounds=4
+if test -n "${rsos_maxrounds}"; then
+	l_maxrounds=${rsos_maxrounds}
+fi
+if test -z "${rsos_rounds}"; then
+	setenv rsos_rounds 0
+fi
 
 l_fallback=0
+l_off=0
 l_state=ok
 if test "${rsos_ok}" = "0"; then
 	if test -n "${rsos_tries}" && test ${rsos_tries} -gt 0; then
@@ -94,18 +114,48 @@ else
 	l_opart=3
 fi
 if test ${l_fallback} = 1; then
-	if test "${rsos_fallback}" = "${l_other}"; then
-		echo "rsos: slot ${rsos_slot} fails too, and slot ${l_other} failed before: staying on ${rsos_slot}"
+	if test "${rsos_ok}" = "0"; then
+		echo "rsos: updated slot ${rsos_slot} was never confirmed: marking it bad"
+		setenv rsos_bad ${rsos_slot}
+	fi
+	setexpr rsos_rounds ${rsos_rounds} + 1
+	if test ${rsos_rounds} -ge ${l_maxrounds}; then
+		echo "rsos: ${rsos_rounds} slot failures without a confirmed boot"
+		l_off=1
+	elif test "${rsos_bad}" = "${l_other}"; then
+		echo "rsos: slot ${rsos_slot} failed too often, slot ${l_other} is marked bad: staying on ${rsos_slot}"
 	elif test -e mmc @MMC@:${l_opart} /boot/@KERNEL@; then
-		echo "rsos: slot ${rsos_slot} failed too often, falling back to slot ${l_other}"
-		setenv rsos_fallback ${rsos_slot}
-		setenv rsos_slot ${l_other}
+		if test "${rsos_fallback}" != "${l_other}" || test "${rsos_good}" = "${l_other}"; then
+			echo "rsos: slot ${rsos_slot} failed too often, falling back to slot ${l_other}"
+			setenv rsos_fallback ${rsos_slot}
+			setenv rsos_slot ${l_other}
+		else
+			echo "rsos: slot ${rsos_slot} fails too, and slot ${l_other} failed before: staying on ${rsos_slot}"
+		fi
 	else
 		echo "rsos: slot ${l_other} has no kernel: staying on ${rsos_slot}"
 	fi
 	setenv rsos_ok 1
 	setenv rsos_tries 0
 	setenv rsos_fails 1
+fi
+
+# The failure budget is spent: power off (the next power-on starts a fresh
+# budget on the last confirmed slot); "reset" in case the power-off returns
+# (a board without one: then the boot starts over).
+if test ${l_off} = 1; then
+	if test -n "${rsos_good}" && test "${rsos_good}" != "${rsos_bad}"; then
+		setenv rsos_slot ${rsos_good}
+	fi
+	setenv rsos_rounds 0
+	setenv rsos_ok 1
+	setenv rsos_tries 0
+	setenv rsos_fails 0
+	setenv rsos_fallback
+	echo "rsos: no slot starts, powering off (next power-on: slot ${rsos_slot})"
+	saveenv
+	poweroff
+	reset
 fi
 
 if test "${rsos_slot}" = "b"; then
@@ -162,18 +212,29 @@ if load mmc @MMC@:${l_part} ${kernel_addr_r} /boot/@KERNEL@; then
 fi
 
 # Only reached when the kernel or the DTB cannot be loaded, or the boot
-# command fails: switch to the other slot once (unless it is the one that
-# failed before, or has no kernel), else power off.
+# command fails: switch to the other slot at once when it has a kernel and
+# is not marked bad (one round of the failure budget), else power off.
 echo "rsos: cannot boot slot ${rsos_slot} (partition ${l_part}, /boot/@KERNEL@, /boot/${l_fdt})"
-if test "${rsos_fallback}" != "${l_other}" && test -e mmc @MMC@:${l_opart} /boot/@KERNEL@; then
+if test "${rsos_ok}" = "0"; then
+	setenv rsos_bad ${rsos_slot}
+fi
+setexpr rsos_rounds ${rsos_rounds} + 1
+setenv rsos_ok 1
+setenv rsos_tries 0
+setenv rsos_fails 0
+if test ${rsos_rounds} -lt ${l_maxrounds} && test "${rsos_bad}" != "${l_other}" && test -e mmc @MMC@:${l_opart} /boot/@KERNEL@; then
 	echo "rsos: switching to slot ${l_other}"
 	setenv rsos_fallback ${rsos_slot}
 	setenv rsos_slot ${l_other}
-	setenv rsos_ok 1
-	setenv rsos_tries 0
-	setenv rsos_fails 0
 	saveenv
 	reset
 fi
-echo "rsos: no slot can be booted, powering off"
+if test -n "${rsos_good}" && test "${rsos_good}" != "${rsos_bad}"; then
+	setenv rsos_slot ${rsos_good}
+fi
+setenv rsos_rounds 0
+setenv rsos_fallback
+echo "rsos: no slot can be booted, powering off (next power-on: slot ${rsos_slot})"
+saveenv
 poweroff
+reset

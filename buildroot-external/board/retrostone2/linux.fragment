@@ -140,10 +140,17 @@ CONFIG_THERMAL_EMERGENCY_POWEROFF_DELAY_MS=5000
 # 120 s) are only logged (the boot logger keeps dmesg): a slow card flushing a
 # large copy can legitimately block that long. The detectors wake each CPU
 # every 4 s (watchdog_thresh 10 s * 2/5): no measurable idle cost.
+# The kernel services U-Boot's watchdog only until user space first opens
+# /dev/watchdog, and for at most 120 s after it registered
+# (WATCHDOG_OPEN_TIMEOUT): a hang in rcS, or a menu that crashes before it
+# opens the device, resets the board (boot.cmd counts the boot as failed)
+# instead of leaving the always-powered panel on without a picture. The long
+# first-boot paths open it first (data-partition's keeper). Development:
+# watchdog.open_timeout=0 in rsos_extraargs turns it off.
 CONFIG_WATCHDOG=y
 CONFIG_WATCHDOG_CORE=y
 CONFIG_WATCHDOG_HANDLE_BOOT_ENABLED=y
-CONFIG_WATCHDOG_OPEN_TIMEOUT=0
+CONFIG_WATCHDOG_OPEN_TIMEOUT=120
 CONFIG_SUNXI_WATCHDOG=y
 CONFIG_PANIC_TIMEOUT=10
 CONFIG_SOFTLOCKUP_DETECTOR=y

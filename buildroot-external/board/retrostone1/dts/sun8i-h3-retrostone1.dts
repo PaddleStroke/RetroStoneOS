@@ -242,12 +242,25 @@
 	 * PL9 "PWR-DRAM" (the DRAM rail) stays up.
 	 * TODO(hw): check that power-off really turns the screen off, and the
 	 * current drawn afterwards (the slide switch must still be turned off).
+	 *
+	 * The driver pulses the line: active, active-delay-ms, inactive,
+	 * inactive-delay-ms, active again, then timeout-ms. With the default
+	 * 100 ms the line went back high (bucks enabled again) while the rails
+	 * were still collapsing, which could restart the board. Held active
+	 * for 3 s instead: the CPU is off long before the line would be
+	 * released. "input": the line stays an input (R5 pulls it up) until
+	 * the power-off, never driven by the probe.
+	 * TODO(hw): the board stays off (no restart) after a power-off, over
+	 * several tries (docs/boards.md, RetroStone1 tests).
 	 */
 	gpio-poweroff {
 		compatible = "gpio-poweroff";
 		gpios = <&r_pio 0 8 GPIO_ACTIVE_LOW>;	/* PL8, PWR-STB */
 		priority = <128>;
-		active-delay-ms = <100>;
+		input;
+		active-delay-ms = <3000>;
+		inactive-delay-ms = <100>;
+		timeout-ms = <3000>;
 	};
 
 	/*

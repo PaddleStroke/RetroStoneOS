@@ -13,11 +13,14 @@ CONFIG_BOOTDELAY=0
 # /boot/boot.scr first when rsos_slot=b, then slot a's (partition 2), then
 # slot b's (partition 3), then the standard boot scan as the last resort.
 # The script itself decides which slot to boot and does not return (it
-# boots, resets to the other slot or powers off). The SD card is "mmc 0" on
+# boots, resets to the other slot or powers off). The bootcmd ends with
+# "poweroff" (where the board has one) rather than wait at the U-Boot
+# prompt; a key on the UART during the boot delay still gives the prompt
+# (the bootcmd does not run then). The SD card is "mmc 0" on
 # every board that uses this fragment (sunxi: mmc0; Orange Pi 5: the
 # mmc0 = &sdmmc alias).
 CONFIG_USE_BOOTCOMMAND=y
-CONFIG_BOOTCOMMAND="if test \"${rsos_slot}\" = b; then load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; fi; load mmc 0:2 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; bootflow scan -lb"
+CONFIG_BOOTCOMMAND="if test \"${rsos_slot}\" = b; then load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; fi; load mmc 0:2 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; bootflow scan -lb; poweroff"
 
 # Device tree overlays (applied by boot.scr, listed in rsos_overlays)
 CONFIG_OF_LIBFDT_OVERLAY=y

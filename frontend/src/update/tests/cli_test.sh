@@ -159,6 +159,16 @@ check "listed on a development build (signed=0, installable)" \
 check "not installed without --allow-unsigned" "U --machine apply $R/data/update/unsigned.rsu | grep -q '^error${T}code=unsigned'"
 check "installed with --allow-unsigned" "U --machine --allow-unsigned apply $R/data/update/unsigned.rsu | grep -q '^done${T}version=0.2.1'"
 
+echo "== (review) a signed development package on a release build"
+mk_system 0.1.0 release "${ENV_A}rsos_bad=b\nrsos_rounds=1\n"
+# shellcheck disable=SC2086
+"$MK" pack -o "$W/dev.rsu" $PACK --version 0.2.2 --variant dev -s "$W/test.key" > /dev/null
+check "refused: code=variant, nothing written" \
+	"U --machine apply $W/dev.rsu | grep -q '^error${T}code=variant' && grep -q '^rsos_slot=a$' $R/env.txt"
+check "installed with --allow-dev (UART only)" "U --machine --allow-dev apply $W/dev.rsu | grep -q '^done${T}version=0.2.2'"
+check "the updater's write cleared rsos_bad and rsos_rounds" \
+	"grep -q '^rsos_slot=b$' $R/env.txt && ! grep -q '^rsos_bad=' $R/env.txt && ! grep -q '^rsos_rounds=' $R/env.txt"
+
 echo "== the log"
 check "every run logged" "grep -q 'installed 0.2.0 in slot b' $W/update.log"
 

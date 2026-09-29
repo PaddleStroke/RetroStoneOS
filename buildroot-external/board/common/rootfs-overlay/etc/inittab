@@ -2,9 +2,12 @@
 #
 # Format: <tty>::<action>:<command>
 #
-# post-build.sh adds "::respawn:/usr/bin/rsos-frontend" right after the
-# ::sysinit line (so init starts it first) when the frontend is part of the
-# image.
+# post-build.sh adds "::respawn:/usr/libexec/rsos/frontend-respawn" right
+# after the ::sysinit line (so init starts it first) when the frontend is
+# part of the image. That wrapper execs /usr/bin/rsos-frontend, and stops
+# respawning a menu that keeps crashing (5 starts in 60 s): the watchdog then
+# resets the board (U-Boot counts the failed boot) instead of leaving the
+# panel powered without a picture.
 
 # Early init: mounts, /data, cpufreq, audio. Runs to completion first.
 ::sysinit:/etc/init.d/rcS

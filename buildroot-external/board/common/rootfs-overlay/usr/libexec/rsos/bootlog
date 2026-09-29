@@ -12,7 +12,8 @@
 # Disable by creating rsos/logs/disabled on the card.
 # Also, once per boot: data-partition's first-boot trace (a first boot that
 # hung or lost power before the menu leaves its steps on the card, see
-# data-partition) goes to rsos/logs/firstboot.txt, and the splash's log
+# data-partition) goes to rsos/logs/firstboot.txt (its last 256 KiB are
+# kept), and the splash's log
 # (/run/rsos/splash.log) to boot<N>/splash.log.
 # Started in the background by rcS; it waits for the menu to be on screen
 # (/run/rsos/menu-up, at most 20 s) before touching the SD card, so its
@@ -31,7 +32,8 @@
 #                   rsos_extraargs "initcall_debug log_buf_len=1M"): the
 #                   slowest initcalls and driver probes, and the deferrals
 # RSOS_BOOTLOG_BS (/proc/device-tree/bootstage), RSOS_BOOTLOG_RUN (/run/rsos)
-# and RSOS_BOOTLOG_DMESG (a file instead of the dmesg command) are for tests.
+# RSOS_BOOTLOG_DMESG (a file instead of the dmesg command) and
+# RSOS_BOOTLOG_FIRSTBOOT_MAX (firstboot.txt's size) are for tests.
 
 D=/data/rsos/logs
 RSOS_RELEASE=0
@@ -323,6 +325,15 @@ note "writing to $B"
 # the card. (data-partition writes there only after checking that the area
 # lies outside every partition: finding its magic there proves it.)
 FBK=${RSOS_BOOTLOG_TRACE_KIB-$RSOS_BOARD_FIRSTBOOT_TRACE_KIB}
+# firstboot.txt keeps its last 256 KiB (whole lines): a card that keeps
+# failing its first boot must not fill the drive with it.
+FB_MAX=${RSOS_BOOTLOG_FIRSTBOOT_MAX:-262144}
+cap_file() { # <file> <bytes>
+	[ -f "$1" ] || return 0
+	_cf=$(wc -c < "$1")
+	[ "${_cf:-0}" -gt "$2" ] || return 0
+	tail -c "$2" "$1" | sed 1d > "$1.tmp" && mv -f "$1.tmp" "$1"
+}
 firstboot_trace() {
 	fb_raw=
 	case "$FBK" in
@@ -338,6 +349,7 @@ firstboot_trace() {
 			echo "--- collected by boot$n (uptime $(cut -d' ' -f1 /proc/uptime) s; clock: $(date))"
 			printf '%s\n' "$fb_raw"
 		} >> "$D/firstboot.txt"
+		cap_file "$D/firstboot.txt" "$FB_MAX"
 		sync
 		dd if=/dev/zero of="$RSOS_DISK" bs=64k seek=$((FBK / 64)) count=1 conv=fsync 2> /dev/null
 		note "first-boot trace collected from $RSOS_DISK at $FBK KiB and cleared"
@@ -348,6 +360,7 @@ firstboot_trace() {
 				echo "--- collected by boot$n (this boot; clock: $(date))"
 				cat "$RUN/firstboot.trace"
 			} >> "$D/firstboot.txt"
+			cap_file "$D/firstboot.txt" "$FB_MAX"
 			note "first-boot trace of this boot collected"
 		fi
 		;;

@@ -109,11 +109,13 @@ fi
 # It goes right after the ::sysinit line, before the UART shell: BusyBox init
 # starts the respawn entries in file order once rcS has finished, so the menu
 # is forked first and the shell's start-up does not delay it. (Only the
-# respawn line is removed first, not the comments that mention it.)
-sed -i '/^::respawn:\/usr\/bin\/rsos-frontend$/d' "$TARGET/etc/inittab"
+# respawn line is removed first, not the comments that mention it.) Through
+# /usr/libexec/rsos/frontend-respawn: no endless respawn of a crashing menu.
+sed -i -e '/^::respawn:\/usr\/bin\/rsos-frontend$/d' \
+	-e '/^::respawn:\/usr\/libexec\/rsos\/frontend-respawn$/d' "$TARGET/etc/inittab"
 if [ -x "$TARGET/usr/bin/rsos-frontend" ]; then
-	sed -i '/^::sysinit:/a ::respawn:/usr/bin/rsos-frontend' "$TARGET/etc/inittab"
-	grep -q '^::respawn:/usr/bin/rsos-frontend$' "$TARGET/etc/inittab"
+	sed -i '/^::sysinit:/a ::respawn:/usr/libexec/rsos/frontend-respawn' "$TARGET/etc/inittab"
+	grep -q '^::respawn:/usr/libexec/rsos/frontend-respawn$' "$TARGET/etc/inittab"
 fi
 
 # --- roms/<system> folders for a fresh data partition: every system listed by

@@ -349,7 +349,8 @@ static void test_generic(void)
 
 		display_config_defaults(&dc);
 		board_apply_display(&b, &dc);
-		CHECK(!b.display_quirks && !dc.panel_keep_scanning, "display: no quirk, the panel CRTC may stop");
+		CHECK(b.display_quirks == BOARD_QUIRK_PANEL_KEEP_SCANNING && dc.panel_keep_scanning,
+		      "(review) display: fails safe, the panel keeps scanning (0x%x)", b.display_quirks);
 	}
 }
 
@@ -401,7 +402,39 @@ static void test_parser(void)
 	board_parse(&b, "display_quirks = panel-keep-scanning, bogus\n");
 	CHECK(b.display_quirks == BOARD_QUIRK_PANEL_KEEP_SCANNING, "quirk list: 0x%x", b.display_quirks);
 	board_parse(&b, "display_quirks =\n");
-	CHECK(!b.display_quirks, "no quirks");
+	CHECK(b.display_quirks == BOARD_QUIRK_PANEL_KEEP_SCANNING, "(review) no quirks listed: still keep-scanning");
+	board_parse(&b, "display_quirks = sun4i-tcon0-clock panel-power-switched\n");
+	CHECK(b.display_quirks == BOARD_QUIRK_SUN4I_TCON0_CLOCK, "(review) opt-out: 0x%x", b.display_quirks);
+	board_parse(&b, "display_quirks = panel-keep-scanning panel-power-switched\n");
+	CHECK(!b.display_quirks, "(review) the opt-out wins: 0x%x", b.display_quirks);
+	{
+		/* which built-in screens keep scanning (the default quirk) */
+		static const struct {
+			const char *ini;
+			bool keep;
+		} v[] = {
+			{ "internal_display = dpi\n", true },
+			{ "internal_display = unknown\n", true },
+			{ "internal_display = lvds\n", true },
+			{ "internal_display = dsi\n", true },
+			{ "internal_display = auto\n", true },
+			{ "internal_display = composite\n", false },
+			{ "internal_display = none\n", false },
+			{ "internal_display = hdmi\n", false },
+			{ "internal_display = dpi\ndisplay_quirks = panel-power-switched\n", false },
+		};
+
+		for (size_t i = 0; i < sizeof(v) / sizeof(v[0]); i++) {
+			struct display_config dc;
+			struct board_profile t;
+
+			board_defaults(&t);
+			board_parse(&t, v[i].ini);
+			display_config_defaults(&dc);
+			board_apply_display(&t, &dc);
+			CHECK(dc.panel_keep_scanning == v[i].keep, "(review) keep-scanning for %s", v[i].ini);
+		}
+	}
 	{
 		struct display_config dc;
 
@@ -422,6 +455,13 @@ static void test_other(const char *path)
 	printf("5. %s\n", path);
 	CHECK(r == 0 && b.loaded, "loads (%d)", r);
 	CHECK(strcmp(b.name, "Generic"), "has a name: %s", b.name);
+	if (b.internal_display == BOARD_INTERNAL_NONE) {
+		struct display_config dc;
+
+		display_config_defaults(&dc);
+		board_apply_display(&b, &dc);
+		CHECK(!dc.panel_keep_scanning, "(review) no built-in screen: no keep-scanning");
+	}
 	if (strstr(path, "rpi4")) {
 		CHECK(b.internal_display == BOARD_INTERNAL_NONE, "Pi 4: no built-in screen");
 		CHECK(!b.builtin_pad_prefix[0] && !b.refresh_native && !b.storage_overlays[0],

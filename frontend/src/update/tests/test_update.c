@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -360,6 +361,9 @@ static void append_member(struct pkg *p, const char *name, const void *d, size_t
 		append(p, z, 512 - n % 512);
 }
 
+/* the manifest variant of the packages make_pkg makes */
+static const char *g_pkg_variant = "release";
+
 /* A package of a pseudo-random "image" (image_len bytes, compressible). */
 static void make_pkg(struct pkg *p, const char *board, const char *version, int64_t t, size_t image_len,
 		     const struct rsu_seckey *sk, unsigned seed, int bootloader_min, int min_updater)
@@ -381,6 +385,7 @@ static void make_pkg(struct pkg *p, const char *board, const char *version, int6
 	}
 	zl = ZSTD_compress(z, cap, p->image, image_len, 3);
 	fill_manifest(&m, board, version, t);
+	snprintf(m.variant, sizeof(m.variant), "%s", g_pkg_variant);
 	m.payload_size = zl;
 	m.image_size = image_len;
 	m.bootloader_min = bootloader_min;
@@ -473,6 +478,26 @@ static void test_container(void)
 	CHECK(rsu_policy(&sys, h, 0) == RSU_E_UNSIGNED, "unsigned on a dev build: only when allowed");
 	CHECK(rsu_policy(&sys, h, RSU_ALLOW_UNSIGNED) == RSU_OK, "unsigned on a dev build, allowed");
 	sys.release = true;
+	{
+		struct pkg d;
+
+		/* (review) a signed development package: never on a release
+		 * build unless asked (--allow-dev); fine on a dev build */
+		g_pkg_variant = "dev";
+		make_pkg(&d, "retrostone2", "0.2.0", 1790000000, 64 * 1024, &g_sk, 1, 1, 1);
+		g_pkg_variant = "release";
+		rsu_header_parse(d.data, d.len, h, err, sizeof(err));
+		CHECK(!strcmp(h->m.variant, "dev") && rsu_policy(&sys, h, 0) == RSU_E_VARIANT,
+		      "signed dev package on a release build: refused");
+		CHECK(rsu_policy(&sys, h, RSU_FORCE | RSU_ALLOW_UNSIGNED) == RSU_E_VARIANT, "... even forced");
+		CHECK(rsu_policy(&sys, h, RSU_ALLOW_DEV) == RSU_OK, "... unless --allow-dev");
+		CHECK(!strcmp(rsu_err_code(RSU_E_VARIANT), "variant"), "error code 'variant'");
+		sys.release = false;
+		CHECK(rsu_policy(&sys, h, 0) == RSU_OK, "dev package on a dev build");
+		sys.release = true;
+		free_pkg(&d);
+		rsu_header_parse(p.data, p.len, h, err, sizeof(err));
+	}
 	/* damaged containers */
 	p.data[148] ^= 1;
 	CHECK(rsu_header_parse(p.data, p.len, h, err, sizeof(err)) < 0, "bad tar checksum");
@@ -751,15 +776,47 @@ static void test_install(void)
 		CHECK(upd_battery_ok(&c, &pct, &ac) && ac && pct == 20, "20%% with the charger: fine");
 	}
 
-	/* a good install */
+	/* a good install; slot b was marked bad by U-Boot (an earlier update
+	 * that never started), and a confirmation of slot a (rsos-boot-ok)
+	 * holds the boot state lock for a second meanwhile */
+	snprintf(st, sizeof(st), "%s/env.txt", root);
+	put_text(st, "%srsos_bad=b\nrsos_rounds=1\n", env_a);
 	init_ctx(&c, root);
 	snprintf(c.target_dev, sizeof(c.target_dev), "%s", slot);
 	upd_load_system(&c);
-	e = upd_apply_file(&c, pkgp, false, h);
-	CHECK(e == RSU_OK, "install: %s (%s)", rsu_err_code(e), c.err);
+	{
+		char lp[1024];
+		struct timespec t0, t1;
+		pid_t pid;
+		int status = 0;
+
+		snprintf(lp, sizeof(lp), "%s/run/rsos/bootenv.lock", root);
+		pid = fork();
+		if (pid == 0) {
+			int fd = open(lp, O_WRONLY | O_CREAT, 0644);
+
+			if (fd < 0 || flock(fd, LOCK_EX) < 0)
+				_exit(1);
+			usleep(1000000);
+			/* what rsos-boot-ok writes for slot a */
+			put_text(st, "%srsos_bad=b\nrsos_good=a\n", "rsos_slot=a\nrsos_ok=1\nrsos_tries=0\nrsos_fails=0\n");
+			_exit(0);
+		}
+		usleep(200000);
+		clock_gettime(CLOCK_MONOTONIC, &t0);
+		e = upd_apply_file(&c, pkgp, false, h);
+		clock_gettime(CLOCK_MONOTONIC, &t1);
+		waitpid(pid, &status, 0);
+		CHECK(e == RSU_OK, "install: %s (%s)", rsu_err_code(e), c.err);
+		CHECK((t1.tv_sec - t0.tv_sec) * 1000 + (t1.tv_nsec - t0.tv_nsec) / 1000000 >= 600 &&
+		      WIFEXITED(status) && WEXITSTATUS(status) == 0,
+		      "(review) the slot switch waited for rsos-boot-ok's lock (bootenv.lock)");
+	}
 	CHECK(slot_equals(slot, p.image, p.image_len), "slot b holds the new image");
 	CHECK(env_is(root, "rsos_slot", "b") && env_is(root, "rsos_ok", "0") && env_is(root, "rsos_tries", "3") &&
 	      env_is(root, "rsos_fails", "0") && env_is(root, "rsos_fallback", ""), "environment switched to b, on trial");
+	CHECK(env_is(root, "rsos_bad", "") && env_is(root, "rsos_rounds", "") && env_is(root, "rsos_good", "a"),
+	      "(review) the updater's write clears the bad mark and the failure budget");
 	snprintf(st, sizeof(st), "%s/setenv.calls", root);
 	t = get_file(st, NULL);
 	CHECK(t && strchr(t, '\n') == t + strlen(t) - 1, "exactly one fw_setenv call");
@@ -930,9 +987,24 @@ static void test_boot(void)
 	upd_boot(&c, ev, sizeof(ev), ver, sizeof(ver));
 	CHECK(!strcmp(ev, "none"), "nothing more: %s", ev);
 
+	/* (review) the boot environment cannot be read (fw_printenv fails):
+	 * nothing is decided nor removed, the menu asks again later */
+	make_system(root, "0.1.0", "release", "root=/dev/mmcblk0p2 rsos.slot=a rsos.boot=pending", "", true);
+	put_text(dl, "package");
+	snprintf(st, sizeof(st), "%s/data/rsos/update-state.ini", root);
+	put_text(st, "version=0.2.0\nslot=b\nfile=%s\nannounced=0\n", dl);
+	init_ctx(&c, root);
+	upd_load_system(&c);
+	{
+		enum rsu_err e = upd_boot(&c, ev, sizeof(ev), ver, sizeof(ver));
+
+		CHECK(e == RSU_E_ENV && !strcmp(ev, "unknown") && access(dl, F_OK) == 0 && access(st, F_OK) == 0,
+		      "environment unreadable: %s %s, state and download kept", rsu_err_code(e), ev);
+	}
+
 	/* the new system did not start: U-Boot fell back to a */
 	make_system(root, "0.1.0", "release", "root=/dev/mmcblk0p2 rsos.slot=a rsos.boot=pending",
-		    "rsos_slot=a\nrsos_ok=1\nrsos_fails=1\nrsos_fallback=b\n", true);
+		    "rsos_slot=a\nrsos_ok=1\nrsos_fails=1\nrsos_fallback=b\nrsos_bad=b\n", true);
 	put_text(dl, "package");
 	snprintf(st, sizeof(st), "%s/data/rsos/update-state.ini", root);
 	put_text(st, "version=0.2.0\nslot=b\nfile=%s\nannounced=0\n", dl);
@@ -1148,7 +1220,69 @@ static void test_download(void)
 	CHECK(access(part, F_OK) < 0, "no .part left");
 	e = upd_download(&c, url, "retrostoneos-0.2.0-retrostone2.rsu", p.len, path, sizeof(path));
 	CHECK(e == RSU_OK && r->requests == 2, "already downloaded: no request");
+
+	/* (review) a damaged file of the right size (a bad resume, a disk
+	 * error) is taken as downloaded; the install finds it damaged and
+	 * deletes it, so the next attempt downloads it again */
+	{
+		char slot[1024];
+		struct rsu_header *h = malloc(sizeof(*h));
+		uint8_t *bad = malloc(p.len);
+
+		memcpy(bad, p.data, p.len);
+		bad[p.len - 1024 - 700] ^= 0x40;          /* inside the compressed payload */
+		put_file(path, bad, p.len);
+		snprintf(slot, sizeof(slot), "%s/slot-b.img", root);
+		make_slot(slot, 4u << 20);
+		snprintf(c.target_dev, sizeof(c.target_dev), "%s", slot);
+		e = upd_download(&c, url, "retrostoneos-0.2.0-retrostone2.rsu", p.len, path, sizeof(path));
+		e = e ? e : upd_apply_file(&c, path, true, h);
+		CHECK(e == RSU_E_PAYLOAD && access(path, F_OK) < 0 && slot_untouched(slot, 4u << 20),
+		      "damaged download: %s, deleted, nothing written", rsu_err_code(e));
+		r->requests = 0;
+		e = upd_download(&c, url, "retrostoneos-0.2.0-retrostone2.rsu", p.len, path, sizeof(path));
+		got = get_file(path, &len);
+		CHECK(e == RSU_OK && r->requests >= 1 && got && len == p.len && !memcmp(got, p.data, len),
+		      "downloaded again: %s (%d requests)", rsu_err_code(e), r->requests);
+		free(got);
+		/* a user's file (not ours) is never deleted */
+		put_file(path, bad, p.len);
+		e = upd_apply_file(&c, path, false, h);
+		CHECK(e == RSU_E_PAYLOAD && access(path, F_OK) == 0, "a damaged user's file is kept: %s", rsu_err_code(e));
+		c.target_dev[0] = 0;
+		free(bad);
+		free(h);
+	}
 	unlink(path);
+
+	/* (review) the download takes the update lock: not while another
+	 * rsos-update downloads or installs */
+	{
+		char lp[1024];
+		pid_t pid;
+		int status = 0;
+
+		snprintf(lp, sizeof(lp), "%s/run/rsos/update.lock", root);
+		pid = fork();
+		if (pid == 0) {
+			int fd = open(lp, O_RDWR | O_CREAT, 0644);
+
+			if (fd < 0 || flock(fd, LOCK_EX) < 0)
+				_exit(1);
+			usleep(800000);
+			_exit(0);
+		}
+		usleep(200000);
+		r->requests = 0;
+		e = upd_download(&c, url, "retrostoneos-0.2.0-retrostone2.rsu", p.len, path, sizeof(path));
+		CHECK(e == RSU_E_BUSY && r->requests == 0 && access(path, F_OK) < 0, "busy: %s", rsu_err_code(e));
+		waitpid(pid, &status, 0);
+		CHECK(upd_lock(&c) == RSU_OK && c.lock_fd >= 0, "then free: taken");
+		e = upd_download(&c, url, "retrostoneos-0.2.0-retrostone2.rsu", p.len, path, sizeof(path));
+		CHECK(e == RSU_OK && c.lock_fd >= 0, "a download under the caller's lock keeps it held");
+		upd_unlock(&c);
+		unlink(path);
+	}
 
 	/* the process dies in the middle (power cut, killed): the next run
 	 * resumes the .part with a Range request */
@@ -1321,6 +1455,23 @@ static void test_check_net(void)
 	e = upd_check_net(&c, f);
 	CHECK(e == RSU_OK && !f->installable && f->verdict == RSU_E_UNSIGNED, "unsigned from the network: %s",
 	      rsu_err_code(f->verdict));
+	/* (review) a nonsense asset size (negative, infinite, below one
+	 * byte): never cast to an integer (undefined behaviour), not offered */
+	{
+		static const char *const sizes[] = { "-5", "1e999", "-1e999", "0.5", "1e300" };
+
+		for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
+			snprintf(json, sizeof(json),
+				 "[{\"tag_name\":\"v0.3.0\",\"draft\":false,\"body\":\"\",\"assets\":["
+				 "{\"name\":\"retrostoneos-0.3.0-retrostone2.rsu\",\"size\":%s,"
+				 "\"browser_download_url\":\"http://127.0.0.1:%d/pkg\"}]}]", sizes[i], g_port);
+			rel->len = strlen(json);
+			e = upd_check_net(&c, f);
+			CHECK(e == RSU_OK && !f->installable && f->size == 0 && f->verdict == RSU_E_HTTP,
+			      "size %s: %s, size %" PRIu64 ", %s", sizes[i], rsu_err_code(e), f->size,
+			      rsu_err_code(f->verdict));
+		}
+	}
 	/* a server that is not there */
 	snprintf(c.api_url, sizeof(c.api_url), "http://127.0.0.1:1/releases");
 	e = upd_check_net(&c, f);

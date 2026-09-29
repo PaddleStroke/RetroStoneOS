@@ -281,10 +281,23 @@ static int apply_url(const char *url, const char *name, uint64_t size)
 		mfield("phase", "download");
 		mend();
 	}
-	e = upd_download(&C, url, name, size, path, sizeof(path));
+	/* one lock from the download to the end of the install: another
+	 * rsos-update can neither write into the same .part nor install or
+	 * delete the file in between */
+	e = upd_lock(&C);
 	if (e)
 		return fail(e);
-	return apply_path(path, true);
+	e = upd_download(&C, url, name, size, path, sizeof(path));
+	if (e) {
+		upd_unlock(&C);
+		return fail(e);
+	}
+	{
+		int r = apply_path(path, true);
+
+		upd_unlock(&C);
+		return r;
+	}
 }
 
 static int cmd_verify(const char *path, bool full)
@@ -330,7 +343,7 @@ static int cmd_boot(void)
 static int cmd_status(void)
 {
 	static const char *const vars[] = { "rsos_slot", "rsos_ok", "rsos_tries", "rsos_fails", "rsos_fallback",
-					     "rsos_bootloader" };
+					     "rsos_bad", "rsos_good", "rsos_rounds", "rsos_bootloader" };
 	char v[128], sp[4096];
 	FILE *f;
 
@@ -370,6 +383,7 @@ static void usage(void)
 		"options:\n"
 		"  --machine           one line per event, for the menu\n"
 		"  --allow-unsigned    development builds: accept a package without signature\n"
+		"  --allow-dev         release builds: accept a signed development package (UART only)\n"
 		"  --force             install the same or an older version\n"
 		"  --ignore-battery    no battery check\n"
 		"  --prerelease        also consider pre-releases\n"
@@ -397,6 +411,8 @@ int main(int argc, char **argv)
 			g_machine = true;
 		else if (!strcmp(a, "--allow-unsigned"))
 			flags |= RSU_ALLOW_UNSIGNED;
+		else if (!strcmp(a, "--allow-dev"))
+			flags |= RSU_ALLOW_DEV;
 		else if (!strcmp(a, "--force"))
 			flags |= RSU_FORCE;
 		else if (!strcmp(a, "--ignore-battery"))

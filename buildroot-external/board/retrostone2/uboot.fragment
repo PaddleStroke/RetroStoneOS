@@ -17,9 +17,16 @@ CONFIG_BOOTDELAY=0
 # out: the former "for rsos_p in 2 3" loop did not work (review S6, found on
 # QEMU: with the environment variable rsos_p just set above, the loop
 # variable did not take the values 2 and 3). boot.scr does not return (it
-# boots, resets to the other slot or powers off).
+# boots, resets to the other slot or powers off, then resets if the power-off
+# returns). The bootcmd ends with "poweroff" too: when no boot.scr can be
+# loaded and the bootflow scan finds nothing, U-Boot must not wait at its
+# prompt (it services the watchdog there, so the panel, whose supply is
+# always on, would stay powered without a picture for hours). The prompt
+# stays reachable on a development build by pressing a key on the UART
+# during the (zero) boot delay: the bootcmd does not run then. Release
+# builds never stop (uboot-release.fragment).
 CONFIG_USE_BOOTCOMMAND=y
-CONFIG_BOOTCOMMAND="if test \"${rsos_verbose}\" = 1; then setenv silent; else setenv silent 1; fi; setenv silent_linux no; if test \"${rsos_slot}\" = b; then load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; fi; load mmc 0:2 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; setenv silent; load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; bootflow scan -lb"
+CONFIG_BOOTCOMMAND="if test \"${rsos_verbose}\" = 1; then setenv silent; else setenv silent 1; fi; setenv silent_linux no; if test \"${rsos_slot}\" = b; then load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; fi; load mmc 0:2 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; setenv silent; load mmc 0:3 ${scriptaddr} /boot/boot.scr && source ${scriptaddr}; bootflow scan -lb; poweroff"
 
 # Boot timing (docs/build.md, "Boot time"): bootstage records U-Boot's steps,
 # and boot.scr adds its own ("bootstage mark", patches/uboot/0001). The
@@ -109,12 +116,13 @@ CONFIG_CMD_POWEROFF=y
 # Hardware watchdog (review S7): U-Boot starts the A20 watchdog with its
 # maximum timeout (16 s) and services it until bootz. The kernel's sunxi_wdt
 # finds it running (WDOG_HW_RUNNING) and services it itself
-# (CONFIG_WATCHDOG_HANDLE_BOOT_ENABLED, no open timeout) until the frontend
-# opens /dev/watchdog and takes over. So a kernel that freezes anywhere
-# (including the early boot, before any user space) resets the board, and
-# boot.cmd counts that boot as failed; a long first boot (data partition
-# conversion) cannot trigger it, because the kernel keeps servicing it until
-# the menu opens the device.
+# (CONFIG_WATCHDOG_HANDLE_BOOT_ENABLED) until the frontend opens
+# /dev/watchdog and takes over, for at most 120 s (WATCHDOG_OPEN_TIMEOUT,
+# linux.fragment). So a kernel that freezes anywhere (including the early
+# boot, before any user space), or a boot that never gets to the menu,
+# resets the board, and boot.cmd counts that boot as failed; a long first
+# boot (data partition conversion) is not cut short: data-partition's
+# keeper opens the device and services it while the conversion progresses.
 CONFIG_WATCHDOG_AUTOSTART=y
 CONFIG_WATCHDOG_TIMEOUT_MSECS=16000
 

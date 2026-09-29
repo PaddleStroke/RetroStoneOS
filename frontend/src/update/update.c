@@ -387,6 +387,7 @@ void upd_ctx_init(struct upd_ctx *c, const char *root)
 	under(c->power_dir, sizeof(c->power_dir), c->root, "/sys/class/power_supply");
 	cpy(c->ca_file, "/etc/ssl/certs/ca-certificates.crt", sizeof(c->ca_file));
 	cpy(c->api_url, UPD_REPO_API, sizeof(c->api_url));
+	c->lock_fd = -1;
 }
 
 static void cmdline_word(const char *cl, const char *key, char *out, size_t n)
@@ -570,6 +571,7 @@ static int refusal_rank(enum rsu_err e)
 	case RSU_E_BADSIG: return 7;
 	case RSU_E_UNSIGNED: return 6;
 	case RSU_E_NOKEY: return 6;
+	case RSU_E_VARIANT: return 6;
 	case RSU_E_SAME: return 5;
 	case RSU_E_OLDER: return 4;
 	case RSU_E_BOARD: return 2;
@@ -766,6 +768,18 @@ static enum rsu_err fetch_head(struct upd_ctx *c, const char *url, struct rsu_he
 	return RSU_OK;
 }
 
+/* An asset's "size" (a JSON number: a double): 0 when it is not a
+ * plausible byte count (negative, fractional garbage beyond 2^53, NaN,
+ * infinite), never a cast of such a value (undefined behaviour). */
+static uint64_t json_size(const struct json *obj)
+{
+	double d = json_num(obj, "size", 0);
+
+	if (!(d >= 1.0 && d <= 9007199254740992.0))   /* also false for NaN */
+		return 0;
+	return (uint64_t)d;
+}
+
 enum rsu_err upd_check_net(struct upd_ctx *c, struct upd_found *out)
 {
 	struct http_opts o;
@@ -862,8 +876,9 @@ enum rsu_err upd_check_net(struct upd_ctx *c, struct upd_found *out)
 
 		cpy(out->where, url, sizeof(out->where));
 		cpy(out->name, json_str(best_rsu, "name"), sizeof(out->name));
-		out->size = (uint64_t)json_num(best_rsu, "size", 0);
-		e = url ? fetch_head(c, url, &h) : RSU_E_HTTP;
+		out->size = json_size(best_rsu);
+		/* (no size: nothing a download could be checked against) */
+		e = url && out->size ? fetch_head(c, url, &h) : RSU_E_HTTP;
 		if (e == RSU_OK) {
 			/* never an unsigned package from the network */
 			e = rsu_policy(&c->sys, &h, c->flags & ~(unsigned)RSU_ALLOW_UNSIGNED);
@@ -889,12 +904,64 @@ enum rsu_err upd_check_net(struct upd_ctx *c, struct upd_found *out)
 		if (best_img) {
 			cpy(out->where, json_str(best_img, "browser_download_url"), sizeof(out->where));
 			cpy(out->name, json_str(best_img, "name"), sizeof(out->name));
-			out->size = (uint64_t)json_num(best_img, "size", 0);
+			out->size = json_size(best_img);
 		}
 		upd_logf("release %s: %s", best_ver, c->ab ? "no update package for this board" : "reflash needed");
 	}
 	json_free(root);
 	return RSU_OK;
+}
+
+/* ----------------------------------------------------------------- locks */
+enum rsu_err upd_lock(struct upd_ctx *c)
+{
+	char p[PATH_MAX];
+	int fd;
+
+	if (c->lock_fd >= 0)
+		return RSU_OK;
+	mkdirs(c->run_dir);
+	snprintf(p, sizeof(p), "%s/update.lock", c->run_dir);
+	fd = open(p, O_RDWR | O_CREAT | O_CLOEXEC, 0644);
+	if (fd < 0)
+		return RSU_OK;                    /* no lock file possible: go on unlocked (as before) */
+	if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
+		close(fd);
+		seterr(c, "another rsos-update is downloading or installing");
+		return RSU_E_BUSY;
+	}
+	c->lock_fd = fd;
+	return RSU_OK;
+}
+
+void upd_unlock(struct upd_ctx *c)
+{
+	if (c->lock_fd >= 0)
+		close(c->lock_fd);
+	c->lock_fd = -1;
+}
+
+/*
+ * The boot state lock (<run>/bootenv.lock), shared with /usr/bin/rsos-boot-ok:
+ * held around the slot switch, so that a confirmation of the running slot
+ * (rsos_ok=1 ...) cannot land on the slot just selected for its trial.
+ * Blocking: rsos-boot-ok holds it only for a few fw_printenv/fw_setenv.
+ */
+static int lock_bootenv(struct upd_ctx *c)
+{
+	char p[PATH_MAX];
+	int fd;
+
+	snprintf(p, sizeof(p), "%s/bootenv.lock", c->run_dir);
+	fd = open(p, O_WRONLY | O_CREAT | O_CLOEXEC, 0644);
+	if (fd < 0)
+		return -1;
+	while (flock(fd, LOCK_EX) < 0)
+		if (errno != EINTR) {
+			close(fd);
+			return -1;
+		}
+	return fd;
 }
 
 /* ------------------------------------------------------------- download */
@@ -966,8 +1033,27 @@ static int dl_data(const void *data, size_t n, void *user)
 	return 0;
 }
 
+static enum rsu_err download(struct upd_ctx *c, const char *url, const char *name, uint64_t size,
+			     char *path_out, size_t n);
+
+/* under the update lock: two downloads into the same .part (the menu and
+ * the UART) would mix their bytes */
 enum rsu_err upd_download(struct upd_ctx *c, const char *url, const char *name, uint64_t size,
 			  char *path_out, size_t n)
+{
+	bool mine = c->lock_fd < 0;
+	enum rsu_err e = upd_lock(c);
+
+	if (e)
+		return e;
+	e = download(c, url, name, size, path_out, n);
+	if (mine)
+		upd_unlock(c);
+	return e;
+}
+
+static enum rsu_err download(struct upd_ctx *c, const char *url, const char *name, uint64_t size,
+			     char *path_out, size_t n)
 {
 	char dir[PATH_MAX - 256], fin[PATH_MAX], part[PATH_MAX + 16], info[PATH_MAX + 16], want[512], err[512];
 	struct stat st;
@@ -993,6 +1079,7 @@ enum rsu_err upd_download(struct upd_ctx *c, const char *url, const char *name, 
 	snprintf(info, sizeof(info), "%s.part.info", fin);
 	cpy(path_out, fin, n);
 	if (stat(fin, &st) == 0 && (uint64_t)st.st_size == size) {
+		/* (checked by upd_apply_file, which deletes it if it is damaged) */
 		upd_logf("%s is already downloaded", fin);
 		return RSU_OK;
 	}
@@ -1137,23 +1224,6 @@ enum rsu_err upd_slots(struct upd_ctx *c)
 }
 
 /* ------------------------------------------------------------------ apply */
-static int lock_updates(struct upd_ctx *c)
-{
-	char p[PATH_MAX];
-	int fd;
-
-	mkdirs(c->run_dir);
-	snprintf(p, sizeof(p), "%s/update.lock", c->run_dir);
-	fd = open(p, O_RDWR | O_CREAT | O_CLOEXEC, 0644);
-	if (fd < 0)
-		return -1;
-	if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
-		close(fd);
-		return -2;
-	}
-	return fd;
-}
-
 static ssize_t read_full(int fd, void *buf, size_t n, off_t off)
 {
 	size_t got = 0;
@@ -1469,35 +1539,57 @@ static enum rsu_err readback(struct upd_ctx *c, const struct rsu_header *h, uint
 	return RSU_OK;
 }
 
-/* the one boot environment write (docs/build.md "Updater contract") */
+/* the one boot environment write (docs/build.md "Updater contract"), under
+ * the boot state lock shared with rsos-boot-ok; the running slot is checked
+ * again under it. rsos_bad goes: the slot it named is either the one just
+ * written (a new system, on trial again) or the running one (confirmed:
+ * upd_slots checked it). rsos_rounds (the failure budget) goes too. */
 static enum rsu_err switch_slot(struct upd_ctx *c)
 {
-	char script[PATH_MAX], body[128], v[64], ok[64], tries[64];
+	char script[PATH_MAX], body[160], v[64] = "", ok[64] = "", tries[64], bad[64];
 	char *argv[] = { c->fw_setenv, "-c", c->fw_config, "-s", script, NULL };
-	int r;
+	enum rsu_err e = RSU_OK;
+	int r, lk;
 
+	lk = lock_bootenv(c);
+	if (lk < 0)
+		upd_logf("warning: no boot state lock (%s): going on", strerror(errno));
+	if (upd_env_get(c, "rsos_slot", v, sizeof(v)) < 0 || v[0] != c->booted || v[1] ||
+	    (upd_env_get(c, "rsos_ok", ok, sizeof(ok)) == 0 && strcmp(ok, "1"))) {
+		seterr(c, "the boot state changed meanwhile (rsos_slot=%s rsos_ok=%s)", v, ok);
+		e = RSU_E_ENV;
+		goto out;
+	}
 	snprintf(script, sizeof(script), "%s/update-env.txt", c->run_dir);
-	snprintf(body, sizeof(body), "rsos_slot %c\nrsos_ok 0\nrsos_tries 3\nrsos_fails 0\nrsos_fallback\n",
+	snprintf(body, sizeof(body),
+		 "rsos_slot %c\nrsos_ok 0\nrsos_tries 3\nrsos_fails 0\nrsos_fallback\nrsos_bad\nrsos_rounds\n",
 		 c->target_slot);
 	if (write_file_atomic(script, body, strlen(body)) < 0) {
 		seterr(c, "%s: %s", script, strerror(errno));
-		return RSU_E_IO;
+		e = RSU_E_IO;
+		goto out;
 	}
 	maybe_abort("env", 0);
 	r = run_capture(argv, NULL, NULL, 0);
 	unlink(script);
 	if (r != 0) {
 		seterr(c, "fw_setenv failed (%d)", r);
-		return RSU_E_ENV;
+		e = RSU_E_ENV;
+		goto out;
 	}
 	if (upd_env_get(c, "rsos_slot", v, sizeof(v)) < 0 || v[0] != c->target_slot ||
 	    upd_env_get(c, "rsos_ok", ok, sizeof(ok)) < 0 || strcmp(ok, "0") ||
-	    upd_env_get(c, "rsos_tries", tries, sizeof(tries)) < 0 || strcmp(tries, "3")) {
+	    upd_env_get(c, "rsos_tries", tries, sizeof(tries)) < 0 || strcmp(tries, "3") ||
+	    upd_env_get(c, "rsos_bad", bad, sizeof(bad)) == 0) {
 		seterr(c, "the boot environment does not read back as written");
-		return RSU_E_ENV;
+		e = RSU_E_ENV;
+		goto out;
 	}
 	upd_logf("boot environment: rsos_slot=%c rsos_ok=0 rsos_tries=3", c->target_slot);
-	return RSU_OK;
+out:
+	if (lk >= 0)
+		close(lk);
+	return e;
 }
 
 void upd_state_path(struct upd_ctx *c, char *out, size_t n)
@@ -1538,20 +1630,20 @@ enum rsu_err upd_verify_file(struct upd_ctx *c, const char *path, bool full, str
 	return e;
 }
 
+static void remove_download(struct upd_ctx *c, const char *file);
+
 enum rsu_err upd_apply_file(struct upd_ctx *c, const char *path, bool downloaded, struct rsu_header *h)
 {
 	uint8_t *buf = NULL, *out = NULL;
-	int lock, pfd = -1, tfd = -1, pct;
+	int pfd = -1, tfd = -1, pct;
 	enum rsu_err e;
 	struct stat st;
 	uint64_t tsize = 0;
-	bool ac;
+	bool ac, mine = c->lock_fd < 0;
 
-	lock = lock_updates(c);
-	if (lock == -2) {
-		seterr(c, "another rsos-update is installing");
-		return RSU_E_BUSY;
-	}
+	e = upd_lock(c);
+	if (e)
+		return e;
 	e = upd_read_header(c, path, h);
 	if (e)
 		goto out;
@@ -1675,8 +1767,15 @@ out:
 		close(pfd);
 	free(buf);
 	free(out);
-	if (lock >= 0)
-		close(lock);
+	/* our own download turned out damaged (a bad resume, a disk error, a
+	 * truncated or corrupted file of the right size): delete it, or the
+	 * next attempt would take it as downloaded again */
+	if (downloaded && (e == RSU_E_FORMAT || e == RSU_E_BADSIG || e == RSU_E_PAYLOAD)) {
+		upd_logf("the downloaded package is damaged (%s)", rsu_err_code(e));
+		remove_download(c, path);
+	}
+	if (mine)
+		upd_unlock(c);
 	return e;
 }
 
@@ -1736,6 +1835,16 @@ enum rsu_err upd_boot(struct upd_ctx *c, char *event, size_t n, char *version, s
 			sscanf(bst, "%63s", bs);
 			free(bst);
 		}
+	}
+	/* the boot state decides between "pending" and "failed": when it
+	 * cannot be read (fw_printenv failed: rsos_slot, which U-Boot always
+	 * sets, does not read), say nothing and keep the state file (the
+	 * caller asks again later), never "failed" (which removes it) */
+	if (c->booted && slot[0] != c->booted && upd_env_get(c, "rsos_slot", envslot, sizeof(envslot)) < 0) {
+		upd_logf("the boot environment cannot be read: the update state is kept for later");
+		cpy(event, "unknown", n);
+		free(t);
+		return RSU_E_ENV;
 	}
 	upd_env_get(c, "rsos_ok", ok, sizeof(ok));
 	upd_env_get(c, "rsos_slot", envslot, sizeof(envslot));

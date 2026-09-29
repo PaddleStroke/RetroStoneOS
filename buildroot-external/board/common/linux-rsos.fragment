@@ -78,10 +78,18 @@ CONFIG_SMB_SERVER=m
 # builds its driver in), soft/hard lockups panic, a panic reboots after 10 s,
 # hung tasks are logged only (a slow card flushing a large copy can block
 # for minutes).
+# A watchdog that U-Boot started (the sunxi boards) is serviced by the kernel
+# only until user space first opens /dev/watchdog, and for at most 120 s
+# after it registered (WATCHDOG_OPEN_TIMEOUT): a hang in rcS or a frontend
+# that crashes before it opens the device resets the board, so that U-Boot's
+# A/B logic can act (and the panel is not left powered without a picture).
+# The long first-boot paths open it themselves long before that
+# (data-partition's keeper). Development: watchdog.open_timeout=0 on the
+# kernel command line (fw_setenv rsos_extraargs) turns it off.
 CONFIG_WATCHDOG=y
 CONFIG_WATCHDOG_CORE=y
 CONFIG_WATCHDOG_HANDLE_BOOT_ENABLED=y
-CONFIG_WATCHDOG_OPEN_TIMEOUT=0
+CONFIG_WATCHDOG_OPEN_TIMEOUT=120
 CONFIG_PANIC_TIMEOUT=10
 CONFIG_SOFTLOCKUP_DETECTOR=y
 CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC=y

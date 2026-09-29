@@ -35,10 +35,20 @@ static void copy(char *dst, size_t n, const char *src)
 	snprintf(dst, n, "%s", src ? src : "");
 }
 
+/*
+ * Panel safety fails safe: keep-scanning is the default (a TFT must never
+ * stay powered with its signals stopped, and a board whose panel supply is
+ * always on cannot say so if its board.ini is missing or unreadable).
+ * board.ini opts out with "display_quirks = panel-power-switched" (the
+ * panel's supply is switched with it); board_apply_display() applies it to
+ * the panel connectors that need it only (DPI, LVDS, DSI, Unknown: not a
+ * composite screen behind its own controller, not HDMI).
+ */
 void board_defaults(struct board_profile *b)
 {
 	memset(b, 0, sizeof(*b));
 	copy(b->name, sizeof(b->name), "Generic");
+	b->display_quirks = BOARD_QUIRK_PANEL_KEEP_SCANNING;
 	b->internal_display = BOARD_INTERNAL_AUTO;
 	copy(b->cpu_governor_menu, sizeof(b->cpu_governor_menu), "schedutil");
 	copy(b->cpu_governor_game, sizeof(b->cpu_governor_game), "performance");
@@ -122,13 +132,19 @@ static void parse_quirks(struct board_profile *b, const char *v)
 {
 	char buf[256], *tok, *save = NULL;
 
-	b->display_quirks = 0;
+	/* keep-scanning unless the board opts out (see board_defaults) */
+	b->display_quirks = BOARD_QUIRK_PANEL_KEEP_SCANNING;
 	copy(buf, sizeof(buf), v);
 	for (tok = strtok_r(buf, ", \t", &save); tok; tok = strtok_r(NULL, ", \t", &save))
 		if (!strcasecmp(tok, "sun4i-tcon0-clock"))
 			b->display_quirks |= BOARD_QUIRK_SUN4I_TCON0_CLOCK;
 		else if (!strcasecmp(tok, "panel-keep-scanning"))
 			b->display_quirks |= BOARD_QUIRK_PANEL_KEEP_SCANNING;
+	/* (an explicit opt-out wins over an explicit keep-scanning) */
+	copy(buf, sizeof(buf), v);
+	for (tok = strtok_r(buf, ", \t", &save); tok; tok = strtok_r(NULL, ", \t", &save))
+		if (!strcasecmp(tok, "panel-power-switched"))
+			b->display_quirks &= ~BOARD_QUIRK_PANEL_KEEP_SCANNING;
 }
 
 static void set_key(struct board_profile *b, const char *k, const char *v)

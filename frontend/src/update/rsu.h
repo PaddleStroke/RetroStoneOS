@@ -59,6 +59,7 @@ enum rsu_err {
 	RSU_E_CANCELLED,
 	RSU_E_NOTLS,        /* built without HTTPS support */
 	RSU_E_INTERNAL,
+	RSU_E_VARIANT,      /* a development package on a release build */
 	RSU_E_COUNT
 };
 /* Machine code ("badsig") and English text of a result. */
@@ -169,9 +170,12 @@ struct rsu_system {
 enum {
 	RSU_ALLOW_UNSIGNED = 1,       /* development builds, local files, asked */
 	RSU_FORCE = 2,                /* same or older version (UART only) */
+	RSU_ALLOW_DEV = 4,            /* release build: accept a signed development package (UART only) */
 };
 
-/* Signature first, then format, board, bootloader and version. */
+/* Signature first, then format, board, variant (a release build takes
+ * variant=release packages only, unless RSU_ALLOW_DEV), bootloader and
+ * version. */
 enum rsu_err rsu_policy(const struct rsu_system *sys, const struct rsu_header *h, unsigned flags);
 
 #endif

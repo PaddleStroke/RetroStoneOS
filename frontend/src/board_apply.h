@@ -30,6 +30,29 @@ static inline void board_apply_input(const struct board_profile *b, struct input
 	c->backlight_name = board_name_or_auto(b->backlight);
 }
 
+/* Panel safety (board.c, board_defaults): keep-scanning unless the board
+ * opts out (panel-power-switched), for the panel connector types that need
+ * it: DPI, LVDS, DSI, Unknown (a DPI panel behind a bridge) - and any
+ * internal connector when the board does not list them (auto, or no
+ * board.ini: fail safe). Never for a board without a built-in panel, nor for
+ * a composite screen behind its own controller (the RetroStone1). */
+static inline bool board_panel_keeps_scanning(const struct board_profile *b)
+{
+	const unsigned need = 1u << 0 /* Unknown */ | 1u << 7 /* LVDS */ | 1u << 16 /* DSI */ | 1u << 17 /* DPI */;
+
+	if (!(b->display_quirks & BOARD_QUIRK_PANEL_KEEP_SCANNING))
+		return false;
+	switch (b->internal_display) {
+	case BOARD_INTERNAL_NONE:
+		return false;
+	case BOARD_INTERNAL_LIST:
+		return (b->internal_types & need) != 0;
+	case BOARD_INTERNAL_AUTO:
+	default:
+		return true;
+	}
+}
+
 static inline void board_apply_display(const struct board_profile *b, struct display_config *c)
 {
 	c->internal_mode = b->internal_display == BOARD_INTERNAL_NONE ? DISPLAY_INTERNAL_NONE :
@@ -40,7 +63,7 @@ static inline void board_apply_display(const struct board_profile *b, struct dis
 		     b->tv_norm == BOARD_TV_AUTO ? DISPLAY_TV_AUTO : DISPLAY_TV_NTSC;
 	c->tv_overscan = b->tv_overscan;
 	c->a20_clock_log = (b->display_quirks & BOARD_QUIRK_SUN4I_TCON0_CLOCK) != 0;
-	c->panel_keep_scanning = (b->display_quirks & BOARD_QUIRK_PANEL_KEEP_SCANNING) != 0;
+	c->panel_keep_scanning = board_panel_keeps_scanning(b);
 	c->backlight_name = board_name_or_auto(b->backlight);
 }
 

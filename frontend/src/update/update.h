@@ -66,6 +66,7 @@ struct upd_ctx {
 	char root_dev[256];           /* root= */
 	char target[1024];            /* the inactive slot's partition (upd_slots) */
 	char target_slot;
+	int lock_fd;                  /* <run>/update.lock held (upd_lock), else -1 */
 
 	char err[512];                /* details of the last error (English) */
 };
@@ -111,14 +112,25 @@ enum rsu_err upd_scan_local(struct upd_ctx *c, const char *dir, struct upd_found
  * RSU_E_NOTFOUND: no release for this board; else a network error. */
 enum rsu_err upd_check_net(struct upd_ctx *c, struct upd_found *out);
 
+/* The update lock (<run>/update.lock): one download or install at a time.
+ * upd_download and upd_apply_file take it themselves when it is not held;
+ * a caller that downloads then installs holds it across both. RSU_E_BUSY
+ * when another process has it. */
+enum rsu_err upd_lock(struct upd_ctx *c);
+void upd_unlock(struct upd_ctx *c);
+
 /* Downloads url (size bytes) to <data>/rsos/update/<name>, resuming a
- * previous partial download; path_out gets the file. */
+ * previous partial download; path_out gets the file. A complete file there
+ * is taken as it is: upd_apply_file checks it, and deletes it when it is
+ * damaged (so the next attempt downloads it again). */
 enum rsu_err upd_download(struct upd_ctx *c, const char *url, const char *name, uint64_t size,
 			  char *path_out, size_t n);
 
 /* Verifies and installs a package into the inactive slot, then switches the
  * boot slot. downloaded: the file is ours (deleted once the new system is
- * confirmed); a user's file is never deleted. *h gets the package header. */
+ * confirmed, or at once when it turns out damaged: format, signature or
+ * payload hash); a user's file is never deleted. *h gets the package
+ * header. */
 enum rsu_err upd_apply_file(struct upd_ctx *c, const char *path, bool downloaded, struct rsu_header *h);
 
 /* Checks a package without installing it: signature (any version), payload
@@ -127,8 +139,10 @@ enum rsu_err upd_verify_file(struct upd_ctx *c, const char *path, bool full, str
 
 /* After a restart: event gets "none", "updated" (first boot of the new
  * version: tell the user), "pending" (installed, restart not done yet),
- * "confirmed" (the new system is confirmed: the download was removed) or
- * "failed" (the new system did not start: the old one runs). */
+ * "confirmed" (the new system is confirmed: the download was removed),
+ * "failed" (the new system did not start: the old one runs) or "unknown"
+ * (the boot environment could not be read: nothing is removed, ask again
+ * later; RSU_E_ENV). */
 enum rsu_err upd_boot(struct upd_ctx *c, char *event, size_t n, char *version, size_t vn);
 
 /* Determines the booted slot and the inactive partition (c->target), and
