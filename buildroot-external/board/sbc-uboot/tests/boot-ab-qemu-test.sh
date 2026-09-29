@@ -12,11 +12,12 @@
 # U-Boot tarball in ~/rsos/dl and the host tools of a build: mkimage and
 # fw_printenv, from ~/rsos/output/host by default, RSOS_HOST_DIR otherwise):
 #   sh buildroot-external/board/sbc-uboot/tests/boot-ab-qemu-test.sh
+# RSOS_QEMU_AB_DIR: another work dir (default ~/rsos/qemu-ab-sbc).
 set -u
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 T=$(cd "$(dirname "$0")/.." && pwd)
 H3=$T/../orangepi-h3
-W=$HOME/rsos/qemu-ab-sbc
+W=${RSOS_QEMU_AB_DIR:-$HOME/rsos/qemu-ab-sbc}
 H=${RSOS_HOST_DIR:-$HOME/rsos/output/host}
 mkdir -p "$W"
 cd "$W" || exit 1
@@ -44,7 +45,11 @@ $W/sd.img 0x110000 0x10000
 EOF
 env_get() { "$H/bin/fw_printenv" -c fw_env.config -n "$1" 2> /dev/null; }
 env_set() { "$H/bin/fw_setenv" -c fw_env.config "$@"; }
-confirm() { printf 'rsos_ok 1\nrsos_tries 0\nrsos_fails 0\nrsos_fallback\n' | "$H/bin/fw_setenv" -c fw_env.config -s -; }
+# (the slot read before the pipe: fw_printenv would wait for fw_setenv's lock)
+confirm() {
+	_s=$(env_get rsos_slot)
+	printf 'rsos_ok 1\nrsos_tries 0\nrsos_fails 0\nrsos_fallback\nrsos_rounds\nrsos_good %s\n' "$_s" | "$H/bin/fw_setenv" -c fw_env.config -s -
+}
 state() { echo "slot=$(env_get rsos_slot) ok=$(env_get rsos_ok) tries=$(env_get rsos_tries) fails=$(env_get rsos_fails) fallback=$(env_get rsos_fallback)"; }
 
 # boot.scr: the template filled in as mk-boot-scr.sh does for the H3 boards,
@@ -95,6 +100,7 @@ boot() {
 pass=0; fail=0
 check() { if eval "$2"; then echo "  ok: $1"; pass=$((pass+1)); else echo "  FAIL: $1"; fail=$((fail+1)); fi; }
 started() { grep -q "^=== KERNEL slot $1:.* rsos.boot=$2" out.txt; }
+no_kernel() { ! grep -q '^=== KERNEL' out.txt; }
 
 echo "== 1: fresh card, slot a; every boot counted until confirmed"
 make_card good empty
@@ -115,12 +121,20 @@ boot
 check "4th boot: falls back to slot b (root=/dev/mmcblk0p3)" "grep -q 'falling back to slot b' out.txt && started b pending && grep -q 'root=/dev/mmcblk0p3' out.txt"
 check "state: slot=b ok=1 fails=1 fallback=a" "[ \"\$(state)\" = 'slot=b ok=1 tries=0 fails=1 fallback=a' ]"
 
-echo "== 3: ... and slot b panics too: no ping-pong, stay on b"
+echo "== 3: ... and slot b panics too: back to the last confirmed slot a, then power off (budget)"
 boot; boot
 boot
-check "b fails 3 times: stays on b" "grep -q 'staying on b' out.txt && started b pending && [ \"\$(env_get rsos_slot)\" = b ]"
+check "b fails 3 times: back to a (rsos_good)" "grep -q 'falling back to slot a' out.txt && started a pending && [ \"\$(env_get rsos_rounds)\" = 2 ]"
+boot; boot
+boot
+check "a fails again: stays on a" "grep -q 'staying on a' out.txt && started a pending"
+boot; boot
+boot
+check "round 4: powers off, no kernel, a fresh budget on a" \
+	"grep -q 'no slot starts, powering off (next power-on: slot a)' out.txt && no_kernel && [ \"\$(env_get rsos_rounds)\" = 0 ] && [ \"\$(env_get rsos_slot)\" = a ]"
+boot
 confirm
-check "rsos-boot-ok clears the fallback" "[ \"\$(state)\" = 'slot=b ok=1 tries=0 fails=0 fallback=' ]"
+check "next power-on starts a; rsos-boot-ok clears the fallback" "started a pending && [ \"\$(state)\" = 'slot=a ok=1 tries=0 fails=0 fallback=' ]"
 
 echo "== 4: confirmed slot a panics, slot b empty (factory card): stay on a"
 make_card good empty
@@ -131,25 +145,32 @@ check "stays on a (b has no kernel)" "grep -q 'slot b has no kernel' out.txt && 
 echo "== 5: slot a with a corrupt kernel, slot b good: switch at once"
 make_card bad good
 boot
-check "bootz fails on a: switching to b, reset" "grep -q 'switching to slot b' out.txt && ! grep -q '=== KERNEL' out.txt"
+check "bootz fails on a: switching to b, reset" "grep -q 'switching to slot b' out.txt && no_kernel"
 boot
 check "next boot starts b" "started b pending"
+env_set rsos_slot a
+env_set rsos_fallback b
+boot
+check "(review) unloadable a with rsos_fallback=b: switches to b, no power-off" "grep -q 'switching to slot b' out.txt && ! grep -q 'powering off' out.txt"
 
-echo "== 6: both kernels corrupt: power off"
+echo "== 6: both kernels corrupt: switches within the budget, then power off"
 make_card bad bad
 boot
 check "a fails, switch to b" "grep -q 'switching to slot b' out.txt"
-boot
-check "b fails too: powering off" "grep -q 'no slot can be booted, powering off' out.txt"
+boot; boot; boot
+check "round 4: powering off" "grep -q 'no slot can be booted, powering off' out.txt"
 
-echo "== 7: updated slot on trial (ok=0 tries=3) that never confirms"
+echo "== 7: updated slot on trial (ok=0 tries=3) that never confirms: marked bad"
 make_card good good
 boot; confirm
-printf 'rsos_slot b\nrsos_ok 0\nrsos_tries 3\nrsos_fails 0\nrsos_fallback\n' | "$H/bin/fw_setenv" -c fw_env.config -s -
+printf 'rsos_slot b\nrsos_ok 0\nrsos_tries 3\nrsos_fails 0\nrsos_fallback\nrsos_bad\nrsos_rounds\n' | "$H/bin/fw_setenv" -c fw_env.config -s -
 boot; boot; boot
 check "3 trial boots of b (tries 2, 1, 0)" "started b pending && [ \"\$(env_get rsos_tries)\" = 0 ]"
 boot
-check "4th boot: back to a, fallback=b" "started a pending && [ \"\$(state)\" = 'slot=a ok=1 tries=0 fails=1 fallback=b' ]"
+check "4th boot: back to a, fallback=b, bad=b" "started a pending && [ \"\$(state)\" = 'slot=a ok=1 tries=0 fails=1 fallback=b' ] && [ \"\$(env_get rsos_bad)\" = b ]"
+boot; boot
+boot
+check "(review) then a fails 3 times: never back to the bad slot b" "grep -q 'slot b is marked bad: staying on a' out.txt && started a pending"
 
 echo "== 8: rsos_maxfails=0: a confirmed slot is not counted (no environment write)"
 make_card good empty
@@ -171,3 +192,4 @@ check "U-Boot started the watchdog" "grep -qi 'watchdog\|wdt' out.txt"
 
 echo "PASS=$pass FAIL=$fail"
 [ $fail -eq 0 ]
+

@@ -113,7 +113,7 @@ signature formats; no OpenSSL.
 | File | Where | |
 |---|---|---|
 | public key | `frontend/assets/update.pub` in the repository, installed as `/usr/share/rsos/update.pub` | public |
-| **private key** | `update-signing.key` in a private folder **outside the repository** (for example `C:\path\to\RetroStoneOS-keys\`), and the GitHub secret `UPDATE_SIGNING_KEY` | **never committed** |
+| **private key** | `update-signing.key` in a private folder **outside the repository** (for example `C:\path\to\RetroStoneOS-keys\`), and the secret `UPDATE_SIGNING_KEY` in the GitHub Environment `release` (docs/ci.md §7) | **never committed** |
 
 Both are signify keys ("untrusted comment: ..." + one base64 line). The private key has **no passphrase** (the CI
 cannot type one); protect the file instead. It was made on 2026-09-27 with
@@ -124,8 +124,9 @@ cannot type one); protect the file instead. It was made on 2026-09-27 with
 1. **Back up** `update-signing.key` somewhere safe and offline (a password manager, an encrypted USB drive). Losing
    it means the consoles in the field cannot be updated any more (they only accept this key): a new key can only
    reach them through a reflash, or through an update signed with the old key.
-2. Add it to GitHub: `PaddleStroke/RetroStoneOS` > Settings > Secrets and variables > Actions > New repository
-   secret: name **`UPDATE_SIGNING_KEY`**, value: the whole content of `update-signing.key` (both lines).
+2. Add it to GitHub as the secret **`UPDATE_SIGNING_KEY`** in the `release` environment (docs/ci.md §7: the
+   environment is limited to `v*` tags), value: the whole content of `update-signing.key` (both lines). Manual
+   (workflow_dispatch) and branch builds never get it: their packages are never signed.
 3. Anyone who has the file can publish an update every console installs: never mail it, never put it in the
    repository or in an issue. If it leaks: make a new key, put its public key in `frontend/assets/update.pub`, and
    publish one last update signed with the **old** key that brings the new public key (then revoke the secret).
@@ -133,7 +134,10 @@ cannot type one); protect the file instead. It was made on 2026-09-27 with
 **Policy** (the updater enforces it, `rsu_policy()`):
 
 - **Release builds** (`BR2_RETROSTONE_RELEASE`, `RSOS_VARIANT=release`) install only packages signed with their
-  key. Unsigned, or signed with another key, or modified: refused.
+  key. Unsigned, or signed with another key, or modified: refused. They also install only **release** packages
+  (manifest `variant = release`): a development build signed with the same key is refused ("variant": "This is a
+  development build of RetroStoneOS: this console installs release updates only"), unless
+  `rsos-update --allow-dev apply FILE` on the UART (a developer, on purpose).
 - **Development builds** install signed packages the same way. An **unsigned** package is accepted only from a local
   file (USB drive, SD card, UART) and only after an explicit confirmation ("This update is not signed. Install it only
   if you built it yourself." / `rsos-update --allow-unsigned apply FILE`). The online check never offers one. A
@@ -160,8 +164,8 @@ rsos-update apply auto               download and install the newest version fou
 rsos-update verify [--full] FILE     check a package (signature, payload; --full: decompress and check the image)
 rsos-update boot                     after a restart: "updated", clean-up once confirmed
 rsos-update status                   the boot environment (rsos_*) and the installed update
-options: --allow-unsigned (development builds), --force (same or older version), --prerelease,
-         --ignore-battery, --machine (lines for the menu), --log FILE
+options: --allow-unsigned (development builds), --allow-dev (release builds: a signed development package),
+         --force (same or older version), --prerelease, --ignore-battery, --machine (lines for the menu), --log FILE
 ```
 
 Every run is logged to `rsos/logs/update.log` on the RETROSTONE drive (`/data/rsos/logs/update.log`, kept across the
@@ -209,14 +213,19 @@ minute, or set the date in Settings > Date & time."
 To `/data/rsos/update/<name>.part`, with `<name>.part.info` (name and size): a free-space check first (size + 16 MB),
 then the download, retried 3 times on a network error, each time **resumed** with a Range request from what is on the
 card (also after a power cut or a new attempt later). A server that ignores Range restarts from the beginning; a file
-of another size on the server (a rebuilt release) is refused. Complete: fsync, renamed to `<name>`. The downloaded
+of another size on the server (a rebuilt release) is refused; an asset size that is not a plausible byte count
+(negative, not finite) makes the release not installable. Complete: fsync, renamed to `<name>`. The downloaded
 package stays there until the new system is confirmed, then it is deleted (a package the user copied is never
-deleted).
+deleted). The download runs under the update lock (`/run/rsos/update.lock`), held from the download to the end of the
+install: two `rsos-update` (the menu and the UART) never write the same `.part`. A complete file of the right size
+is taken as downloaded without hashing it there (nor is a resumed `.part` trusted more): the install checks it, and
+**deletes our own download when it turns out damaged** (format, signature or payload hash), so the next attempt
+downloads it again instead of failing on it for ever.
 
 ### 4.4 Installing (`upd_apply_file()`)
 
-1. one `rsos-update` at a time (`flock /run/rsos/update.lock`);
-2. the manifest's signature (policy above), board, bootloader, version; the battery (>= 30 % or a charger);
+1. one `rsos-update` at a time (`flock /run/rsos/update.lock`, also around the download);
+2. the manifest's signature (policy above), board, variant, bootloader, version; the battery (>= 30 % or a charger);
 3. the slots: the running slot is `rsos.slot=` of the kernel command line, its partition `root=`
    (`/dev/mmcblk0p2` for slot a, `p3` for b; any `<disk>[p]N`); the target is the other one. The boot environment must
    select the running slot and it must be **confirmed** (`rsos_ok=1`): a system on trial (just updated, not yet
@@ -230,9 +239,12 @@ deleted).
    and the image, 8 MiB at a time written back (`sync_file_range`) and dropped from the page cache (the menu's
    cached files stay); the first 64 KiB last, then `fdatasync`;
 6. **pass 3**: the slot is read back from the card (`O_DIRECT`) and its SHA-256 compared with the manifest;
-7. **the switch**: one `fw_setenv -s` with `rsos_slot=<new> rsos_ok=0 rsos_tries=3 rsos_fails=0 rsos_fallback=`
-   (the "Updater contract" of docs/build.md; the environment is redundant: a power cut during that write leaves
-   either the old or the new state), read back with `fw_printenv`;
+7. **the switch**: under `/run/rsos/bootenv.lock` (the lock of `rsos-boot-ok`: a confirmation of the running slot
+   cannot land on the new one and skip its trial), the running slot checked again (selected, confirmed), then one
+   `fw_setenv -s` with `rsos_slot=<new> rsos_ok=0 rsos_tries=3 rsos_fails=0` and `rsos_fallback`, `rsos_bad`,
+   `rsos_rounds` emptied (the "Updater contract" of docs/build.md: this write is the only thing that clears
+   `rsos_bad`, the mark U-Boot puts on an update that never got confirmed; the environment is redundant: a power cut
+   during that write leaves either the old or the new state), read back with `fw_printenv`;
 8. `/data/rsos/update-state.ini` (version, slots, the downloaded file, `announced`) for after the restart.
 
 The running slot and `/data` are never opened for writing. Cancelling (the menu's STOP, `SIGTERM`, `Ctrl-C`) is
@@ -245,7 +257,9 @@ been stable for 30 s after the network settings were applied. The menu, once its
 `rsos-update boot` (only when `update-state.ini` exists; again every 30 s until the confirmation, at most 10 minutes):
 `updated` the first time ("Updated to RetroStoneOS x.y"), `confirmed` once `rsos-boot-ok` confirmed the slot (the
 downloaded package and the state file are deleted), `failed` when U-Boot fell back (the existing boot note says so;
-the download is deleted: it would fail again).
+the download is deleted: it would fail again; U-Boot has marked the slot `rsos_bad`, so it is never booted again
+until a new update is written there), `unknown` when the boot environment cannot be read (`fw_printenv` failed:
+nothing is decided nor deleted, the menu asks again later).
 
 ### 4.6 U-Boot is not updated
 
@@ -275,7 +289,7 @@ One line per event, `type<TAB>key=value<TAB>...`, `\\` `\t` `\n` escaped in valu
 | `state`, `progress` | `phase` (`download verify write readback switch`), `done`, `total` (bytes) |
 | `done` | `version slot` |
 | `error` | `code` (`rsu_err_code()`: `badsig`, `battery`, `clock`...), `msg`, `detail` |
-| `boot` | `event` (`none updated updated-waiting pending confirmed failed`), `version` |
+| `boot` | `event` (`none updated updated-waiting pending confirmed failed unknown`), `version` |
 | `verified` | `version board signed compare` |
 
 The menu (`ui/update_ui.c`) translates the codes; the helper's English text goes to the log only. The helper runs in
@@ -287,15 +301,16 @@ its own session: an install goes on if the menu restarts.
 whose image has `/etc/fw_env.config` it makes `retrostoneos-<version>-<image>.rsu` (+ `.sha256`):
 `zstd -19` of `images/rootfs.ext4` (checked by decompressing it again), the manifest from the image's
 `/etc/rsos/version.env`, the changelog excerpt (the commit subjects since the previous tag, at most 40), and the
-signature with the `UPDATE_SIGNING_KEY` secret, whose public half must equal the image's `update.pub` (else the job
+signature with the secret `UPDATE_SIGNING_KEY` of the `release` environment (docs/ci.md §7; only `v*` tag builds get
+it: manual and branch builds are never signed), whose public half must equal the image's `update.pub` (else the job
 fails). Without the secret the package is **`<...>-unsigned.rsu`**: release images refuse it and the online check never
 looks at it (it only looks for `-<board>.rsu`), but a developer can install it on a development image from a USB
 drive. `images.yml` uploads the packages with the images; the release job attaches them to the release (and to
 `SHA256SUMS`), and the release notes list them.
 
 For a tag `v0.2.0` the images report `0.2.0` (`RSOS_CI_OS_VERSION` -> `BR2_RETROSTONE_VERSION`), and
-`make-rsu.sh` checks that the package says the same. A manual run (workflow_dispatch) builds packages too (named after
-the branch and commit; their version is the one of `rsos-frontend.mk`, `0.1` + `-dev` for development images).
+`make-rsu.sh` checks that the package says the same. A manual run (workflow_dispatch) builds packages too, always
+unsigned (named after the branch and commit; their version is the one of `rsos-frontend.mk`, `0.1` + `-dev` for development images).
 
 Locally (WSL), after a build:
 
@@ -308,8 +323,8 @@ UPDATE_SIGNING_KEY="$(cat /mnt/c/path/to/RetroStoneOS-keys/update-signing.key)" 
 
 | Test | What |
 |---|---|
-| `make check-update` (in `make check`) | `test_update` (146 checks): SHA-256 vectors, base64, signify keys and signatures (good, modified, another key, a key with the same number), the manifest parser, version order, the tar container, the policy (bad signature, tampered manifest, wrong board even forced, older, same, forced, unsigned on release and development builds, bootloader, updater), JSON, URLs, slot selection from the command line (mmcblk, sda, nvme, mismatch, `PARTUUID=`, on trial, restart pending, no environment), installs into a file slot with fake `fw_printenv`/`fw_setenv` (content, environment, one `fw_setenv` call, state file, battery, tampered payload, bad signature, wrong board, downgrade, forced downgrade, unsigned on development builds, an interrupted write: environment untouched and no superblock, then the retry, a slot too small), the after-restart events, downloads from a local HTTP server (a dropped connection resumed with Range, a process killed halfway resumed by the next run, a server without Range, a changed file, no space, 404, plain http refused), the GitHub check (chunked JSON, redirect, only the package head fetched, pre-releases, up to date, a board without A/B, the clock, an unsigned package online, no server) |
-| | `cli_test.sh` (35 checks): `rsos-mkupdate` keygen/pack/sign/verify/info, **interoperability with OpenBSD signify** (it verifies our signatures; its keys sign our packages; identical signatures), `rsos-update` `--machine` output for info/check/verify/apply/boot/status on a fake system |
+| `make check-update` (in `make check`) | `test_update` (165 checks): SHA-256 vectors, base64, signify keys and signatures (good, modified, another key, a key with the same number), the manifest parser, version order, the tar container, the policy (bad signature, tampered manifest, wrong board even forced, older, same, forced, unsigned on release and development builds, a signed development package on a release build and `--allow-dev`, bootloader, updater), JSON, URLs, slot selection from the command line (mmcblk, sda, nvme, mismatch, `PARTUUID=`, on trial, restart pending, no environment), installs into a file slot with fake `fw_printenv`/`fw_setenv` (content, environment, one `fw_setenv` call, state file, battery, tampered payload, bad signature, wrong board, downgrade, forced downgrade, unsigned on development builds, an interrupted write: environment untouched and no superblock, then the retry, a slot too small; the slot switch waiting for rsos-boot-ok's lock and clearing `rsos_bad`), the after-restart events (also an unreadable environment: `unknown`, nothing removed), downloads from a local HTTP server (a dropped connection resumed with Range, a process killed halfway resumed by the next run, a server without Range, a changed file, no space, 404, plain http refused, a damaged download of the right size deleted by the install and downloaded again, a user's damaged file kept, the update lock around the download), the GitHub check (chunked JSON, redirect, only the package head fetched, pre-releases, up to date, a board without A/B, the clock, an unsigned package online, asset sizes that are negative or not finite, no server) |
+| | `cli_test.sh` (38 checks): `rsos-mkupdate` keygen/pack/sign/verify/info, **interoperability with OpenBSD signify** (it verifies our signatures; its keys sign our packages; identical signatures), `rsos-update` `--machine` output for info/check/verify/apply/boot/status on a fake system, a signed development package refused on a release build (`variant`) and installed with `--allow-dev` |
 | | `check-update-ui`: the screens with the preview tool and `tests/fake-rsos-update.sh`: check, notes, install, restart dialog, up to date, a failed install, a board without A/B, "Updated to" after a restart, the USB dialog with and without a package |
 | `board/retrostone2/tests/update-ab-test.sh` (root, WSL, after a build; run by the images workflow) | the real image on a loop device (22 checks): a bad signature, a power cut in the middle of the write, the install (the environment read with the host `fw_printenv` on the card, slot b mounted and compared byte for byte, slot a and the data partition unchanged), the restart and the confirmation; then **U-Boot in QEMU** (the cubieboard build of `boot-ab-qemu-test.sh`) boots the updated slot on trial, and after an interrupted install still boots slot a |
 | live | `rsos-update check` against `api.github.com` from WSL: TLS and the certificate chain; a wrong CA bundle and a name mismatch (by IP) are refused |

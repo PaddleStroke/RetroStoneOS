@@ -15,8 +15,16 @@
 # slot on trial, rsos_fails + 1 for a confirmed one) and says so with
 # rsos.boot=pending on the kernel command line; rcS copies that to
 # /run/rsos/boot-state. Confirming sets rsos_ok=1 rsos_tries=0 rsos_fails=0
-# and clears rsos_fallback (one fw_setenv, a single write of one of the two
-# redundant copies; nothing is written when there is nothing to change).
+# rsos_good=<this slot>, clears rsos_fallback and rsos_rounds (the failure
+# budget) and a pending cpu-lowvolt trial (rsos_lowvolt=trial) (one
+# fw_setenv, a single write of one of the two redundant copies; nothing is
+# written when there is nothing to change). It never clears rsos_bad: only
+# the updater does, when it writes that slot. A refund also clears the
+# cpu-lowvolt trial (an orderly shutdown: the overlay did not freeze).
+# Every access to the boot state takes /run/rsos/bootenv.lock, which the
+# updater (rsos-update) takes too around its switch of the boot slot, and
+# re-reads rsos_slot under it: a confirmation can never land on a slot the
+# updater just selected (which would skip its trial).
 #
 # "Stable" (review S5): the network drivers that the settings ask for are
 # loaded and the Ethernet PHY parked (/run/rsos/net-applied, written at the
@@ -71,6 +79,7 @@ state() {
 
 if [ "$1" = "status" ]; then
 	echo "slot=$(get rsos_slot) ok=$(get rsos_ok) tries=$(get rsos_tries) fails=$(get rsos_fails) fallback=$(get rsos_fallback) maxfails=$(get rsos_maxfails)"
+	echo "bad=$(get rsos_bad) good=$(get rsos_good) rounds=$(get rsos_rounds) maxrounds=$(get rsos_maxrounds) lowvolt=$(get rsos_lowvolt)"
 	echo "booted=$BOOTED boot=$(state)"
 	exit 0
 fi
@@ -94,8 +103,10 @@ slot_check() {
 	return 0
 }
 
+# The boot state lock, shared with the updater (frontend/src/update/update.c,
+# switch_slot): held until this script exits.
 lock() {
-	exec 9> "$RUN/boot-ok.lock"
+	exec 9> "$RUN/bootenv.lock"
 	flock 9
 }
 
@@ -107,11 +118,17 @@ confirm() {
 	slot_check || return 1
 	_fb=$(get rsos_fallback)
 	[ -n "$_fb" ] && echo "$_fb" > "$RUN/boot-fallback"
+	_lv=$(get rsos_lowvolt)
+	_rd=$(get rsos_rounds)
 	if [ "$(get rsos_ok)" = 1 ] && [ "$(get rsos_tries)" = 0 ] &&
-		[ "$(get rsos_fails)" = 0 ] && [ -z "$_fb" ]; then
+		[ "$(get rsos_fails)" = 0 ] && [ -z "$_fb" ] && [ "$(get rsos_good)" = "$BOOTED" ] &&
+		[ "${_rd:-0}" = 0 ] && [ "$_lv" != trial ]; then
 		:
 	else
-		printf 'rsos_ok 1\nrsos_tries 0\nrsos_fails 0\nrsos_fallback\n' | fw_setenv -s - || return 1
+		{
+			printf 'rsos_ok 1\nrsos_tries 0\nrsos_fails 0\nrsos_fallback\nrsos_rounds\nrsos_good %s\n' "$BOOTED"
+			[ "$_lv" != trial ] || echo rsos_lowvolt
+		} | fw_setenv -s - || return 1
 	fi
 	echo confirmed > "$RUN/boot-state"
 	msg "slot $BOOTED confirmed"
@@ -128,6 +145,7 @@ refund() {
 		_f=$(get rsos_fails)
 		case "$_f" in [1-9]) fw_setenv rsos_fails $((_f - 1)) ;; esac
 	fi
+	[ "$(get rsos_lowvolt)" != trial ] || fw_setenv rsos_lowvolt
 	echo refunded > "$RUN/boot-state"
 }
 

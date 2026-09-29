@@ -13,9 +13,19 @@
 #                       stability window)
 #   rsos_fallback  a|b  the slot this one fell back from (no ping-pong);
 #                       cleared when the running slot is confirmed
+#   rsos_bad       a|b  an updated slot that never got confirmed (its trial
+#                       ran out): U-Boot never falls back to it. Only the
+#                       updater's next write of the boot state (a new
+#                       system in a slot) clears it, never a confirmation
+#   rsos_good      a|b  the last slot that rsos-boot-ok confirmed
+#   rsos_rounds    N    slots that ran out of boots (or could not be loaded)
+#                       since the last confirmed boot: the failure budget
 #   rsos_maxfails  N    fallback threshold for a confirmed slot (default 3;
 #                       0 = never count, no environment write on a normal
 #                       boot)
+#   rsos_maxrounds N    failure budget (default 4, about two full rounds of
+#                       both slots): power off when rsos_rounds reaches it
+#   rsos_lowvolt   trial|failed  the cpu-lowvolt test overlay (see below)
 #
 # Every boot is counted before the kernel starts, and Linux undoes the count:
 #   - trial slot (rsos_ok=0): rsos_tries - 1 at each boot; at 0, fall back;
@@ -23,24 +33,36 @@
 #     rsos_maxfails, fall back.
 #   /usr/bin/rsos-boot-ok confirms the running slot once the menu is up, the
 #   network drivers are loaded and 30 s have passed without a problem
-#   (rsos_ok=1 rsos_tries=0 rsos_fails=0, rsos_fallback cleared); an orderly
-#   shutdown before that (rcK: "rsos-boot-ok refund") gives the try back. So a
-#   kernel that panics (panic=10), hangs (hardware watchdog, lockup
-#   detectors) or loses power before the window, N times in a row, makes
-#   U-Boot boot the other slot, even if it was confirmed before.
+#   (rsos_ok=1 rsos_tries=0 rsos_fails=0 rsos_good=<slot>, rsos_fallback and
+#   rsos_rounds cleared); an orderly shutdown before that (rcK: "rsos-boot-ok
+#   refund") gives the try back. So a kernel that panics (panic=10), hangs
+#   (hardware watchdog, lockup detectors) or loses power before the window,
+#   N times in a row, makes U-Boot boot the other slot, even if it was
+#   confirmed before.
 #   Cost: one saveenv here per counted boot (+ one fw_setenv from Linux about
 #   40 s later, in the background). TODO(hw): measure the saveenv time
 #   (bootstage marks "boot.scr" -> "env-saved").
-# Fall back = switch to the other slot if it has a kernel, mark it confirmed
-# and remember rsos_fallback; if the other slot is the one that failed
-# before (or has no kernel), stay and count again from 1.
+# A slot that runs out of boots ("exhausted") counts one round
+# (rsos_rounds + 1); a trial slot (rsos_ok=0) is also marked rsos_bad. Then:
+#   - the budget is spent (rsos_rounds = rsos_maxrounds): power off. The next
+#     power-on starts a fresh budget on the last confirmed slot (rsos_good);
+#   - else switch to the other slot when it has a kernel, is not rsos_bad,
+#     and either did not fail before in this episode (rsos_fallback) or is
+#     the last confirmed slot (both slots failed: prefer rsos_good); mark it
+#     confirmed and remember rsos_fallback;
+#   - else stay and count again from 1.
 # The kernel command line says rsos.boot=pending when this boot was counted.
 # If the kernel or the device tree cannot be loaded, or bootz returns, the
-# script switches to the other slot at once (reset), or powers off when no
-# slot can be booted: it never stops at a U-Boot prompt.
+# script switches to the other slot at once (reset) when it has a kernel and
+# is not rsos_bad (one round of the budget), or powers off (and resets, in
+# case the power-off returns): it never stops at a U-Boot prompt.
 #
 # Updater contract: write the inactive slot, then in one "fw_setenv -s":
-#   rsos_slot <new>, rsos_ok 0, rsos_tries 3, rsos_fails 0, rsos_fallback (empty)
+#   rsos_slot <new>, rsos_ok 0, rsos_tries 3, rsos_fails 0, rsos_fallback,
+#   rsos_bad and rsos_rounds (empty)
+# The protection against a bad slot needs this script in the slot that runs
+# (U-Boot sources the selected slot's boot.scr): a slot with an older script
+# may still fall back to a slot marked bad.
 # Counters: 1..9 (setexpr works in hex).
 # The saved environment is a full copy of U-Boot's (including bootcmd and the
 # transient "silent", which keeps the console quiet from the environment load
@@ -49,6 +71,12 @@
 #
 # Optional settings, also in the U-Boot environment (fw_setenv):
 #   rsos_overlays   e.g. "emmc sata": /boot/overlays/<name>.dtbo to apply
+#                   "cpu-lowvolt" (a test that may freeze the board) is
+#                   one-shot: applied with rsos_lowvolt=trial, which
+#                   rsos-boot-ok clears when that boot is confirmed (or given
+#                   back); a boot that finds "trial" still set skips it and
+#                   sets rsos_lowvolt=failed (skipped until
+#                   "fw_setenv rsos_lowvolt")
 #   rsos_extraargs  appended to the kernel command line (e.g. "initcall_debug")
 #   rsos_verbose    1: U-Boot prints on the UART (silent otherwise, see bootcmd)
 #
@@ -86,8 +114,16 @@ l_maxfails=3
 if test -n "${rsos_maxfails}"; then
 	l_maxfails=${rsos_maxfails}
 fi
+l_maxrounds=4
+if test -n "${rsos_maxrounds}"; then
+	l_maxrounds=${rsos_maxrounds}
+fi
+if test -z "${rsos_rounds}"; then
+	setenv rsos_rounds 0
+fi
 
 l_fallback=0
+l_off=0
 l_state=ok
 if test "${rsos_ok}" = "0"; then
 	if test -n "${rsos_tries}" && test ${rsos_tries} -gt 0; then
@@ -119,12 +155,26 @@ else
 	l_opart=3
 fi
 if test ${l_fallback} = 1; then
-	if test "${rsos_fallback}" = "${l_other}"; then
-		echo "rsos: slot ${rsos_slot} fails too, and slot ${l_other} failed before: staying on ${rsos_slot}"
+	if test "${rsos_ok}" = "0"; then
+		# An update that never got confirmed: never boot it again by
+		# falling back (the updater's next write of the slot clears it).
+		echo "rsos: updated slot ${rsos_slot} was never confirmed: marking it bad"
+		setenv rsos_bad ${rsos_slot}
+	fi
+	setexpr rsos_rounds ${rsos_rounds} + 1
+	if test ${rsos_rounds} -ge ${l_maxrounds}; then
+		echo "rsos: ${rsos_rounds} slot failures without a confirmed boot"
+		l_off=1
+	elif test "${rsos_bad}" = "${l_other}"; then
+		echo "rsos: slot ${rsos_slot} failed too often, slot ${l_other} is marked bad: staying on ${rsos_slot}"
 	elif test -e mmc 0:${l_opart} /boot/zImage; then
-		echo "rsos: slot ${rsos_slot} failed too often, falling back to slot ${l_other}"
-		setenv rsos_fallback ${rsos_slot}
-		setenv rsos_slot ${l_other}
+		if test "${rsos_fallback}" != "${l_other}" || test "${rsos_good}" = "${l_other}"; then
+			echo "rsos: slot ${rsos_slot} failed too often, falling back to slot ${l_other}"
+			setenv rsos_fallback ${rsos_slot}
+			setenv rsos_slot ${l_other}
+		else
+			echo "rsos: slot ${rsos_slot} fails too, and slot ${l_other} failed before: staying on ${rsos_slot}"
+		fi
 	else
 		echo "rsos: slot ${l_other} has no kernel: staying on ${rsos_slot}"
 	fi
@@ -132,6 +182,27 @@ if test ${l_fallback} = 1; then
 	setenv rsos_ok 1
 	setenv rsos_tries 0
 	setenv rsos_fails 1
+fi
+
+# The failure budget is spent: power off rather than loop with the panel
+# powered and no picture. The next power-on starts a fresh budget, on the
+# last confirmed slot unless it is marked bad. ("reset" in case the
+# power-off returns: never a U-Boot prompt.)
+if test ${l_off} = 1; then
+	if test -n "${rsos_good}" && test "${rsos_good}" != "${rsos_bad}"; then
+		setenv rsos_slot ${rsos_good}
+	fi
+	setenv rsos_rounds 0
+	setenv rsos_ok 1
+	setenv rsos_tries 0
+	setenv rsos_fails 0
+	setenv rsos_fallback
+	setenv rsos_p
+	setenv silent
+	echo "rsos: no slot starts, powering off (next power-on: slot ${rsos_slot})"
+	saveenv
+	poweroff
+	reset
 fi
 
 if test "${rsos_slot}" = "b"; then
@@ -142,6 +213,31 @@ else
 	l_part=2
 	l_other=b
 	l_opart=3
+fi
+
+# cpu-lowvolt: one boot at a time until a boot with it is confirmed (a
+# freeze at 1.0 V must not come back after every watchdog reset).
+l_lowvolt=0
+if test -n "${rsos_overlays}"; then
+	for l_ov in ${rsos_overlays}; do
+		if test "${l_ov}" = "cpu-lowvolt"; then
+			l_lowvolt=1
+		fi
+	done
+fi
+if test ${l_lowvolt} = 1; then
+	if test "${rsos_lowvolt}" = "trial"; then
+		echo "rsos: the last boot with overlay cpu-lowvolt was not confirmed: skipping it (fw_setenv rsos_lowvolt to try again)"
+		setenv rsos_lowvolt failed
+		l_lowvolt=0
+		l_save=1
+	elif test "${rsos_lowvolt}" = "failed"; then
+		echo "rsos: overlay cpu-lowvolt skipped (rsos_lowvolt=failed)"
+		l_lowvolt=0
+	else
+		setenv rsos_lowvolt trial
+		l_save=1
+	fi
 fi
 
 if test ${l_save} = 1; then
@@ -186,7 +282,9 @@ if load mmc 0:${l_part} ${kernel_addr_r} /boot/zImage; then
 			fdt addr ${fdt_addr_r}
 			fdt resize 65536
 			for l_ov in ${rsos_overlays}; do
-				if load mmc 0:${l_part} ${fdtoverlay_addr_r} /boot/overlays/${l_ov}.dtbo; then
+				if test "${l_ov}" = "cpu-lowvolt" && test ${l_lowvolt} = 0; then
+					true
+				elif load mmc 0:${l_part} ${fdtoverlay_addr_r} /boot/overlays/${l_ov}.dtbo; then
 					if fdt apply ${fdtoverlay_addr_r}; then
 						echo "rsos: overlay ${l_ov} applied"
 					else
@@ -206,21 +304,36 @@ fi
 
 # Only reached when the kernel or the DTB cannot be loaded, or bootz fails
 # (missing or corrupt kernel): never stop at a prompt. Switch to the other
-# slot once (unless it is the one that failed before, or has no kernel),
-# else power off.
+# slot at once when it has a kernel and is not marked bad (one round of the
+# failure budget: two unloadable slots cannot ping-pong for ever), else power
+# off. (The slot that failed before, rsos_fallback, is tried too: it may
+# well boot, and powering off at every power-on would be worse.) A trial slot
+# that cannot be loaded is marked bad.
 setenv silent
 echo "rsos: cannot boot slot ${rsos_slot} (partition ${l_part})"
-if test "${rsos_fallback}" != "${l_other}" && test -e mmc 0:${l_opart} /boot/zImage; then
+if test "${rsos_ok}" = "0"; then
+	setenv rsos_bad ${rsos_slot}
+fi
+setexpr rsos_rounds ${rsos_rounds} + 1
+setenv rsos_ok 1
+setenv rsos_tries 0
+setenv rsos_fails 0
+setenv rsos_p
+if test ${rsos_rounds} -lt ${l_maxrounds} && test "${rsos_bad}" != "${l_other}" && test -e mmc 0:${l_opart} /boot/zImage; then
 	echo "rsos: switching to slot ${l_other}"
 	setenv rsos_fallback ${rsos_slot}
 	setenv rsos_slot ${l_other}
-	setenv rsos_ok 1
-	setenv rsos_tries 0
-	setenv rsos_fails 0
-	setenv rsos_p
 	setenv silent 1
 	saveenv
 	reset
 fi
-echo "rsos: no slot can be booted, powering off"
+# The next power-on starts a fresh budget, on the last confirmed slot.
+if test -n "${rsos_good}" && test "${rsos_good}" != "${rsos_bad}"; then
+	setenv rsos_slot ${rsos_good}
+fi
+setenv rsos_rounds 0
+setenv rsos_fallback
+echo "rsos: no slot can be booted, powering off (next power-on: slot ${rsos_slot})"
+saveenv
 poweroff
+reset

@@ -137,7 +137,11 @@ tests the output from the UART without the menu.
    make it `BTN_MODE` in the pad). `evtest` on "Power Key".
 4. **Power-off**: that driving PL8 low after shutdown turns the screen and the CPU off, and the current drawn
    afterwards with the slide switch still on (the DRAM rail on PL9, the LDO and the speaker amplifier stay
-   powered). Also that nothing ever drives PL5 high (it would cut VDD-SYS).
+   powered). Also that nothing ever drives PL5 high (it would cut VDD-SYS). The gpio-poweroff node holds PL8 low
+   for 3 s (`active-delay-ms`) before the driver would release it (its pulse sequence: active, inactive, active):
+   check that the board **stays off** after `poweroff`, over ten tries (no restart once PL8 would go high again;
+   a scope or a meter on PL8 / the 3.3 V rail shows the line held low until the rails are gone), and that the
+   UART prints nothing after "reboot: Power down". If it restarts, raise `active-delay-ms`.
 5. **DRAM clock**: 624 MHz; run `memtester`, then try the Orange Pi One's 672 MHz.
 6. **Analog stick** (units with the stick): axis directions (`abs-range` swap for an inversion), centre and
    dead zone; with no stick fitted, check that the floating inputs do not produce phantom moves (if they do, drop

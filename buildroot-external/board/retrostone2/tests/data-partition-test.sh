@@ -15,11 +15,11 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 REPO=$(cd "$(dirname "$0")/../../../.." && pwd)
 SCRIPT=$REPO/buildroot-external/board/common/rootfs-overlay/usr/libexec/rsos/data-partition
 OUT=$HOME/rsos/output
-W=$HOME/rsos/dptest
+W=${RSOS_DPTEST_DIR:-$HOME/rsos/dptest}
 rm -rf "$W"; mkdir -p "$W/bin" "$W/data" "$W/run"
 # BusyBox applets first in PATH; host tools for what BusyBox lacks.
 for a in sh find tar dd head tail du cut wc grep sed tr mount umount sync cat mkdir rm mv sleep usleep printf echo ls \
-	md5sum sort; do
+	md5sum sort od; do
 	ln -sf /bin/busybox "$W/bin/$a"
 done
 for t in mkfs.exfat fsck.exfat; do
@@ -53,13 +53,17 @@ reflash() {
 # Every run: the first-boot trace in the image's raw gap at 3 MiB (as the
 # RetroStone2 board.ini), the kernel log and the watchdog as plain files
 # (never the host's /dev/watchdog or /dev/kmsg).
+DPARGS=      # arguments of data-partition (--format-confirmed)
+KEEPRUN=     # 1: keep $W/run (the menu's call after a boot: data-problem)
+PRE=true     # run first, in the namespace (the menu's tmpfs on /data)
 run_dp() { # [env...]; output in $W/out.txt (and on stdout)
-	rm -f "$W/run"/* "$W/wd" "$W/kmsg"
+	[ -n "$KEEPRUN" ] || rm -f "$W/run"/*
+	rm -f "$W/wd" "$W/kmsg"
 	: > "$W/wd"
 	env -i PATH="$TPATH" RSOS_DATA_DISK="$LOOP" RSOS_DATA_MNT="$W/data" RSOS_RUN="$W/run" \
 		RSOS_SHARE="$OUT/target/usr/share/rsos" RSOS_TRACE_KIB=3072 RSOS_KMSG="$W/kmsg" \
 		RSOS_WATCHDOG="$W/wd" "$@" \
-		unshare -m --propagation private /bin/busybox sh -c "/bin/busybox sh $SCRIPT; rc=\$?; ls -a $W/data > $W/ls.txt; grep ' $W/data ' /proc/mounts > $W/mnt.txt; (cd $W/data && find . -type f | sort | while read f; do md5sum \"\$f\"; done) > $W/sums.txt; exit \$rc" \
+		unshare -m --propagation private /bin/busybox sh -c "$PRE; /bin/busybox sh $SCRIPT $DPARGS; rc=\$?; ls -a $W/data > $W/ls.txt; grep ' $W/data ' /proc/mounts > $W/mnt.txt; (cd $W/data && find . -type f | sort | while read f; do md5sum \"\$f\"; done) > $W/sums.txt; exit \$rc" \
 		> "$W/out.txt" 2>&1
 	local rc=$?
 	sed 's/^/     | /' "$W/out.txt"
@@ -70,6 +74,12 @@ ptype() { sfdisk --part-type "$LOOP" 1 2>/dev/null | tr -d " "; }
 psize_mib() { echo $(( $(cat /sys/class/block/${LOOP##*/}p1/size) / 2048 )); }
 fstype() { blkid -p -o value -s TYPE "${LOOP}p1"; }
 mounted_fs() { cut -d' ' -f3 "$W/mnt.txt"; }
+mounted_ro() { cut -d' ' -f4 "$W/mnt.txt" | grep -q '^ro,\|^ro$'; }
+problem() { [ "$(cat "$W/run/data-problem" 2> /dev/null)" = "$1" ]; }
+# md5 of the partition's first 4 MiB (untouched?)
+p1sum() { dd if="${LOOP}p1" bs=1M count=4 status=none | md5sum | cut -d' ' -f1; }
+# after a write to the partition: the host's udev may re-read the table (the node goes and comes back)
+settle() { sync; udevadm settle 2> /dev/null; sleep 1; }
 marker() { dd if=$LOOP bs=1M skip=$(( $(cat /sys/class/block/${LOOP##*/}/size) / 2048 - 1 )) count=1 status=none | head -c 64 | tr -d '\0'; }
 # the first-boot trace in the raw gap (64 KiB at 3 MiB)
 rawtrace() { dd if="$LOOP" bs=64k skip=48 count=1 status=none | tr -d '\0'; }
@@ -164,8 +174,43 @@ seed_files
 run_dp RSOS_TEST_ABORT=after_restore; rc=$?
 check "aborted (99), files already there" "[ $rc -eq 99 ] && seed_ok"
 run_dp; rc=$?
-check "resume: formatted and restored again, exit 0" "[ $rc -eq 0 ] && said formatting && seed_ok && full_exfat"
+check "(review) resume: the stamp says it finished: not formatted again, exit 0" \
+	"[ $rc -eq 0 ] && said 'conversion had finished' && ! said formatting && seed_ok && full_exfat"
 check "marker cleared" "[ -z \"\$(marker)\" ]"
+cleanup
+
+echo "== C3 (review): the marker cannot be cleared; the user writes to /data; the next boot keeps it all =="
+make_card $BIG
+seed_files
+run_dp RSOS_TEST_FAIL=clear_marker; rc=$?
+check "converted, exit 0, the marker left" "[ $rc -eq 0 ] && full_exfat && seed_ok && marker | grep -q '^RSOSCV02 '"
+mkdir -p "$W/mnt"; mount -t exfat "${LOOP}p1" "$W/mnt" && cp "$W/new.bin" "$W/mnt/saves/new.srm" && umount "$W/mnt"
+settle
+run_dp; rc=$?
+check "no format, no restore: the save made since is kept" \
+	"[ $rc -eq 0 ] && said 'conversion had finished' && ! said formatting && ! said restoring && has $W/new.bin ./saves/new.srm && seed_ok"
+check "marker cleared (read back)" "[ -z \"\$(marker)\" ] && said 'conversion marker cleared'"
+cleanup
+
+echo "== R1 (review): partx fails after the MBR write: the seed read-only, the next boot finishes =="
+make_card $BIG
+seed_files
+run_dp RSOS_TEST_FAIL=partx; rc=$?
+check "the seed mounted read-only (the marker is valid), files there" \
+	"[ \"\$(mounted_fs)\" = vfat ] && mounted_ro && seed_ok && [ -e $W/run/data-readonly ] && marker | grep -q '^RSOSCV02 '"
+run_dp; rc=$?
+check "next boot: finished from the backup, files restored" "[ $rc -eq 0 ] && said 'finishing an interrupted' && full_exfat && seed_ok"
+cleanup
+
+echo "== R2 (review): mkfs.exfat fails, at the first boot and at the resume: read-only both times =="
+make_card $BIG
+seed_files
+run_dp RSOS_TEST_FAIL=mkfs; rc=$?
+check "first boot: read-only" "mounted_ro && seed_ok && marker | grep -q '^RSOSCV02 '"
+run_dp RSOS_TEST_FAIL=mkfs; rc=$?
+check "resume fails too: read-only again, the marker kept" "said 'could not finish it' && mounted_ro && marker | grep -q '^RSOSCV02 '"
+run_dp; rc=$?
+check "then finished: files restored" "[ $rc -eq 0 ] && full_exfat && seed_ok && [ -z \"\$(marker)\" ]"
 cleanup
 
 echo "== D: small card with 100 MiB of files: too small, keep FAT32 =="
@@ -290,9 +335,60 @@ make_card $BIG
 echo ',+,7' | sfdisk --quiet --no-reread -N 1 "$LOOP"; partx -u "$LOOP"
 "$W/bin/mkfs.exfat" -L RETROSTONE "${LOOP}p1" > /dev/null
 dd if=/dev/zero of="${LOOP}p1" bs=512 seek=24 count=$((64 * 2048)) conv=notrunc status=none
+settle
 run_dp; rc=$?
-check "checked, then formatted: /data available" "[ $rc -eq 0 ] && said 'checking' && full_exfat && layout"
-check "note for the UI (data-reformatted)" "said 'formatting it as an empty exFAT'"
+check "(review) checked (fsck -p, -y), NOT formatted: a tmpfs on /data, data-problem" \
+	"[ $rc -ne 0 ] && said 'fsck.exfat -y' && ! said formatting && [ \"\$(mounted_fs)\" = tmpfs ] && layout && problem 'unmountable exfat'"
+check "no marker written (nothing started)" "[ -z \"\$(marker)\" ]"
+# the menu's "storage could not be read" screen, after the user confirmed:
+# it runs while the menu keeps its files on the tmpfs /data
+MENU_TMPFS="mount -t tmpfs menu $W/data && echo settings > $W/data/menu.cfg"
+PRE=$MENU_TMPFS DPARGS=--format-confirmed KEEPRUN=1 run_dp; rc=$?
+check "(review) --format-confirmed: exit 0, a full-size empty exFAT, data-problem gone, marker cleared" \
+	"[ $rc -eq 0 ] && [ \"\$(ptype)\" = 7 ] && [ \"\$(fstype)\" = exfat ] && [ \$(psize_mib) -gt $GROWN ] && [ ! -e $W/run/data-problem ] && [ -z \"\$(marker)\" ]"
+check "the menu's tmpfs /data untouched (still mounted, its file there, nothing else written)" \
+	"[ \"\$(mounted_fs)\" = tmpfs ] && grep -q menu.cfg $W/ls.txt && ! grep -q roms $W/ls.txt"
+check "messages on stderr and in the kernel log" "said 'confirmed by the user' && grep -q 'rsos-data: formatting' $W/kmsg"
+run_dp; rc=$?
+check "next boot: normal, the layout" "[ $rc -eq 0 ] && full_exfat && layout && ! said formatting"
+PRE=$MENU_TMPFS DPARGS=--format-confirmed run_dp; rc=$?
+check "(review) --format-confirmed without a data problem: refused, nothing formatted" \
+	"[ $rc -ne 0 ] && said 'refused' && ! said formatting && [ -z \"\$(marker)\" ]"
+run_dp; rc=$?
+check "the volume still there" "[ $rc -eq 0 ] && full_exfat && layout && ! said formatting"
+cleanup
+
+echo "== P2 (review): another filesystem (NTFS from a PC), no marker: never formatted =="
+make_card $BIG
+echo ',+,7' | sfdisk --quiet --no-reread -N 1 "$LOOP"; partx -u "$LOOP"
+dd if=/dev/urandom of="${LOOP}p1" bs=1M count=4 status=none
+printf '\353R\220NTFS    ' | dd of="${LOOP}p1" conv=notrunc status=none
+printf '\125\252' | dd of="${LOOP}p1" bs=1 seek=510 conv=notrunc status=none
+settle; before=$(p1sum)
+run_dp; rc=$?
+check "foreign ntfs, tmpfs, untouched" "problem 'foreign ntfs' && [ \"\$(mounted_fs)\" = tmpfs ] && [ \"\$(p1sum)\" = $before ] && ! said formatting"
+cleanup
+
+echo "== P3 (review): FAT16 that does not mount, and a blank partition: never formatted =="
+make_card $BIG
+echo ',+,7' | sfdisk --quiet --no-reread -N 1 "$LOOP"; partx -u "$LOOP"
+dd if=/dev/zero of="${LOOP}p1" bs=1M count=4 status=none
+printf 'FAT16   ' | dd of="${LOOP}p1" bs=1 seek=54 conv=notrunc status=none
+settle; before=$(p1sum)
+run_dp; rc=$?
+check "foreign fat16, untouched" "problem 'foreign fat16' && [ \"\$(p1sum)\" = $before ] && ! said formatting"
+dd if=/dev/zero of="${LOOP}p1" bs=1M count=4 status=none
+settle
+run_dp; rc=$?
+check "blank: unmountable unknown, still blank" "problem 'unmountable unknown' && cmp -s -n 4194304 ${LOOP}p1 /dev/zero && ! said formatting"
+cleanup
+
+echo "== P4 (review): a FAT32 that does not mount (seed-sized, damaged): kept for a PC =="
+make_card $BIG
+dd if=/dev/zero of="${LOOP}p1" bs=1 seek=11 count=2 conv=notrunc status=none   # bytes per sector = 0
+settle; before=$(p1sum)
+run_dp; rc=$?
+check "unmountable vfat, untouched" "problem 'unmountable vfat' && [ \"\$(p1sum)\" = $before ] && [ \"\$(mounted_fs)\" = tmpfs ]"
 cleanup
 
 echo "== Q: exFAT not unmounted cleanly (VolumeDirty set) =="
@@ -376,6 +472,37 @@ run_dp; rc=$?
 check "next boot: exit 0, converted" "[ $rc -eq 0 ] && full_exfat"
 check "both boots in the record, the old one first" \
 	"traced '(the previous record' && [ \$(rawtrace | grep -c '^=== boot') -eq 2 ] && rawtrace | grep -n 'exit status' | head -n 1 | grep -q 'status 99'"
+cleanup
+
+echo "== S5 (review): a request stuck in the driver (in-flight and io_ticks move, no I/O completes): no service =="
+# a fake disk stat: the completed-I/O fields (1, 3, 5, 7) frozen, the
+# in-flight count and io_ticks changing all the time
+( i=0; while :; do echo "100 0 800 5 50 0 400 7 1 $((1000 + i)) $((2000 + i))" > "$W/stat.tmp"; mv "$W/stat.tmp" "$W/stat"; i=$((i + 1)); sleep 0.3; done ) &
+STATW=$!
+make_card $BIG
+run_dp RSOS_TEST_HANG=before_sfdisk:8 RSOS_WD_STALL_S=3 RSOS_WD_PERIOD_S=1 RSOS_WD_STAT="$W/stat"; rc=$?
+kill $STATW 2> /dev/null
+check "no progress said despite the moving io_ticks; the watchdog starved" \
+	"said 'no progress for' && [ \$(tr -cd . < $W/wd | wc -c) -le 7 ] && [ $rc -eq 0 ] && full_exfat"
+cleanup
+
+echo "== S6 (review): a chatty splash: its last 8 KiB only in the trace; the record ends with the last step =="
+cat > "$W/splash-chatty" << 'EOF'
+#!/bin/busybox sh
+i=0
+while [ $i -lt 3000 ]; do echo "stub splash: line $i of a very chatty splash log, padding padding padding"; i=$((i + 1)); done
+s=
+trap 'kill $s; exit 0' TERM
+while :; do sleep 1 & s=$!; wait $s; done
+EOF
+chmod +x "$W/splash-chatty"
+make_card $BIG
+seed_files
+run_dp RSOS_SPLASH="$W/splash-chatty" RSOS_SPLASH_STOP_S=1; rc=$?
+check "exit 0, converted" "[ $rc -eq 0 ] && full_exfat && seed_ok"
+check "the splash's last lines only (<= 8 KiB of them), the record ends with the exit" \
+	"[ \$(rawtrace | grep 'splash|' | wc -c) -le 8400 ] && traced 'line 2999 of' && ! traced 'line 100 of' && rawtrace | tail -n 1 | grep -q 'done (exit status 0)'"
+check "the record starts with the magic" "rawtrace | head -n 1 | grep -q '^RSOSFB01 '"
 cleanup
 
 echo "PASS=$pass FAIL=$fail"

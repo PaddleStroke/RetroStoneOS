@@ -1,0 +1,79 @@
+#!/bin/sh
+# frontend-respawn: init's respawn entry for the menu (/etc/inittab; added by
+# board/common/post-build.sh when the frontend is in the image). It execs
+# /usr/bin/rsos-frontend (same pid: init, rcK and rsos-boot-ok see the
+# frontend itself), after counting the starts.
+#
+# BusyBox init restarts a process that exits, for ever, about once a second.
+# A menu that keeps crashing would keep the board on, the panel powered
+# (its supply is always on) without a picture, until the battery dies. So
+# after MAX starts within WINDOW seconds (5 in 60 s) it stops respawning and
+# lets the hardware watchdog reset the board: it opens /dev/watchdog (which
+# starts it if the menu's orderly exit had stopped it) and never services
+# it; the reset comes within the watchdog's timeout (16 s on sunxi). A boot
+# that ends so is not confirmed: U-Boot counts it as failed and its A/B
+# logic can act (fall back, or power off after its failure budget). If the
+# reset does not come, "reboot -f" (no rcK: the boot stays counted) after
+# HOLD seconds. The reason goes to the kernel log and /run/rsos.
+#
+# Development: touch /run/rsos/respawn-unlimited to respawn for ever.
+# Tests (board/common/tests/frontend-respawn-test.sh): RSOS_RUN, RSOS_FRONTEND,
+# RSOS_RESPAWN_MAX, RSOS_RESPAWN_WINDOW_S, RSOS_RESPAWN_HOLD_S, RSOS_WATCHDOG,
+# RSOS_UPTIME (a file instead of /proc/uptime), RSOS_KMSG, RSOS_REBOOT (the
+# fallback command) and RSOS_RESPAWN_TEST (return instead of waiting for
+# ever).
+#
+# Cost on every start: one shell with builtins only (read, echo), no fork.
+
+RUN=${RSOS_RUN:-/run/rsos}
+FE=${RSOS_FRONTEND:-/usr/bin/rsos-frontend}
+MAX=${RSOS_RESPAWN_MAX:-5}
+WINDOW=${RSOS_RESPAWN_WINDOW_S:-60}
+HOLD=${RSOS_RESPAWN_HOLD_S:-30}
+WD=${RSOS_WATCHDOG-/dev/watchdog}
+KMSG=${RSOS_KMSG:-/dev/kmsg}
+STARTS=$RUN/frontend-starts
+
+_up=0
+{ read -r _up _ < "${RSOS_UPTIME:-/proc/uptime}"; } 2> /dev/null
+now=${_up%.*}
+
+# the starts within the window, and this one
+starts=
+{ read -r starts < "$STARTS"; } 2> /dev/null
+n=0
+keep=
+for t in $starts; do
+	case $t in
+	'' | *[!0-9]*) continue ;;
+	esac
+	if [ $((now - t)) -lt "$WINDOW" ]; then
+		keep="$keep$t "
+		n=$((n + 1))
+	fi
+done
+
+if [ "$n" -lt "$MAX" ] || [ -e "$RUN/respawn-unlimited" ]; then
+	{ echo "$keep$now" > "$STARTS"; } 2> /dev/null
+	exec "$FE" "$@"
+	exit 127
+fi
+
+# --- Give up.
+why="the menu (rsos-frontend) started $n times in ${WINDOW} s: not restarted, the watchdog resets the board"
+echo "rsos: $why" >&2
+{
+	echo "<3>rsos: $why" >> "$KMSG"
+	echo "$now $why" > "$RUN/frontend-gave-up"
+} 2> /dev/null
+sync
+# (opened in a subshell: a failed redirection must not end this script;
+# closed without the magic 'V', the watchdog keeps running unserviced)
+[ -z "$WD" ] || (: > "$WD") 2> /dev/null
+sleep "$HOLD"
+{ echo "<3>rsos: no watchdog reset after ${HOLD} s: rebooting" >> "$KMSG"; } 2> /dev/null
+${RSOS_REBOOT:-reboot -f}
+[ -z "${RSOS_RESPAWN_TEST:-}" ] || exit 3
+while :; do
+	sleep 3600
+done

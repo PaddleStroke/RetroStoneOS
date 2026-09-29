@@ -19,15 +19,21 @@
 #   3. ONE write of the MBR: the new disk identifier, and the data entry
 #      grown to the end of the card with type 0x07;
 #   4. mkfs.exfat, mount, restore the backup, recreate the layout, sync;
-#   5. clear the marker.
+#   5. write the stamp rsos/.conversion-done (<id>) on the new volume, sync,
+#      clear the marker and read it back.
 # On every boot the marker is read first. It is acted on only if its <id> is
 # the card's current MBR disk identifier and the entry already reaches the end
 # of the card, i.e. step 3 happened on this card since it was last flashed:
 # steps 4-5 are then redone from the start (format again, restore the verified
-# backup again), which is idempotent. Any other marker is stale (a power cut
-# before step 3: the seed is untouched; or the card was re-flashed, which
-# rewrites the MBR) and is discarded, and the normal first boot runs again
-# from the (new) seed.
+# backup again), which is idempotent, unless the volume already carries the
+# stamp of this <id> (the conversion finished, only the marker was left: it
+# is just cleared, nothing that was written since is lost). Any other marker
+# is stale (a power cut before step 3: the seed is untouched; or the card was
+# re-flashed, which rewrites the MBR) and is discarded, and the normal first
+# boot runs again from the (new) seed. While a valid marker stays (the
+# conversion could not finish: partx or mkfs.exfat failed), /data is mounted
+# read-only: what the menu would write there would be lost when the next
+# boot finishes the conversion from the backup.
 #   - card too small for the backup, or the backup step fails: keep the FAT32
 #     seed and grow its entry (type 0x0c) so this is not retried on every boot.
 #   - an entry of type 0x07 that still holds the FAT32 seed (a power cut
@@ -36,11 +42,22 @@
 #
 # Every boot: an exFAT volume whose VolumeDirty flag is set (the last session
 # ended without unmounting it: power cut, forced power-off, freeze) is checked
-# with "fsck.exfat -p" before use (result in /run/rsos/data-fsck). A volume
-# that cannot be mounted is checked (fsck.exfat -p, then -y); only when that
-# fails too, or when the partition holds no recognizable filesystem at all, is
-# it formatted again, empty, with a message and /run/rsos/data-reformatted.
-# A FAT32 volume that fails to mount is never formatted (no fsck.fat here).
+# with "fsck.exfat -p" before use (result in /run/rsos/data-fsck). An exFAT
+# volume that cannot be mounted is checked (fsck.exfat -p, then -y).
+# Nothing is ever formatted without the user's consent (outside the first
+# boot of a pristine seed and the resume of its conversion): a partition that
+# still does not mount, holds another filesystem, or cannot be read is left
+# alone; a small tmpfs goes on /data so that the menu can start, and
+# /run/rsos/data-problem says why, for the menu:
+#   unmountable <exfat|vfat|unknown>   no filesystem that mounts
+#   foreign <ntfs|fat16|fat12|ext4>    another filesystem (a PC's)
+#   readerror                          the partition cannot be read
+# The menu offers to back the card up on a PC first, or to format it; after
+# the user confirmed, it runs "data-partition --format-confirmed" (refused
+# without data-problem): an empty full-size exFAT (the conversion path
+# without backup), prepared on its own mount point while the menu keeps its
+# tmpfs /data, data-problem removed; exit 0, and the menu restarts the
+# console; else non-zero, data-problem stays.
 #
 # The long paths (conversion, resume, check, repair; never a normal boot):
 #   - the splash (rsos-frontend --splash) is cosmetic and can never hold the
@@ -48,12 +65,13 @@
 #     few seconds if it is stuck in the kernel;
 #   - every step is traced: the console (UART), the kernel log, and a raw
 #     64 KiB area outside every partition (board.ini firstboot_trace_kib;
-#     RetroStone2: 3 MiB), so that a boot that hangs or loses power leaves
-#     its last step on the card; the next boot that reaches the menu
-#     (bootlog) appends it to RETROSTONE/rsos/logs/firstboot.txt;
+#     RetroStone2: 3 MiB, the trace's last 64 KiB), so that a boot that
+#     hangs or loses power leaves its last step on the card; the next boot
+#     that reaches the menu (bootlog) appends it to
+#     RETROSTONE/rsos/logs/firstboot.txt;
 #   - the hardware watchdog is serviced only while the boot makes progress
-#     (SD card I/O or a new step): after 180 s without any, the board resets
-#     (the conversion is power-cut safe).
+#     (completed SD card I/O or a new step): after 180 s without any, the
+#     board resets (the conversion is power-cut safe).
 #
 # The disk and the MBR entry come from the board (/usr/libexec/rsos/board.sh:
 # board.ini data_disk, default the disk of root= on the kernel command line,
@@ -61,10 +79,17 @@
 # RSOS_DATA_DISK / RSOS_DATA_PART_NR / RSOS_DATA_MNT / RSOS_SHARE / RSOS_RUN
 # override them (tests); RSOS_TEST_ABORT=before_sfdisk|after_sfdisk|
 # after_format|after_restore simulates a power cut (exit 99),
-# RSOS_TEST_FAIL=backup a failing backup and RSOS_TEST_HANG=<step>:<seconds>
+# RSOS_TEST_FAIL=backup|partx|mkfs|clear_marker a failing backup, partx
+# after the MBR write, mkfs.exfat, or a marker that is never cleared, and
+# RSOS_TEST_HANG=<step>:<seconds>
 # (before_sfdisk, after_format) a step that stops for that long. RSOS_SPLASH,
 # RSOS_SPLASH_STOP_S, RSOS_TRACE_KIB, RSOS_KMSG, RSOS_WATCHDOG,
-# RSOS_WD_STALL_S and RSOS_WD_PERIOD_S: see below.
+# RSOS_WD_STALL_S, RSOS_WD_PERIOD_S and RSOS_WD_STAT (the disk's stat file):
+# see below. RSOS_DATA_TMPFS: the size of the stand-in tmpfs (32m).
+#
+# Other notes for the menu: /run/rsos/data-readonly (a conversion to finish at
+# the next boot: /data is read-only), data-error, data-fsck,
+# data-restore-failed.
 
 # (rcS exports RSOS_DISK and RSOS_BOARD_DATA_PARTITION: no need to read the
 # board files again on the way to the menu)
@@ -149,9 +174,15 @@ trace_area() {
 	TRACE_BLK=$((TRACE_KIB / 64))
 }
 
+# The record: the magic line, then the trace's LAST bytes (the steps that
+# matter are the latest ones), 64 KiB in all.
 trace_raw() {
 	[ -n "$TRACE_BLK" ] || return 0
-	dd if="$TRACE" of="$DISK" bs=64k seek="$TRACE_BLK" count=1 conv=sync,fsync 2> /dev/null
+	{
+		head -n 1 "$TRACE"
+		sed 1d "$TRACE" | tail -c 65280
+	} > "$TRACE.raw" 2> /dev/null
+	dd if="$TRACE.raw" of="$DISK" bs=64k seek="$TRACE_BLK" count=1 conv=sync,fsync 2> /dev/null
 }
 
 trace_start() { # <why>
@@ -195,16 +226,22 @@ trace_line() {
 
 # --- Hardware watchdog (the long paths only). U-Boot starts the A20
 # watchdog (16 s) and the kernel services it until a program opens
-# /dev/watchdog (the menu): a first boot stuck in user space would hang for
-# good. Here a background keeper opens it and services it while the boot
-# makes progress, i.e. the SD card's I/O counters move (tar, cksum, mkfs,
-# fsck: all the time) or a step is traced. After WD_STALL seconds without
+# /dev/watchdog (the menu), or for CONFIG_WATCHDOG_OPEN_TIMEOUT (120 s)
+# after it registered: a first boot stuck in user space would reset in the
+# middle of a long, legitimate step. Here a background keeper opens it and
+# services it while the boot makes progress, i.e. the SD card's counters of
+# COMPLETED I/O move (reads, sectors read, writes, sectors written: fields
+# 1, 3, 5 and 7 of /sys/class/block/<disk>/stat; tar, cksum, mkfs, fsck:
+# all the time) or a step is traced. (Not the whole line: its in-flight and
+# io_ticks fields keep changing while a request is stuck in the driver.)
+# After WD_STALL seconds without
 # either it stops (once: the board resets 16 s later, the trace says where
 # it stood). At the end the keeper closes it with the magic 'V' (the
 # watchdog stops; the menu opens it again right after). No device, nothing.
 WD=${RSOS_WATCHDOG-/dev/watchdog}
 WD_STALL=${RSOS_WD_STALL_S:-180}
 WD_PERIOD=${RSOS_WD_PERIOD_S:-4}
+WD_STAT=${RSOS_WD_STAT:-/sys/class/block/$DISK_NAME/stat}
 WD_PID=
 wd_keeper() {
 	_wk_sleep=
@@ -217,10 +254,15 @@ wd_keeper() {
 	while :; do
 		_wk_io=
 		_wk_n=
+		_wk_1=
+		_wk_3=
+		_wk_5=
+		_wk_7=
 		{
-			read -r _wk_io < "/sys/class/block/$DISK_NAME/stat"
+			read -r _wk_1 _ _wk_3 _ _wk_5 _ _wk_7 _ < "$WD_STAT"
 			read -r _wk_n < "$TRACE.n"
 		} 2> /dev/null
+		_wk_io="$_wk_1 $_wk_3 $_wk_5 $_wk_7"
 		if [ "$_wk_io|$_wk_n" != "$_wk_last" ]; then
 			_wk_last="$_wk_io|$_wk_n"
 			_wk_idle=0
@@ -282,11 +324,11 @@ proc_state() { # <pid>: "state D, in <kernel function>"
 	_ps=${_ps##*) }
 	echo "state ${_ps%% *}, in ${_pw:-?}"
 }
-proc_stack() { # <pid>: its kernel stack in the trace and on the console
+proc_stack() { # <pid>: its kernel stack (its first 4 KiB) in the trace and on the console
 	[ -r "/proc/$1/stack" ] || return 0
-	sed 's/^/rsos-data:     /' "/proc/$1/stack" 2> /dev/null
+	sed 's/^/rsos-data:     /' "/proc/$1/stack" 2> /dev/null | head -c 4096
 	[ -n "$TRACE_ON" ] || return 0
-	sed 's/^/    /' "/proc/$1/stack" >> "$TRACE" 2> /dev/null
+	sed 's/^/    /' "/proc/$1/stack" 2> /dev/null | head -c 4096 >> "$TRACE"
 	trace_raw
 }
 wait_gone() { # <pid> <tenths of a second>
@@ -347,7 +389,8 @@ splash_stop() {
 		SPLASH_STUCK=1
 	fi
 	if [ -n "$TRACE_ON" ] && [ -s "$SPLASH_LOG" ]; then
-		sed -n "${SPLASH_FROM},\$s/^/    splash| /p" "$SPLASH_LOG" >> "$TRACE" 2> /dev/null
+		# (its last 8 KiB: a chatty splash must not push the steps out)
+		sed -n "${SPLASH_FROM},\$s/^/    splash| /p" "$SPLASH_LOG" 2> /dev/null | tail -c 8192 >> "$TRACE"
 		trace_raw
 	fi
 	SPLASH_PID=
@@ -376,6 +419,17 @@ make_layout() {
 	mkdir -p "$MNT/bios" "$MNT/saves" "$MNT/states" "$MNT/screenshots" "$MNT/themes"
 	[ -f "$MNT/README.txt" ] || { [ -f "$README" ] && sed 's/$/\r/' "$README" > "$MNT/README.txt"; }
 	return 0
+}
+
+# A partition table re-read (e.g. by a host's udev after a write to the
+# disk) removes and re-creates the node: give it up to 2 s.
+wait_part() {
+	_i=0
+	while [ ! -b "$PART" ] && [ $_i -lt 20 ]; do
+		usleep 100000 2> /dev/null || sleep 1
+		_i=$((_i + 1))
+	done
+	[ -b "$PART" ]
 }
 
 mount_exfat() {
@@ -419,6 +473,104 @@ mount_data() {
 	fi
 	mount -t vfat -o noatime,utf8,shortname=mixed "$PART" "$MNT" 2> /dev/null && FSTYPE=vfat && return 0
 	return 1
+}
+
+# Read-only, while a valid conversion marker stays (see the header).
+mount_data_ro() {
+	FSTYPE=
+	mount -t exfat -o ro,noatime "$PART" "$MNT" 2> /dev/null && FSTYPE=exfat && return 0
+	mount -t vfat -o ro,noatime,utf8,shortname=mixed "$PART" "$MNT" 2> /dev/null && FSTYPE=vfat && return 0
+	return 1
+}
+
+# The filesystem signature in the partition's first 4 KiB: exfat, ntfs,
+# fat32, fat16, fat12, ext4, or unknown (none of these: blank, garbage).
+# Returns 1 when they cannot be read.
+fs_signature() {
+	_fs_b=$RUN/.data-head
+	mkdir -p "$RUN" 2> /dev/null
+	if ! dd if="$PART" of="$_fs_b" bs=4096 count=1 2> /dev/null || [ "$(wc -c < "$_fs_b")" -ne 4096 ]; then
+		rm -f "$_fs_b"
+		return 1
+	fi
+	_fs_3=$(dd if="$_fs_b" bs=1 skip=3 count=5 2> /dev/null)
+	_fs_54=$(dd if="$_fs_b" bs=1 skip=54 count=5 2> /dev/null)
+	_fs_82=$(dd if="$_fs_b" bs=1 skip=82 count=5 2> /dev/null)
+	_fs_ext=$(dd if="$_fs_b" bs=1 skip=1080 count=2 2> /dev/null | od -An -tx1 | tr -d ' \n')
+	rm -f "$_fs_b"
+	case "$_fs_3" in
+	EXFAT) echo exfat ;;
+	NTFS*) echo ntfs ;;
+	*)
+		if [ "$_fs_82" = FAT32 ]; then
+			echo fat32
+		elif [ "$_fs_54" = FAT16 ]; then
+			echo fat16
+		elif [ "$_fs_54" = FAT12 ]; then
+			echo fat12
+		elif [ "$_fs_ext" = 53ef ]; then
+			echo ext4
+		else
+			echo unknown
+		fi
+		;;
+	esac
+	return 0
+}
+
+# /data cannot be used and nothing is formatted without the user's consent:
+# a tmpfs on /data (the menu starts; nothing written there is kept) and the
+# reason in /run/rsos/data-problem, for the menu (see the header).
+data_problem() { # <reason>
+	msg "/data is not available ($1): nothing is formatted without the user's consent; a temporary /data (tmpfs) instead"
+	mkdir -p "$MNT" 2> /dev/null
+	is_mounted || mount -t tmpfs -o "size=${RSOS_DATA_TMPFS:-32m},mode=0755" rsos-data "$MNT" 2> /dev/null ||
+		msg "no tmpfs on $MNT either"
+	note data-problem "$1"
+	is_mounted && make_layout
+}
+
+# The same for a conversion that cannot finish (its marker points to the
+# backup of the seed: the menu must not offer to format; data-error).
+data_unfinished() {
+	msg "/data is not available until the conversion is finished (next boot): a temporary /data (tmpfs) instead"
+	mkdir -p "$MNT" 2> /dev/null
+	is_mounted || mount -t tmpfs -o "size=${RSOS_DATA_TMPFS:-32m},mode=0755" rsos-data "$MNT" 2> /dev/null
+	note data-error "conversion unfinished"
+	is_mounted && make_layout
+}
+
+# A valid marker (see the header): the MBR carries its disk identifier.
+marker_valid() {
+	set -f
+	# shellcheck disable=SC2046 # (split on purpose)
+	set -- $(read_marker)
+	set +f
+	[ "$1" = "$MAGIC" ] && [ $# -eq 5 ] && [ "$2" = "$(disk_id)" ]
+}
+
+# While the marker stays valid: read-only (what the menu would write would be
+# lost when the next boot finishes the conversion from the backup).
+mount_while_converting() {
+	is_mounted && umount "$MNT"
+	if mount_data_ro; then
+		msg "/data is read-only until the conversion is finished (next boot)"
+		note data-readonly "conversion unfinished"
+		return 0
+	fi
+	data_unfinished
+	return 1
+}
+
+# The stamp of a finished conversion (step 5), on the new volume.
+STAMP=rsos/.conversion-done
+conversion_done() { # <id>
+	is_mounted && return 1
+	mount -t exfat -o ro "$PART" "$MNT" 2> /dev/null || return 1
+	_cd=
+	[ -r "$MNT/$STAMP" ] && read -r _cd _ < "$MNT/$STAMP"
+	umount "$MNT"
+	[ "$_cd" = "$1" ]
 }
 
 # The helpers below run on every boot: they use shell builtins (read) rather
@@ -482,6 +634,19 @@ clear_marker() {
 	dd if=/dev/zero of="$DISK" bs=1M seek="$(marker_mib)" count=1 conv=fsync 2> /dev/null
 }
 
+# Cleared, and read back as cleared (a few tries). If it stays, the stamp on
+# the volume (step 5) keeps the next boot from redoing the conversion.
+clear_marker_checked() {
+	for _cm in 1 2 3; do
+		if clear_marker && [ -z "$(read_marker)" ]; then
+			msg "conversion marker cleared"
+			return 0
+		fi
+		msg "the conversion marker is still there after clearing it (try $_cm)"
+	done
+	return 1
+}
+
 # --- The MBR disk identifier ("0x1234abcd") binds a marker to one partition
 # table write on this card: re-flashing the card rewrites the MBR.
 disk_id() {
@@ -516,6 +681,7 @@ grow_mbr() { # <id>
 	# Never format unless the MBR now carries the marker's identifier: a
 	# power cut after this point must find the two equal.
 	[ "$(disk_id)" = "$1" ] || { msg "the new disk identifier was not written"; return 1; }
+	[ "$RSOS_TEST_FAIL" != partx ] || return 1
 	partx --update --nr "$PART_NR" "$DISK"
 }
 
@@ -529,6 +695,7 @@ keep_fat32() {
 # A new, full-size exFAT on the (already grown) entry.
 format_fs() {
 	msg "formatting $PART as exFAT ($LABEL)"
+	[ "$RSOS_TEST_FAIL" != mkfs ] || return 1
 	mkfs.exfat -L "$LABEL" "$PART" > /dev/null 2>&1
 }
 
@@ -552,7 +719,7 @@ restore_backup() { # <offset MiB> <size MiB> <crc>
 
 # Steps 4-5 (see the header), on the entry that the MBR already makes
 # full-size exFAT. Idempotent: redone from the start after a power cut.
-finish_conversion() { # <backup offset MiB> <backup size MiB> <crc>
+finish_conversion() { # <backup offset MiB> <backup size MiB> <crc> <marker id>
 	splash_start
 	is_mounted && umount "$MNT"
 	if needs_growing; then
@@ -566,17 +733,23 @@ finish_conversion() { # <backup offset MiB> <backup size MiB> <crc>
 	msg "exFAT created"
 	test_abort after_format
 	test_hang after_format
-	mount_data || { msg "cannot mount the new exFAT on $PART"; return 1; }
+	wait_part
+	mount_data || { usleep 500000 2> /dev/null; wait_part && mount_data; } ||
+		{ msg "cannot mount the new exFAT on $PART"; return 1; }
 	_done=1
 	if [ "$2" -gt 0 ]; then
 		restore_backup "$1" "$2" "$3" || _done=
 		[ -n "$_done" ] && msg "files restored"
 	fi
 	make_layout
+	# (the stamp: from here on the volume is the finished result)
+	[ -n "$_done" ] && mkdir -p "$MNT/rsos" && echo "$4" > "$MNT/$STAMP"
 	sync
 	msg "folder layout written and synced"
 	test_abort after_restore
-	[ -n "$_done" ] && clear_marker && msg "conversion marker cleared"
+	if [ -n "$_done" ] && [ "$RSOS_TEST_FAIL" != clear_marker ] && ! clear_marker_checked; then
+		msg "cannot clear the conversion marker: the stamp on the volume keeps the next boot from redoing the conversion"
+	fi
 	splash_stop
 	return 0
 }
@@ -636,33 +809,81 @@ convert() { # <with backup: 0|1>
 	fi
 	msg "partition table written (disk id $id)"
 	test_abort after_sfdisk
-	finish_conversion "$bk_off" "$bk_mib" "$sum" || return 3
+	finish_conversion "$bk_off" "$bk_mib" "$sum" "$id" || return 3
 	return 0
 }
 
-# A partition that does not mount: check it, and as the very last resort
-# format it (empty) rather than leave the device without /data.
-repair_or_reformat() {
-	_sig=$(dd if="$PART" bs=1 skip=3 count=5 2> /dev/null)
-	_sig32=$(dd if="$PART" bs=1 skip=82 count=5 2> /dev/null)
-	if [ "$_sig" = EXFAT ]; then
+# A partition that does not mount: an exFAT volume is checked (fsck.exfat -p,
+# then -y); nothing is ever formatted here (see the header): data_problem.
+repair_or_report() {
+	# (a node re-created meanwhile: once more, first)
+	usleep 500000 2> /dev/null || sleep 1
+	wait_part && mount_data && return 0
+	if ! _fs=$(fs_signature); then
+		msg "$PART cannot be read"
+		data_problem readerror
+		return 1
+	fi
+	msg "$PART holds: $_fs"
+	case "$_fs" in
+	exfat)
 		fsck_data -p
 		mount_data && return 0
 		fsck_data -y
 		mount_data && return 0
-		# fsck says it is fine but it still does not mount: the problem is
-		# not the filesystem; never format it then.
-		fsck.exfat -n "$PART" > /dev/null 2>&1 && return 1
-	elif [ "$_sig32" = FAT32 ]; then
-		# No fsck.fat in the image: keep it for a PC to repair.
-		return 1
-	fi
-	[ -d "$MNT" ] || return 1
-	msg "$PART cannot be mounted or repaired: formatting it as an empty exFAT (its data is lost)"
-	note data-reformatted "$PART"
-	convert 0
-	[ $? -eq 0 ]
+		data_problem "unmountable exfat"
+		;;
+	fat32)
+		# (no fsck.fat in the image: a PC repairs it)
+		data_problem "unmountable vfat"
+		;;
+	unknown) data_problem "unmountable unknown" ;;
+	*) data_problem "foreign $_fs" ;;
+	esac
+	return 1
 }
+
+# --- The menu, after the user confirmed the format of a card that has a
+# data problem (its "storage could not be read" screen, which reboots on
+# exit 0): an empty full-size exFAT on the data entry (the conversion
+# without backup: marker, MBR, mkfs.exfat, layout, stamp; power-cut safe as
+# the first boot). Only when /run/rsos/data-problem exists (never a healthy
+# card by accident). The menu runs meanwhile, with its files open on the
+# tmpfs /data: that stays as it is, nothing is written there; the new volume
+# is prepared on a mount point of its own in /run/rsos, then unmounted (the
+# reboot mounts it on /data). No splash (the menu has the display), no
+# watchdog keeper (the menu has the watchdog). Messages on stderr and in the
+# kernel log. Exit 0 only when mkfs.exfat and the set-up after it succeeded.
+if [ "$1" = "--format-confirmed" ]; then
+	exec 1>&2
+	SPLASH_BIN=
+	WD=
+	if [ ! -e "$RUN/data-problem" ]; then
+		echo "rsos-data: --format-confirmed: no data problem ($RUN/data-problem): refused" >&2
+		{ echo "<4>rsos-data: --format-confirmed refused: no data problem" >> "$KMSG"; } 2> /dev/null
+		exit 2
+	fi
+	longpath "format confirmed by the user"
+	_why=
+	read -r _why < "$RUN/data-problem"
+	if ! wait_part; then
+		msg "$PART not found"
+		exit 1
+	fi
+	MNT=$RUN/format-mnt
+	mkdir -p "$MNT" || exit 1
+	is_mounted && umount "$MNT"
+	msg "formatting $PART as an empty exFAT, confirmed by the user${_why:+ ($_why)}"
+	if convert 0 && is_mounted && [ -d "$MNT/roms" ]; then
+		umount "$MNT" && rmdir "$MNT"
+		rm -f "$RUN/data-problem"
+		msg "$PART is an empty exFAT: restart to use it"
+		exit 0
+	fi
+	is_mounted && umount "$MNT"
+	msg "the format failed"
+	exit 1
+fi
 
 # --- 1. An unfinished conversion comes first.
 RESUMING=
@@ -672,12 +893,19 @@ set +f
 if [ "$1" = "$MAGIC" ]; then
 	longpath "conversion marker found ($*)"
 	if [ $# -eq 5 ] && [ "$2" = "$(disk_id)" ] && ! needs_growing; then
-		msg "finishing an interrupted first-boot conversion"
-		if ! finish_conversion "$3" "$4" "$5"; then
-			# Keep the marker (it may point to a backup): no repair or
-			# reformat below; the next boot tries again.
-			msg "could not finish it, trying again at the next boot"
-			RESUMING=1
+		if conversion_done "$2"; then
+			# Finished, only the marker was left (a power cut, or it
+			# could not be cleared): never format and restore again.
+			msg "the conversion had finished (its stamp is on the volume): clearing the marker"
+			clear_marker_checked || msg "cannot clear the conversion marker (the stamp still protects the volume)"
+		else
+			msg "finishing an interrupted first-boot conversion"
+			if ! finish_conversion "$3" "$4" "$5" "$2"; then
+				# Keep the marker (it may point to a backup): no repair
+				# below, read-only; the next boot tries again.
+				msg "could not finish it, trying again at the next boot"
+				RESUMING=1
+			fi
 		fi
 		splash_stop
 	else
@@ -686,27 +914,20 @@ if [ "$1" = "$MAGIC" ]; then
 	fi
 fi
 
-# (A partition table re-read, e.g. by a host's udev after a write to the
-# whole disk, removes and re-creates the node: give it up to 2 s.)
-_i=0
-while [ ! -b "$PART" ] && [ $_i -lt 20 ]; do
-	usleep 100000 2> /dev/null || sleep 1
-	_i=$((_i + 1))
-done
-if [ ! -b "$PART" ]; then
+if ! wait_part; then
 	msg "$PART not found, /data is not available"
 	note data-error "no $PART"
 	exit 1
 fi
 
+if [ -n "$RESUMING" ]; then
+	mount_while_converting
+	exit $?
+fi
 if ! is_mounted && ! mount_data; then
 	longpath "cannot mount $PART"
 	msg "cannot mount $PART on $MNT"
-	if [ -n "$RESUMING" ] || ! repair_or_reformat; then
-		msg "/data is not available"
-		note data-error "cannot mount $PART"
-		exit 1
-	fi
+	repair_or_report || exit 1
 fi
 
 # --- 2. First boot: fill the card. Also an entry of type 0x07 that still
@@ -739,6 +960,14 @@ if [ -n "$unfinished" ] || needs_growing; then
 		keep_fat32
 		;;
 	3)
+		# Stopped after the MBR write (partx or mkfs.exfat failed): the
+		# marker makes the next boot finish from the backup, so nothing
+		# may be written meanwhile. (Not written: the marker is stale,
+		# the seed untouched and usable.)
+		if marker_valid; then
+			mount_while_converting
+			exit $?
+		fi
 		is_mounted || mount_data || {
 			note data-error "conversion unfinished"
 			exit 1

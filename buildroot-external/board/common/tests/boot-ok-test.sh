@@ -79,10 +79,40 @@ bo "rsos.slot=a rsos.boot=pending" now
 check "fallback cleared, /run/rsos/boot-fallback = b" "[ -z \"\$(get rsos_fallback)\" ] && [ \"\$(cat $W/run/boot-fallback)\" = b ]"
 
 echo "== nothing to write when the slot is already confirmed"
-env_init rsos_slot=a rsos_ok=1 rsos_tries=0 rsos_fails=0
+env_init rsos_slot=a rsos_ok=1 rsos_tries=0 rsos_fails=0 rsos_good=a rsos_rounds=0
 before=$(md5sum < "$W/env.img")
 bo "rsos.slot=a rsos.boot=ok" now
 check "environment image unchanged" "[ \"\$(md5sum < $W/env.img)\" = \"$before\" ]"
+
+echo "== (review) confirming: rsos_good, the failure budget, the cpu-lowvolt trial; never rsos_bad"
+env_init rsos_slot=a rsos_ok=1 rsos_tries=0 rsos_fails=1 rsos_rounds=2 rsos_bad=b rsos_lowvolt=trial rsos_good=b
+bo "rsos.slot=a rsos.boot=pending" now
+check "good=a, rounds and lowvolt cleared, bad=b kept" \
+	"[ \"\$(get rsos_good)\" = a ] && [ -z \"\$(get rsos_rounds)\" ] && [ -z \"\$(get rsos_lowvolt)\" ] && [ \"\$(get rsos_bad)\" = b ]"
+env_init rsos_slot=a rsos_ok=1 rsos_tries=0 rsos_fails=1 rsos_lowvolt=failed
+bo "rsos.slot=a rsos.boot=pending" now
+check "lowvolt=failed is kept (only the user clears it)" "[ \"\$(get rsos_lowvolt)\" = failed ]"
+
+echo "== (review) a refund clears the cpu-lowvolt trial too (an orderly shutdown: no freeze)"
+env_init rsos_slot=a rsos_ok=1 rsos_tries=0 rsos_fails=2 rsos_lowvolt=trial
+echo pending > "$W/run/boot-state"
+bo "rsos.slot=a rsos.boot=pending" refund
+check "fails 2 -> 1, lowvolt cleared" "[ \"\$(get rsos_fails)\" = 1 ] && [ -z \"\$(get rsos_lowvolt)\" ]"
+
+echo "== (review) the updater switches the slot while a confirmation waits for the lock"
+env_init rsos_slot=a rsos_ok=1 rsos_tries=0 rsos_fails=1
+# the updater: holds the shared lock, then writes slot b on trial
+(
+	flock 8
+	sleep 2
+	printf 'rsos_slot b\nrsos_ok 0\nrsos_tries 3\nrsos_fails 0\nrsos_fallback\n' | "$W/bin/fw_setenv" -s -
+) 8> "$W/run/bootenv.lock" &
+UP=$!
+sleep 1
+bo "rsos.slot=a rsos.boot=pending" now; rc=$?
+wait $UP
+check "confirmation refused (slot b selected meanwhile): b keeps its trial" \
+	"[ $rc -ne 0 ] && [ \"\$(get rsos_slot)\" = b ] && [ \"\$(get rsos_ok)\" = 0 ] && [ \"\$(get rsos_tries)\" = 3 ]"
 
 echo "== wait mode: net-applied, then the delay, then confirm"
 env_init rsos_slot=a rsos_ok=1 rsos_tries=0 rsos_fails=1

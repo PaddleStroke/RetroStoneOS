@@ -74,6 +74,42 @@ if [ -f "$RUN/shutdown-signal" ]; then
 fi
 ts "rcK start"
 
+# --- Every step below can hang (a lock, a dying SD card): each has a time
+# limit, and a deadline process forces the power-off (or the reboot)
+# without syncing if the whole shutdown takes too long (35 s: up to 12 s
+# for a game to save, then 20 s for the rest), so that a hang can never
+# leave the unit on (the panel powered) until the battery dies. The
+# watchdog cannot do it: it is disarmed below, so that a slow but healthy
+# shutdown never turns into a reset. The deadline checks the uptime rather
+# than trusting one sleep (step 5's "kill -TERM -1" may kill its sleep; its
+# "kill -KILL -1" kills it, and it is started again). Stopped at the end,
+# before init's own path goes on.
+DL_PID=
+deadline_start() { # <seconds>
+	read -r _d _ < /proc/uptime
+	_d=$((${_d%.*} + $1))
+	(
+		trap '' TERM HUP
+		while :; do
+			read -r _u _ < /proc/uptime
+			[ "${_u%.*}" -ge "$_d" ] && break
+			sleep 1
+		done
+		{ echo "<3>rcK: shutdown stuck: forced ${MODE:-poweroff}" > /dev/kmsg; } 2> /dev/null
+		if [ "$MODE" = reboot ]; then
+			reboot -f -n
+		else
+			poweroff -f -n
+		fi
+	) &
+	DL_PID=$!
+}
+deadline_stop() {
+	[ -z "$DL_PID" ] || kill -KILL "$DL_PID" 2> /dev/null
+	DL_PID=
+}
+deadline_start "${RSOS_RCK_DEADLINE_S:-35}"
+
 # --- 1. The boot logger syncs and writes to /data every few seconds: stop it
 # first (it exits at once on SIGTERM, see /usr/libexec/rsos/bootlog).
 if [ -f "$RUN/bootlog.pid" ]; then
@@ -90,12 +126,25 @@ fi
 
 # --- 2. The frontend (and a running game) save their state on SIGTERM. On
 # the fast path the frontend has usually exited already. (The wait polls
-# with the kill builtin: no fork per check.)
+# with the kill builtin: no fork per check.) A game gets CHILD_GRACE_MS (8 s)
+# from the menu to save its state: with a game running (a second
+# rsos-frontend process, the game child, or /run/rsos/game-running, which the
+# frontend may write), wait up to 12 s, else 3 s. Then sync at once: the
+# saves are on the card before anything else can hang.
 _fp=$(pidof rsos-frontend)
 if [ -n "$_fp" ]; then
+	_n=0
+	for _p in $_fp; do
+		_n=$((_n + 1))
+	done
+	_max=150
+	if [ "$_n" -gt 1 ] || [ -e "$RUN/game-running" ]; then
+		_max=600
+	fi
+	# shellcheck disable=SC2086 # (one pid per word)
 	kill -TERM $_fp 2> /dev/null
 	i=0
-	while [ $i -lt 150 ]; do
+	while [ $i -lt $_max ]; do
 		_alive=
 		for _p in $_fp; do
 			kill -0 "$_p" 2> /dev/null && _alive=1
@@ -105,6 +154,8 @@ if [ -n "$_fp" ]; then
 		i=$((i + 1))
 	done
 	ts "frontend stopped"
+	sync
+	ts "synced"
 fi
 
 # The hardware watchdog (docs/power.md): the frontend normally closes it
@@ -119,23 +170,23 @@ fi
 _bs=
 [ -r "$RUN/boot-state" ] && read -r _bs _ < "$RUN/boot-state"
 if [ "$_bs" = pending ] && [ -x /usr/bin/rsos-boot-ok ]; then
-	/usr/bin/rsos-boot-ok refund
+	timeout 5 /usr/bin/rsos-boot-ok refund
 	ts "boot try given back"
 fi
 
 # --- 3. No RTC backup cell: save the clock (docs/power.md).
-[ -x /usr/bin/rsos-clock ] && /usr/bin/rsos-clock save
+[ -x /usr/bin/rsos-clock ] && timeout 5 /usr/bin/rsos-clock save
 ts "clock saved"
 
 # --- 4. Bluetooth pairing store: a loop-mounted image on /data (see
 # rsos-net; at most 3 s behind a running rsos-net). SMB share: ksmbd keeps
 # files of /data open.
 if mounted /var/lib/bluetooth; then
-	RSOS_NET_LOCK_WAIT=3 /usr/bin/rsos-net -n bt off
+	RSOS_NET_LOCK_WAIT=3 timeout 8 /usr/bin/rsos-net -n bt off
 	ts "bluetooth off"
 fi
 if [ -d /sys/module/ksmbd ] && [ -x /usr/sbin/ksmbd.control ]; then
-	/usr/sbin/ksmbd.control --shutdown > /dev/null 2>&1
+	timeout 5 /usr/sbin/ksmbd.control --shutdown > /dev/null 2>&1
 	ts "smb share stopped"
 fi
 
@@ -162,29 +213,32 @@ if mounted /data; then
 	fi
 	sync
 	read -r T_SYNC _ < /proc/uptime
-	umount /data 2> /dev/null || mount -o remount,ro /data 2> /dev/null
+	timeout 10 umount /data 2> /dev/null || timeout 5 mount -o remount,ro /data 2> /dev/null
 	read -r T_UMOUNT _ < /proc/uptime
 	if mounted_rw /data; then
 		# Something still writes there: stop everything (as init would)
-		# and try again.
+		# and try again. (That kills the deadline process too: a new one.)
 		kill -TERM -1 2> /dev/null
 		usleep 200000
 		kill -KILL -1 2> /dev/null
+		deadline_start 20
 		# The Bluetooth store's loop device keeps /data busy until its
 		# own filesystem is gone (the loop device then frees itself).
-		umount /var/lib/bluetooth 2> /dev/null
+		timeout 5 umount /var/lib/bluetooth 2> /dev/null
 		sync
-		umount /data 2> /dev/null || mount -o remount,ro /data 2> /dev/null
+		timeout 10 umount /data 2> /dev/null || timeout 5 mount -o remount,ro /data 2> /dev/null
 	fi
 	ts "/data unmounted"
 fi
 
-# --- 6. Fast path: power off / reboot now (poweroff -f syncs first).
+# --- 6. Fast path: power off / reboot now (poweroff -f syncs first; the
+# deadline process stays, in case that sync hangs).
 if [ -n "$MODE" ] && [ -n "$T_LOG" ] && [ -x /usr/libexec/rsos/axpstamp ]; then
-	/usr/libexec/rsos/axpstamp save "$T_LOG" "$T_SYNC" "$T_UMOUNT" 2> /dev/null
+	timeout 3 /usr/libexec/rsos/axpstamp save "$T_LOG" "$T_SYNC" "$T_UMOUNT" 2> /dev/null
 fi
 case "$MODE" in
 poweroff) poweroff -f ;;
 reboot) reboot -f ;;
 esac
+deadline_stop
 exit 0

@@ -50,6 +50,7 @@ static const struct {
 	[RSU_E_CANCELLED] = { "cancelled", "Cancelled" },
 	[RSU_E_NOTLS] = { "notls", "This build cannot use HTTPS" },
 	[RSU_E_INTERNAL] = { "internal", "Internal error" },
+	[RSU_E_VARIANT] = { "variant", "This is a development build of RetroStoneOS: this console installs release updates only" },
 };
 
 const char *rsu_err_code(enum rsu_err e)
@@ -843,6 +844,10 @@ enum rsu_err rsu_policy(const struct rsu_system *sys, const struct rsu_header *h
 		return RSU_E_UPDATER;
 	if (strcmp(h->m.board, sys->board))
 		return RSU_E_BOARD;
+	/* a release console never takes a development build (signed by the
+	 * same key in CI) unless asked on the UART */
+	if (sys->release && strcmp(h->m.variant, "release") && !(flags & RSU_ALLOW_DEV))
+		return RSU_E_VARIANT;
 	if (h->m.bootloader_min > (sys->bootloader > 0 ? sys->bootloader : 1))
 		return RSU_E_BOOTLOADER;
 	c = rsu_version_cmp(h->m.version, h->m.build_time, sys->version, sys->build_time);

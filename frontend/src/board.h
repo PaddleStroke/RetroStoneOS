@@ -57,14 +57,17 @@
  *   cpu_governor_game                                                     performance
  *   storage_overlays          opt-in device tree overlays the Storage    "" (none)
  *                             menu offers (known: emmc sata)
- *   display_quirks            driver quirks: sun4i-tcon0-clock (log the  "" (none)
- *                             A20 TCON0 pixel clock model when the panel
+ *   display_quirks            driver quirks: sun4i-tcon0-clock (log the  panel-keep-
+ *                             A20 TCON0 pixel clock model when the panel scanning
  *                             is retimed); panel-keep-scanning (the
- *                             built-in panel cannot be powered off: its
- *                             CRTC never stops while the display is open;
- *                             screen off = backlight off + black frame,
- *                             HDMI on another CRTC; display_config.
- *                             panel_keep_scanning). Scaling and plane
+ *                             default, even without board.ini: the
+ *                             built-in DPI/LVDS/DSI/Unknown panel may not
+ *                             be powered off: its CRTC never stops while
+ *                             the display is open; screen off = backlight
+ *                             off + black frame, HDMI on another CRTC;
+ *                             display_config.panel_keep_scanning);
+ *                             panel-power-switched (the opt-out: the
+ *                             panel's supply is switched). Scaling and plane
  *                             limits need no quirk: they are probed with
  *                             TEST_ONLY commits.
  */

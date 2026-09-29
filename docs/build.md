@@ -204,13 +204,21 @@ boot, when entry 1 does not reach the end of the card yet:
    `partx --update` (the table cannot be re-read while a root filesystem is
    mounted);
 4. `mkfs.exfat`, mount, restore, layout, `sync`;
-5. the marker is cleared.
+5. the stamp `rsos/.conversion-done` (the marker's `<id>`) on the new volume,
+   `sync`, then the marker is cleared and read back.
 
 Every boot reads the marker first. It is acted on only when its `<id>` is the
 card's current MBR disk identifier and the entry already reaches the end of the
 card, i.e. when step 3 happened on this card since it was last flashed: steps 4
 and 5 are then redone from the start (format again, restore the verified backup
-again), which is idempotent. Any other marker is stale and is discarded: a cut
+again), which is idempotent, unless the volume already carries the stamp of
+that `<id>`: the conversion had finished and only the marker was left (a cut,
+or a marker that could not be cleared), so it is just cleared and nothing
+written since is lost. While a valid marker stays (`partx` or `mkfs.exfat`
+failed: the next boot finishes the conversion from the backup), `/data` is
+mounted **read-only** (`/run/rsos/data-readonly`; a tmpfs and
+`/run/rsos/data-error` if even that fails): what the menu would write there
+would be lost. Any other marker is stale and is discarded: a cut
 before step 3 leaves the seed untouched, and re-flashing the card rewrites the
 MBR (the image's disk identifier is 0), so a backup from before a re-flash is
 never restored over the new seed. `mkfs.exfat` never runs unless the MBR
@@ -226,11 +234,20 @@ arrives by re-flashing, which makes them stale.
 session did not unmount it) is checked with `fsck.exfat -p` before it is
 mounted, with the "Checking the SD card" splash; the result goes to
 `/run/rsos/data-fsck` (docs/power.md §11 has the timing). **A volume that does
-not mount** is checked (`fsck.exfat -p`, then `-y`); if it still does not mount
-and fsck does not call it clean (or the partition holds no filesystem at all),
-it is formatted as an empty full-size exFAT through the same crash-safe steps,
-with a message and `/run/rsos/data-reformatted` for the UI. A FAT32 volume that
-does not mount is left alone (no fsck.fat in the image; `/run/rsos/data-error`).
+not mount** is checked if it is exFAT (`fsck.exfat -p`, then `-y`). **Nothing
+is ever formatted without the user's consent** (outside the first boot of the
+pristine seed and the resume of its conversion): a partition that still does
+not mount, holds another filesystem or cannot be read is left alone; a small
+tmpfs goes on `/data` so that the menu starts, and `/run/rsos/data-problem`
+says why: `unmountable <exfat|vfat|unknown>`, `foreign <ntfs|fat16|fat12|ext4>`
+or `readerror`. The menu then offers to back the card up on a PC first, or to
+format it: after the user confirmed, it runs
+`/usr/libexec/rsos/data-partition --format-confirmed` (refused without
+`data-problem`), which makes an empty full-size exFAT through the same
+crash-safe steps on a mount point of its own (the menu keeps its tmpfs
+`/data`; nothing is written there), logs to stderr and the kernel log, and
+exits 0 only when the format and the layout succeeded; the menu then
+restarts the console.
 
 Then, if `roms/` is missing, it creates the layout, and it runs
 `/usr/bin/rsos-seed-homebrew /data`, which copies the bundled homebrew games
@@ -252,14 +269,20 @@ first boot). Only on the long paths (conversion, resume, check, repair):
   (board.ini `firstboot_trace_kib`: 3072 on the RetroStone2 and RetroStone1,
   i.e. 3 MiB, in the reserved gap between the U-Boot environment and rootfs
   A; checked against the partition table before use, so the marker and the
-  backup at the end of the card are never touched). A record that no boot
-  collected (a boot that hung or lost power) is kept above the next one. The
-  next boot that reaches the menu appends it to
-  `RETROSTONE/rsos/logs/firstboot.txt` (bootlog) and clears the area;
+  backup at the end of the card are never touched). The area holds the
+  record's magic line and the trace's **last** 64 KiB (a chatty splash log
+  goes in as its last 8 KiB, a kernel stack as its first 4 KiB). A record
+  that no boot collected (a boot that hung or lost power) is kept above the
+  next one. The next boot that reaches the menu appends it to
+  `RETROSTONE/rsos/logs/firstboot.txt` (bootlog; the file keeps its last
+  256 KiB) and clears the area;
 - the hardware watchdog (started by U-Boot, serviced by the kernel until a
-  program opens it) is serviced by a background keeper while the boot makes
-  progress (SD card I/O counters or a new step); after 180 s without either it
-  stops servicing it and the board resets 16 s later (the conversion is
+  program opens it, for at most 120 s: `CONFIG_WATCHDOG_OPEN_TIMEOUT`) is
+  serviced by a background keeper while the boot makes progress (the SD
+  card's counters of **completed** I/O, fields 1, 3, 5 and 7 of
+  `/sys/class/block/<disk>/stat`: the in-flight and `io_ticks` fields keep
+  moving while a request is stuck; or a new step); after 180 s without either
+  it stops servicing it and the board resets 16 s later (the conversion is
   power-cut safe). The keeper closes it with the magic `V` at the end, and
   the menu opens it again as before.
 
@@ -276,13 +299,19 @@ write, right after it, in the middle of `mkfs.exfat`, after the format and
 after the restore, each followed by a reboot, the review's scenarios G (cut
 after sfdisk under an old image, also with files added afterwards) and H
 (stale marker after a re-flash), a damaged backup, a failed backup, a card too
-small, an unmountable exFAT without a marker, a dirty volume, and a normal boot
-(about 30 ms); the trace (every step on the card at 3 MiB, the kernel log, the
+small, an unmountable exFAT without a marker (checked, not formatted; then
+`--format-confirmed` beside a tmpfs `/data`, and its refusal without a data
+problem), another filesystem (NTFS, FAT16), a blank partition and a damaged
+FAT32 (never formatted, data-problem), a marker that cannot be cleared (the
+stamp keeps a save made since), `partx` and `mkfs.exfat` failures (read-only
+until the next boot finishes), a dirty volume, and a normal boot (about 30
+ms); the trace (every step on the card at 3 MiB, the kernel log, the
 watchdog closed with `V`, rootfs A, U-Boot and its environment untouched,
 nothing on a normal boot), a stub splash that stops on SIGTERM (its log in the
-trace), one that ignores it (SIGKILL, the boot goes on), a stalled step (the
-watchdog is no longer serviced) and a first boot that never finished (its
-trace kept by the next one).
+trace), one that ignores it (SIGKILL, the boot goes on), a chatty one (its
+last 8 KiB), a stalled step (the watchdog is no longer serviced), a request
+stuck in the driver (in-flight and `io_ticks` moving: still no service) and a
+first boot that never finished (its trace kept by the next one).
 
 ## Boot flow
 
@@ -295,7 +324,11 @@ trace kept by the next one).
 2. `bootcmd` sets `silent=1` (unless `rsos_verbose=1`), then loads and runs
    `/boot/boot.scr`: slot b's copy first when `rsos_slot=b`, then slot a's
    (partition 2), then (console back on) slot b's (partition 3), then a bootstd
-   scan as the last resort. The partitions are spelled out: the former
+   scan as the last resort, then `poweroff`: U-Boot never waits at its prompt
+   (it services the watchdog there, and the RetroStone2 panel, whose supply is
+   always on, would stay powered without a picture). A development build still
+   gives the prompt to a key pressed on the UART at power-on (the bootcmd does
+   not run then). The partitions are spelled out: the former
    `for rsos_p in 2 3` loop did not work (found on QEMU: with the environment
    variable `rsos_p` just set by bootcmd, the loop variable did not take the
    values 2 and 3, "Can't set block device"), so a missing `boot.scr` on the
@@ -308,17 +341,28 @@ trace kept by the next one).
    plus `rsos_extraargs` (`initcall_debug log_buf_len=1M` only in the
    development build, see "Release build"). It never returns: if the kernel
    or the DTB cannot be loaded or `bootz` fails, it switches to the other slot
-   (reset) or powers off.
+   (reset) or powers off (then resets, if the power-off returns).
 4. Linux 6.18.54 (sunxi_defconfig + `linux.fragment` + `linux-patches.fragment`,
    LZ4-compressed zImage, everything needed at boot built in, no initramfs)
    mounts the root read-only and devtmpfs on `/dev`.
 5. BusyBox init: `/etc/init.d/rcS` mounts proc/sys/devpts/tmpfs (`/run`, `/tmp`,
    `/dev/shm`), sets the `performance` governor for the boot, reads the boot
    reason, mounts `/data`, restores the clock and puts everything else in the
-   background; then init starts `/usr/bin/rsos-frontend` first (respawned; the
-   line is only added to `/etc/inittab` when that binary is in the image,
-   otherwise the system just boots to the UART shell), the UART shell on ttyS0
-   (see "Debug UART"), and `rsos-net apply` in the background.
+   background; then init starts `/usr/bin/rsos-frontend` first (respawned,
+   through `/usr/libexec/rsos/frontend-respawn`; the line is only added to
+   `/etc/inittab` when that binary is in the image, otherwise the system just
+   boots to the UART shell), the UART shell on ttyS0 (see "Debug UART"), and
+   `rsos-net apply` in the background. `frontend-respawn` execs the frontend
+   (same pid) after counting its starts: after 5 starts within 60 s (a menu
+   that crash-loops) it stops respawning and opens `/dev/watchdog` without
+   servicing it, so the board resets (U-Boot counts the boot as failed and its
+   A/B logic acts) instead of staying on with the panel powered and no
+   picture; `reboot -f` 30 s later if no reset came. `touch
+   /run/rsos/respawn-unlimited` turns it off (development). The kernel
+   services U-Boot's watchdog only until the first open, for at most 120 s
+   (`CONFIG_WATCHDOG_OPEN_TIMEOUT`): a hang in rcS or a menu that crashes
+   before it opens the device resets the board too (`watchdog.open_timeout=0`
+   in `rsos_extraargs` turns that off for development).
 
 No udev and no mdev: devices come from devtmpfs, firmware is loaded by the
 kernel directly from `/lib/firmware`.
@@ -453,8 +497,11 @@ Goal: under 1 s from the power key to the power cut, without risking data.
    `/run/rsos/shutdown-start` (its `/proc/uptime` when the key was pressed),
    signals init (SIGUSR2 = power off, SIGTERM = reboot) and exits.
 2. BusyBox init runs `/etc/init.d/rcK` (`::shutdown`), which:
-   stops the boot logger (SIGTERM; it exits at once), stops the frontend if it
-   is still running (SIGTERM, up to 3 s, polled every 20 ms), stops the
+   starts a deadline process (below), stops the boot logger (SIGTERM; it exits
+   at once), stops the frontend if it is still running (SIGTERM, polled every
+   20 ms, up to 3 s, or 12 s when a game runs: a second `rsos-frontend`
+   process or `/run/rsos/game-running`; the menu gives a game 8 s to save its
+   state), syncs at once, stops the
    hardware watchdog (magic close), gives back the A/B boot try if this boot
    was not confirmed yet (`rsos-boot-ok refund`, one `fw_setenv`, only then:
    see "A/B slots"), saves the clock (`rsos-clock save`), turns Bluetooth off
@@ -463,7 +510,11 @@ Goal: under 1 s from the power key to the power cut, without risking data.
    times to `/data/rsos/logs/shutdown.txt` (the last 5 shutdowns), syncs once
    and unmounts `/data` (read-only remount if busy; if it is still read-write,
    SIGTERM/SIGKILL to every process, as init would, unmounts the Bluetooth
-   store's loop filesystem, and tries again).
+   store's loop filesystem, and tries again). Each of these steps has a time
+   limit (`timeout`), and the deadline process forces `poweroff -f -n` (or
+   `reboot -f -n`) when the whole shutdown takes more than 35 s (a step stuck
+   in the kernel, a dying card): with the watchdog disarmed, nothing else
+   would stop a hang there from keeping the unit on until the battery dies.
 3. **Fast path**: when the frontend wrote one of the two files, rcK then runs
    `poweroff -f` (or `reboot -f`) itself. The kernel's axp20x power-off
    handler switches the AXP209 off, exactly as on init's path, but init's own
@@ -503,8 +554,13 @@ needs no extra filesystem code.
 | `rsos_tries` | `0`-`9` | trial slot: boots left before falling back |
 | `rsos_fails` | `0`-`9` | confirmed slot: boots in a row that were not confirmed |
 | `rsos_fallback` | `a` / `b` / empty | the slot this one fell back from (no ping-pong); cleared by the confirmation |
+| `rsos_bad` | `a` / `b` / empty | an updated slot whose trial ran out: U-Boot never falls back to it; only the updater's next write clears it (never a confirmation) |
+| `rsos_good` | `a` / `b` / empty | the last slot `rsos-boot-ok` confirmed |
+| `rsos_rounds` | `0`-`9` | slots that ran out of boots (or could not be loaded) since the last confirmed boot: the failure budget; cleared by the confirmation |
 | `rsos_maxfails` | `0`-`9` (default 3) | fallback threshold for a confirmed slot; `0`: do not count, no environment write on a normal boot |
+| `rsos_maxrounds` | `1`-`9` (default 4) | failure budget: power off when `rsos_rounds` reaches it (about two full rounds of both slots) |
 | `rsos_overlays` | e.g. `emmc sata` | device tree overlays to apply (see below) |
+| `rsos_lowvolt` | `trial` / `failed` / empty | the one-shot `cpu-lowvolt` test overlay (see below) |
 | `rsos_extraargs` | e.g. `quiet` | appended to the kernel command line |
 
 **Every boot is counted, and Linux confirms it** (system review S5, S6). A
@@ -520,15 +576,35 @@ unreadable, gave an endless reboot loop or a U-Boot prompt. Rules (in
   back.
 - Confirmed slot (`rsos_ok=1`): `rsos_fails<rsos_maxfails`: increment, save,
   boot; else fall back.
-- Fall back: if the other slot has a kernel (`test -e mmc 0:<part>
-  /boot/zImage`) and is not the one this slot fell back from, switch to it:
-  `rsos_slot=<other> rsos_ok=1 rsos_fails=1 rsos_fallback=<failed slot>`.
-  Otherwise stay and count again from 1 (a factory card has an empty slot B;
-  two failing slots do not ping-pong). One `saveenv` per boot at most.
+- A slot that runs out of boots is exhausted: `rsos_rounds + 1`, and a trial
+  slot is marked `rsos_bad` (an update that never got confirmed must never
+  come back through a later fallback: before this, three unconfirmed boots of
+  the good slot fell back to it, and when it failed again, "staying on" it
+  lasted for ever). Then:
+  - `rsos_rounds` reached `rsos_maxrounds` (default 4, about two full rounds
+    of both slots): **power off** (then `reset`, in case the power-off
+    returns), rather than loop for ever with the panel powered and no
+    picture. The next power-on gets a fresh budget on the last confirmed slot
+    (`rsos_good`, unless it is marked bad).
+  - else fall back: if the other slot has a kernel (`test -e mmc 0:<part>
+    /boot/zImage`), is not `rsos_bad`, and either did not fail before in
+    this episode (`rsos_fallback`) or is the last confirmed slot (both
+    failed: `rsos_good` is preferred), switch to it: `rsos_slot=<other>
+    rsos_ok=1 rsos_fails=1 rsos_fallback=<failed slot>`.
+  - otherwise stay and count again from 1 (a factory card has an empty slot
+    B). One `saveenv` per boot at most.
 - The kernel gets `rsos.boot=pending` when the boot was counted.
-- The kernel or the DTB cannot be loaded, or `bootz` returns: switch to the
-  other slot at once and reset (same conditions), else `poweroff`. Never a
-  U-Boot prompt (except if the AXP209 power-off itself fails).
+- The kernel or the DTB cannot be loaded, or `bootz` returns: a trial slot is
+  marked bad, one round is counted, and U-Boot switches to the other slot at
+  once and resets when it has a kernel, is not `rsos_bad` and the budget
+  allows (also when it is `rsos_fallback`: before, an unloadable slot whose
+  other slot had failed once powered off at every power-on), else powers off
+  (fresh budget at the next power-on). Never a U-Boot prompt: the bootcmd
+  itself ends with `poweroff`, and `boot.scr` resets if the power-off returns
+  (TODO(hw): check that U-Boot's AXP209 power-off really cuts the power).
+- A slot running an older `boot.scr` does not know `rsos_bad` (U-Boot runs the
+  selected slot's script): the protection is complete once both slots hold
+  this version.
 
 In Linux, rcS copies `rsos.boot=pending` to `/run/rsos/boot-state`, and:
 
@@ -539,15 +615,21 @@ In Linux, rcS copies `rsos.boot=pending` to `/run/rsos/boot-state`, and:
   keeps waiting, because `apply` runs when the user leaves charge mode; after
   120 s outside charge mode it goes on anyway), then 30 s more, and checks that
   the menu process is still the same (no crash and respawn). Then one
-  `fw_setenv -s`: `rsos_ok=1 rsos_tries=0 rsos_fails=0`, `rsos_fallback`
-  cleared (its old value goes to `/run/rsos/boot-fallback` for the UI). It
-  refuses when the running slot (`rsos.slot=`) is not `rsos_slot`, or when the
-  kernel was not booted by `boot.scr` (no `rsos.slot=`). One waiter at a time.
-  `rsos-boot-ok now` confirms at once; `rsos-boot-ok status` prints the state.
+  `fw_setenv -s`: `rsos_ok=1 rsos_tries=0 rsos_fails=0 rsos_good=<slot>`,
+  `rsos_fallback` and `rsos_rounds` cleared (the old `rsos_fallback` goes to
+  `/run/rsos/boot-fallback` for the UI), and a pending `rsos_lowvolt=trial`
+  cleared; never `rsos_bad`. It refuses when the running slot (`rsos.slot=`)
+  is not `rsos_slot`, or when the kernel was not booted by `boot.scr` (no
+  `rsos.slot=`). One waiter at a time. `rsos-boot-ok now` confirms at once;
+  `rsos-boot-ok status` prints the state. Every access takes
+  `/run/rsos/bootenv.lock`, the lock the updater takes around its slot
+  switch, and re-reads `rsos_slot` under it: a confirmation can never land on
+  a slot just selected for its trial.
 - **Refund**: an orderly shutdown or reboot before the confirmation (rcK,
   `rsos-boot-ok refund`) gives the try back (`rsos_fails - 1`, or
-  `rsos_tries + 1` on trial): turning the unit off right after the menu
-  appears, or a charge-mode session, is not a failed boot.
+  `rsos_tries + 1` on trial, and clears a `cpu-lowvolt` trial): turning the
+  unit off right after the menu appears, or a charge-mode session, is not a
+  failed boot.
 
 So a slot that panics, hangs (hardware watchdog, lockup detectors: docs/power.md
 §11), crashes the menu in a loop or loses power before the stability window,
@@ -562,19 +644,29 @@ counting of confirmed slots off.
 **Tests**: `board/retrostone2/tests/boot-ab-qemu-test.sh` builds U-Boot for
 QEMU's cubieboard (A10) with this tree's patches and fragment, and boots fake
 kernels (a "kernel" that starts and never confirms, one that `bootz` rejects):
-first boot, counting, fallback after 3 failures, no ping-pong, empty slot B,
-corrupt kernel, both corrupt, a slot without `boot.scr`, a trial slot,
-`rsos_maxfails=0`, overlays, and the watchdog start (21 checks).
-`board/common/tests/boot-ok-test.sh` tests `rsos-boot-ok` with the host
-`fw_setenv` on an environment image (16 checks).
+first boot, counting, fallback after 3 failures, both slots failing (back to
+the last confirmed one, then the power-off after the budget and a fresh
+budget), empty slot B, corrupt kernel (also with `rsos_fallback` naming the
+good slot), both corrupt (switches within the budget, then the power-off and
+the reset), a slot on trial that never confirms (marked bad; the good slot
+failing afterwards never falls back to it; the updater's write clears the
+mark), `rsos_maxfails=0`, overlays, the one-shot `cpu-lowvolt`, the watchdog
+start, and no `boot.scr` at all (the bootcmd's power-off) (40 checks);
+`board/sbc-uboot/tests/boot-ab-qemu-test.sh` does the same for the Orange Pi
+script (24 checks). `board/common/tests/boot-ok-test.sh` tests `rsos-boot-ok`
+with the host `fw_setenv` on an environment image (20 checks, including the
+lock shared with the updater).
 
 **Updater contract** (implemented by `rsos-update`, docs/updates.md): write
 the new root filesystem to the inactive slot's partition (its first 64 KiB
 zeroed first and written last, so a half-written slot never has a superblock
-and is never a fallback target), read it back, then in one step
-`fw_setenv -s` with `rsos_slot=<new> rsos_ok=0 rsos_tries=3 rsos_fails=0` and
-an empty `rsos_fallback`, and reboot. It refuses while the running slot is on
-trial (`rsos_ok=0`): that slot's fallback must not be overwritten.
+and is never a fallback target), read it back, then, under
+`/run/rsos/bootenv.lock` and after checking again that the running slot is
+the selected, confirmed one, in one step `fw_setenv -s` with
+`rsos_slot=<new> rsos_ok=0 rsos_tries=3 rsos_fails=0` and an empty
+`rsos_fallback`, `rsos_bad` and `rsos_rounds`, and reboot. It refuses while
+the running slot is on trial (`rsos_ok=0`): that slot's fallback must not be
+overwritten.
 `board/retrostone2/tests/update-ab-test.sh` (root, after a build) checks the
 whole chain on the real image (22 checks, including U-Boot in QEMU booting the
 updated slot and ignoring an interrupted one).
@@ -609,6 +701,12 @@ with `-@` so it has the symbols overlays need). If an overlay fails to apply,
 the base DT is reloaded and the boot continues. With `rsos_overlays` unset the
 boot script does no extra work. The setting lives in the environment, not in a
 slot, so it survives updates. `fw_setenv rsos_overlays` (no value) removes it.
+The test overlay `cpu-lowvolt` (the 1.0 V CPU floor, which may freeze the
+board) is one-shot: `boot.scr` applies it with `rsos_lowvolt=trial`, which
+`rsos-boot-ok` clears once that boot is confirmed (or given back at an orderly
+shutdown); a boot that finds `trial` still set (the last one froze, the
+watchdog reset it) skips it and sets `rsos_lowvolt=failed`, and it stays
+skipped until `fw_setenv rsos_lowvolt`.
 
 The AHCI driver is built into the kernel; with the SATA node disabled it never
 probes, so it costs no boot time on units without the slot.
