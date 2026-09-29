@@ -283,13 +283,65 @@ static const char *gl_path(struct arena *a, const char *root, const char *p)
 	return arena_strdup(a, out);
 }
 
-static struct game *find_game(struct scan *sc, const char *abs)
+/*
+ * The scanned games by path and by relative path, for apply_gamelist(): a
+ * linear search per gamelist entry is quadratic (10,000 entries x 10,000
+ * games). Open addressing, game index + 1 (0 = empty), at most half full;
+ * a name listed twice finds its first game, as the linear search did.
+ */
+struct game_index {
+	int *path, *rel;
+	unsigned mask;
+};
+
+static void gidx_put(int *t, unsigned mask, uint64_t h, int i)
 {
-	/* linear with a quick basename check; gamelists are loaded once and
-	 * then cached, so this is fine even for a few thousand games */
-	for (int i = 0; i < sc->n; i++)
-		if (!strcmp(sc->games[i].path, abs))
-			return &sc->games[i];
+	unsigned k = (unsigned)h & mask;
+
+	while (t[k])
+		k = (k + 1) & mask;
+	t[k] = i + 1;
+}
+
+static void gidx_build(struct game_index *x, const struct scan *sc)
+{
+	unsigned n = 16;
+
+	while (n < 2u * (unsigned)sc->n)
+		n *= 2;
+	x->mask = n - 1;
+	x->path = xcalloc(n, sizeof(int));
+	x->rel = xcalloc(n, sizeof(int));
+	for (int i = 0; i < sc->n; i++) {
+		gidx_put(x->path, x->mask, hash64_str(sc->games[i].path, 0), i);
+		gidx_put(x->rel, x->mask, hash64_str(sc->games[i].rel, 0), i);
+	}
+}
+
+static void gidx_free(struct game_index *x)
+{
+	free(x->path);
+	free(x->rel);
+}
+
+static struct game *gidx_find(const struct game_index *x, const int *t, const struct scan *sc,
+			      const char *s, bool rel)
+{
+	for (unsigned k = (unsigned)hash64_str(s, 0) & x->mask; t[k]; k = (k + 1) & x->mask) {
+		struct game *g = &sc->games[t[k] - 1];
+
+		if (!strcmp(rel ? g->rel : g->path, s))
+			return g;
+	}
+	return NULL;
+}
+
+static struct game *find_game(const struct game_index *x, struct scan *sc, const char *abs)
+{
+	struct game *g = gidx_find(x, x->path, sc, abs, false);
+
+	if (g)
+		return g;
 	/* absolute path from another machine (/home/pi/RetroPie/roms/nes/x):
 	 * match on the part after "/<system>/" */
 	{
@@ -298,12 +350,8 @@ static struct game *find_game(struct scan *sc, const char *abs)
 
 		snprintf(key, sizeof(key), "/%s/", sc->system);
 		p = strstr(abs, key);
-		if (p) {
-			p += strlen(key);
-			for (int i = 0; i < sc->n; i++)
-				if (!strcmp(sc->games[i].rel, p))
-					return &sc->games[i];
-		}
+		if (p)
+			return gidx_find(x, x->rel, sc, p + strlen(key), true);
 	}
 	return NULL;
 }
@@ -312,6 +360,7 @@ static void apply_gamelist(struct scan *sc, const char *xml_path)
 {
 	struct xml_doc *doc = xml_load(xml_path);
 	const struct xml_node *root, *n;
+	struct game_index idx;
 	int matched = 0;
 
 	if (!doc)
@@ -324,6 +373,7 @@ static void apply_gamelist(struct scan *sc, const char *xml_path)
 		xml_free(doc);
 		return;
 	}
+	gidx_build(&idx, sc);
 	for (n = root->child; n; n = n->next) {
 		const char *p, *v;
 		struct game *g;
@@ -335,7 +385,7 @@ static void apply_gamelist(struct scan *sc, const char *xml_path)
 		if (!p || !*p)
 			continue;
 		abs = gl_path(sc->a, sc->root, p);
-		g = find_game(sc, abs);
+		g = find_game(&idx, sc, abs);
 		if (!g)
 			continue; /* ES also drops entries whose file is missing */
 		matched++;
@@ -367,6 +417,7 @@ static void apply_gamelist(struct scan *sc, const char *xml_path)
 		g->kidgame = parse_bool(xml_child_text(n, "kidgame"), false);
 	}
 	LOGI("games: %s: %d entries matched", xml_path, matched);
+	gidx_free(&idx);
 	xml_free(doc);
 }
 

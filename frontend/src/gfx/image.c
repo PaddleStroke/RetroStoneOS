@@ -433,8 +433,9 @@ static bool img_info_(const char *path, int *w, int *h)
 		ui_cost_end(&cs);
 		if (!im)
 			return false;
-		*w = (int)ceilf(im->width);
-		*h = (int)ceilf(im->height);
+		/* width="1e30" or NaN: not an int, not drawable */
+		*w = im->width > 0 && im->width <= GFX_IMAGE_MAX_DIM ? (int)ceilf(im->width) : 0;
+		*h = im->height > 0 && im->height <= GFX_IMAGE_MAX_DIM ? (int)ceilf(im->height) : 0;
 		nsvgDelete(im);
 		if (*w <= 0 || *h <= 0)
 			return false;
@@ -490,6 +491,15 @@ bool img_info(const char *path, int *w, int *h)
 }
 
 /* --------------------------------------------------------------- decode */
+/* The largest SVG raster, a side: more than any screen, and a broken size
+ * (width="1e30", an extreme aspect ratio) must not reach gfx_image_new(). */
+#define SVG_MAX_DIM 4096
+
+static bool svg_size_ok(float v)
+{
+	return isfinite(v) && v > 0 && v <= SVG_MAX_DIM;
+}
+
 static struct gfx_image *svg_raster(NSVGimage *im, int w, int h)
 {
 	struct gfx_image *img;
@@ -498,18 +508,30 @@ static struct gfx_image *svg_raster(NSVGimage *im, int w, int h)
 
 	if (!t_rast)
 		t_rast = nsvgCreateRasterizer();
-	if (im->width <= 0 || im->height <= 0)
+	if (!(im->width > 0) || !(im->height > 0) || !isfinite(im->width) || !isfinite(im->height) ||
+	    w <= 0 || h <= 0 || w > SVG_MAX_DIM || h > SVG_MAX_DIM)
 		return NULL;
 	sx = (float)w / im->width;
 	sy = (float)h / im->height;
 	/* nanosvg scales uniformly: rasterize at the larger scale, then
 	 * resample the other axis if the element stretches the SVG. */
 	s = sx > sy ? sx : sy;
-	rw = fabsf(sx - sy) < 0.01f ? w : (int)ceilf(im->width * s);
-	rh = fabsf(sx - sy) < 0.01f ? h : (int)ceilf(im->height * s);
-	if (fabsf(sx - sy) < 0.01f)
+	if (fabsf(sx - sy) < 0.01f) {
+		rw = w;
+		rh = h;
 		s = sx;
+	} else {
+		/* an extreme stretch: rasterize smaller, the resample does the rest */
+		if (!svg_size_ok(im->width * s) || !svg_size_ok(im->height * s))
+			s = (float)(SVG_MAX_DIM - 1) / (im->width > im->height ? im->width : im->height);
+		if (!(im->width * s <= SVG_MAX_DIM) || !(im->height * s <= SVG_MAX_DIM))
+			return NULL;  /* a denormal size: s overflowed (or NaN) */
+		rw = MAX(1, (int)ceilf(im->width * s));
+		rh = MAX(1, (int)ceilf(im->height * s));
+	}
 	img = gfx_image_new(rw, rh);
+	if (!img)
+		return NULL;
 	nsvgRasterize(t_rast, im, 0, 0, s, (unsigned char *)img->px, rw, rh, rw * 4);
 	gfx_image_from_rgba(img);
 	if (rw != w || rh != h) {
@@ -531,9 +553,9 @@ static struct gfx_image *decode_(const char *path, int w, int h, gfx_color tint)
 		if (!im)
 			return NULL;
 		if (w <= 0)
-			w = (int)ceilf(im->width);
+			w = svg_size_ok(im->width) ? (int)ceilf(im->width) : 0;
 		if (h <= 0)
-			h = (int)ceilf(im->height);
+			h = svg_size_ok(im->height) ? (int)ceilf(im->height) : 0;
 		if (w > 0 && h > 0)
 			img = svg_raster(im, w, h);
 		nsvgDelete(im);
@@ -768,9 +790,9 @@ struct gfx_image *img_from_svg_string(const char *svg, int w, int h, gfx_color t
 	im = nsvgParse(buf, "px", 96.0f);
 	free(buf);
 	if (im) {
-		if (w <= 0 && h > 0 && im->height > 0)
+		if (w <= 0 && h > 0 && im->height > 0 && svg_size_ok(im->width * (float)h / im->height))
 			w = MAX(1, (int)lroundf(im->width * (float)h / im->height));
-		if (h <= 0 && w > 0 && im->width > 0)
+		if (h <= 0 && w > 0 && im->width > 0 && svg_size_ok(im->height * (float)w / im->width))
 			h = MAX(1, (int)lroundf(im->height * (float)w / im->width));
 		if (w > 0 && h > 0)
 			img = svg_raster(im, w, h);

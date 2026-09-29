@@ -106,7 +106,11 @@ void gfx_ninepatch(struct gfx_surface *s, const struct gfx_image *img,
 		   int x, int y, int w, int h, int corner);
 
 /* --------------------------------------------------------------- images */
-struct gfx_image *gfx_image_new(int w, int h);            /* zeroed */
+/* Zeroed. NULL if w or h is over GFX_IMAGE_MAX_DIM (a broken SVG or theme
+ * size); gfx_surface_from_image(), the blits and the image helpers take
+ * NULL and draw nothing. */
+#define GFX_IMAGE_MAX_DIM 16384
+struct gfx_image *gfx_image_new(int w, int h);
 void gfx_image_free(struct gfx_image *img);
 /* Takes straight RGBA bytes (stb_image / nanosvg order) and converts
  * them in place to premultiplied ARGB words. Sets GFX_IMG_OPAQUE. */

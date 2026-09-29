@@ -9,6 +9,8 @@
  * Supported: elements, attributes (single/double quotes), text, CDATA,
  * comments, processing instructions and DOCTYPE (both skipped), the five
  * predefined entities and numeric character references (encoded as UTF-8).
+ * Limits (broken files): 256 levels of nesting (a deeper element is kept
+ * empty) and 64 KiB of text per element; parsing time is linear.
  */
 #ifndef RSOS_UI_XML_H
 #define RSOS_UI_XML_H

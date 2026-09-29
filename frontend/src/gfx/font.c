@@ -126,6 +126,75 @@ void font_setup_dir(const char *dir)
 	font_set_fallbacks(paths, n);
 }
 
+static uint32_t be16(const uint8_t *p) { return (uint32_t)p[0] << 8 | p[1]; }
+static uint32_t be32(const uint8_t *p) { return be16(p) << 16 | be16(p + 2); }
+
+/*
+ * stb_truetype trusts the file: every table of the font directory must lie
+ * in the file, the tables stbtt_InitFont() reads fixed fields of must be
+ * long enough, and the cmap encoding records must lie in the cmap table.
+ * (A theme font from a USB stick may be truncated or not a font at all.)
+ */
+static bool font_tables_ok(const uint8_t *d, size_t len, int off)
+{
+	const uint8_t *dir, *head = NULL, *hhea = NULL, *maxp = NULL, *loca = NULL;
+	uint32_t n, hmtx_l = 0, loca_l = 0, glyf_l = 0;
+	bool glyf = false;
+
+	if (off < 0 || (size_t)off > len || len - (size_t)off < 12)
+		return false;
+	dir = d + off;
+	n = be16(dir + 4);
+	if ((len - (size_t)off - 12) / 16 < n)
+		return false;
+	for (uint32_t i = 0; i < n; i++) {
+		const uint8_t *r = dir + 12 + 16 * i;
+		uint32_t o = be32(r + 8), l = be32(r + 12);  /* from the file start */
+
+		if ((uint64_t)o + l > len)
+			return false;
+		if ((!memcmp(r, "head", 4) && l < 54) || (!memcmp(r, "hhea", 4) && l < 36) ||
+		    (!memcmp(r, "maxp", 4) && l < 6))
+			return false;
+		if (!memcmp(r, "head", 4))
+			head = d + o;
+		else if (!memcmp(r, "hhea", 4))
+			hhea = d + o;
+		else if (!memcmp(r, "maxp", 4))
+			maxp = d + o;
+		else if (!memcmp(r, "hmtx", 4))
+			hmtx_l = l;
+		else if (!memcmp(r, "loca", 4))
+			loca = d + o, loca_l = l;
+		else if (!memcmp(r, "glyf", 4))
+			glyf = true, glyf_l = l;
+		if (!memcmp(r, "cmap", 4)) {
+			const uint8_t *t = d + o;
+			uint32_t nt;
+
+			if (l < 4 || (l - 4) / 8 < (nt = be16(t + 2)))
+				return false;
+			for (uint32_t k = 0; k < nt; k++)
+				if (be32(t + 4 + 8 * k + 4) > l - 4)
+					return false;  /* the subtable's format and length */
+		}
+	}
+	/* the long horizontal metrics, and (TrueType outlines) the glyph
+	 * offsets of loca within glyf; the outlines themselves are not checked */
+	if (hhea && (uint64_t)be16(hhea + 34) * 4 > hmtx_l)
+		return false;
+	if (head && maxp && glyf) {
+		uint32_t ng = be16(maxp + 4), lf = be16(head + 50);
+
+		if (!loca || (uint64_t)(ng + 1) * (lf ? 4 : 2) > loca_l)
+			return false;
+		for (uint32_t g = 0; g <= ng; g++)
+			if ((lf ? be32(loca + 4 * g) : 2 * be16(loca + 2 * g)) > glyf_l)
+				return false;
+	}
+	return true;
+}
+
 static struct face *face_get(const char *path)
 {
 	struct face *f;
@@ -148,8 +217,10 @@ static struct face *face_get(const char *path)
 		ui_log_once(path, "font: cannot open %s", path);
 		return NULL;
 	}
-	if (fstat(fd, &st) < 0 || st.st_size < 12) {
+	/* 16: stbtt_GetFontOffsetForIndex() reads that much of a collection */
+	if (fstat(fd, &st) < 0 || st.st_size < 16) {
 		close(fd);
+		ui_log_once(path, "font: %s is not a TrueType/OpenType font", path);
 		return NULL;
 	}
 	m = mmap(NULL, (size_t)st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
@@ -157,7 +228,7 @@ static struct face *face_get(const char *path)
 	if (m == MAP_FAILED)
 		return NULL;
 	off = stbtt_GetFontOffsetForIndex(m, 0);
-	if (off < 0 || !stbtt_InitFont(&f->info, m, off)) {
+	if (off < 0 || !font_tables_ok(m, (size_t)st.st_size, off) || !stbtt_InitFont(&f->info, m, off)) {
 		ui_log_once(path, "font: %s is not a TrueType/OpenType font", path);
 		munmap(m, (size_t)st.st_size);
 		return NULL;
@@ -305,6 +376,8 @@ static float glyph_adv(struct font *f, uint32_t cp)
 {
 	float a;
 
+	if (!f)
+		return 0;  /* no usable font (font_get): text has no width */
 	pthread_mutex_lock(&g_fmu);
 	a = glyph_get(f, cp)->adv;
 	pthread_mutex_unlock(&g_fmu);
@@ -416,6 +489,12 @@ struct font *font_get(const char *path, int px)
 	if (!f)
 		f = default_font_for(px);
 	pthread_mutex_unlock(&g_fmu);
+	/* No default font either (missing or corrupt file): NULL, which every
+	 * font_* function takes (nothing drawn, zero sizes) rather than a
+	 * crash at the first text. */
+	if (!f)
+		ui_log_once("font: no usable font", "font: no usable font (%s, default %s): text not drawn",
+			    path && *path ? path : "-", g_default_path[0][0] ? g_default_path[0] : "unset");
 	return f;
 }
 
@@ -448,14 +527,15 @@ void font_cache_clear(void)
 	pthread_mutex_unlock(&g_fmu);
 }
 
-int font_px(const struct font *f) { return f->px; }
-int font_height(const struct font *f) { return f->height; }
-int font_ascent(const struct font *f) { return f->ascent; }
-int font_cap_height(const struct font *f) { return f->cap; }
+/* f may be NULL (font_get() found no usable font): zero sizes. */
+int font_px(const struct font *f) { return f ? f->px : 0; }
+int font_height(const struct font *f) { return f ? f->height : 0; }
+int font_ascent(const struct font *f) { return f ? f->ascent : 0; }
+int font_cap_height(const struct font *f) { return f ? f->cap : 0; }
 
 int font_baseline_in_box(const struct font *f, int top, int h)
 {
-	return top + (h + f->cap) / 2;
+	return top + (h + font_cap_height(f)) / 2;
 }
 
 unsigned utf8_next(const char **ps)
@@ -542,9 +622,12 @@ int font_text_width(struct font *f, const char *s, int len)
 static int draw_mode(struct gfx_surface *s, struct font *f, int x, int y,
 		     const char *text, int len, gfx_color c, bool erase)
 {
-	const char *e = len < 0 ? text + strlen(text) : text + len;
+	const char *e;
 	float pen = (float)x;
 
+	if (!f || !text)
+		return 0;
+	e = len < 0 ? text + strlen(text) : text + len;
 	while (text < e && *text) {
 		unsigned cp = utf8_next(&text);
 		const struct glyph *g;

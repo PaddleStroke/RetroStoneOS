@@ -9,12 +9,14 @@
 #include <string.h>
 
 #define JSON_MAX_DEPTH 64
+#define JSON_MAX_NODES 65536  /* a release list has a few hundred */
 
 struct parser {
 	const char *p, *end;
 	int depth;
 	char *err;
 	size_t errlen;
+	int nodes;
 };
 
 static void fail(struct parser *ps, const char *what)
@@ -263,6 +265,10 @@ static struct json *value(struct parser *ps)
 	ws(ps);
 	if (ps->p >= ps->end) {
 		fail(ps, "value expected");
+		return NULL;
+	}
+	if (++ps->nodes > JSON_MAX_NODES) {
+		fail(ps, "too many values");
 		return NULL;
 	}
 	switch (*ps->p) {
