@@ -68,20 +68,32 @@ void ui_log_once(const char *key, const char *fmt, ...)
 	va_list ap;
 	uint64_t h = hash64_str(key, 0x5eed) | 1;
 	unsigned i = (unsigned)h & (ONCE_SLOTS - 1);
-	unsigned n;
+	static unsigned used;
+	bool reset = false;
 
 	pthread_mutex_lock(&g_once_mu);
-	for (n = 0; n < ONCE_SLOTS; n++, i = (i + 1) & (ONCE_SLOTS - 1)) {
+	/* Full (a broken theme can name thousands of missing files): start
+	 * over, so the table keeps deduplicating and a lookup stays short.
+	 * Kept under 3/4 full, a probe always ends on a free slot. */
+	if (used >= ONCE_SLOTS * 3 / 4) {
+		memset(g_once, 0, sizeof(g_once));
+		used = 0;
+		reset = true;
+	}
+	for (;; i = (i + 1) & (ONCE_SLOTS - 1)) {
 		if (g_once[i] == h) {
 			pthread_mutex_unlock(&g_once_mu);
 			return;
 		}
 		if (!g_once[i]) {
 			g_once[i] = h;
+			used++;
 			break;
 		}
 	}
 	pthread_mutex_unlock(&g_once_mu);
+	if (reset)
+		log_emit(UI_LOG_INFO, "log-once table reset");
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
@@ -501,13 +513,22 @@ static int keep_backup(const char *path, const char *tmp)
 	return rename(tmp, path) < 0 ? -errno : 0;
 }
 
+/* A temporary name next to path, unique per process and per call: the UI
+ * thread and the prefetch worker may write the same cache file at once. */
+static void tmp_name(char *tmp, size_t n, const char *path)
+{
+	static unsigned seq;
+
+	snprintf(tmp, n, "%s.tmp%d.%u", path, (int)getpid(), __atomic_add_fetch(&seq, 1, __ATOMIC_RELAXED));
+}
+
 static int write_atomic(const char *path, const void *data, size_t len, bool backup)
 {
 	char tmp[4096];
 	int fd;
 	size_t done = 0;
 
-	snprintf(tmp, sizeof(tmp), "%s.tmp%d", path, (int)getpid());
+	tmp_name(tmp, sizeof(tmp), path);
 	fd = open(tmp, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
 	if (fd < 0)
 		return -errno;
@@ -572,7 +593,7 @@ int file_write_atomic_nosync(const char *path, const void *data, size_t len)
 	int fd;
 	size_t done = 0;
 
-	snprintf(tmp, sizeof(tmp), "%s.tmp%d", path, (int)getpid());
+	tmp_name(tmp, sizeof(tmp), path);
 	fd = open(tmp, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
 	if (fd < 0)
 		return -errno;

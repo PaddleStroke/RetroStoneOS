@@ -116,7 +116,12 @@ void gfx_surface_init(struct gfx_surface *s, uint32_t *pixels, int w, int h,
 
 void gfx_surface_from_image(struct gfx_surface *s, struct gfx_image *img)
 {
-	gfx_surface_init(s, img->px, img->w, img->h, img->stride);
+	/* NULL (an image gfx_image_new() refused): an empty surface, every
+	 * drawing call clips to nothing */
+	if (!img)
+		gfx_surface_init(s, NULL, 0, 0, 0);
+	else
+		gfx_surface_init(s, img->px, img->w, img->h, img->stride);
 }
 
 bool gfx_rect_intersect(struct gfx_rect a, struct gfx_rect b, struct gfx_rect *out)
@@ -530,10 +535,18 @@ void gfx_ninepatch(struct gfx_surface *s, const struct gfx_image *img,
 /* --------------------------------------------------------------- images */
 struct gfx_image *gfx_image_new(int w, int h)
 {
-	struct gfx_image *img = xcalloc(1, sizeof(*img));
+	struct gfx_image *img;
 
 	w = MAX(w, 1);
 	h = MAX(h, 1);
+	/* A broken SVG or theme size must not wrap (size_t)w * h * 4 on the
+	 * 32-bit target: refuse it, the caller draws nothing. */
+	if (w > GFX_IMAGE_MAX_DIM || h > GFX_IMAGE_MAX_DIM || (size_t)w > SIZE_MAX / 4 / (size_t)h) {
+		ui_log_once("gfx_image_new", "gfx: refusing a %dx%d image (over %d pixels a side)", w, h,
+			    GFX_IMAGE_MAX_DIM);
+		return NULL;
+	}
+	img = xcalloc(1, sizeof(*img));
 	img->w = w;
 	img->h = h;
 	img->stride = w;
@@ -556,6 +569,8 @@ void gfx_image_update_flags(struct gfx_image *img)
 {
 	bool opaque = true;
 
+	if (!img)
+		return;
 	for (int j = 0; j < img->h && opaque; j++) {
 		const uint32_t *p = img->px + (size_t)j * img->stride;
 
@@ -574,6 +589,8 @@ void gfx_image_update_flags(struct gfx_image *img)
 
 void gfx_image_from_rgba(struct gfx_image *img)
 {
+	if (!img)
+		return;
 	for (int j = 0; j < img->h; j++) {
 		uint32_t *p = img->px + (size_t)j * img->stride;
 		const uint8_t *b = (const uint8_t *)p;
@@ -595,7 +612,7 @@ void gfx_image_tint(struct gfx_image *img, gfx_color c)
 	uint32_t tr = (c >> 16) & 0xff, tg = (c >> 8) & 0xff, tb = c & 0xff,
 		 ta = c >> 24;
 
-	if (c == 0xffffffffu)
+	if (!img || c == 0xffffffffu)
 		return;
 	for (int j = 0; j < img->h; j++) {
 		uint32_t *p = img->px + (size_t)j * img->stride;
@@ -706,15 +723,21 @@ struct gfx_image *gfx_image_scale(const struct gfx_image *src, int w, int h)
 	struct taps tx, ty;
 	int32_t *tmp;  /* src->h rows x w columns x 4 channels, 8.? fixed */
 
-	if (w <= 0 || h <= 0)
+	if (!src || w <= 0 || h <= 0)
 		return NULL;
 	dst = gfx_image_new(w, h);
+	if (!dst)
+		return NULL;
 	if (w == src->w && h == src->h) {
 		for (int j = 0; j < h; j++)
 			memcpy(dst->px + (size_t)j * dst->stride,
 			       src->px + (size_t)j * src->stride, (size_t)w * 4);
 		dst->flags = src->flags & GFX_IMG_OPAQUE;
 		return dst;
+	}
+	if ((size_t)w > SIZE_MAX / (sizeof(int32_t) * 4) / (size_t)MAX(src->h, 1)) {
+		gfx_image_free(dst);  /* the intermediate buffer would wrap (32-bit) */
+		return NULL;
 	}
 	make_taps(&tx, src->w, w);
 	make_taps(&ty, src->h, h);

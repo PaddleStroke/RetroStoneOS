@@ -279,14 +279,15 @@ static const struct i18n_cat_entry *lookup(const struct cat *c, const char *ctx,
 {
 	size_t cl = ctx ? strlen(ctx) : 0, ml = strlen(msgid);
 	uint32_t h = I18N_HASH_INIT;
-	uint32_t i;
+	uint32_t i, steps = 0;
 
 	if (ctx) {
 		h = i18n_hash_step(h, ctx, (uint32_t)cl);
 		h = i18n_hash_step(h, "\004", 1);
 	}
 	h = i18n_hash_step(h, msgid, (uint32_t)ml);
-	for (i = c->buckets[h & (c->h->nbuckets - 1)]; i; i = c->e[i - 1].next) {
+	/* at most count steps: a broken catalog's chain may loop */
+	for (i = c->buckets[h & (c->h->nbuckets - 1)]; i && steps++ < c->h->count; i = c->e[i - 1].next) {
 		const struct i18n_cat_entry *e = &c->e[i - 1];
 		const char *k = (const char *)c->map + e->key;
 

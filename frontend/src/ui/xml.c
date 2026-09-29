@@ -7,11 +7,31 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ * Limits against broken files (a gamelist or a theme from a USB stick):
+ * elements nest at most XML_MAX_DEPTH deep (a deeper one is kept, but as
+ * an empty element: its content goes to its parent) and an element keeps
+ * at most XML_MAX_TEXT bytes of text. The text of the open elements grows
+ * in per-depth buffers (geometric) and goes to the arena once, when the
+ * element closes: linear, however many pieces (comments, child elements)
+ * split it.
+ */
+#define XML_MAX_DEPTH 256
+#define XML_MAX_TEXT (64 * 1024)
+#define XML_CLOSE_SEARCH 64      /* open elements a close tag is matched against */
+
+struct text_buf {
+	char *s;
+	size_t len, cap;
+};
+
 struct parser {
 	struct xml_doc *doc;
 	char *p, *end;
 	int line;
 	struct xml_node *cur;
+	int depth;                               /* of cur, 0 = doc->top */
+	struct text_buf text[XML_MAX_DEPTH + 1]; /* of the open elements, by depth */
 };
 
 static bool is_name_char(char c)
@@ -119,13 +139,36 @@ static size_t decode_entities(char *s, size_t n)
 	return (size_t)(w - s);
 }
 
+/* Appends s[0..n) to the text of the current element (up to XML_MAX_TEXT). */
+static void text_append(struct parser *ps, const char *s, size_t n)
+{
+	struct text_buf *b = &ps->text[ps->depth];
+
+	if (ps->depth == 0)
+		return;
+	if (n > XML_MAX_TEXT - b->len)
+		n = XML_MAX_TEXT - b->len;
+	if (!n)
+		return;
+	if (b->len + n + 1 > b->cap) {
+		size_t cap = b->cap ? b->cap : 256;
+
+		while (cap < b->len + n + 1)
+			cap *= 2;
+		b->s = xrealloc(b->s, cap);
+		b->cap = cap;
+	}
+	memcpy(b->s + b->len, s, n);
+	b->len += n;
+	b->s[b->len] = 0;
+}
+
 static void add_text(struct parser *ps, char *s, size_t n)
 {
-	struct xml_node *cur = ps->cur;
 	size_t i;
 	bool blank = true;
 
-	if (!cur || cur == &ps->doc->top)
+	if (ps->depth == 0)
 		return;
 	for (i = 0; i < n; i++) {
 		if (!isspace((unsigned char)s[i])) {
@@ -133,33 +176,27 @@ static void add_text(struct parser *ps, char *s, size_t n)
 			break;
 		}
 	}
-	if (blank && (!cur->text || !*cur->text))
+	if (blank && !ps->text[ps->depth].len)
 		return;
 	n = decode_entities(s, n);
-	if (!cur->text || !*cur->text) {
-		cur->text = arena_strndup(&ps->doc->arena, s, n);
-	} else {
-		size_t ol = strlen(cur->text);
-		char *t = arena_alloc(&ps->doc->arena, ol + n + 1);
-
-		memcpy(t, cur->text, ol);
-		memcpy(t + ol, s, n);
-		t[ol + n] = 0;
-		cur->text = t;
-	}
+	text_append(ps, s, n);
 }
 
 static void close_node(struct parser *ps)
 {
 	struct xml_node *n = ps->cur;
+	struct text_buf *b = &ps->text[ps->depth];
 
-	if (n->text && *n->text) {
-		char *t = (char *)n->text;
-		char *s = str_trim(t);
+	if (ps->depth == 0)
+		return;
+	if (b->len) {
+		char *s = str_trim(b->s);
 
-		if (s != t)
-			memmove(t, s, strlen(s) + 1);
+		if (*s)
+			n->text = arena_strdup(&ps->doc->arena, s);
+		b->len = 0;
 	}
+	ps->depth--;
 	ps->cur = n->parent ? n->parent : &ps->doc->top;
 }
 
@@ -259,9 +296,15 @@ static void parse_tag(struct parser *ps)
 			ap = &a->next;
 		}
 	}
-	ps->cur = n;
 	if (self_close)
-		close_node(ps);
+		return;
+	if (ps->depth >= XML_MAX_DEPTH) {
+		/* too deep: kept empty, its content goes to the parent */
+		return;
+	}
+	ps->cur = n;
+	ps->depth++;
+	ps->text[ps->depth].len = 0;
 }
 
 static void parse_close(struct parser *ps)
@@ -276,13 +319,15 @@ static void parse_close(struct parser *ps)
 	l = (size_t)(ps->p - name);
 	gt = memchr(ps->p, '>', (size_t)(ps->end - ps->p));
 	ps->p = gt ? gt + 1 : ps->end;
-	/* Find the matching open element; ignore unmatched close tags. */
-	for (n = ps->cur; n && n != &ps->doc->top; n = n->parent) {
+	/* Find the matching open element among the XML_CLOSE_SEARCH innermost
+	 * ones (real files are a few levels deep); ignore unmatched close tags. */
+	n = ps->cur;
+	for (int d = ps->depth; d > 0 && d > ps->depth - XML_CLOSE_SEARCH; d--, n = n->parent) {
 		if (strlen(n->name) == l && !memcmp(n->name, name, l))
-			break;
+			goto found;
 	}
-	if (!n || n == &ps->doc->top)
-		return;
+	return;
+found:
 	while (ps->cur != n)
 		close_node(ps);
 	close_node(ps);
@@ -305,6 +350,8 @@ struct xml_doc *xml_parse(const char *data, size_t len)
 	ps.end = doc->buf + len;
 	ps.line = 1;
 	ps.cur = &doc->top;
+	ps.depth = 0;
+	memset(ps.text, 0, sizeof(ps.text));
 
 	/* UTF-8 BOM */
 	if (len >= 3 && !memcmp(ps.p, "\xef\xbb\xbf", 3))
@@ -338,20 +385,7 @@ struct xml_doc *xml_parse(const char *data, size_t len)
 				if (!q)
 					q = ps.end;
 				/* CDATA is literal: no entity decoding. Protect '&'. */
-				{
-					struct xml_node *cur = ps.cur;
-
-					if (cur != &ps.doc->top) {
-						size_t ol = cur->text ? strlen(cur->text) : 0;
-						size_t n = (size_t)(q - ps.p);
-						char *t = arena_alloc(&doc->arena, ol + n + 1);
-
-						if (ol)
-							memcpy(t, cur->text, ol);
-						memcpy(t + ol, ps.p, n);
-						cur->text = t;
-					}
-				}
+				text_append(&ps, ps.p, (size_t)(q - ps.p));
 				ps.p = q < ps.end ? q + 3 : ps.end;
 			} else {
 				q = memchr(ps.p, '>', (size_t)(ps.end - ps.p));
@@ -367,8 +401,10 @@ struct xml_doc *xml_parse(const char *data, size_t len)
 			parse_tag(&ps);
 		}
 	}
-	while (ps.cur != &doc->top)
+	while (ps.depth > 0)
 		close_node(&ps);
+	for (int i = 0; i <= XML_MAX_DEPTH; i++)
+		free(ps.text[i].s);
 	return doc;
 }
 

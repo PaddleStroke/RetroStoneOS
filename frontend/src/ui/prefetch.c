@@ -139,6 +139,7 @@ static void *worker(void *arg)
 	for (;;) {
 		struct pf_job *j = NULL;
 		int64_t t0;
+		int prio;
 
 		while (!P->stop) {
 			int64_t now = mono_us();
@@ -149,10 +150,10 @@ static void *worker(void *arg)
 			    now < P->quiet_until_us) {
 				/* only PF_BG work left, held back by an input burst */
 				struct timespec ts;
-				int64_t until = P->quiet_until_us;
+				/* cv waits on CLOCK_MONOTONIC (prefetch_init), the
+				 * clock of mono_us(): a clock set back cannot stall it */
+				int64_t until = P->quiet_until_us + 1000;
 
-				clock_gettime(CLOCK_REALTIME, &ts);
-				until = (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000 + (until - now) + 1000;
 				ts.tv_sec = (time_t)(until / 1000000);
 				ts.tv_nsec = (long)(until % 1000000) * 1000;
 				pthread_cond_timedwait(&P->cv, &P->mu, &ts);
@@ -163,9 +164,10 @@ static void *worker(void *arg)
 		if (P->stop)
 			break;
 		P->running = j;
+		prio = j->prio;  /* prefetch_raise() may change it: read under mu */
 		pthread_mutex_unlock(&P->mu);
 		if (P->trace)
-			fprintf(stderr, "prefetch: run %p prio %d\n", (void *)j, j->prio);
+			fprintf(stderr, "prefetch: run %p prio %d\n", (void *)j, prio);
 		t0 = mono_us();
 		if (P->delay_us)
 			usleep((useconds_t)P->delay_us);
@@ -193,7 +195,14 @@ void prefetch_init(struct ui *ui)
 	const char *d = getenv("RSOS_PREFETCH_DELAY_MS");
 
 	pthread_mutex_init(&P->mu, NULL);
-	pthread_cond_init(&P->cv, NULL);
+	{
+		pthread_condattr_t ca;
+
+		pthread_condattr_init(&ca);
+		pthread_condattr_setclock(&ca, CLOCK_MONOTONIC);
+		pthread_cond_init(&P->cv, &ca);
+		pthread_condattr_destroy(&ca);
+	}
 	pthread_cond_init(&P->idle_cv, NULL);
 	for (int p = 0; p < PF_NPRIO; p++)
 		q_reset(P, p);

@@ -266,9 +266,18 @@ static void resolve_path(const char *dir, const char *in, char *out, size_t n)
 }
 
 /* --------------------------------------------------------------- parser */
+/* A theme that includes itself, or a few files that include each other
+ * several times, would parse an exponential number of files: the files
+ * being parsed are on a stack (an include of one of them is skipped), and
+ * a theme reads at most THEME_MAX_FILES files in all. */
+#define THEME_MAX_DEPTH 16
+#define THEME_MAX_FILES 64
+
 struct load_ctx {
 	struct theme *t;
 	int depth;
+	int nfiles;
+	const char *open[THEME_MAX_DEPTH + 1];  /* the files being parsed */
 };
 
 static void parse_file(struct load_ctx *c, const char *path);
@@ -382,10 +391,21 @@ static void parse_file(struct load_ctx *c, const char *path)
 	const struct xml_node *root, *n;
 	char dir[1024];
 
-	if (c->depth > 16) {
+	if (c->depth > THEME_MAX_DEPTH) {
 		LOGW("theme: include depth exceeded at %s", path);
 		return;
 	}
+	for (int i = 0; i < c->depth; i++) {
+		if (!strcmp(c->open[i], path)) {
+			ui_log_once(path, "theme: %s includes itself, include skipped", path);
+			return;
+		}
+	}
+	if (++c->nfiles > THEME_MAX_FILES) {
+		ui_log_once(path, "theme: more than %d included files, %s skipped", THEME_MAX_FILES, path);
+		return;
+	}
+	c->open[c->depth] = path;
 	doc = xml_load(path);
 	if (!doc) {
 		ui_log_once(path, "theme: cannot read %s", path);
@@ -466,7 +486,7 @@ static struct theme *theme_new(const struct theme_sysinfo *si)
 struct theme *theme_load_file(const char *path, const struct theme_sysinfo *si)
 {
 	struct theme *t = theme_new(si);
-	struct load_ctx c = { t, 0 };
+	struct load_ctx c = { .t = t };
 
 	if (path && *path) {
 		strlcpy_(t->path, path, sizeof(t->path));

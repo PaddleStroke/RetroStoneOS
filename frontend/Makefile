@@ -249,7 +249,7 @@ uipreview: $(UIPREVIEW)
 # ------------------------------------------------------------------ checks
 # Every module's tests. Paths are used as they are (BUILDDIR may be absolute).
 check: check-display check-host check-power check-transfer check-ui check-ui-assets check-loader check-splash \
-	check-board check-i18n check-frontend check-update check-b2
+	check-board check-i18n check-frontend check-update check-b2 check-robust
 
 check-display: $(SELFTEST) $(KMS_TEST)
 	$(SELFTEST)
@@ -404,6 +404,19 @@ $(LOADER_TEST): $(BUILDDIR)/tests/test_loader.o $(UI_OBJS)
 check-loader: $(LOADER_TEST)
 	rm -rf $(LOADER_CHECK_DIR)
 	$(LOADER_TEST) $(LOADER_CHECK_DIR) $(abspath third_party) $(abspath themes)
+
+# Broken or odd files (a theme, a gamelist, a font from a USB stick) do not
+# freeze or crash the menu: SVG sizes, include loops, XML text and nesting,
+# no usable font, a looping catalog chain (tests/test_robust.c).
+ROBUST_TEST = $(BUILDDIR)/test_robust
+ROBUST_CHECK_DIR = $(BUILDDIR)/robust-check
+
+$(ROBUST_TEST): $(BUILDDIR)/tests/test_robust.o $(UI_OBJS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(UI_LDLIBS)
+
+check-robust: $(ROBUST_TEST)
+	rm -rf $(ROBUST_CHECK_DIR)
+	$(ROBUST_TEST) $(ROBUST_CHECK_DIR) $(abspath third_party/fonts)
 
 # The board profile (src/board.h, docs/porting.md): the RetroStone2's
 # board.ini gives the constants the code had before, and the module
@@ -801,10 +814,11 @@ clean:
 
 .PHONY: all frontend-all install clean check check-display check-host check-power check-transfer \
 	check-ui check-ui-assets check-loader check-splash check-board check-frontend check-syntax check-asan uipreview \
-	splash-previews FORCE catalogs pot po-update po-stats check-i18n cjk-fonts
+	splash-previews FORCE catalogs pot po-update po-stats check-i18n cjk-fonts check-robust
 
 # the batch 2 checks (check-b2), after every variable they use
 include batch2.mk
 
 -include $(LIB_OBJS:.o=.d) $(KMSTEST_OBJS:.o=.d) $(SELFTEST_OBJS:.o=.d) $(KMS_TEST_OBJS:.o=.d) $(BUILDDIR)/main.d \
-	$(BUILDDIR)/tests/test_loader.d $(BUILDDIR)/tests/test_board.d $(BUILDDIR)/tests/test_i18n.d
+	$(BUILDDIR)/tests/test_loader.d $(BUILDDIR)/tests/test_board.d $(BUILDDIR)/tests/test_i18n.d \
+	$(BUILDDIR)/tests/test_robust.d
