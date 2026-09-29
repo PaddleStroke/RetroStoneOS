@@ -78,16 +78,58 @@ void core_close(void)
 
 /* ------------------------------------------------------------- logging */
 
+/*
+ * The core's log goes to game.log, in RAM (/run/rsos): a core that logs
+ * every frame must not fill it. Token bucket: CORE_LOG_RATE lines a second,
+ * bursts of CORE_LOG_BURST (a core's start-up), then a "suppressed" summary
+ * with the next line that passes (and at exit, core_log_flush()). Cores log
+ * from their own threads too (GLideN64): one lock.
+ */
+#define CORE_LOG_RATE 20.0
+#define CORE_LOG_BURST 200.0
+
+static pthread_mutex_t log_mu = PTHREAD_MUTEX_INITIALIZER;
+static struct hrate log_rate;
+
+static void log_suppressed(unsigned long n)
+{
+	if (n)
+		hlog(HLOG_WARN, "[%s] %lu core log lines suppressed (over %.0f a second)", H.core_id, n,
+		     CORE_LOG_RATE);
+}
+
 static void core_log(enum retro_log_level level, const char *fmt, ...)
 {
 	static const enum hlog_level map[] = { HLOG_DEBUG, HLOG_INFO, HLOG_WARN, HLOG_ERROR };
+	enum hlog_level lvl = level <= RETRO_LOG_ERROR ? map[level] : HLOG_INFO;
+	unsigned long dropped = 0;
 	char buf[1024];
 	va_list ap;
+	bool pass;
 
+	if (!hlog_enabled(lvl))
+		return;
+	pthread_mutex_lock(&log_mu);
+	pass = hrate_take(&log_rate, hnow_ms(), CORE_LOG_RATE, CORE_LOG_BURST, &dropped);
+	pthread_mutex_unlock(&log_mu);
+	if (!pass)
+		return;
+	log_suppressed(dropped);
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
-	hlog(level <= RETRO_LOG_ERROR ? map[level] : HLOG_INFO, "[%s] %s", H.core_id, buf);
+	hlog(lvl, "[%s] %s", H.core_id, buf);
+}
+
+void core_log_flush(void)
+{
+	unsigned long n;
+
+	pthread_mutex_lock(&log_mu);
+	n = log_rate.dropped;
+	log_rate.dropped = 0;
+	pthread_mutex_unlock(&log_mu);
+	log_suppressed(n);
 }
 
 /* ---------------------------------------------------------------- perf */

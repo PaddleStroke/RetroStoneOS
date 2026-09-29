@@ -17,6 +17,7 @@
 #include "../batt_overlay.h"
 #include "../bench.h"
 #include "../coreinfo.h"
+#include "../draw.h"
 #include "../hutil.h"
 #include "../ini.h"
 #include "../md5.h"
@@ -1096,9 +1097,65 @@ static void test_input_ports(void)
 }
 #endif
 
+/* Review B1-7: the core's log lines are rate-limited (token bucket) with a
+ * "suppressed" count. */
+static void test_log_rate(void)
+{
+	struct hrate r = { 0 };
+	unsigned long dropped = 0;
+	int passed = 0;
+
+	printf("core log rate limit\n");
+	for (int i = 0; i < 1000; i++)
+		passed += hrate_take(&r, 1000, 20, 200, &dropped);
+	CHECK(passed == 200 && r.dropped == 800, "a burst of 1000 lines at once: 200 pass, 800 dropped (%d)", passed);
+	CHECK(!hrate_take(&r, 1020, 20, 200, &dropped), "20 ms later: still empty");
+	dropped = 0;
+	CHECK(hrate_take(&r, 1100, 20, 200, &dropped) && dropped == 801,
+	      "100 ms later a line passes, with the count of the dropped ones (%lu)", dropped);
+	while (hrate_take(&r, 2000, 20, 200, &dropped))
+		;
+	passed = 0;
+	for (int t = 10; t <= 10000; t += 10)
+		passed += hrate_take(&r, 2000 + t, 20, 200, &dropped);
+	CHECK(passed >= 199 && passed <= 201, "a line every 10 ms for 10 s: 20 a second pass (%d)", passed);
+	passed = 0;
+	for (int i = 0; i < 300; i++)
+		passed += hrate_take(&r, 60000, 20, 200, &dropped);
+	CHECK(passed == 200, "after a quiet minute, the burst is back to 200 (%d)", passed);
+}
+
+/* Review B1-6: cv_blit_rgb scaled a 12000000x1 thumbnail with i * sw in
+ * int (overflow, then out of bounds). UBSan / ASan check this one. */
+static void test_blit_huge(void)
+{
+	int sw = 12000000;
+	uint8_t *rgb = malloc((size_t)sw * 3);
+	uint32_t px[320 * 4];
+	struct canvas c = { px, 320, 4, 320 };
+
+	printf("thumbnail blit: a huge source\n");
+	if (!rgb) {
+		CHECK(0, "no memory for the test");
+		return;
+	}
+	for (int i = 0; i < sw; i++) {
+		rgb[3 * i] = (uint8_t)(i * 256LL / sw);
+		rgb[3 * i + 1] = rgb[3 * i + 2] = 0;
+	}
+	memset(px, 0, sizeof(px));
+	cv_blit_rgb(&c, 0, 0, 320, 4, rgb, sw, 1);
+	CHECK((px[0] >> 16) == 0 && (px[319] >> 16) >= 250 && (px[160] >> 16) >= 126 && (px[160] >> 16) <= 129,
+	      "12000000x1 into 320 px: the right pixels, no overflow (%u %u %u)", px[0] >> 16, px[160] >> 16,
+	      px[319] >> 16);
+	free(rgb);
+}
+
 int main(void)
 {
 	hlog_set_level(HLOG_WARN);
+	test_log_rate();
+	test_blit_huge();
 	test_batt_overlay();
 	test_perf();
 	test_bench();

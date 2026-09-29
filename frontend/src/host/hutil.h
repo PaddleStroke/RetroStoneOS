@@ -17,10 +17,25 @@
 enum hlog_level { HLOG_ERROR = 0, HLOG_WARN, HLOG_INFO, HLOG_DEBUG };
 
 void hlog_set_level(enum hlog_level max);
+bool hlog_enabled(enum hlog_level lvl);
 void hlog(enum hlog_level lvl, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 void hlogv(enum hlog_level lvl, const char *fmt, va_list ap);
 /* Logs only the first time `key` is seen (per process). */
 void hlog_once(const char *key, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+
+/*
+ * Token bucket for log lines: `rate` lines a second on average, bursts of
+ * up to `burst`. Returns true if this line may be logged; then *dropped is
+ * the number of lines refused since the last one that passed (log it as a
+ * "N lines suppressed" summary). Not thread-safe: the caller locks.
+ */
+struct hrate {
+	double tokens;
+	int64_t last_ms;
+	unsigned long dropped;
+	bool started;
+};
+bool hrate_take(struct hrate *r, int64_t now_ms, double rate, double burst, unsigned long *dropped);
 
 int64_t hnow_us(void);   /* CLOCK_MONOTONIC */
 int64_t hnow_ms(void);

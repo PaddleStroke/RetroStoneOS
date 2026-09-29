@@ -83,7 +83,23 @@ The child writes lines on `--status-fd N` (fd 3 from `host_launch()`): `error <m
 7.1), `poweroff`; batch 2: `playtime <s>` (the total play time of this run, every `--playtime-report` s (300) and
 at exit: `res.playtime_s`), `setting scale|cpu <value>` (changed in the in-game menu, to be kept for this game),
 `switch <n>` (the game switcher's choice: `res.switch_to`). `host_launch_opts.on_status(kind, arg, user)` gets
-each line as it comes (main.c saves the play time as it grows). Exit codes (`enum host_exit`):
+each line as it comes (main.c saves the play time as it grows).
+
+**Status lines** that hold the menu's idle power-off (2026-09-29, review batch B1; the menu side is `power_set_busy()`
+in main.c). Each line is `<kind> <arg>\n` as all the others, so `on_status` gets `(kind, arg)`:
+
+| Line on the pipe | `kind`, `arg` | Sent by | Menu action |
+|---|---|---|---|
+| `nostate \n` | `"nostate"`, `""` | the game process, once, after the first frame, when the core has no save states (`savestates = false` in its `.info`, or `retro_serialize_size()` is 0) | hold the idle power-off until the game process ends: no auto state can be written, an idle power-off would lose the game |
+| `busy bench\n` | `"busy"`, `"bench"` | the benchmark driver (section 18), when it starts, before the first run | hold the idle power-off (nobody touches the unit during an unattended benchmark) |
+| `busy off\n` | `"busy"`, `"off"` | the benchmark driver, just before it execs the results game | release it (the results page is a game again) |
+| `autostate <bytes> <ms>\n` | `"autostate"`, `"<bytes> <ms>"` | the game process after its auto state, **and** the benchmark driver after a power-off during a benchmark (the start state copied as the auto state) | `res.auto_state_saved`: record `resume.ini` at a power-off (section 7.1) |
+
+The end of the game process (any exit, crash or kill) releases every hold. The driver also has handlers for
+`RSOS_SIG_IDLE_WARN` / `RSOS_SIG_IDLE_CANCEL` (ignored: their default action killed it); a power-off still comes as
+`RSOS_SIG_POWEROFF`, which the driver answers with `autostate` then `poweroff`.
+
+Exit codes (`enum host_exit`):
 
 | Code | Meaning | UI action |
 |---|---|---|
@@ -107,6 +123,7 @@ per game; copied to the SD card's `rsos/logs/` by the boot logger), `/tmp/rsos-g
 | `RSOS_SIG_POWEROFF` = `SIGUSR2` | one "Powering off..." frame (OSD toast over the last frame), SRAM flush + `.state.auto` (always), exit 3 |
 | `RSOS_SIG_SLEEP` = `SIGRTMIN+1` | (not sent any more: no sleep mode, power.md §6) SRAM flush (async), ALSA closed, `display_set_active(false)`, no more frames; wait (200 ms naps, watchdog muted) |
 | `RSOS_SIG_WAKE` = `SIGRTMIN+2` | (not sent any more) `display_set_active(true)`, drain input (the waking key never reaches the game), reopen ALSA, reset pacing |
+| `RSOS_SIG_IDLE_WARN` / `_CANCEL` = `SIGRTMIN+3` / `+4` | the idle power-off notice toast / take it down; the benchmark driver ignores both |
 
 The values come from `src/power/power.h` when it exists. Under a supervisor (`--status-fd` given), the child takes no
 battery decision and ignores the power key except for an immediate SRAM flush on the long press (the power module owns
@@ -321,6 +338,8 @@ and warnings. `n64.bench.ini` is the benchmark plan (section 18). Requirement do
 /data/states/<system>/<game>.state.auto   power-off / autosave slot (resume)
 <state>.png                               thumbnail (last frame, box-filtered to <= 160 px wide)
 <state>.bak                               the previous state of that slot (undo, and power-cut fallback)
+<game>.state.auto.sram                    the auto state's saves reference (section 7.2)
+<game>.srm.bak, <game>.rtc.bak            the save before its first write after a state load (section 7.2)
 ```
 
 Migration from RetrOrangePi/RetroPie: `.srm` files (kept next to the ROMs there) go to `/data/saves/<system>/`
@@ -347,6 +366,12 @@ press (synchronous, from the input layer's callback), `SIGUSR1`, sleep, `RSOS_SI
 the low-battery warning. A write failure resets the hash so it is retried. States and periodic SRAM writes run on the
 worker thread (FIFO, so ordering is kept), with completion toasts ("State saved, slot 2"); exit and power-off writes
 are synchronous.
+
+**A memory the core exposes late** (2026-09-29, review B1): a core may return no `RETRO_MEMORY_SAVE_RAM` / `RTC`
+memory at `sram_load()` (right after `retro_load_game()`) and give it after its first frame. That region is **never
+written before its file was loaded**: `sram_tick()` looks for it every frame and loads the file the first time the
+memory exists (`loaded <file> (N bytes) when the core exposed the memory, after the start`), then the usual rules
+apply. Before, fresh memory was written over a `.srm` that had never been loaded.
 
 ### 7.1 Resume: the auto state, the launch prompt, the boot offer (2026-09-27)
 
@@ -409,6 +434,55 @@ keeps the auto state, so starting the game later still offers "Resume where you 
 Robustness: a power cut (battery pulled) during a game writes neither file, so nothing is offered (the periodic SRAM
 flush is on the card); a game killed after the 8 s grace time sends no `autostate`, so no `resume.ini`; a power cut
 between the state and `resume.ini` only loses the boot question (the launch prompt still works).
+
+### 7.2 Resume and battery saves: a newer `.srm` wins (2026-09-29, review B1)
+
+A state holds the core's copy of the battery save (SRAM, RTC). Resuming from an auto state **older than the `.srm`**
+used to turn the card's newer save back into the state's copy: `sram_load()` loaded the `.srm`, the state load
+replaced the core's SRAM with its own copy, and about a second later `sram_tick()` wrote that over the `.srm`, with no
+backup. The state is older than the `.srm` after "Start fresh" (the old auto state is kept) and an in-game save; a
+crash, a hang kill or a power cut (no state written); `autosave_exit` off; a failed state write (the old file stays).
+The paths were Resume, `resume_mode = always` and the game switcher (it resumes without asking).
+
+**The saves reference.** Each time the auto state is written (`state_save(STATE_SLOT_AUTO)`, in `do_job()`), the
+reference `<game>.state.auto.sram` is removed first and written after the state is on the card:
+
+```
+# RetroStoneOS: the battery saves on the card when this state was written
+state <hash> <bytes>        the state file itself (hhash64)
+srm <hash> <bytes>          or "srm none"
+rtc <hash> <bytes>          or "rtc none"
+```
+
+The SRAM is flushed before the auto state (section 7.1), so these are the files the state matches. The `state` line
+ties the reference to its state: a reference next to another state (the `.bak` fallback, a state restored from a
+backup) is not used. The benchmark writes one for its start state (`state_write_saves_ref()` in `bench_start()`),
+and the driver copies it with the state when a power-off makes the start state the auto state.
+
+**At resume** (`state_load(STATE_SLOT_AUTO)`: Resume, the boot offer, `resume_mode = always`, the switcher), for the
+`.srm` and the `.rtc`, before the state is handed to the core:
+
+- the file **changed** since the state if the reference is the state's own and the file's hash or size differs from
+  it (or the reference says `none` and the file exists now); without a usable reference (a state from an older
+  version, copied, from RetroArch), if the file is newer than the state (mtime, nanoseconds). No file on the card:
+  nothing to protect.
+- a changed file is **copied to `<file>.bak` at once** (before any SRAM write), logged
+  (`resume: <file> changed after the auto state was written (saves reference): kept as <file>.bak`);
+- after `retro_unserialize()`, the file is **read again into the core's memory** (`retro_get_memory_data()`
+  write-back) and becomes the "on disk" hash, so nothing is written back: `resume: <file> is newer than the auto
+  state: given back to the core after the state`. The game continues from the state's position with the newer
+  battery save, like a console whose cartridge kept its save. A core that gives no memory pointer cannot take it
+  back: the `.bak` keeps it.
+
+**Any state load** (numbered slots from the menu or the hotkeys, the auto state): the **first** SRAM/RTC write after
+it keeps the file as `<file>.bak` (`hwrite_atomic(..., backup)`, `first write since a state was loaded: the file is
+kept as .bak`), so loading an old slot on purpose can always be undone by hand. "Start fresh" setting the old auto
+state aside is the menu's part (batch B2).
+
+Tests (`rsos-launch-test`, the test core's `RSOS_TESTCORE_SRAM=state`: the state carries the SRAM): session 1 writes
+the auto state with save `A`; the card gets a newer save `B`; the resume keeps `B` (and `B` as `.bak`), the next
+resume changes nothing (no backup); without a reference and a `.srm` newer than the state, the `.srm` stays;
+`RSOS_TESTCORE_SRAM=late` (memory from frame 5 on): the `.srm` is loaded then and never overwritten.
 
 ## 8. Video and pacing
 
@@ -499,6 +573,20 @@ stall: frame 1234: core 412 ms; GL: 2 compiles 250 ms, 1 links 40 ms, 3 slow dra
 and the exit adds `gl probe: N shader compiles (X ms), N links, N draws (N over 2 ms: X ms), N texture uploads`,
 `stalls: N frames over 50 ms (X ms in all)` and `stalls with shader work (compile, link or slow draw): N of M`. At
 start: `cpu: governor performance, 960 MHz (policy 720-960 MHz)` (a warning if the governor is not `performance`).
+
+**The core's own log** (`RETRO_ENVIRONMENT_GET_LOG_INTERFACE`, `core_log()` in core.c) is rate-limited, since
+game.log is in RAM (`/run/rsos`): a token bucket of 20 lines a second with bursts of 200 (a core's start-up), one lock
+(cores log from their own threads). Lines over the limit are dropped and counted; the next line that passes, and the
+end of the game, log `[<core>] N core log lines suppressed (over 20 a second)`. Lines under the log level are not
+counted. The host's own lines are not limited (the size cap of game.log itself is the menu's, launch.c).
+
+**Hang watchdog inputs.** The main loop's heartbeat (a 32-bit counter) and `busy_ok` are read by the watchdog thread
+with `__atomic` loads (`host_heartbeat()`, `host_busy()` in host_internal.h): a 64-bit `volatile` counter was torn on
+32-bit ARM.
+
+**Thumbnails** (`host_png_read_rgb()`, the in-game menu's slot picker and the switcher): files over 8 MB and pictures
+wider or taller than 4096 px (`STBI_MAX_DIMENSIONS`; stb's default is 2^24) are refused, and the scaled blits index
+in 64 bits.
 
 ### Battery overlay (in-game battery indicator)
 

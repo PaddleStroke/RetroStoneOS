@@ -230,7 +230,7 @@ int host_switcher_run(void)
 		struct pollfd pfd[2];
 		int nfd = 0, to = hin_timeout_ms();
 
-		H.heartbeat++;
+		host_heartbeat();
 		if (dirty) {
 			draw();
 			display_present_copy(S.px, CW * 4);

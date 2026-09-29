@@ -266,7 +266,8 @@ void cv_blit_frame(struct canvas *c, int dx, int dy, int dw, int dh, const void 
 	if (!src || sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0)
 		return;
 	for (int j = 0; j < dh; j++) {
-		int y = dy + j, sy = j * sh / dh;
+		/* 64-bit: j * sh overflows int for a huge source */
+		int y = dy + j, sy = (int)((int64_t)j * sh / dh);
 		const uint8_t *line = (const uint8_t *)src + (size_t)sy * (size_t)pitch;
 		uint32_t *p;
 
@@ -279,7 +280,7 @@ void cv_blit_frame(struct canvas *c, int dx, int dy, int dw, int dh, const void 
 
 			if (x < 0 || x >= c->w)
 				continue;
-			v = fmt_unpack(fmt, line + (size_t)(i * sw / dw) * (size_t)bpp);
+			v = fmt_unpack(fmt, line + (size_t)((int64_t)i * sw / dw) * (size_t)bpp);
 			if (dim < 256)
 				v = ((((v & 0xff00ff) * (unsigned)dim) >> 8) & 0xff00ff) |
 				    ((((v & 0x00ff00) * (unsigned)dim) >> 8) & 0x00ff00);
@@ -290,17 +291,19 @@ void cv_blit_frame(struct canvas *c, int dx, int dy, int dw, int dh, const void 
 
 void cv_blit_rgb(struct canvas *c, int dx, int dy, int dw, int dh, const uint8_t *rgb, int sw, int sh)
 {
-	if (!rgb || sw <= 0 || sh <= 0)
+	if (!rgb || sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0)
 		return;
 	for (int j = 0; j < dh; j++) {
 		int y = dy + j;
-		const uint8_t *line = rgb + (size_t)(j * sh / dh) * (size_t)sw * 3;
+		/* 64-bit index math: i * sw overflows int for a 12000000x1
+		 * picture (review: a crafted thumbnail) */
+		const uint8_t *line = rgb + (size_t)((int64_t)j * sh / dh) * (size_t)sw * 3;
 
 		if (y < 0 || y >= c->h)
 			continue;
 		for (int i = 0; i < dw; i++) {
 			int x = dx + i;
-			const uint8_t *s = line + (size_t)(i * sw / dw) * 3;
+			const uint8_t *s = line + (size_t)((int64_t)i * sw / dw) * 3;
 
 			if (x >= 0 && x < c->w)
 				c->px[(size_t)y * (size_t)c->stride + x] =

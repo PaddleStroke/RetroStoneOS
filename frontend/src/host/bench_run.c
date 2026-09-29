@@ -21,6 +21,7 @@
 #include "coreinfo.h"
 #include "host.h"
 #include "hutil.h"
+#include "saves.h"
 
 #if defined(__has_include)
 #if __has_include("../power/power.h")
@@ -37,10 +38,18 @@ static volatile sig_atomic_t stop_sig, poweroff_sig;
  * their default action killed the driver) */
 static volatile pid_t g_step_pid;
 static int g_sig_sleep, g_sig_wake;
+/* the idle power-off notice and its cancel: nothing to show (the driver
+ * has no display), but their default action also killed the driver and
+ * every unattended benchmark with it. The menu holds its idle power-off
+ * while "busy bench" is on; an older menu's power-off itself still comes as
+ * DRV_SIG_POWEROFF (the start state becomes the auto state). */
+static int g_sig_idle_warn, g_sig_idle_cancel;
 
 static void on_sig(int sig)
 {
-	if (sig == g_sig_sleep || sig == g_sig_wake) {
+	if (sig == g_sig_idle_warn || sig == g_sig_idle_cancel) {
+		/* ignored (a handler, not SIG_IGN: the runs' execs reset it) */
+	} else if (sig == g_sig_sleep || sig == g_sig_wake) {
 		pid_t p = g_step_pid;
 
 		if (p > 0)
@@ -103,21 +112,47 @@ static void write_report(const struct bench_plan *p, const struct bench_result *
 	free(buf);
 }
 
-/* A power-off during the benchmark: the game resumes, next time, from the
- * moment the benchmark started. */
-static void save_auto_state(const struct bench_plan *p)
+/* A status line to the menu (the game process's pipe, kept across the
+ * exec): "kind arg\n", as host_status(). */
+static void drv_status(const struct host_config *cfg, const char *kind, const char *arg)
 {
-	char a[BENCH_PATH + 8], b[BENCH_PATH + 8];
+	char line[128];
+	int n;
 
+	if (cfg->status_fd < 0)
+		return;
+	n = snprintf(line, sizeof(line), "%s %s\n", kind, arg);
+	if (n > 0 && n < (int)sizeof(line) && write(cfg->status_fd, line, (size_t)n) < 0)
+		hlog(HLOG_WARN, "status fd: %s", strerror(errno));
+}
+
+/* A power-off during the benchmark: the game resumes, next time, from the
+ * moment the benchmark started. The menu records the resume offer on
+ * "autostate" (as after a game's own auto state). */
+static void save_auto_state(const struct host_config *cfg, const struct bench_plan *p)
+{
+	char a[BENCH_PATH + 16], b[BENCH_PATH + 16], line[48];
+	int64_t t0 = hnow_us();
+
+	/* the saves reference goes with the state (saves.h), never an older
+	 * auto state's */
+	if (p->auto_state[0] && hpath(b, sizeof(b), "%s%s", p->auto_state, STATE_SAVES_REF_EXT))
+		unlink(b);
 	if (!p->auto_state[0] || hcopy_file(p->state, p->auto_state) != 0) {
 		hlog(HLOG_ERROR, "bench: could not copy the start state to %s", p->auto_state);
 		return;
 	}
+	hpath(a, sizeof(a), "%s%s", p->state, STATE_SAVES_REF_EXT);
+	hpath(b, sizeof(b), "%s%s", p->auto_state, STATE_SAVES_REF_EXT);
+	if (hfile_exists(a))
+		hcopy_file(a, b);
 	hpath(a, sizeof(a), "%s.png", p->state);
 	hpath(b, sizeof(b), "%s.png", p->auto_state);
 	if (hfile_exists(a))
 		hcopy_file(a, b);
 	hlog(HLOG_INFO, "bench: start state saved as %s", p->auto_state);
+	snprintf(line, sizeof(line), "%lld %lld", hfile_size(p->auto_state), (long long)((hnow_us() - t0) / 1000));
+	drv_status(cfg, "autostate", line);
 }
 
 int bench_driver_main(const struct host_config *cfg, const char *plan_path)
@@ -141,11 +176,17 @@ int bench_driver_main(const struct host_config *cfg, const char *plan_path)
 	sigaction(SIGUSR1, &sa, NULL);
 	sigaction(DRV_SIG_POWEROFF, &sa, NULL);
 	host_supervisor_signals(true, &g_sig_sleep, &g_sig_wake, NULL);   /* numbers; still blocked */
+	host_idle_signals(&g_sig_idle_warn, &g_sig_idle_cancel);
 	sigaction(g_sig_sleep, &sa, NULL);
 	sigaction(g_sig_wake, &sa, NULL);
+	sigaction(g_sig_idle_warn, &sa, NULL);
+	sigaction(g_sig_idle_cancel, &sa, NULL);
 	/* blocked by the game process across its exec (host.c bench_start):
 	 * the handlers exist now */
 	host_supervisor_signals(false, NULL, NULL, NULL);
+	/* nobody touches the unit during a benchmark: the menu holds its idle
+	 * power-off until "busy off" or the end of this process */
+	drv_status(cfg, "busy", "bench");
 	hlog(HLOG_INFO, "bench driver: %d configurations, report %s", p.n, p.results);
 	write_report(&p, res, 0, false);
 
@@ -246,13 +287,8 @@ int bench_driver_main(const struct host_config *cfg, const char *plan_path)
 	hlog(HLOG_INFO, "bench driver: done (%d runs%s), report %s", nres, aborted ? ", stopped" : "", p.results);
 
 	if (poweroff_sig) {
-		save_auto_state(&p);
-		if (cfg->status_fd >= 0) {
-			static const char line[] = "poweroff \n";
-
-			if (write(cfg->status_fd, line, sizeof(line) - 1) < 0)
-				hlog(HLOG_WARN, "status fd: %s", strerror(errno));
-		}
+		save_auto_state(cfg, &p);
+		drv_status(cfg, "poweroff", "");
 		return HOST_EXIT_POWEROFF;
 	}
 	if (stop_sig)
@@ -260,6 +296,8 @@ int bench_driver_main(const struct host_config *cfg, const char *plan_path)
 	{
 		const char *extra[6], *args[160];
 
+		/* the results page is a game again: the idle power-off applies */
+		drv_status(cfg, "busy", "off");
 		extra[0] = "--load-state-file";
 		extra[1] = p.state;
 		extra[2] = "--bench-report";

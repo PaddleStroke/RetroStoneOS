@@ -126,6 +126,8 @@ void host_usage(const char *argv0);
  * (sleep, wake, power-off: RSOS_SIG_*), e.g. across an exec; returns their
  * numbers in the non-NULL pointers. */
 void host_supervisor_signals(bool block, int *sleep_sig, int *wake_sig, int *poweroff_sig);
+/* The idle power-off notice and its cancel (RSOS_SIG_IDLE_WARN/CANCEL). */
+void host_idle_signals(int *warn_sig, int *cancel_sig);
 
 /* ------------------------------------------------------------ UI side */
 
@@ -166,8 +168,11 @@ struct host_launch_opts {
 	 * then the rest of the line), while the game runs: "playtime <s>" (the
 	 * seconds played in this session, every few minutes and at exit),
 	 * "setting scale <mode>" / "setting cpu <profile>" (changed in the
-	 * in-game menu: save them for this game), plus the ones res collects.
-	 * May be NULL. */
+	 * in-game menu: save them for this game), "nostate" (the core has no
+	 * save states: hold the idle power-off until the game process ends),
+	 * "busy bench" / "busy off" (a benchmark runs: hold the idle power-off
+	 * until "busy off" or the end of the game process), plus the ones res
+	 * collects. docs/host-design.md, "Status lines". May be NULL. */
 	void (*on_status)(const char *kind, const char *arg, void *user);
 };
 

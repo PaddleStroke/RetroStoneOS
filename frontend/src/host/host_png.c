@@ -34,6 +34,9 @@
 
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
+/* thumbnails and screenshots are a few hundred pixels: a crafted PNG on the
+ * card (12000000x1, stb's default limit is 2^24) is refused, not decoded */
+#define STBI_MAX_DIMENSIONS HOST_PNG_MAX_DIM
 #define STBI_ONLY_PNG
 #define STBI_NO_STDIO
 #define STBI_NO_LINEAR
@@ -84,12 +87,20 @@ void *host_png_encode(const uint8_t *rgb, int w, int h, size_t *size)
 uint8_t *host_png_read_rgb(const char *path, int *w, int *h)
 {
 	size_t size;
-	void *data = hread_file(path, &size);
+	long long fsize = hfile_size(path);
+	void *data;
 	int comp;
 	uint8_t *px;
 
+	if (fsize <= 0 || fsize > HOST_PNG_MAX_FILE)
+		return NULL;
+	data = hread_file(path, &size);
 	if (!data)
 		return NULL;
+	if (size > HOST_PNG_MAX_FILE) {   /* it grew since the stat */
+		free(data);
+		return NULL;
+	}
 	px = stbi_load_from_memory(data, (int)size, w, h, &comp, 3);
 	free(data);
 	return px;
