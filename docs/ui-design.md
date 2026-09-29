@@ -175,8 +175,27 @@ game name, ROM, system, the core it was saved with and an `answered(resume, user
 there). The UI shows **"Resume <game>?"** [RESUME] [START FRESH]; B = start fresh. RESUME runs the normal launch path
 (`launch_req()`: transfer stop, CPU profile, the launch callback, last played; the list entry is looked up, its list
 loaded on the spot through `ui_system_ready()` if the background loader has not reached it) with the recorded core,
-`req->resume = true` and `req->boot_resume = true`. START FRESH just closes the dialog: the auto state stays, so the
-game's own prompt still offers it. `ui_debug_screen()`: `dialog:Resume <game>?|RESUME`.
+`req->resume = true` and `req->boot_resume = true`. START FRESH (and B) close the dialog and call the offer's
+`start_fresh(offer, user)`: main.c moves the old `.state.auto` (and its `.png`) to `.state.auto.old` (one kept, the
+one before replaced), so nothing resumes it automatically later (`resume_mode` always, the game switcher) over newer
+progress (review B2). NEVER ASK and `resume_boot = never` keep it: the game's own prompt still offers it. START
+FRESH in the game's own prompt ("Resume where you left off?") sets `req->start_fresh`: the same move before the
+game starts. `ui_debug_screen()`: `dialog:Resume <game>?|RESUME`.
+
+**Storage problem** (review B2). The system layer does not format a `/data` it cannot mount any more: it mounts a
+tmpfs there and writes `/run/rsos/data-problem` (`unmountable <fs|unknown>`, `readerror` or `foreign <fs>`). main.c
+reads it at start and, once the menu is up (after the first-boot language picker, never in charge mode), calls
+`ui_data_problem(ui, problem)`: an opaque screen replaces the menu (the stack is emptied down to the carousel, B /
+Start / Select do nothing, and `data_problem_poll()` pushes it again if anything closes it). It says what happened
+("The storage could not be read", then the reason and "Nothing was erased: your games and saves may still be
+recoverable. Turn the console off and read the SD card on a PC to copy them.") with two choices: **Turn off (to back
+up on a PC)** (`ui_power(UI_POWER_OFF)`) and **Format the storage (erases everything)**: a second question ("Erase
+everything on the storage? ...") [CANCEL] [FORMAT], CANCEL selected, B = cancel; then `cfg.data_partition_helper
+--format-confirmed` (`/usr/libexec/rsos/data-partition`, system layer) runs in its own session, polled with
+`WNOHANG` ("Formatting the storage, please wait. Do not turn the console off."; no idle power-off meanwhile:
+`ui_data_problem_busy()`), then a reboot on exit status 0, else "The storage could not be formatted (error N)." and
+the two choices again. main.c starts neither the USB drives, the boot notes nor the resume offer meanwhile.
+`ui_debug_screen()`: `storage:<ask|formatting|failed|done> <problem>|<Turn off|Format>`.
 
 **Toasts.** `ui_toast(ui, text, UI_SEV_INFO | UI_SEV_WARNING | UI_SEV_ERROR)`: a pill at the bottom, dark / amber /
 red, shown 3.5 / 5 / 6 s; the UI's own toasts (`ui_toastf`) 3.5 s, and 6 s for those that ask the user to do
@@ -535,7 +554,10 @@ to the default, then to the first theme found. The default stays `rsos-dark` (pr
   marked "(hidden)". "Delete this game" asks `Delete "<file>" from the SD card?` [DELETE] [CANCEL] (CANCEL
   selected; for .m3u/.cue: "The discs/tracks it lists are kept"), deletes the file only, then asks "Also delete its
   saves and save states?" [NO] [YES] (NO selected): `.srm`/`.rtc` in `/data/saves/<system>/`, `.state*` (and their
-  `.png`) in `/data/states/<system>/`. The game is removed from every list and from gamedb.tsv.
+  `.png`) in `/data/states/<system>/` (their `.bak` copies too). The game is removed from every list and from
+  gamedb.tsv. If another file of the system's ROM folder has the same save name (`Game.zip` next to `Game.sfc`, the
+  same name in a subfolder, a zip whose inner file has it; `cb.game_saves` returns `-EEXIST`), the question is not
+  asked: "Game deleted. Its saves were kept: another game uses the same save files." (review B2).
 - **Per-game scaling and CPU profile** (batch 2, game options and the in-game menu): "Scaling" (Default (the
   setting) / Aspect / Integer / Stretch) and "CPU profile" (Automatic / Performance / Battery saver), stored in
   gamedb.tsv and passed at launch (`--scale`, `--cpu-profile`); the menu process applies the profile with
@@ -781,7 +803,10 @@ menu instead of ~2400 requests and 1.2 MB, i.e. the menu within ~0.3 s of the lo
   USB stick through the real main loop (see rom-transfer.md §5).
 - `make check-frontend` step 5 (resume, 2026-09-27): a power-off during a game (`game:poweroff` while the slow test
   core runs) writes `resume.ini`; the next boot shows "Resume Smoke Test?" and RESUME launches with
-  `--load-state auto`; START FRESH and B keep the auto state and drop the offer; a missing ROM gives no dialog;
+  `--load-state auto`; START FRESH and B move the auto state aside (`.state.auto.old`) and drop the offer (review
+  B2; `check-b2-frontend` also runs the launch prompt's START FRESH, Delete with a shared save name, the storage
+  problem screen with a fake format helper, the log caps; `check-b2-ui` a copy that ends under its "Stop?" dialog
+  and the update helper's `RES_OPTIONS`); a missing ROM gives no dialog;
   the launch prompt under `resume_mode` ask / always / never; Settings > Games > Auto-save on exit off → no auto
   state at exit, on → written.
 - `make check-ui` (2026-09-27): Settings > Display > LCD refresh rate: 60 Hz on trial (`SETTING lcd_refresh=60`),

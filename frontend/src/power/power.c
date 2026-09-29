@@ -1489,6 +1489,10 @@ void power_set_game_running(bool running)
 		return;
 	P.st.game_running = running;
 	P.last_activity = now_ms();
+	/* a game that starts or ends during the 10 s notice: the notice goes
+	 * (its countdown starts over), else idle_warned would stay set and skip
+	 * the dim / screen-off stages up to a silent power-off (review) */
+	idle_cancel("game");
 	if (P.st.mode == POWER_MODE_NORMAL && P.st.screen != POWER_SCREEN_ON)
 		screen_set(POWER_SCREEN_ON);
 	gov_apply();

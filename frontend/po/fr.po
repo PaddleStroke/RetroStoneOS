@@ -2896,3 +2896,63 @@ msgstr "Extinction dans 10 s — appuie sur un bouton pour annuler"
 #. was stopped because the game's state could not be saved
 msgid "Automatic power-off cancelled: the game could not be saved."
 msgstr "Extinction automatique annulée : le jeu n’a pas pu être sauvegardé."
+
+#. TRANSLATORS: after "Delete this game": the saves question is not asked, because
+#. another game file has the same name (the saves belong to both)
+msgid "Game deleted. Its saves were kept: another game uses the same save files."
+msgstr "Jeu supprimé. Ses sauvegardes sont gardées : un autre jeu utilise les mêmes fichiers de sauvegarde."
+
+#. TRANSLATORS: storage problem screen (the data partition of the SD card could not be read)
+msgid "The SD card reports read errors: it may be failing."
+msgstr "La carte SD signale des erreurs de lecture : elle est peut-être défaillante."
+
+#. TRANSLATORS: storage problem screen; %s is a file system name ("ntfs", "ext4")
+#, c-format
+msgid "The data partition uses a format this console does not use (%s)."
+msgstr "La partition de données utilise un format que cette console n’utilise pas (%s)."
+
+#. TRANSLATORS: storage problem screen; %s is a file system name ("exfat")
+#, c-format
+msgid "The data partition (%s) could not be opened: it may be damaged."
+msgstr "La partition de données (%s) n’a pas pu être ouverte : elle est peut-être endommagée."
+
+#. TRANSLATORS: storage problem screen
+msgid "The data partition could not be opened: it may be damaged."
+msgstr "La partition de données n’a pas pu être ouverte : elle est peut-être endommagée."
+
+#. TRANSLATORS: title of the screen shown instead of the menu when the storage
+#. (the SD card's data partition: games, saves) cannot be read
+msgid "The storage could not be read"
+msgstr "Le stockage n’a pas pu être lu"
+
+#. TRANSLATORS: storage problem screen: formatted, the console restarts
+msgid "Done. Restarting..."
+msgstr "Terminé. Redémarrage…"
+
+#. TRANSLATORS: storage problem screen, while the format runs
+msgid "Formatting the storage, please wait. Do not turn the console off."
+msgstr "Formatage du stockage, patiente un peu. N’éteins pas la console."
+
+#. TRANSLATORS: storage problem screen, after what happened
+msgid "Nothing was erased: your games and saves may still be recoverable. Turn the console off and read the SD card on a PC to copy them."
+msgstr "Rien n’a été effacé : tes jeux et tes sauvegardes sont peut-être encore récupérables. Éteins la console et lis la carte SD sur un PC pour les copier."
+
+#. TRANSLATORS: storage problem screen: the format did not work; %d is its exit code
+#, c-format
+msgid "The storage could not be formatted (error %d)."
+msgstr "Le stockage n’a pas pu être formaté (erreur %d)."
+
+#. TRANSLATORS: storage problem screen: power off, to read the SD card on a computer
+msgid "Turn off (to back up on a PC)"
+msgstr "Éteindre (pour sauvegarder sur un PC)"
+
+#. TRANSLATORS: storage problem screen: erase the data partition and start again
+msgid "Format the storage (erases everything)"
+msgstr "Formater le stockage (efface tout)"
+
+msgid "FORMAT"
+msgstr "FORMATER"
+
+#. TRANSLATORS: the second question before formatting the storage
+msgid "Erase everything on the storage? All games, saves and settings on it are lost. This cannot be undone."
+msgstr "Tout effacer sur le stockage ? Tous les jeux, sauvegardes et paramètres qu’il contient seront perdus. Impossible de revenir en arrière."

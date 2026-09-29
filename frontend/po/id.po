@@ -2400,4 +2400,62 @@ msgstr ""
 
 #, c-format
 msgid "User: retrostone, Password: %s"
+#. TRANSLATORS: after "Delete this game": the saves question is not asked, because
+#. another game file has the same name (the saves belong to both)
+msgid "Game deleted. Its saves were kept: another game uses the same save files."
+msgstr ""
+
+#. TRANSLATORS: storage problem screen (the data partition of the SD card could not be read)
+msgid "The SD card reports read errors: it may be failing."
+msgstr ""
+
+#. TRANSLATORS: storage problem screen; %s is a file system name ("ntfs", "ext4")
+#, c-format
+msgid "The data partition uses a format this console does not use (%s)."
+msgstr ""
+
+#. TRANSLATORS: storage problem screen; %s is a file system name ("exfat")
+#, c-format
+msgid "The data partition (%s) could not be opened: it may be damaged."
+msgstr ""
+
+#. TRANSLATORS: storage problem screen
+msgid "The data partition could not be opened: it may be damaged."
+msgstr ""
+
+#. TRANSLATORS: title of the screen shown instead of the menu when the storage
+#. (the SD card's data partition: games, saves) cannot be read
+msgid "The storage could not be read"
+msgstr ""
+
+#. TRANSLATORS: storage problem screen: formatted, the console restarts
+msgid "Done. Restarting..."
+msgstr ""
+
+#. TRANSLATORS: storage problem screen, while the format runs
+msgid "Formatting the storage, please wait. Do not turn the console off."
+msgstr ""
+
+#. TRANSLATORS: storage problem screen, after what happened
+msgid "Nothing was erased: your games and saves may still be recoverable. Turn the console off and read the SD card on a PC to copy them."
+msgstr ""
+
+#. TRANSLATORS: storage problem screen: the format did not work; %d is its exit code
+#, c-format
+msgid "The storage could not be formatted (error %d)."
+msgstr ""
+
+#. TRANSLATORS: storage problem screen: power off, to read the SD card on a computer
+msgid "Turn off (to back up on a PC)"
+msgstr ""
+
+#. TRANSLATORS: storage problem screen: erase the data partition and start again
+msgid "Format the storage (erases everything)"
+msgstr ""
+
+msgid "FORMAT"
+msgstr ""
+
+#. TRANSLATORS: the second question before formatting the storage
+msgid "Erase everything on the storage? All games, saves and settings on it are lost. This cannot be undone."
 msgstr ""

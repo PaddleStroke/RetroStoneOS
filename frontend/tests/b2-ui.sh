@@ -155,6 +155,29 @@ pv "start down down a wait:300 expect:menu:Network|WiFi down down down down down
 	--fake-transfer
 t "no helper installed: the item is not there (the menu wraps to WiFi)" [ $? = 0 ]
 
+echo "b2-ui: review: an export that ends under its \"Stop?\" dialog is finished at once (stick read-only again)"
+pv "usbfs:vfat usb wait:300 right expect:|EXPORT_GAMES a wait:1000 expect:menu:Export_games_to_GAMES|Export tap:a \
+	tap:b expect:dialog:Stop? wait:8000 expect:dialog:Copied right a wait:300 expect:dialog:Stop? right \
+	expect:|CONTINUE a wait:300 expect:carousel" --fake-transfer
+t "the summary over the dialog, then the dialog answers nothing" [ $? = 0 ]
+t "read-write once, read-only again once, nothing cancelled" sh -c "[ \$(grep -c '^REMOUNT /media/usb0 rw\$' '$W/pv.out') = 1 ] && \
+	[ \$(grep -c '^REMOUNT /media/usb0 ro\$' '$W/pv.out') = 1 ]"
+
+echo "b2-ui: review: the update helper's resolver: 2 s per server, one try (RES_OPTIONS)"
+cat > "$W/fake-update.sh" <<EOF
+#!/bin/sh
+echo "\${RES_OPTIONS:-none}|\$*" >> "$W/update-env.log"
+printf 'boot\tevent=none\n'
+EOF
+chmod +x "$W/fake-update.sh"
+printf '[update]\nstate = confirm\n' > "$W/data/rsos/update-state.ini"
+rm -f "$W/update-env.log"
+export RSOS_UPDATE_SYNC=1
+pv "wait:1500" --update-helper "$W/fake-update.sh"
+unset RSOS_UPDATE_SYNC
+t "the helper ran with RES_OPTIONS=timeout:2 attempts:1" grep -q '^timeout:2 attempts:1|--machine boot' "$W/update-env.log"
+rm -f "$W/data/rsos/update-state.ini"
+
 if [ $fails = 0 ]; then
 	echo "b2-ui: ALL OK"
 else

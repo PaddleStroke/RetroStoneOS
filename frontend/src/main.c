@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/mount.h>
@@ -97,6 +98,10 @@
 #define DATA_REFORMAT_PATH  "/run/rsos/data-reformatted"
 #define DATA_ERROR_PATH     "/run/rsos/data-error"
 #define DATA_RESTORE_PATH   "/run/rsos/data-restore-failed"
+/* /data could not be mounted and was left alone (a tmpfs stands in):
+ * "unmountable <fs|unknown>", "readerror" or "foreign <fs>" (system layer) */
+#define DATA_PROBLEM_PATH   "/run/rsos/data-problem"
+#define DATA_PARTITION_HELPER "/usr/libexec/rsos/data-partition"
 
 /* ------------------------------------------------------------------ state */
 struct script_tok {
@@ -137,6 +142,12 @@ static struct {
 	struct ui_transfer_api ta;
 	char settings_path[PATH_MAX];
 	char battery_path[PATH_MAX];
+	int64_t display_down_since;   /* no display since (0: up, or never tried) */
+	bool no_display_off;          /* the power-off for "no display" was asked */
+	/* /run/rsos/data-problem: /data could not be mounted (a tmpfs stands in);
+	 * the UI's blocking screen instead of the menu */
+	char data_problem[128];
+	bool data_problem_shown;
 
 	bool power_tried, power_ok;
 	bool usb_tried, usb_started;
@@ -169,6 +180,14 @@ static struct {
 	bool activity_pending;      /* a pad moved, not reported yet (rate limit) */
 	int64_t activity_sent_at;
 	int64_t busy_checked_at;   /* the idle power-off's busy check (once a second) */
+	/* the running game's status lines that hold the idle power-off: its core
+	 * cannot save a state ("nostate": an idle power-off would lose the game),
+	 * a benchmark runs ("busy") */
+	bool game_nostate, game_busy;
+	bool resume_recorded;      /* resume.ini written for the running game already */
+	int64_t game_log_checked_at;   /* game.log size check (cap while a game runs) */
+	/* the running game (launch_status: resume.ini at "autostate" during a benchmark) */
+	const char *cur_core_path, *cur_game, *cur_p1dev;
 
 	/* shutdown */
 	bool shutdown_req;
@@ -267,9 +286,12 @@ static int min_timeout(int a, int b)
  * pets it every WATCHDOG_PET_MS from the main loop (whose poll timeout is
  * capped for it), from launch_idle() while a game runs (every ~100 ms) and
  * in charge mode / with the screen off (the same loop). The long jobs run
- * elsewhere: USB copies and scans in threads, the game, its state saves and
- * the benchmark in the game process, the game lists in the loader thread,
- * network helpers double-forked. Never opened by --splash or --run. An
+ * elsewhere: USB copies and scans in threads, the probe and mount of a new
+ * USB drive in usb.c's worker thread (a failing stick or a slow ntfs3 mount
+ * can sit in D state for 30 s), the game, its state saves and the benchmark
+ * in the game process, the game lists in the loader thread, network helpers
+ * double-forked, the update helper and the storage format in child
+ * processes polled with WNOHANG. Never opened by --splash or --run. An
  * orderly exit writes 'V' (magic close) before closing; a crash or a hang
  * lets it reboot the unit. Headless tests: only with --watchdog PATH (a
  * plain file: the keepalive becomes a written 'k').
@@ -287,18 +309,30 @@ static void wd_open(void)
 	mlog("watchdog: %s open, kept alive every %d ms", M.wd_path, WATCHDOG_PET_MS);
 }
 
-static void wd_pet(void)
+static void wd_keepalive(bool force)
 {
 	int64_t t;
 
 	if (M.wd_fd < 0)
 		return;
 	t = now_ms();
-	if (M.wd_last && t - M.wd_last < WATCHDOG_PET_MS)
+	if (!force && M.wd_last && t - M.wd_last < WATCHDOG_PET_MS)
 		return;
 	M.wd_last = t;
 	if (ioctl(M.wd_fd, WDIOC_KEEPALIVE, 0) < 0 && (errno != ENOTTY || write(M.wd_fd, "k", 1) != 1))
 		mlog("watchdog: keepalive: %s", strerror(errno));
+}
+
+static void wd_pet(void)
+{
+	wd_keepalive(false);
+}
+
+/* Between the steps of an exit (each may take seconds: a copy thread that
+ * stops, settings and gamedb flushed, sync): a full period for the next. */
+static void wd_pet_now(void)
+{
+	wd_keepalive(true);
 }
 
 /* 0 ms: pet now; the poll timeout never lets it starve */
@@ -342,9 +376,14 @@ static bool read_word(const char *path, char *out, size_t n)
  * fork + fork + exec: the grandchild is reparented to init, so no zombie
  * and no waitpid() on a pid that host_launch() or the UI could be waiting
  * for. Never blocks for more than the intermediate fork.
+ *
+ * The helper never inherits our stderr, the log thread's pipe (review): its
+ * stdout and stderr are appended to the log file (or /dev/null), so it
+ * never keeps the pipe open after we exit and never dies of SIGPIPE on it.
  */
 static void spawn_detached(const char *const argv[], int niceness)
 {
+	const char *log = M.log_path && *M.log_path ? M.log_path : "/dev/null";
 	pid_t p = fork();
 
 	if (p < 0) {
@@ -356,7 +395,21 @@ static void spawn_detached(const char *const argv[], int niceness)
 
 		if (q == 0) {
 			sigset_t none;
+			int fd = open("/dev/null", O_RDWR);   /* async-signal-safe only, here */
+			int lfd = open(log, O_WRONLY | O_APPEND);
 
+			if (fd >= 0)
+				dup2(fd, 0);
+			if (lfd < 0)
+				lfd = fd;
+			if (lfd >= 0) {
+				dup2(lfd, 1);
+				dup2(lfd, 2);
+			}
+			if (fd > 2)
+				close(fd);
+			if (lfd > 2 && lfd != fd)
+				close(lfd);
 			sigemptyset(&none);
 			sigprocmask(SIG_SETMASK, &none, NULL);
 			signal(SIGPIPE, SIG_DFL);
@@ -379,11 +432,37 @@ static void spawn_detached(const char *const argv[], int niceness)
  * with fprintf(stderr) (or its own logger that ends there), so this keeps
  * the console output and adds the file without touching them.
  */
+/*
+ * The file is in /run (RAM): above LOG_ROTATE_BYTES it is renamed to
+ * <file>.1 (the one before is dropped) and a new one is started, so a week
+ * of uptime never fills the tmpfs (review). Only this thread writes it.
+ */
+#define LOG_ROTATE_BYTES (4 << 20)
+
 static struct {
 	int console, file, rd;
 	pthread_t th;
 	bool running;
-} L = { -1, -1, -1, 0, false };
+	char path[PATH_MAX];
+	long long size;            /* bytes in the current file */
+	long long limit;           /* LOG_ROTATE_BYTES (headless tests: RSOS_TEST_LOG_ROTATE) */
+} L = { -1, -1, -1, 0, false, "", 0, LOG_ROTATE_BYTES };
+
+static void log_rotate(void)
+{
+	char old[PATH_MAX + 4];
+	int fd;
+
+	snprintf(old, sizeof(old), "%s.1", L.path);
+	if (rename(L.path, old) < 0)
+		return;                         /* keep appending to the same file */
+	fd = open(L.path, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);
+	if (fd < 0)
+		return;
+	close(L.file);
+	L.file = fd;
+	L.size = 0;
+}
 
 static void *log_thread(void *arg)
 {
@@ -404,6 +483,9 @@ static void *log_thread(void *arg)
 			close(L.file);
 			L.file = -1;
 		}
+		L.size += r;
+		if (L.file >= 0 && L.size > L.limit)
+			log_rotate();
 	}
 	return NULL;
 }
@@ -426,6 +508,14 @@ static void log_setup(const char *path)
 	if (L.file < 0) {
 		mlog("log file %s: %s (stderr only)", path, strerror(errno));
 		return;
+	}
+	{
+		struct stat st;
+
+		snprintf(L.path, sizeof(L.path), "%s", path);
+		L.size = fstat(L.file, &st) == 0 ? (long long)st.st_size : 0;
+		if (M.headless && getenv("RSOS_TEST_LOG_ROTATE") && atoll(getenv("RSOS_TEST_LOG_ROTATE")) > 0)
+			L.limit = atoll(getenv("RSOS_TEST_LOG_ROTATE"));
 	}
 	if (pipe2(p, O_CLOEXEC) < 0) {
 		close(L.file);
@@ -985,6 +1075,7 @@ static void display_try_init(void)
 		if (M.display_failures)
 			mlog("display up after %d attempts", M.display_failures + 1);
 		M.display_failures = 0;
+		M.display_down_since = 0;
 		M.need_redraw = true;
 		if (!M.splash_tried && !M.first_frame)
 			boot_splash();
@@ -993,7 +1084,38 @@ static void display_try_init(void)
 	}
 	if (M.display_failures++ % 20 == 0)
 		mlog("display_init: %s, retrying", strerror(-r));
+	if (!M.display_down_since)
+		M.display_down_since = now_ms();
 	M.display_retry_at = now_ms() + DISPLAY_RETRY_MS;
+}
+
+/*
+ * No display for NO_DISPLAY_OFF_MS on a board whose panel keeps scanning
+ * (panel safety, display-design.md §8.5): nobody owns the panel's picture
+ * and the menu cannot show anything. Power off cleanly instead of retrying
+ * forever (review).
+ */
+#define NO_DISPLAY_OFF_MS 60000
+
+static void no_display_check(int64_t now)
+{
+	static const char *const poweroff[] = { "/sbin/poweroff", NULL };
+
+	if (M.display_ok || !M.display_down_since || M.no_display_off || M.shutdown_req ||
+	    !M.dcfg.panel_keep_scanning || now - M.display_down_since < NO_DISPLAY_OFF_MS)
+		return;
+	M.no_display_off = true;
+	mlog("no display for %d s (%d attempts) on a panel that keeps scanning: powering off",
+	     NO_DISPLAY_OFF_MS / 1000, M.display_failures);
+	if (M.power_ok) {
+		power_request_shutdown(POWER_REASON_USER);   /* -> pw_shutdown(): flushed, init signalled */
+		return;
+	}
+	/* no power module: the same flush as a SIGTERM from init, then init's poweroff */
+	if (!M.headless && access(poweroff[0], X_OK) == 0)
+		spawn_detached(poweroff, 0);
+	else
+		M.quit = SIGTERM;
 }
 
 /* ------------------------------------------------------------- settings */
@@ -1328,9 +1450,13 @@ static bool tcp_client_on(const char *path, unsigned port)
 
 /*
  * The long jobs during which the unit never powers off by itself (checked
- * once a second): a USB import, export or backup, the web share or the SMB
- * share with a client, an OS update download/install, the game list still
- * loading. When the last one ends, the countdown starts over.
+ * once a second): a USB import, export or backup while it copies (not while
+ * it waits for the player: a duplicate question, or a summary nobody has
+ * read yet, review), the web share or the SMB share with a client, an OS
+ * update download/install, the storage being formatted, the game list still
+ * loading, a game whose core cannot save a state (an idle power-off would
+ * lose it) or a benchmark. When the last one ends, the countdown starts
+ * over. The dim and screen-off stages go on meanwhile.
  */
 static void idle_busy_check(bool force)
 {
@@ -1342,10 +1468,16 @@ static void idle_busy_check(bool force)
 	if (!M.power_ok || (!force && t - M.busy_checked_at < 1000))
 		return;
 	M.busy_checked_at = t;
-	if (transfer_import_status(&pr) != TRANSFER_IDLE)
+	if (transfer_import_status(&pr) == TRANSFER_RUNNING && !pr.asking)
 		why = "usb-import";
-	else if (transfer_backup_status(&pr) != TRANSFER_IDLE)
+	else if (transfer_backup_status(&pr) == TRANSFER_RUNNING)
 		why = "usb-export-backup";
+	else if (M.in_game && M.game_nostate)
+		why = "game-without-save-states";
+	else if (M.in_game && M.game_busy)
+		why = "game-benchmark";
+	else if (M.ui && ui_data_problem_busy(M.ui))
+		why = "storage-format";
 	else if (webshare_running() && (webshare_get_status(&ws), ws.clients > 0 || ws.current[0]))
 		why = "web-share-client";
 	else if (tcp_client_on(P("/proc/net/tcp"), 445) || tcp_client_on(P("/proc/net/tcp6"), 445))
@@ -1588,6 +1720,33 @@ static void set_msg(const struct ui_launch *req, const char *fmt, ...)
 
 static void script_in_game(void);
 
+/*
+ * game.log is in /run (RAM) and host_launch() only trims it at a launch: a
+ * core that logs every frame for hours would fill the tmpfs. Checked every
+ * 2 s while the game runs; above GAME_LOG_CAP it is emptied (the child's fd
+ * is O_APPEND: its next line starts the file again). Review.
+ */
+#define GAME_LOG_CAP (2 << 20)
+
+static void game_log_cap(int64_t t)
+{
+	static long long cap;
+	struct stat st;
+
+	if (t - M.game_log_checked_at < 2000)
+		return;
+	M.game_log_checked_at = t;
+	if (!cap)
+		cap = M.headless && getenv("RSOS_TEST_GAME_LOG_CAP") && atoll(getenv("RSOS_TEST_GAME_LOG_CAP")) > 0 ?
+		      atoll(getenv("RSOS_TEST_GAME_LOG_CAP")) : GAME_LOG_CAP;
+	if (stat(P(GAME_LOG_PATH), &st) == 0 && st.st_size > cap) {
+		if (truncate(P(GAME_LOG_PATH), 0) == 0)
+			mlog("game log over %lld KB while the game runs: emptied", cap / 1024);
+		else
+			mlog("game log: truncate: %s", strerror(errno));
+	}
+}
+
 /* Every ~100 ms while the game runs (host_launch()). */
 static bool launch_idle(void *user)
 {
@@ -1596,6 +1755,7 @@ static bool launch_idle(void *user)
 
 	(void)user;
 	wd_pet();               /* the menu's loop is blocked in host_launch() */
+	game_log_cap(t);
 	if (M.headless)
 		script_in_game();   /* test tokens "game:..." (a power-off during the game) */
 	if (M.power_ok) {
@@ -1823,12 +1983,44 @@ static void resume_forget(void)
 	}
 }
 
+/*
+ * "Start fresh" (review): the old .state.auto (and its picture) is moved to
+ * .state.auto.old (one kept, the one before replaced), so nothing resumes
+ * it automatically any more (Resume on launch = always, the game switcher)
+ * over newer progress. Still on the card: game_saves() and Delete see it.
+ */
+static void auto_state_set_aside(const char *core_path, const char *rom, const char *system)
+{
+	char st[PATH_MAX], old[PATH_MAX + 8], a[PATH_MAX + 8], b[PATH_MAX + 16];
+
+	if (!rom || !host_auto_state_path(P("/data/states"), core_path, rom, system, st, sizeof(st)))
+		return;
+	snprintf(old, sizeof(old), "%s.old", st);
+	if (rename(st, old) < 0) {
+		mlog("start fresh: cannot move %s aside: %s", st, strerror(errno));
+		return;
+	}
+	snprintf(a, sizeof(a), "%s.png", st);
+	snprintf(b, sizeof(b), "%s.old.png", st);
+	if (rename(a, b) < 0 && errno == ENOENT)
+		unlink(b);                      /* no picture: not the one of the older state */
+	mlog("start fresh: %s moved aside (%s)", st, old);
+}
+
 static void resume_answered(bool resume, void *user)
 {
 	(void)user;
 	/* handled: never offered again, whatever happens in the game */
 	resume_forget();
-	mlog("resume: %s", resume ? "resuming at the player's request" : "start fresh (auto state kept)");
+	mlog("resume: %s", resume ? "resuming at the player's request" : "start fresh");
+}
+
+/* The player chose START FRESH (or B) in the boot offer. NEVER ASK and
+ * Resume on boot = never keep the state: the launch prompt offers it. */
+static void resume_fresh(const struct ui_resume_offer *o, void *user)
+{
+	(void)user;
+	auto_state_set_aside(o->core_path, o->rom_path, o->system);
 }
 
 /* Once the menu is up (never in charge mode): the resume offer, if any. */
@@ -1864,7 +2056,7 @@ static void resume_check(void)
 	{
 		struct ui_resume_offer o = {
 			.game_name = name, .rom_path = rom, .system = sys, .core = core,
-			.core_path = core_path, .answered = resume_answered,
+			.core_path = core_path, .answered = resume_answered, .start_fresh = resume_fresh,
 		};
 
 		mlog("resume: offering %s (%s, %s)", name, rom, st);
@@ -1918,13 +2110,51 @@ static void switcher_write(const struct ui_launch *req, const char *core_path)
 		mlog("switcher: cannot write %s: %s", P(SWITCHER_PATH), strerror(-r));
 }
 
+/* "busy" / "busy <why>" sets, "busy 0" / "busy off" / "busy end" clears. */
+static bool status_flag_on(const char *arg)
+{
+	return !arg || !*arg || (strcmp(arg, "0") && strcmp(arg, "off") && strcmp(arg, "end") && strcmp(arg, "done"));
+}
+
 /* Status lines of the running game (host_launch_opts.on_status): its play
- * time so far (saved in gamedb every few minutes, so a crash loses little)
- * and the per-game settings changed in its menu. */
+ * time so far (saved in gamedb every few minutes, so a crash loses little),
+ * the per-game settings changed in its menu, and what holds the idle
+ * power-off: "nostate" (the core cannot save a state: the idle power-off
+ * would quit the game unsaved) and "busy" (a benchmark runs). During a
+ * benchmark, the "autostate" of a power-off (the start state copied to the
+ * game's .state.auto) records resume.ini at once: the benchmark driver may
+ * not exit in time. */
 static void launch_status(const char *kind, const char *arg, void *user)
 {
 	const struct ui_launch *req = user;
 
+	if (!strcmp(kind, "nostate") || !strcmp(kind, "busy")) {
+		bool on = status_flag_on(arg);
+
+		if (kind[0] == 'n' && on != M.game_nostate)
+			mlog("the game's core cannot save a state: no idle power-off during this game");
+		else if (kind[0] == 'b' && on != M.game_busy)
+			mlog("the game is busy (%s): %s", arg && *arg ? arg : "benchmark",
+			     on ? "no idle power-off meanwhile" : "done");
+		if (kind[0] == 'n')
+			M.game_nostate = on;
+		else
+			M.game_busy = on;
+		idle_busy_check(true);
+		return;
+	}
+	if (!strcmp(kind, "autostate") && req && M.game_busy && !M.resume_recorded && M.cur_core_path &&
+	    (M.shutdown_req || M.poweroff_sent_at)) {
+		struct host_launch_result res;
+
+		memset(&res, 0, sizeof(res));
+		res.auto_state_saved = true;
+		res.auto_state_bytes = atoll(arg);
+		mlog("autostate during a benchmark: recording resume.ini now");
+		resume_record(req, M.cur_core_path, M.cur_game, M.cur_p1dev, &res);
+		M.resume_recorded = true;
+		return;
+	}
 	if (!M.ui || !req)
 		return;
 	if (!strcmp(kind, "playtime")) {
@@ -1948,12 +2178,79 @@ static void launch_status(const char *kind, const char *arg, void *user)
 	}
 }
 
+/*
+ * Another ROM of the system that uses the same save name (review): Game.zip
+ * next to Game.sfc, the same name in two subfolders, a zip whose inner file
+ * has this name. Its saves are the same files: Delete must keep them. The
+ * system's ROM folder, 4 levels deep; zips are opened (their inner name)
+ * within a time budget, then only their file name counts. The media folders
+ * and non-ROM files (pictures, texts, saves) are skipped.
+ */
+#define SAVE_NAME_ZIP_BUDGET_MS 1500
+
+static bool rom_like(const char *name)
+{
+	static const char *const skip[] = { "png", "jpg", "jpeg", "gif", "bmp", "webp", "svg", "xml", "txt", "nfo",
+					    "pdf", "mp4", "mkv", "avi", "srm", "rtc", "sav", "ini", "cfg", "db",
+					    "tsv", "md", "html", "old", "bak", "tmp" };
+	const char *dot = strrchr(name, '.');
+
+	if (name[0] == '.')
+		return false;
+	for (size_t i = 0; dot && i < sizeof(skip) / sizeof(skip[0]); i++)
+		if (!strcasecmp(dot + 1, skip[i]))
+			return false;
+	return true;
+}
+
+static bool save_name_used_in(const char *dir, int depth, const char *self, const char *core_path, const char *game,
+			      int64_t zip_until, char *other, size_t on)
+{
+	DIR *d = opendir(dir);
+	struct dirent *de;
+	bool found = false;
+
+	while (d && !found && (de = readdir(d))) {
+		char p[PATH_MAX], stem[256], *dot;
+		struct stat st;
+
+		if (de->d_name[0] == '.' || snprintf(p, sizeof(p), "%s/%s", dir, de->d_name) >= (int)sizeof(p) ||
+		    stat(p, &st) < 0)
+			continue;
+		if (S_ISDIR(st.st_mode)) {
+			if (depth > 0 && strcasecmp(de->d_name, "media") && strcasecmp(de->d_name, "images") &&
+			    strcasecmp(de->d_name, "videos") && strcasecmp(de->d_name, "manuals"))
+				found = save_name_used_in(p, depth - 1, self, core_path, game, zip_until, other, on);
+			continue;
+		}
+		if (!S_ISREG(st.st_mode) || !strcmp(p, self) || !rom_like(de->d_name))
+			continue;
+		snprintf(stem, sizeof(stem), "%s", de->d_name);
+		if ((dot = strrchr(stem, '.')) && dot != stem)
+			*dot = 0;
+		if (!strcmp(stem, game)) {
+			found = true;
+		} else if (dot && !strcasecmp(dot + 1, "zip") && now_ms() < zip_until) {
+			char inner[256];
+
+			host_game_name(core_path, p, inner, sizeof(inner));
+			found = !strcmp(inner, game);
+		}
+		if (found)
+			snprintf(other, on, "%s", p);
+	}
+	if (d)
+		closedir(d);
+	return found;
+}
+
 /* ui cb.game_saves (Delete this game): the .srm/.rtc and .state* files of
  * the game, by the name the game process gives them (host_game_name: a
- * zip's inner file). remove = true deletes them. */
+ * zip's inner file). remove = true deletes them. -EEXIST: another ROM uses
+ * the same save name (its saves are these files): nothing is deleted. */
 static int game_saves(const struct ui_launch *req, bool remove, void *user)
 {
-	char core[PATH_MAX], game[256];
+	char core[PATH_MAX], game[256], romdir[PATH_MAX + 64], other[PATH_MAX] = "";
 	const char *core_path = req->core_path;
 	static const char *const roots[2] = { "/data/saves", "/data/states" };
 	int n = 0;
@@ -1965,6 +2262,12 @@ static int game_saves(const struct ui_launch *req, bool remove, void *user)
 		core_path = core;
 	}
 	host_game_name(core_path, req->rom_path, game, sizeof(game));
+	snprintf(romdir, sizeof(romdir), "%s/%s", P("/data/roms"), req->system);
+	if (game[0] && save_name_used_in(romdir, 4, req->rom_path, core_path, game,
+					 now_ms() + SAVE_NAME_ZIP_BUDGET_MS, other, sizeof(other))) {
+		mlog("saves of %s: \"%s\" is also the save name of %s: kept", req->rom_path, game, other);
+		return -EEXIST;
+	}
 	for (int k = 0; k < 2 && game[0]; k++) {
 		char dir[PATH_MAX];
 		DIR *d;
@@ -2139,8 +2442,16 @@ static int launch_game(const struct ui_launch *req, void *user)
 		mlog("display_suspend failed: closing the display for the game");
 		scr_shutdown();
 	}
+	/* "Start fresh" in the launch prompt: the old auto state goes aside */
+	if (req->start_fresh && !req->resume)
+		auto_state_set_aside(core_path, req->rom_path, req->system);
 	M.in_game = true;
 	M.combo_since = M.term_sent_at = M.poweroff_sent_at = 0;
+	M.game_nostate = M.game_busy = M.resume_recorded = false;
+	M.game_log_checked_at = 0;
+	M.cur_core_path = core_path;
+	M.cur_game = game;
+	M.cur_p1dev = p1dev;
 	mlog("launch %s (%s) with %s%s", req->game_name, req->rom_path, core_path,
 	     req->resume ? (req->boot_resume ? ", resuming (boot offer)" : ", resuming") : "");
 
@@ -2148,6 +2459,11 @@ static int launch_game(const struct ui_launch *req, void *user)
 
 	M.in_game = false;
 	M.game_buttons = 0;
+	M.cur_core_path = M.cur_game = M.cur_p1dev = NULL;
+	if (M.game_nostate || M.game_busy) {
+		M.game_nostate = M.game_busy = false;
+		idle_busy_check(true);          /* the idle power-off counts again */
+	}
 	/*
 	 * The idle power-off never cuts the power without saving: it goes on
 	 * only if the game wrote its resume state (.state.auto, then
@@ -2203,12 +2519,13 @@ static int launch_game(const struct ui_launch *req, void *user)
 			/* TRANSLATORS: the automatic power-off (no input for a while)
 			 * was stopped because the game's state could not be saved */
 			set_msg(req, "%s", _("Automatic power-off cancelled: the game could not be saved."));
-		} else if (res.status == HOST_EXIT_POWEROFF) {
+		} else if (res.status == HOST_EXIT_POWEROFF || (M.shutdown_req && res.auto_state_saved)) {
 			/* the game to offer at the next boot, only if its state is
-			 * really on the card */
-			if (res.auto_state_saved)
+			 * really on the card (also a game killed after the grace time
+			 * that had said "autostate": a benchmark driver) */
+			if (res.auto_state_saved && !M.resume_recorded)
 				resume_record(req, core_path, game, p1dev, &res);
-			else
+			else if (!res.auto_state_saved)
 				mlog("resume: no auto state was written: nothing to offer at the next boot");
 			if (!M.shutdown_req && M.power_ok)
 				power_request_shutdown(POWER_REASON_USER);   /* -> pw_shutdown() */
@@ -2357,12 +2674,15 @@ static void finish_shutdown(void)
 	if (M.poweroff_done)
 		return;
 	M.poweroff_done = true;
+	wd_pet_now();
 	if (M.ui)
 		ui_power_event(M.ui, UI_PWR_SHUTDOWN);   /* flush again: the game may have changed gamedb */
+	wd_pet_now();
 	if (M.usb_started) {
 		transfer_stop_jobs();
 		transfer_usb_shutdown();
 	}
+	wd_pet_now();
 	M.usb_started = false;
 	/* the "Powering off..." frame reaches the screen before we go */
 	for (int i = 0; i < 5 && M.display_ok && !M.headless && !M.display_left && display_flip_pending(); i++)
@@ -2851,6 +3171,20 @@ int main(int argc, char **argv)
 		M.charge = true;
 		mlog("boot reason: charger (charge mode)");
 	}
+	/* /data unreadable: the blocking screen once the menu is up, no menu */
+	{
+		FILE *f = fopen(P(DATA_PROBLEM_PATH), "re");
+
+		if (f) {
+			if (!fgets(M.data_problem, sizeof(M.data_problem), f))
+				M.data_problem[0] = 0;
+			fclose(f);
+			M.data_problem[strcspn(M.data_problem, "\r\n")] = 0;
+			if (!M.data_problem[0])
+				snprintf(M.data_problem, sizeof(M.data_problem), "unmountable unknown");
+			mlog("data partition problem: %s (the storage screen instead of the menu)", M.data_problem);
+		}
+	}
 
 	/* 1. display (the first output lights up in here) */
 	display_try_init();
@@ -2894,6 +3228,7 @@ int main(int argc, char **argv)
 	}
 	if (M.headless)
 		uc.net_helper = "/bin/false";
+	uc.data_partition_helper = P(DATA_PARTITION_HELPER);
 	if (M.res_dir)
 		uc.res_dir = M.res_dir;
 	if (M.themes_dir)
@@ -2963,21 +3298,31 @@ int main(int argc, char **argv)
 
 		if (!M.power_tried && (M.first_frame || now - M.t0_ms >= POWER_LATE_MS))
 			power_start();
-		if (!M.usb_tried && M.first_frame && !M.charge && M.power_tried)
+		/* no USB import/export while /data is a stand-in tmpfs */
+		if (!M.usb_tried && M.first_frame && !M.charge && M.power_tried && !M.data_problem[0])
 			usb_start();
 		if (!M.boot_ok_done && M.first_frame && ui_is_loaded(M.ui))
 			boot_ok();
 		/* the normal menu (at boot, or after the charge-mode exit) */
 		if (M.boot_ok_done && !M.charge && !M.boot_ok_spawned)
 			boot_ok_spawn();
+		/* /data unreadable: the storage screen stays up instead of the menu
+		 * (after the first-boot language picker: in the language chosen) */
+		if (M.data_problem[0] && !M.data_problem_shown && M.boot_ok_done && !M.charge && !M.shutdown_req &&
+		    !ui_first_boot_busy(M.ui)) {
+			M.data_problem_shown = true;
+			ui_data_problem(M.ui, M.data_problem);
+			M.need_redraw = true;
+		}
 		/* both wait for the first-boot language picker (in the language chosen) */
 		if (M.boot_ok_done && !M.charge && !M.boot_notes_shown && !M.shutdown_req &&
-		    !ui_first_boot_busy(M.ui))
+		    !ui_first_boot_busy(M.ui) && !M.data_problem[0])
 			boot_notes();
 		/* after the first menu frame (never delays it), not in charge mode */
 		if (!M.resume_checked && M.first_frame && ui_is_loaded(M.ui) && !M.charge && !M.shutdown_req &&
-		    !ui_first_boot_busy(M.ui))
+		    !ui_first_boot_busy(M.ui) && !M.data_problem[0])
 			resume_check();
+		no_display_check(now);
 		if (!M.lists_logged && ui_lists_complete(M.ui)) {
 			M.lists_logged = true;
 			mlog("game lists complete %lld ms after start", (long long)(now_ms() - M.t0_ms));
@@ -3090,21 +3435,28 @@ out:
 		 * signalling init failed): finish_shutdown() flushed everything;
 		 * nothing slow here: no redraw, no teardown. */
 		shutdown_exit(rc);
-	/* SIGTERM from init/rcK without a request of ours: flush, release. */
-	wd_pet();
+	/* SIGTERM from init/rcK without a request of ours: flush, release. Each
+	 * step can take seconds (a copy thread stopping, gamedb, sync): the
+	 * watchdog gets a full period before each one (review). */
+	wd_pet_now();
 	if (M.usb_started) {
 		transfer_stop_jobs();
+		wd_pet_now();
 		transfer_usb_shutdown();
 	}
+	wd_pet_now();
 	webshare_stop();
 	netnames_stop();
+	wd_pet_now();
 	if (M.ui)
 		ui_destroy(M.ui);   /* saves settings.ini and gamedb, flushes the image cache */
+	wd_pet_now();
 	if (M.power_ok)
 		power_exit();
 	if (M.in)
 		input_close(M.in);
 	scr_shutdown();
+	wd_pet_now();
 	sync();
 	wd_close();
 	mlog("exit %d after %lld ms, %d frames", rc, (long long)(now_ms() - M.t0_ms), M.frames);

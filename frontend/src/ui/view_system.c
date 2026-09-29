@@ -390,6 +390,11 @@ static void build_backdrop(const struct sv_ctx *c, struct sv_item *it, bool warm
 	}
 	ui_cost_begin(&cs, UI_COST_BACKDROP);
 	bd = gfx_image_new(W, H);
+	if (!bd) {
+		/* an absurd size (gfx_image_new refuses it): no backdrop */
+		ui_cost_end(&cs);
+		return;
+	}
 	gfx_surface_from_image(&s, bd);
 	gfx_fill(&s, 0, 0, W, H, 0xff000000u);
 	for (int i = 0; i < it->first_live; i++) {
@@ -534,6 +539,12 @@ static void build_logos(const struct sv_ctx *c, struct sv_item *it)
 		}
 		n = font_wrap(f, txt, bwi, lines, 4);
 		img = gfx_image_new(bwi, bhi);
+		if (!img) {
+			/* an absurd size (gfx_image_new refuses it): no text logo */
+			ui_cost_end(&cs);
+			it->logos_built = true;
+			return;
+		}
 		gfx_surface_from_image(&s, img);
 		y0 = (bhi - n * lh) / 2;
 		for (int i = 0; i < n; i++) {

@@ -1447,6 +1447,9 @@ static int g_mounts, g_umounts;
 static unsigned long g_last_flags;
 static char g_last_fs[16], g_last_data[64], g_last_target[256];
 
+/* a slow mount (a failing stick, ntfs3): it runs in usb.c's worker thread */
+static volatile int g_mount_delay_ms, g_mount_started;
+
 static int fake_mount(const char *src, const char *target, const char *fstype,
 		      unsigned long flags, const char *data)
 {
@@ -1454,6 +1457,9 @@ static int fake_mount(const char *src, const char *target, const char *fstype,
 	g_last_flags = flags;
 	if (flags & MS_REMOUNT)
 		return 0;
+	g_mount_started = 1;
+	if (g_mount_delay_ms)
+		usleep((useconds_t)g_mount_delay_ms * 1000);
 	g_mounts++;
 	snprintf(g_last_fs, sizeof(g_last_fs), "%s", fstype);
 	snprintf(g_last_data, sizeof(g_last_data), "%s", data ? data : "");
@@ -1624,6 +1630,56 @@ static void test_usb(void)
 	n = drain(ev, 8, 60);
 	CHECK(n == 1 && ev[0].type == TRANSFER_USB_REMOVED && g_umounts >= 2);
 	CHECK(transfer_usb_drives(drv, 4) == 0);
+
+	/* review: a mount that takes 400 ms (a slow ntfs3, a failing stick)
+	 * never blocks transfer_usb_poll(): the main loop pets the watchdog */
+	{
+		int64_t t0, worst = 0, got_at = -1;
+		int mounts = g_mounts, umounts;
+
+		g_mount_delay_ms = 400;
+		g_mount_started = 0;
+		fake_disk(sys, dev, "sdc", true, "sdc1", 1u << 22, bs);
+		t0 = tr_now_ms();
+		n = 0;
+		while (tr_now_ms() - t0 < 1500 && n == 0) {
+			struct transfer_usb_event e;
+			int64_t a = tr_now_ms();
+			int k = transfer_usb_poll(&e);
+			int64_t d = tr_now_ms() - a;
+
+			if (d > worst)
+				worst = d;
+			if (k > 0) {
+				ev[n++] = e;
+				got_at = tr_now_ms() - t0;
+			}
+			usleep(5000);
+		}
+		CHECK(g_mount_started && worst < 100);
+		if (worst >= 100)
+			printf("  a poll took %lld ms during the mount\n", (long long)worst);
+		CHECK(n == 1 && ev[0].type == TRANSFER_USB_MOUNTED && got_at >= 400 && g_mounts == mounts + 1);
+		CHECK(transfer_usb_drives(drv, 4) == 1);
+		pathf(p, sizeof(p), "%s/sdc", blk);
+		unlink(p);
+		n = drain(ev, 8, 60);
+		CHECK(n == 1 && ev[0].type == TRANSFER_USB_REMOVED);
+
+		/* pulled during the mount: no MOUNTED, the new mount undone */
+		g_mount_started = 0;
+		fake_disk(sys, dev, "sdd", true, "sdd1", 1u << 22, bs);
+		t0 = tr_now_ms();
+		while (!g_mount_started && tr_now_ms() - t0 < 1000)
+			drain(ev, 8, 5);
+		CHECK(g_mount_started);
+		umounts = g_umounts;
+		pathf(p, sizeof(p), "%s/sdd", blk);
+		unlink(p);
+		n = drain(ev, 8, 700);
+		CHECK(n == 0 && transfer_usb_drives(drv, 4) == 0 && g_umounts == umounts + 1);
+		g_mount_delay_ms = 0;
+	}
 	transfer_usb_shutdown();
 }
 

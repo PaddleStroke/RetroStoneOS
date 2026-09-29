@@ -6,7 +6,9 @@
 # relaunch (the child asks for another game, the menu launches it resumed),
 # Resume on boot (always / never / ask with its 4 choices), per-game scaling
 # and CPU profile (game options -> the game's arguments; the in-game menu ->
-# gamedb), Hide and Delete (with the saves question, NO by default).
+# gamedb), Hide and Delete (with the saves question, NO by default). Review
+# B2: Start fresh moves the auto state aside, Delete keeps saves another ROM
+# shares, the log caps, the storage problem screen (/run/rsos/data-problem).
 set -u
 FE=$1
 CORE=$2
@@ -125,7 +127,30 @@ run "wait:500 expect:dialog:Resume_Alpha_Quest? down right expect:|NEVER_ASK a w
 t "the run" [ $? = 0 ]
 t "resume_boot = never saved, no launch" sh -c "grep -q '^resume_boot *= *never$' '$SET' && \
 	! grep -q 'launch Alpha Quest' '$LOG'"
+t "NEVER ASK keeps the auto state (the launch prompt offers it)" [ -s "$W/data/states/nes/Alpha Quest.state.auto" ]
 setting resume_boot ask
+
+ST="$W/data/states/nes/Alpha Quest.state.auto"
+echo "b2-frontend: review: START FRESH (and B) at boot move the auto state aside (.state.auto.old)"
+printf 'older' > "$ST.old"
+write_resume
+run "wait:500 expect:dialog:Resume_Alpha_Quest? right expect:|START_FRESH a wait:300 expect:carousel term"
+t "the run" [ $? = 0 ]
+t "START FRESH: .state.auto moved to .state.auto.old (the older .old replaced)" sh -c "[ ! -e '$ST' ] && \
+	[ -s '$ST.old' ] && [ \"\$(cat '$ST.old')\" != older ] && grep -q 'start fresh: .* moved aside' '$LOG'"
+mv "$ST.old" "$ST"
+write_resume
+run "wait:500 expect:dialog:Resume_Alpha_Quest? b wait:300 expect:carousel term"
+t "B: the same" sh -c "[ ! -e '$ST' ] && [ -s '$ST.old' ]"
+mv "$ST.old" "$ST"
+echo "b2-frontend: review: START FRESH in the launch prompt: the same, then the game starts fresh"
+run "wait:300 a wait:500 expect:game=Alpha_Quest a wait:300 expect:dialog:Resume_where_you_left_off? right \
+	expect:|START_FRESH a wait:1500 expect:list term"
+t "the run" [ $? = 0 ]
+t "moved aside, the game did not load it" sh -c "[ -s '$ST.old' ] && grep -q 'start fresh: .* moved aside' '$LOG' && \
+	! grep -q 'load state' '$GLOG'"
+rm -f "$ST"
+mv "$ST.old" "$ST"
 
 echo "b2-frontend: per-game scaling and CPU profile (game options), applied at launch"
 run "wait:300 a wait:500 expect:game=Alpha_Quest select wait:300 down down down expect:|Scaling right \
@@ -177,6 +202,60 @@ run "wait:300 a wait:500 select wait:300 down down down down down down down a wa
 	b wait:300 expect:list term"
 rc=$?
 t "CANCEL (selected) and B delete nothing" sh -c "[ $rc = 0 ] && [ -e '$W/data/roms/nes/Alpha Quest.nes' ]"
+
+echo "b2-frontend: review: Delete a game whose save name another ROM shares (Echo.zip): the saves are kept"
+printf 'NES\032Echo' > "$W/data/roms/nes/Echo.nes"
+printf 'PK-not-listed' > "$W/data/roms/nes/Echo.zip"
+printf 'SRAM' > "$W/data/saves/nes/Echo.srm"
+run "wait:300 a wait:500 down expect:game=Echo select wait:300 down down down down down down down \
+	expect:|Delete_this_game a wait:300 expect:dialog:Delete_\"Echo.nes\" left expect:|DELETE a wait:300 \
+	expect:dialog:Game_deleted._Its_saves_were_kept a wait:300 term"
+t "the run" [ $? = 0 ]
+t "Echo.nes deleted, Echo.srm kept (also Echo.zip's), said in the log" sh -c "[ ! -e '$W/data/roms/nes/Echo.nes' ] && \
+	[ -s '$W/data/saves/nes/Echo.srm' ] && grep -q 'is also the save name of .*Echo.zip: kept' '$LOG'"
+rm -f "$W/data/roms/nes/Echo.zip" "$W/data/saves/nes/Echo.srm"
+
+echo "b2-frontend: review: frontend.log rotated (to .1) above its cap; game.log emptied above its cap during a game"
+rm -f "$LOG.1"
+RSOS_TEST_LOG_ROTATE=1500 run "wait:300 term"
+t "the run" [ $? = 0 ]
+t "frontend.log.1 kept, a new frontend.log started" sh -c "[ -s '$LOG.1' ] && [ -s '$LOG' ] && \
+	[ \$(wc -c < '$LOG.1') -lt 6000 ] && grep -q 'exit 0 after' '$LOG'"
+rm -f "$LOG.1"
+RSOS_TEST_GAME_LOG_CAP=1500 RSOS_TESTCORE=slow run "wait:300 a wait:500 a wait:300 \
+	expect:dialog:Resume_where a wait:3500 expect:list term"
+t "the run" [ $? = 0 ]
+t "game.log emptied while the game ran" grep -q 'game log over 1 KB while the game runs: emptied' "$LOG"
+
+echo "b2-frontend: review: /data unreadable: the storage screen instead of the menu; format (confirmed) then reboot"
+printf 'unmountable exfat\n' > "$W/run/rsos/data-problem"
+mkdir -p "$W/usr/libexec/rsos"
+cat > "$W/usr/libexec/rsos/data-partition" <<EOF
+#!/bin/sh
+echo "\$*" > "$W/run/format-args"
+sleep 1
+exit 0
+EOF
+chmod +x "$W/usr/libexec/rsos/data-partition"
+rm -f "$W/run/format-args"
+run "wait:600 expect:storage:ask_unmountable_exfat|Turn_off b start select wait:300 expect:storage:ask \
+	shot:$W/storage.png down expect:storage:ask_unmountable_exfat|Format a wait:300 \
+	expect:dialog:Erase_everything_on_the_storage? expect:|CANCEL a wait:300 expect:storage:ask expect:|Format \
+	a wait:300 right expect:|FORMAT a wait:300 expect:storage:formatting wait:2000"
+t "the run" [ $? = 0 ]
+t "no menu: no resume offer, no boot notes, no USB" sh -c "grep -q 'data partition problem: unmountable exfat' '$LOG' && \
+	! grep -q 'resume: \|usb: watching' '$LOG'"
+t "the helper ran with --format-confirmed" grep -qx -- '--format-confirmed' "$W/run/format-args"
+t "then the reboot" sh -c "grep -q 'ui: storage: formatted, rebooting' '$LOG' && grep -q 'reboot requested' '$LOG'"
+t "the screen picture" [ -s "$W/storage.png" ]
+printf 'readerror\n' > "$W/run/rsos/data-problem"
+run "wait:600 expect:storage:ask_readerror|Turn_off a wait:500"
+t "Turn off (to back up on a PC): the power-off" sh -c "grep -q 'ui: storage: turning off' '$LOG' && \
+	grep -q 'power-off requested: exiting' '$LOG'"
+printf '#!/bin/sh\nexit 3\n' > "$W/usr/libexec/rsos/data-partition"
+run "wait:600 down a wait:300 right a wait:1500 expect:storage:failed_readerror term"
+t "a failed format: said on the screen, still no menu" grep -q 'ui: storage: the format failed (3)' "$LOG"
+rm -f "$W/run/rsos/data-problem"
 
 if [ $fails = 0 ]; then
 	echo "b2-frontend: ALL OK"

@@ -54,6 +54,7 @@ void ui_config_defaults(struct ui_config *cfg)
 	cfg->net_helper = "/usr/bin/rsos-net";
 	cfg->update_helper = "/usr/bin/rsos-update";   /* used only if it is there */
 	cfg->smb_helper = "/usr/bin/rsos-smb";         /* the same */
+	cfg->data_partition_helper = "/usr/libexec/rsos/data-partition";
 	cfg->wpa_conf = "/data/rsos/wpa_supplicant.conf";
 	cfg->version = RSOS_VERSION;
 	cfg->default_theme = RSOS_DEFAULT_THEME;
@@ -595,12 +596,13 @@ static void launch_req(struct ui *ui, struct game *g, struct ui_launch *req_in)
 	ui_invalidate_snapshot(ui);
 }
 
-static void do_launch(struct ui *ui, struct game *g, bool resume)
+static void do_launch(struct ui *ui, struct game *g, bool resume, bool start_fresh)
 {
 	struct ui_launch req;
 
 	fill_launch(ui, g, &req);
 	req.resume = resume;
+	req.start_fresh = start_fresh && !resume;
 	launch_req(ui, g, &req);
 }
 
@@ -647,7 +649,8 @@ static struct game *find_game(struct ui *ui, const char *system, const char *rom
 }
 
 /* "Resume <game>?" at boot: 0 = resume, 1 = start fresh, -1 (B) = start
- * fresh, 2 = always resume (saved), 3 = never ask (saved, start fresh). */
+ * fresh, 2 = always resume (saved), 3 = never ask (saved, start fresh).
+ * user != NULL: decided by Settings > Games > Resume on boot, no dialog. */
 static void boot_resume_choice(struct ui *ui, int choice, void *user)
 {
 	struct ui_launch req;
@@ -655,8 +658,17 @@ static void boot_resume_choice(struct ui *ui, int choice, void *user)
 	bool resume = choice == 0 || choice == 2;
 	char rel[1024];
 
-	(void)user;
 	ui->boot_resume.active = false;
+	/* the player said START FRESH (or B): the old state goes aside */
+	if (!user && (choice == 1 || choice == -1) && ui->boot_resume.start_fresh) {
+		struct ui_resume_offer o = {
+			.game_name = ui->boot_resume.name, .rom_path = ui->boot_resume.rom,
+			.system = ui->boot_resume.system, .core = ui->boot_resume.core,
+			.core_path = ui->boot_resume.core_path, .user = ui->boot_resume.user,
+		};
+
+		ui->boot_resume.start_fresh(&o, ui->boot_resume.user);
+	}
 	LOGI("ui: boot resume \"%s\": %s%s", ui->boot_resume.name, resume ? "resume" : "start fresh",
 	     choice == 2 ? " (always, saved)" : choice == 3 ? " (never ask, saved)" : "");
 	if (choice == 2 || choice == 3) {
@@ -671,7 +683,7 @@ static void boot_resume_choice(struct ui *ui, int choice, void *user)
 	if (ui->boot_resume.answered)
 		ui->boot_resume.answered(resume, ui->boot_resume.user);
 	if (!resume)
-		return;   /* the menu as it is; the auto state stays for the game's own prompt */
+		return;   /* the menu as it is (START FRESH / B: the state went aside above) */
 	g = find_game(ui, ui->boot_resume.system, ui->boot_resume.rom, ui->boot_resume.name, &tmp, rel,
 		      sizeof(rel), true);
 	memset(&req, 0, sizeof(req));
@@ -705,18 +717,19 @@ void ui_offer_resume(struct ui *ui, const struct ui_resume_offer *o)
 	strlcpy_(ui->boot_resume.core, o->core ? o->core : "", sizeof(ui->boot_resume.core));
 	strlcpy_(ui->boot_resume.core_path, o->core_path ? o->core_path : "", sizeof(ui->boot_resume.core_path));
 	ui->boot_resume.answered = o->answered;
+	ui->boot_resume.start_fresh = o->start_fresh;
 	ui->boot_resume.user = o->user;
 	ui->boot_resume.active = true;
 	/* Settings > Games > Resume on boot */
 	mode = settings_get(ui->settings, "resume_boot", "ask");
 	if (mode && !strcmp(mode, "never")) {
 		LOGI("ui: boot resume \"%s\": resume_boot never, the menu (auto state kept)", ui->boot_resume.name);
-		boot_resume_choice(ui, 1, NULL);
+		boot_resume_choice(ui, 1, ui);
 		return;
 	}
 	if (mode && !strcmp(mode, "always")) {
 		LOGI("ui: boot resume \"%s\": resume_boot always, resuming", ui->boot_resume.name);
-		boot_resume_choice(ui, 0, NULL);
+		boot_resume_choice(ui, 0, ui);
 		return;
 	}
 	/* TRANSLATORS: dialog buttons, uppercase, short: continue the saved game /
@@ -907,7 +920,7 @@ static void resume_choice(struct ui *ui, int choice, void *user)
 	ui->pending_se = NULL;
 	if (!g || choice < 0)
 		return;
-	do_launch(ui, g, choice == 0);
+	do_launch(ui, g, choice == 0, choice == 1);   /* START FRESH: the old state goes aside */
 }
 
 void ui_launch_game(struct ui *ui, struct sysent *se, struct game *g)
@@ -944,12 +957,12 @@ void ui_launch_game(struct ui *ui, struct sysent *se, struct game *g)
 
 		if (mode && !strcmp(mode, "always")) {
 			LOGI("ui: resume_mode always: resuming \"%s\"", g->name);
-			do_launch(ui, g, true);
+			do_launch(ui, g, true, false);
 			return;
 		}
 		if (mode && !strcmp(mode, "never")) {
 			LOGI("ui: resume_mode never: \"%s\" starts fresh", g->name);
-			do_launch(ui, g, false);
+			do_launch(ui, g, false, false);
 			return;
 		}
 		ui->pending_se = se;
@@ -957,7 +970,7 @@ void ui_launch_game(struct ui *ui, struct sysent *se, struct game *g)
 		dialog_open(ui, _("Resume where you left off?"), buttons, resume_choice, NULL);
 		return;
 	}
-	do_launch(ui, g, false);
+	do_launch(ui, g, false, false);
 }
 
 /* ------------------------------------------------------------------ create */
@@ -1288,6 +1301,7 @@ bool ui_update(struct ui *ui, int64_t now_ms)
 	}
 	transfer_poll(ui);
 	update_poll(ui);                /* the system updater's helper (update_ui.c) */
+	data_problem_poll(ui);          /* /data unreadable: the storage screen (screens.c) */
 	if (ui->reload_pending && ui_top(ui) && ui_top(ui)->kind == SCR_SYSVIEW) {
 		ui->reload_pending = false;
 		ui_reload_games(ui, false);
@@ -1345,6 +1359,10 @@ int ui_timeout_ms(const struct ui *ui, int64_t now_ms)
 		MINT(200);
 	MINT(prefetch_timeout(ui));     /* results of the asset worker to install */
 	MINT(update_timeout(ui));
+	if (ui->data_problem.pid > 0)
+		MINT(250);                  /* the storage format helper: polled */
+	if (ui->transfer_watch)
+		MINT(500);                  /* a copy under a dialog: finished when it ends */
 	if (ui->usb_pending[0] && !ui->in_game)
 		MINT(0);                  /* the dialog of a drive plugged meanwhile */
 	if (ui->cfg.transfer && ui->cfg.transfer->webshare_running())
@@ -1445,16 +1463,28 @@ void ui_render(struct ui *ui, struct gfx_surface *s)
 
 			gfx_image_free(ui->snapshot);
 			ui->snapshot = gfx_image_new(ui->w, ui->h);
-			gfx_surface_from_image(&ss, ui->snapshot);
-			/* no help bar under a modal: the modal draws its own */
-			ui->in_snapshot = true;
-			ui->stack[base]->ops->render(ui, ui->stack[base], &ss);
-			ui->in_snapshot = false;
-			gfx_fill(&ss, 0, 0, ui->w, ui->h, ui->ms.dim);
-			ui->snapshot->flags |= GFX_IMG_OPAQUE;
-			ui->snapshot_depth = base;
+			if (ui->snapshot) {
+				gfx_surface_from_image(&ss, ui->snapshot);
+				/* no help bar under a modal: the modal draws its own */
+				ui->in_snapshot = true;
+				ui->stack[base]->ops->render(ui, ui->stack[base], &ss);
+				ui->in_snapshot = false;
+				gfx_fill(&ss, 0, 0, ui->w, ui->h, ui->ms.dim);
+				ui->snapshot->flags |= GFX_IMG_OPAQUE;
+				ui->snapshot_depth = base;
+			}
 		}
-		gfx_blit(s, ui->snapshot, 0, 0, 255);
+		if (ui->snapshot) {
+			gfx_blit(s, ui->snapshot, 0, 0, 255);
+		} else {
+			/* no snapshot (gfx_image_new refused the size): the screen
+			 * below drawn straight, dimmed */
+			ui->snapshot_depth = -1;
+			ui->in_snapshot = true;
+			ui->stack[base]->ops->render(ui, ui->stack[base], s);
+			ui->in_snapshot = false;
+			gfx_fill(s, 0, 0, s->w, s->h, ui->ms.dim);
+		}
 		top->ops->render(ui, top, s);
 	}
 	render_overlays(ui, s);

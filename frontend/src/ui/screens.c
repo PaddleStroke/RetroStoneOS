@@ -5,11 +5,14 @@
  */
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <math.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -2191,6 +2194,11 @@ static void game_delete_finish(struct ui *ui, bool with_saves)
 	if (with_saves) {
 		int n = game_saves(ui, &g_del, true);
 
+		if (n == -EEXIST) {
+			/* another ROM got the same save name meanwhile: kept */
+			message_open(ui, _("Game deleted. Its saves were kept: another game uses the same save files."));
+			return;
+		}
 		LOGI("ui: deleted %d save/state files of %s", n, g_del.rel);
 		/* TRANSLATORS: toast after deleting a game and its saves */
 		ui_toastf(ui, "%s", _("Game and saves deleted"));
@@ -2210,6 +2218,7 @@ static void delete_answer(struct ui *ui, int choice, void *user)
 {
 	const char *buttons[3];
 	struct screen *d;
+	int n;
 
 	(void)user;
 	if (choice != 0)
@@ -2229,7 +2238,17 @@ static void delete_answer(struct ui *ui, int choice, void *user)
 	while (ui->nstack > 1 && ui_top(ui)->kind != SCR_GLVIEW && screen_is_menu(ui_top(ui)))
 		ui_pop(ui);
 	glview_game_removed(ui, g_del.system, g_del.path);
-	if (game_saves(ui, &g_del, false) <= 0) {
+	n = game_saves(ui, &g_del, false);
+	if (n == -EEXIST) {
+		/* Game.zip next to Game.sfc, the same name in two folders: the
+		 * other game's saves are the same files (review) */
+		LOGI("ui: saves of %s kept: another game uses the same save name", g_del.rel);
+		/* TRANSLATORS: after "Delete this game": the saves question is not asked, because
+		 * another game file has the same name (the saves belong to both) */
+		message_open(ui, _("Game deleted. Its saves were kept: another game uses the same save files."));
+		return;
+	}
+	if (n <= 0) {
 		game_delete_finish(ui, false);
 		return;
 	}
@@ -2455,4 +2474,292 @@ void game_options_open(struct ui *ui, struct sysent *se, struct game *g)
 	strlcpy_(it->value, g->rel, sizeof(it->value));
 	m->on_item = game_item;
 	menu_open(ui, m);
+}
+
+/* ------------------------------------------------------ storage problem */
+/*
+ * /data could not be mounted (ui_data_problem, docs/ui-design.md "Storage
+ * problem"): the system layer left the partition alone (a tmpfs stands in)
+ * so nothing is lost yet. This opaque screen replaces the menu until the
+ * unit powers off or reboots: B and Start do nothing, and data_problem_poll()
+ * puts it back if anything closed it. "Turn off" powers off (the card can
+ * then be read on a PC); "Format" asks again (CANCEL selected), then runs
+ * the data-partition helper with --format-confirmed (a child process polled
+ * with WNOHANG: the main loop and the watchdog go on) and reboots.
+ */
+enum { DP_ASK = 0, DP_FORMATTING, DP_FAILED, DP_DONE };
+
+static void dp_text(struct ui *ui, char *out, size_t n)
+{
+	const char *p = ui->data_problem.problem, *arg = strchr(p, ' ');
+	char fs[64] = "";
+
+	if (arg) {
+		strlcpy_(fs, arg + 1, sizeof(fs));
+		fs[strcspn(fs, " \t")] = 0;
+	}
+	if (!strncmp(p, "readerror", 9))
+		/* TRANSLATORS: storage problem screen (the data partition of the SD card could not be read) */
+		strlcpy_(out, _("The SD card reports read errors: it may be failing."), n);
+	else if (!strncmp(p, "foreign", 7) && fs[0])
+		/* TRANSLATORS: storage problem screen; %s is a file system name ("ntfs", "ext4") */
+		snprintf(out, n, _("The data partition uses a format this console does not use (%s)."), fs);
+	else if (fs[0] && strcmp(fs, "unknown"))
+		/* TRANSLATORS: storage problem screen; %s is a file system name ("exfat") */
+		snprintf(out, n, _("The data partition (%s) could not be opened: it may be damaged."), fs);
+	else
+		/* TRANSLATORS: storage problem screen */
+		strlcpy_(out, _("The data partition could not be opened: it may be damaged."), n);
+}
+
+static void dp_render(struct ui *ui, struct screen *scr, struct gfx_surface *s)
+{
+	const struct menu_style *ms = &ui->ms;
+	struct font *f = font_get(ms->font_path, ui_font_px(ui, ms->font_size));
+	struct font *fb = font_get(ms->font_bold[0] ? ms->font_bold : NULL, ui_font_px(ui, ms->font_size * 1.15f));
+	int W = ui->w, H = ui->h, pad = MAX(8, H / 30), w = W - 4 * pad, x = 2 * pad, y = pad * 2;
+	int lh = font_height(f) * 3 / 2, bh = font_height(f) * 2;
+	char what[512], text[1024];
+	int state = ui->data_problem.state;
+	static const struct help_prompt prompts[] = { { "updown", N_("choose") }, { "a", N_("select") } };
+
+	(void)scr;
+	gfx_fill(s, 0, 0, W, H, 0xff000000u);       /* opaque, whatever the theme's panel alpha */
+	gfx_fill(s, 0, 0, W, H, ms->bg);
+	/* TRANSLATORS: title of the screen shown instead of the menu when the storage
+	 * (the SD card's data partition: games, saves) cannot be read */
+	draw_text_box(ui, s, fb, _("The storage could not be read"), x, y, w, lh, AL_CENTER, ms->title);
+	y += lh * 3 / 2;
+	if (state == DP_FORMATTING || state == DP_DONE) {
+		strlcpy_(text, state == DP_DONE ?
+			 /* TRANSLATORS: storage problem screen: formatted, the console restarts */
+			 _("Done. Restarting...") :
+			 /* TRANSLATORS: storage problem screen, while the format runs */
+			 _("Formatting the storage, please wait. Do not turn the console off."), sizeof(text));
+	} else {
+		dp_text(ui, what, sizeof(what));
+		snprintf(text, sizeof(text), "%s %s", what,
+			 /* TRANSLATORS: storage problem screen, after what happened */
+			 _("Nothing was erased: your games and saves may still be recoverable. Turn the console "
+			   "off and read the SD card on a PC to copy them."));
+		if (state == DP_FAILED) {
+			char e[200];
+
+			/* TRANSLATORS: storage problem screen: the format did not work; %d is its exit code */
+			snprintf(e, sizeof(e), _("The storage could not be formatted (error %d)."), ui->data_problem.status);
+			snprintf(text + strlen(text), sizeof(text) - strlen(text), " %s", e);
+		}
+	}
+	{
+		struct text_line lines[10];
+		int n = font_wrap(f, text, w, lines, 10);
+
+		for (int i = 0; i < n; i++)
+			font_draw(s, f, x + (w - lines[i].width) / 2, font_baseline_in_box(f, y + i * lh, lh),
+				  text + lines[i].start, lines[i].len, ms->text);
+		y += MAX(n, 1) * lh + pad;
+	}
+	if (state == DP_FORMATTING || state == DP_DONE)
+		return;
+	for (int i = 0; i < 2; i++) {
+		bool sel = i == ui->data_problem.sel;
+		const char *label = i == 0 ?
+			/* TRANSLATORS: storage problem screen: power off, to read the SD card on a computer */
+			_("Turn off (to back up on a PC)") :
+			/* TRANSLATORS: storage problem screen: erase the data partition and start again */
+			_("Format the storage (erases everything)");
+
+		gfx_fill_round(s, x + pad, y, w - 2 * pad, bh, bh / 4, sel ? ms->selector : gfx_with_alpha(ms->text_dim, 50));
+		draw_text_box(ui, s, f, label, x + pad, y, w - 2 * pad, bh, AL_CENTER, sel ? ms->sel_text : ms->text);
+		y += bh + pad / 2;
+	}
+	help_draw(ui, s, &ui->menu_help, prompts, 2);
+}
+
+/* The format helper: its own session (it finishes whatever happens to us),
+ * SIGPIPE ignored (it may log to our stderr, a pipe). */
+static void dp_format_start(struct ui *ui)
+{
+	const char *helper = ui->cfg.data_partition_helper;
+	pid_t pid;
+
+	if (!helper || !*helper || access(helper, X_OK) != 0) {
+		LOGW("ui: storage: %s missing: cannot format", helper ? helper : "(none)");
+		ui->data_problem.state = DP_FAILED;
+		ui->data_problem.status = 127;
+		ui->dirty = true;
+		return;
+	}
+	pid = fork();
+	if (pid < 0) {
+		ui->data_problem.state = DP_FAILED;
+		ui->data_problem.status = -errno;
+		ui->dirty = true;
+		return;
+	}
+	if (pid == 0) {
+		sigset_t none;
+		int fd = open("/dev/null", O_RDONLY);
+
+		if (fd >= 0)
+			dup2(fd, 0);
+		sigemptyset(&none);
+		sigprocmask(SIG_SETMASK, &none, NULL);
+		signal(SIGPIPE, SIG_IGN);
+		signal(SIGTERM, SIG_DFL);
+		signal(SIGINT, SIG_DFL);
+		setsid();
+		execl(helper, helper, "--format-confirmed", (char *)NULL);
+		_exit(127);
+	}
+	LOGI("ui: storage: formatting (%s --format-confirmed, pid %d)", helper, (int)pid);
+	ui->data_problem.pid = (int)pid;
+	ui->data_problem.state = DP_FORMATTING;
+	ui->dirty = true;
+}
+
+static void dp_confirm(struct ui *ui, int choice, void *user)
+{
+	(void)user;
+	if (choice != 1) {
+		LOGI("ui: storage: format cancelled");
+		return;                 /* CANCEL (selected) or B: the screen again */
+	}
+	dp_format_start(ui);
+}
+
+static void dp_button(struct ui *ui, struct screen *scr, enum input_btn b, enum input_nav_type t)
+{
+	(void)scr;
+	if (t == IN_NAV_RELEASE)
+		return;
+	if (ui->data_problem.state == DP_FORMATTING || ui->data_problem.state == DP_DONE)
+		return;
+	if (b == IN_UP || b == IN_DOWN) {
+		ui->data_problem.sel = b == IN_UP ? 0 : 1;
+		ui->dirty = true;
+	} else if (b == IN_A && t == IN_NAV_PRESS) {
+		if (ui->data_problem.sel == 0) {
+			LOGI("ui: storage: turning off (to back up on a PC)");
+			ui_power(ui, UI_POWER_OFF);
+		} else {
+			/* TRANSLATORS: dialog buttons, uppercase, short (CANCEL is selected) */
+			const char *const buttons[] = { _("CANCEL"), _("FORMAT"), NULL };
+			struct screen *d;
+
+			/* TRANSLATORS: the second question before formatting the storage */
+			d = dialog_open(ui, _("Erase everything on the storage? All games, saves and settings on it are "
+					      "lost. This cannot be undone."), buttons, dp_confirm, NULL);
+			dialog_select(d, 0);
+		}
+	}
+	/* B, Start, Select: nothing (no menu while the storage is unreadable) */
+}
+
+static bool dp_update(struct ui *ui, struct screen *scr)
+{
+	(void)ui;
+	(void)scr;
+	return false;
+}
+
+static int dp_timeout(struct ui *ui, struct screen *scr)
+{
+	(void)scr;
+	return ui->data_problem.pid > 0 ? 250 : -1;
+}
+
+static void dp_relayout(struct ui *ui, struct screen *scr)
+{
+	(void)ui;
+	(void)scr;
+}
+
+static void dp_destroy(struct ui *ui, struct screen *scr)
+{
+	if (ui->data_problem.scr == scr)
+		ui->data_problem.scr = NULL;
+	free(scr);
+}
+
+static void dp_describe(struct ui *ui, struct screen *scr, char *buf, size_t n)
+{
+	static const char *const states[] = { "ask", "formatting", "failed", "done" };
+
+	(void)scr;
+	snprintf(buf, n, "storage:%s %s|%s", states[ui->data_problem.state & 3], ui->data_problem.problem,
+		 ui->data_problem.sel ? "Format" : "Turn off");
+}
+
+static const struct screen_ops dp_ops = {
+	.button = dp_button,
+	.update = dp_update,
+	.render = dp_render,
+	.relayout = dp_relayout,
+	.destroy = dp_destroy,
+	.timeout = dp_timeout,
+	.opaque = true,
+	.describe = dp_describe,
+};
+
+static void dp_push(struct ui *ui)
+{
+	struct screen *s = xcalloc(1, sizeof(*s));
+
+	s->ops = &dp_ops;
+	if (ui_push(ui, s))
+		ui->data_problem.scr = s;
+}
+
+void ui_data_problem(struct ui *ui, const char *problem)
+{
+	if (!ui || !problem || ui->data_problem.active)
+		return;
+	ui->data_problem.active = true;
+	strlcpy_(ui->data_problem.problem, problem, sizeof(ui->data_problem.problem));
+	LOGI("ui: storage problem \"%s\": the storage screen instead of the menu", problem);
+	/* over the carousel only: whatever was open goes */
+	while (ui->nstack > 1)
+		ui_pop(ui);
+	dp_push(ui);
+}
+
+bool ui_data_problem_busy(const struct ui *ui)
+{
+	return ui && ui->data_problem.pid > 0;
+}
+
+void data_problem_poll(struct ui *ui)
+{
+	bool there = false;
+
+	if (!ui->data_problem.active)
+		return;
+	if (ui->data_problem.pid > 0) {
+		int st = 0;
+		pid_t r = waitpid((pid_t)ui->data_problem.pid, &st, WNOHANG);
+
+		if (r == (pid_t)ui->data_problem.pid || (r < 0 && errno == ECHILD)) {
+			int code = r <= 0 ? -1 : WIFEXITED(st) ? WEXITSTATUS(st) :
+				   WIFSIGNALED(st) ? 128 + WTERMSIG(st) : -1;
+
+			ui->data_problem.pid = 0;
+			ui->dirty = true;
+			if (code == 0) {
+				LOGI("ui: storage: formatted, rebooting");
+				ui->data_problem.state = DP_DONE;
+				ui_power(ui, UI_REBOOT);
+			} else {
+				LOGW("ui: storage: the format failed (%d)", code);
+				ui->data_problem.state = DP_FAILED;
+				ui->data_problem.status = code;
+			}
+		}
+	}
+	for (int i = 0; i < ui->nstack; i++)
+		there |= ui->stack[i] == ui->data_problem.scr;
+	if (!there) {
+		ui->data_problem.scr = NULL;
+		dp_push(ui);
+	}
 }
