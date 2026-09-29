@@ -2393,3 +2393,11 @@ msgstr ""
 #. was stopped because the game's state could not be saved
 msgid "Automatic power-off cancelled: the game could not be saved."
 msgstr ""
+
+#, c-format
+msgid "Windows: %s"
+msgstr ""
+
+#, c-format
+msgid "User: retrostone, Password: %s"
+msgstr ""

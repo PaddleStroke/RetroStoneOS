@@ -62,13 +62,21 @@ struct tr_sink {
 	bool defer_dirsync;             /* commit(): leave the folder fsync to the caller */
 	bool dir_unsynced;              /* ... and it was left */
 	bool no_replace;                /* commit(): -EEXIST if the name exists (atomic) */
+	int bak_gens;                   /* commit() keep_bak: backups kept (0/1: name.bak) */
 };
 
 /* Moves dirfd/tmp to dirfd/name. keep_bak: an existing regular name is kept
  * as name.bak (hard link + one rename where possible, else two checked
- * renames undone on failure; -ENAMETOOLONG if name.bak cannot exist).
- * no_replace: fails with -EEXIST instead of replacing. 0 or -errno. */
+ * renames undone on failure; -ENAMETOOLONG if name.bak cannot exist); the
+ * same bytes as name: tmp is dropped, nothing changes. no_replace: fails
+ * with -EEXIST instead of replacing. 0 or -errno. */
 int tr_replace_file(int dirfd, const char *tmp, const char *name, bool keep_bak, bool no_replace);
+/* The same, gens backups kept (0 = none, 1 = name.bak, up to
+ * TR_BAK_GENERATIONS: the older ones as name.bak2, name.bak3). */
+int tr_replace_file_gens(int dirfd, const char *tmp, const char *name, int gens, bool no_replace);
+/* name.bak (gen 1), name.bak2, name.bak3; -ENAMETOOLONG past 255 bytes. */
+int tr_bak_name(char *out, size_t n, const char *name, int gen);
+#define TR_BAK_GENERATIONS 3
 
 int tr_sink_open(struct tr_sink *s, int dirfd, const char *name);
 int tr_sink_write(struct tr_sink *s, const void *buf, size_t len);

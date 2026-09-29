@@ -746,62 +746,62 @@ msgctxt "strftime"
 msgid "%Y-%m-%d %H:%M"
 msgstr ""
 
-#: src/main.c:1057
+#: src/main.c:1068
 msgid "The screen refused this refresh rate"
 msgstr ""
 
-#: src/main.c:2005
+#: src/main.c:2016
 msgid "No emulator is installed for this game."
 msgstr ""
 
-#: src/main.c:2012
+#: src/main.c:2023
 msgid "This game cannot start (missing BIOS?)."
 msgstr ""
 
 #. TRANSLATORS: %s is a system error message (in English)
-#: src/main.c:2179
+#: src/main.c:2190
 #, c-format
 msgid "Cannot start the game process (%s)."
 msgstr ""
 
 #. TRANSLATORS: the automatic power-off (no input for a while)
 #. was stopped because the game's state could not be saved
-#: src/main.c:2194
+#: src/main.c:2205
 msgid "Automatic power-off cancelled: the game could not be saved."
 msgstr ""
 
-#: src/main.c:2205 src/ui/ui.c:582
+#: src/main.c:2216 src/ui/ui.c:582
 msgid "The game could not be started."
 msgstr ""
 
 #. TRANSLATORS: boot message: the SD card's data partition (games, saves)
-#: src/main.c:2290
+#: src/main.c:2301
 msgid "The data partition could not be restored. Your games and saves may need to be copied again."
 msgstr ""
 
-#: src/main.c:2294
+#: src/main.c:2305
 msgid "The data partition was unreadable and was reformatted."
 msgstr ""
 
-#: src/main.c:2297
+#: src/main.c:2308
 msgid "The data partition has errors: saving may fail. Back up your saves."
 msgstr ""
 
-#: src/main.c:2303
+#: src/main.c:2314
 msgid "The last update didn't start; the previous version was restored."
 msgstr ""
 
-#: src/main.c:2309
+#: src/main.c:2320
 msgid "The SD card was checked after an unexpected power loss"
 msgstr ""
 
 #. TRANSLATORS: boot screen under the logo (first start, or after an update)
-#: src/main.c:2578
+#: src/main.c:2589
 msgid "Preparing the SD card, please wait..."
 msgstr ""
 
 #. TRANSLATORS: boot screen under the logo, after the power was cut
-#: src/main.c:2580
+#: src/main.c:2591
 msgid "Checking the SD card, please wait..."
 msgstr ""
 
@@ -840,7 +840,7 @@ msgstr ""
 msgid "select"
 msgstr ""
 
-#: src/ui/menu.c:100 src/ui/menu.c:471 src/ui/menu.c:474 src/ui/transfer_ui.c:1788
+#: src/ui/menu.c:100 src/ui/menu.c:471 src/ui/menu.c:474 src/ui/transfer_ui.c:1861
 #: src/ui/view_gamelist.c:1001
 msgid "back"
 msgstr ""
@@ -1315,7 +1315,7 @@ msgid "Transfer games from a computer or phone"
 msgstr ""
 
 #. TRANSLATORS: screen title (the Settings > Network row of the same name)
-#: src/ui/screens.c:984 src/ui/transfer_ui.c:1792
+#: src/ui/screens.c:984 src/ui/transfer_ui.c:1865
 msgid "Transfer over network"
 msgstr ""
 
@@ -1358,7 +1358,7 @@ msgstr ""
 msgid "Bluetooth on"
 msgstr ""
 
-#: src/ui/screens.c:1030 src/ui/transfer_ui.c:1670
+#: src/ui/screens.c:1030 src/ui/transfer_ui.c:1743
 msgid "failed"
 msgstr ""
 
@@ -2768,7 +2768,7 @@ msgstr[1] ""
 #. TRANSLATORS: dialog buttons, uppercase, short: stop the copy / go on copying
 #. TRANSLATORS: dialog buttons, uppercase, short: stop the network transfer / keep it running
 #. TRANSLATORS: dialog buttons, uppercase, short: stop the update / go on
-#: src/ui/transfer_ui.c:1269 src/ui/transfer_ui.c:1938 src/ui/update_ui.c:704
+#: src/ui/transfer_ui.c:1269 src/ui/transfer_ui.c:2017 src/ui/update_ui.c:704
 msgid "STOP"
 msgstr ""
 
@@ -2878,57 +2878,63 @@ msgid "A USB drive is busy"
 msgstr ""
 
 #. TRANSLATORS: toast; %s is the helper's own message (English)
-#: src/ui/transfer_ui.c:1670
+#: src/ui/transfer_ui.c:1743
 #, c-format
 msgid "Windows file share: %s"
 msgstr ""
 
 #. TRANSLATORS: toast
-#: src/ui/transfer_ui.c:1705
+#: src/ui/transfer_ui.c:1778
 msgid "Network off: web transfer stopped"
 msgstr ""
 
 #. TRANSLATORS: help bar: A stops the network transfer, B goes back
 #. TRANSLATORS: help bar: B stops the system update
-#: src/ui/transfer_ui.c:1788 src/ui/update_ui.c:658
+#: src/ui/transfer_ui.c:1861 src/ui/update_ui.c:658
 msgid "stop"
 msgstr ""
 
 #. TRANSLATORS: above the web address (URL) to type in a computer's browser
-#: src/ui/transfer_ui.c:1820
+#: src/ui/transfer_ui.c:1893
 msgid "Open this address in a browser:"
 msgstr ""
 
-#: src/ui/transfer_ui.c:1823
+#: src/ui/transfer_ui.c:1896
 msgid "(no network address)"
 msgstr ""
 
 #. TRANSLATORS: a second web address ("or http://retrostone.local")
-#: src/ui/transfer_ui.c:1828
+#: src/ui/transfer_ui.c:1901
 #, c-format
 msgid "or %s"
 msgstr ""
 
-#. TRANSLATORS: the Windows file share's address (\\RETROSTONE) and
-#. its user name; the password is the PIN below
-#: src/ui/transfer_ui.c:1845
+#. TRANSLATORS: the Windows file share's address (\\RETROSTONE)
+#: src/ui/transfer_ui.c:1917
 #, c-format
-msgid "Windows: %s (user retrostone)"
+msgid "Windows: %s"
 msgstr ""
 
 #. TRANSLATORS: the Windows file share is starting
-#: src/ui/transfer_ui.c:1848
+#: src/ui/transfer_ui.c:1920
 #, c-format
 msgid "Windows: %s (starting...)"
 msgstr ""
 
+#. TRANSLATORS: the Windows file share's login, under its
+#. address; keep "retrostone" (the user name to type)
+#: src/ui/transfer_ui.c:1926
+#, c-format
+msgid "User: retrostone, Password: %s"
+msgstr ""
+
 #. TRANSLATORS: label above the 4-digit code the web page asks for, short
-#: src/ui/transfer_ui.c:1853
+#: src/ui/transfer_ui.c:1932
 msgid "PIN"
 msgstr ""
 
 #. TRANSLATORS: status; %d is a number of seconds
-#: src/ui/transfer_ui.c:1859
+#: src/ui/transfer_ui.c:1938
 #, c-format
 msgid "Wrong PIN entered: locked for %d s"
 msgid_plural "Wrong PIN entered: locked for %d s"
@@ -2936,55 +2942,55 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. TRANSLATORS: status: a file name, then how much of it arrived ("(40%)")
-#: src/ui/transfer_ui.c:1864
+#: src/ui/transfer_ui.c:1943
 #, c-format
 msgid "Receiving %s (%d%%)"
 msgstr ""
 
 #. TRANSLATORS: status: the transfer stopped by itself, %s is why ("idle")
-#: src/ui/transfer_ui.c:1868
+#: src/ui/transfer_ui.c:1947
 #, c-format
 msgid "Stopped: %s"
 msgstr ""
 
 #. TRANSLATORS: status: the network transfer is stopped
-#: src/ui/transfer_ui.c:1872
+#: src/ui/transfer_ui.c:1951
 msgid "Stopped"
 msgstr ""
 
 #. TRANSLATORS: status: the network transfer runs, nothing arrives yet
-#: src/ui/transfer_ui.c:1875
+#: src/ui/transfer_ui.c:1954
 msgid "Waiting for files..."
 msgstr ""
 
-#: src/ui/transfer_ui.c:1878
+#: src/ui/transfer_ui.c:1957
 #, c-format
 msgid "%d file received"
 msgid_plural "%d files received"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/ui/transfer_ui.c:1883
+#: src/ui/transfer_ui.c:1962
 msgid "Only on your home network. Anyone with the PIN can add files."
 msgstr ""
 
-#: src/ui/transfer_ui.c:1938
+#: src/ui/transfer_ui.c:2017
 msgid "KEEP RECEIVING"
 msgstr ""
 
-#: src/ui/transfer_ui.c:1950
+#: src/ui/transfer_ui.c:2029
 msgid "Keep receiving files in the background?"
 msgstr ""
 
-#: src/ui/transfer_ui.c:1975
+#: src/ui/transfer_ui.c:2054
 msgid "Network transfer is not available in this build."
 msgstr ""
 
-#: src/ui/transfer_ui.c:1982
+#: src/ui/transfer_ui.c:2061
 msgid "Turn on WiFi or Ethernet first (no network address)."
 msgstr ""
 
-#: src/ui/transfer_ui.c:1990
+#: src/ui/transfer_ui.c:2069
 #, c-format
 msgid "The transfer could not start (error %d)."
 msgstr ""
@@ -3697,7 +3703,7 @@ msgstr ""
 
 #. TRANSLATORS: system carousel info bar (uppercase in most themes);
 #. the whole bar is ~50 characters wide at 640x480
-#: src/ui/view_system.c:1057
+#: src/ui/view_system.c:1062
 #, c-format
 msgid "%d game available"
 msgid_plural "%d games available"
@@ -3705,7 +3711,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. TRANSLATORS: system carousel info bar, after "N games available, "
-#: src/ui/view_system.c:1062
+#: src/ui/view_system.c:1067
 #, c-format
 msgid "%d favorite"
 msgid_plural "%d favorites"
@@ -3714,7 +3720,7 @@ msgstr[1] ""
 
 #. TRANSLATORS: system carousel info bar: "%1$s" is "N games
 #. available", "%2$s" is "M favorites" ("12 games available, 3 favorites")
-#: src/ui/view_system.c:1065
+#: src/ui/view_system.c:1070
 #, c-format
 msgctxt "system info"
 msgid "%s, %s"
@@ -3722,7 +3728,7 @@ msgstr ""
 
 #. TRANSLATORS: the carousel with no game at all; keep the path
 #. /data/roms/<system>/ as it is. Wrapped on up to 3 lines.
-#: src/ui/view_system.c:1109
+#: src/ui/view_system.c:1114
 msgid "No games found. Copy ROMs to /data/roms/<system>/"
 msgstr ""
 

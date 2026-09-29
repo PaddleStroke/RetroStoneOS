@@ -138,6 +138,12 @@ static void test_names(void)
 	CHECK(transfer_name_check("Pok\xc3\xa9mon - Version Or (France).gbc") == 0);
 	CHECK(transfer_name_check("\xe3\x83\x9d\xe3\x82\xb1\xe3\x83\xa2\xe3\x83\xb3.gb") == 0);
 	CHECK(transfer_name_check("Rock & Roll, 'Racing' #1.md") == 0);
+	/* code points past 0xff are not truncated into ASCII (review: U+017C
+	 * became '|', U+4E00 became NUL, U+013A ':') */
+	CHECK(transfer_name_check("\xc5\xbc" "aba.gb") == 0);                  /* żaba.gb */
+	CHECK(transfer_name_check("\xe4\xb8\x80\xe4\xba\x8c.gb") == 0);        /* 一二.gb */
+	CHECK(transfer_name_check("Mo\xc4\xba.gb") == 0);                      /* U+013A */
+	CHECK(transfer_relpath_check("\xc5\xbc" "aba/\xe4\xb8\x80\xe4\xba\x8c.gb") == 0);
 	CHECK(transfer_name_check("a b") == 0);
 	CHECK(transfer_name_check("") < 0);
 	CHECK(transfer_name_check(".") < 0);
@@ -295,6 +301,53 @@ static void test_dirs_and_sink(void)
 	if (fd >= 0)
 		close(fd);
 	CHECK(fstatat(dfd, "Game.sfc", &st, 0) == 0 && st.st_size == 6);
+
+	/* Review: a retried upload, or two saves of the same name in one drop,
+	 * pushed the console's own save out of the one .bak. The same bytes
+	 * again change nothing; three generations are kept. */
+	{
+		static const char *const v[] = { "v1", "v2", "v2", "v3", "v4", "v5" };
+		/* after each commit: name, .bak, .bak2, .bak3 ("" = absent) */
+		static const char *const want[][4] = {
+			{ "v1", "", "", "" },     { "v2", "v1", "", "" },     { "v2", "v1", "", "" },
+			{ "v3", "v2", "v1", "" }, { "v4", "v3", "v2", "v1" }, { "v5", "v4", "v3", "v2" },
+		};
+		static const char *const names[] = { "Save.srm", "Save.srm.bak", "Save.srm.bak2",
+						     "Save.srm.bak3" };
+
+		for (size_t i = 0; i < sizeof(v) / sizeof(v[0]); i++) {
+			CHECK(tr_sink_open(&s, dfd, "Save.srm") == 0 && tr_sink_write(&s, v[i], 2) == 0);
+			s.bak_gens = TR_BAK_GENERATIONS;             /* as the web share */
+			CHECK(tr_sink_commit(&s, -1, 0, true) == 0);
+			for (int k = 0; k < 4; k++) {
+				char got[8] = "";
+
+				fd = openat(dfd, names[k], O_RDONLY);
+				if (fd >= 0) {
+					ssize_t n = read(fd, got, sizeof(got) - 1);
+
+					got[n > 0 ? n : 0] = 0;
+					close(fd);
+				}
+				if (strcmp(got, want[i][k]))
+					fprintf(stderr, "  commit %zu: %s is \"%s\", not \"%s\"\n", i, names[k],
+						got, want[i][k]);
+				CHECK(!strcmp(got, want[i][k]));
+			}
+		}
+		CHECK(faccessat(dfd, "Save.srm.bak4", F_OK, 0) != 0);
+		CHECK(count_parts(root) == 0);
+		/* the USB import and backup keep one (bak_gens 0): unchanged */
+		CHECK(tr_sink_open(&s, dfd, "One.srm") == 0 && tr_sink_write(&s, "o1", 2) == 0 &&
+		      tr_sink_commit(&s, -1, 0, true) == 0);
+		CHECK(tr_sink_open(&s, dfd, "One.srm") == 0 && tr_sink_write(&s, "o2", 2) == 0 &&
+		      tr_sink_commit(&s, -1, 0, true) == 0);
+		CHECK(tr_sink_open(&s, dfd, "One.srm") == 0 && tr_sink_write(&s, "o3", 2) == 0 &&
+		      tr_sink_commit(&s, -1, 0, true) == 0);
+		CHECK(faccessat(dfd, "One.srm.bak", F_OK, 0) == 0 && faccessat(dfd, "One.srm.bak2", F_OK, 0) != 0);
+		CHECK(tr_bak_name(p, sizeof(p), "X.srm", 1) == 0 && !strcmp(p, "X.srm.bak"));
+		CHECK(tr_bak_name(p, sizeof(p), "X.srm", 3) == 0 && !strcmp(p, "X.srm.bak3"));
+	}
 
 	/* abort removes the temp file and leaves the original */
 	CHECK(tr_sink_open(&s, dfd, "Game.sfc") == 0);
@@ -1951,20 +2004,25 @@ static int ws_answer(int fd, char *out, size_t n)
 	return code;
 }
 
-static int ws_login(const char *src, int port, const char *pin, char *token)
+static int ws_login_xrw(const char *src, int port, const char *pin, char *token, bool xrw)
 {
 	char req[256], ans[2048], *t;
 	int fd = ws_connect(src, port), code;
 
 	if (fd < 0)
 		return -1;
-	snprintf(req, sizeof(req), "POST /api/login HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 10\r\n\r\npin=%s",
-		 pin);
+	snprintf(req, sizeof(req), "POST /api/login HTTP/1.1\r\nHost: 127.0.0.1\r\n%sContent-Length: 10\r\n\r\npin=%s",
+		 xrw ? "X-Requested-With: rsos\r\n" : "", pin);
 	ws_send(fd, req, strlen(req));
 	code = ws_answer(fd, ans, sizeof(ans));
 	if (token && code == 200 && (t = strstr(ans, "rsos_token=")))
 		snprintf(token, 33, "%.32s", t + 11);
 	return code;
+}
+
+static int ws_login(const char *src, int port, const char *pin, char *token)
+{
+	return ws_login_xrw(src, port, pin, token, true);
 }
 
 /* Starts an upload of `len` bytes to roms/snes/<path>, sends `first` bytes
@@ -2052,6 +2110,20 @@ static void test_webshare_races(const char *root, int port)
 		CHECK(ws_login("127.0.0.2", port, "000000", NULL) == 403);
 	CHECK(ws_login("127.0.0.2", port, "123456", NULL) == 429);
 	CHECK(ws_login("127.0.0.1", port, "123456", NULL) == 200);
+	/* Review: 16 other addresses took over the table's entries and the
+	 * locked one started afresh. A locked entry is kept now. */
+	for (int i = 3; i < 3 + 16; i++) {
+		char src[32];
+
+		snprintf(src, sizeof(src), "127.0.0.%d", i);
+		CHECK(ws_login(src, port, "123456", NULL) == 200);
+	}
+	CHECK(ws_login("127.0.0.2", port, "123456", NULL) == 429);
+	/* Review: a foreign page could post guesses (and lock the owner out)
+	 * without the X-Requested-With header: refused, no guess counted */
+	for (int i = 0; i < 6; i++)
+		CHECK(ws_login_xrw("127.0.0.19", port, "000000", NULL, false) == 403);
+	CHECK(ws_login("127.0.0.19", port, "123456", NULL) == 200);
 }
 
 static void test_webshare_lifecycle(void)

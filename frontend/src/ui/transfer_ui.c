@@ -1604,32 +1604,63 @@ struct webui {
 /*
  * \\RETROSTONE (docs/rom-transfer.md §3.3): the in-kernel ksmbd server,
  * started by the rsos-smb helper next to the network transfer when Settings
- * > Network > Windows file share (smb) is on, with the transfer's PIN as the
- * password of user "retrostone", and stopped with it (before a game, when
- * the network goes off, or on STOP).
+ * > Network > Windows file share (smb) is on, with its own password for user
+ * "retrostone" (g_smb_pass, new at every start, shown on the transfer
+ * screen), and stopped with it (before a game, when the network goes off,
+ * or on STOP).
+ *
+ * One helper job at a time (review: a stop could run while the start was
+ * still writing the configuration): a start asked during a stop, or a stop
+ * during a start, runs when that job ends (smb_job_done), from smb_state
+ * (1 = wanted on, 0 = wanted off).
  */
+static int g_smb_job;               /* the helper job running: 0, UI_JOB_SMB, UI_JOB_SMB_STOP */
+static char g_smb_pass[10];         /* "XXXX-XXXX" */
+
 bool smb_available(struct ui *ui)
 {
 	return ui->cfg.smb_helper && *ui->cfg.smb_helper && access(ui->cfg.smb_helper, X_OK) == 0;
 }
 
-void smb_start(struct ui *ui)
+/* 8 characters without 0/O, 1/I/L (31^8, about 2^39), "-" in the middle:
+ * typed on a PC from the console screen. The web PIN (6 digits, locked out
+ * after 5 tries) is too short for SMB, which has no real lockout. */
+static bool smb_make_password(char out[10])
 {
-	struct webshare_status st;
+	static const char abc[] = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+	unsigned char b[64];
+	FILE *f = fopen("/dev/urandom", "rb");
+	size_t n = f ? fread(b, 1, sizeof(b), f) : 0;
+	int k = 0;
+
+	if (f)
+		fclose(f);
+	for (size_t i = 0; i < n && k < 9; i++) {
+		if (b[i] >= 248)                        /* 248 = 31 * 8: uniform */
+			continue;
+		if (k == 4)
+			out[k++] = '-';
+		out[k++] = abc[b[i] % 31];
+	}
+	out[k] = 0;
+	return k == 9;
+}
+
+static void smb_run_start(struct ui *ui)
+{
 	const char *argv[5];
 
-	if (!TR(ui) || !smb_available(ui) || ui->smb_state == 1 || ui->smb_state == 2 ||
-	    !settings_get_bool(ui->settings, "smb", false) || !TR(ui)->webshare_running())
+	if (!smb_make_password(g_smb_pass)) {
+		ui->smb_state = -1;
 		return;
-	TR(ui)->webshare_get_status(&st);
-	if (!st.pin[0])
-		return;
+	}
 	argv[0] = ui->cfg.smb_helper;
 	argv[1] = "start";
-	argv[2] = st.pin;
+	argv[2] = g_smb_pass;
 	argv[3] = settings_get(ui->settings, "hostname", "retrostone");
 	argv[4] = NULL;
 	if (hw_job_start(argv, UI_JOB_SMB) > 0) {
+		g_smb_job = UI_JOB_SMB;
 		ui->smb_state = 1;
 		LOGI("smb: starting the Windows file share");
 	} else {
@@ -1637,29 +1668,71 @@ void smb_start(struct ui *ui)
 	}
 }
 
+static void smb_run_stop(struct ui *ui)
+{
+	const char *argv[] = { ui->cfg.smb_helper, "stop", NULL };
+
+	if (hw_job_start(argv, UI_JOB_SMB_STOP) > 0) {
+		g_smb_job = UI_JOB_SMB_STOP;
+		LOGI("smb: stopping the Windows file share");
+	}
+}
+
+void smb_start(struct ui *ui)
+{
+	if (!TR(ui) || !smb_available(ui) || ui->smb_state == 1 || ui->smb_state == 2 ||
+	    !settings_get_bool(ui->settings, "smb", false) || !TR(ui)->webshare_running())
+		return;
+	if (g_smb_job) {
+		ui->smb_state = 1;        /* after the stop that runs (smb_job_done) */
+		return;
+	}
+	smb_run_start(ui);
+}
+
 void smb_stop(struct ui *ui)
 {
-	const char *argv[3];
+	static bool checked;
 
-	if (ui->smb_state == 0 || !smb_available(ui))
+	if (ui->smb_state == 0) {
+		/* Once: a share left by a menu that crashed (it restarts with
+		 * smb_state 0) is stopped, not left running unseen. */
+		const char *run = getenv("RSOS_SMB_RUN"), *mod = getenv("RSOS_SMB_SYSMOD");
+
+		if (checked || g_smb_job)
+			return;
+		checked = true;
+		if (!smb_available(ui) || (access(run ? run : "/run/ksmbd", F_OK) != 0 &&
+					   access(mod ? mod : "/sys/module/ksmbd", F_OK) != 0))
+			return;
+		LOGW("smb: a Windows file share was left running: stopping it");
+	} else if (!smb_available(ui)) {
 		return;
-	argv[0] = ui->cfg.smb_helper;
-	argv[1] = "stop";
-	argv[2] = NULL;
+	}
+	checked = true;
 	ui->smb_state = 0;
-	if (hw_job_start(argv, UI_JOB_SMB_STOP) > 0)
-		LOGI("smb: stopping the Windows file share");
+	g_smb_pass[0] = 0;
+	if (!g_smb_job)
+		smb_run_stop(ui);
+	/* else: a start runs, the stop follows it (smb_job_done) */
 }
 
 void smb_job_done(struct ui *ui, const struct hw_job_result *r)
 {
+	g_smb_job = 0;
 	if (r->tag == UI_JOB_SMB_STOP) {
 		if (r->status != 0)
 			LOGW("smb: stop: %s", r->out);
+		if (ui->smb_state == 1) {          /* started again meanwhile */
+			ui->smb_state = 0;
+			smb_start(ui);
+		}
 		return;
 	}
-	if (ui->smb_state != 1)
-		return;               /* stopped meanwhile */
+	if (ui->smb_state != 1) {
+		smb_run_stop(ui);                  /* stopped meanwhile */
+		return;
+	}
 	if (r->status == 0) {
 		ui->smb_state = 2;
 		LOGI("smb: the Windows file share is on");
@@ -1840,14 +1913,20 @@ static void web_render(struct ui *ui, struct screen *scr, struct gfx_surface *s)
 				host[k] = 0;
 				snprintf(path, sizeof(path), "\\\\%s", host);
 				if (ui->smb_state == 2)
-					/* TRANSLATORS: the Windows file share's address (\\RETROSTONE) and
-					 * its user name; the password is the PIN below */
-					tfmt(buf, sizeof(buf), _("Windows: %s (user retrostone)"), path);
+					/* TRANSLATORS: the Windows file share's address (\\RETROSTONE) */
+					tfmt(buf, sizeof(buf), _("Windows: %s"), path);
 				else
 					/* TRANSLATORS: the Windows file share is starting */
 					tfmt(buf, sizeof(buf), _("Windows: %s (starting...)"), path);
 				draw_text_box(ui, s, fs, buf, tx, ty, tw, lh, AL_LEFT, ms->text_dim);
 				ty += lh;
+				if (ui->smb_state == 2) {
+					/* TRANSLATORS: the Windows file share's login, under its
+					 * address; keep "retrostone" (the user name to type) */
+					tfmt(buf, sizeof(buf), _("User: retrostone, Password: %s"), g_smb_pass);
+					draw_text_box(ui, s, fs, buf, tx, ty, tw, lh, AL_LEFT, ms->text);
+					ty += lh;
+				}
 			}
 			/* TRANSLATORS: label above the 4-digit code the web page asks for, short */
 			draw_text_box(ui, s, fs, _("PIN"), tx, ty, tw, lh, AL_LEFT, ms->text_dim);

@@ -347,8 +347,15 @@ int hw_job_start(const char *const argv[], int tag)
 	j->tag = tag;
 	j->pid = pid;
 	j->fd = pfd[0];
-	LOGI("hw: job %d started: %s %s %s", j->id, argv[0], argv[1] ? argv[1] : "",
-	     argv[1] && argv[2] ? argv[2] : "");
+	/* the helper and its command, then "on"/"off" or "...": a later
+	 * argument can be a secret ("rsos-smb start PASSWORD", review: it was
+	 * in the log) */
+	{
+		const char *a2 = argv[1] ? argv[2] : NULL;
+
+		LOGI("hw: job %d started: %s %s %s", j->id, argv[0], argv[1] ? argv[1] : "",
+		     !a2 ? "" : !strcmp(a2, "on") || !strcmp(a2, "off") ? a2 : "...");
+	}
 	return j->id;
 }
 

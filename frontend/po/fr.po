@@ -2596,8 +2596,12 @@ msgid "Windows file share: %s"
 msgstr "Partage Windows : %s"
 
 #, c-format
-msgid "Windows: %s (user retrostone)"
-msgstr "Windows : %s (utilisateur retrostone)"
+msgid "Windows: %s"
+msgstr "Windows : %s"
+
+#, c-format
+msgid "User: retrostone, Password: %s"
+msgstr "Utilisateur : retrostone, mot de passe : %s"
 
 #, c-format
 msgid "Windows: %s (starting...)"

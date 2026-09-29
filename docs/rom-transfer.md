@@ -592,7 +592,10 @@ ask for a system; BIOS names like `scph5501.bin` go to BIOS; `.srm` and
 files **and folders** (multi-disc games, Skraper media), file and folder
 pickers (mobile: the file picker), sequential upload queue with per-file and
 total progress, cancel, "already exists: replace / skip (and the next ones)"
-(saves keep a `.bak`), a filterable file list per folder with delete, free
+(saves and states keep three backups: `.bak`, `.bak2`, `.bak3`; the same
+file sent again replaces nothing), a filterable file list per folder with
+delete (a deleted save or state takes its `.bak` files along, else the game
+would load the `.bak` back), free
 space bar. Dark/light follows the browser. Tested in Chromium at phone width.
 
 HTTP API (all JSON; mutating calls need the cookie and `X-Requested-With: rsos`):
@@ -604,7 +607,7 @@ HTTP API (all JSON; mutating calls need the cookie and `X-Requested-With: rsos`)
 | `GET /api/info` | `{host, free, total, systems:[{id,name,n}], bios, themes}` |
 | `GET /api/list?target=&sys=` | `{files:[{p,s,t}], truncated, free}` (recursive, max 5000) |
 | `PUT /api/upload?target=&sys=&path=&overwrite=0/1&mtime=` | raw body streamed to disk; 201; 409 exists; 507 no space; 413 > 4 GiB on FAT32; 411 no Content-Length |
-| `DELETE /api/file?target=&sys=&path=` | 200; 404; 409 folder not empty |
+| `DELETE /api/file?target=&sys=&path=` | 200 (saves/states: its `.bak`, `.bak2`, `.bak3` too); 404; 409 folder not empty |
 
 `target` is `roms|saves|states` (+ `sys` = a canonical system id) or
 `bios|themes`; `path` is relative, `/`-separated, max 8 levels.
@@ -624,22 +627,31 @@ IoT box) and a malicious web page open in the user's own browser. The model:
 - **PIN**: 6 random digits from `getrandom()`, new at every start, shown only
   on the console screen. 5 wrong PINs lock logins for 30 s, doubling to 10 min
   (brute force of 10^6 PINs would take months, and the share times out long
-  before). Constant-time comparison.
+  before); 20 wrong PINs from any devices lock everybody out for 60 s. The
+  lockouts are kept per address in a 16-entry table; a locked entry is never
+  taken over by a new address (with all 16 locked, a new one waits too), so
+  cycling through addresses does not reset a lock. Constant-time comparison.
 - **Session**: a random 128-bit token in an `HttpOnly; SameSite=Strict` cookie
   (or `X-RSOS-Token` for scripts), valid until the share stops.
-- **CSRF**: every state-changing request needs `X-Requested-With: rsos`; a
-  foreign page cannot add it without a CORS preflight, which the server never
-  answers. **DNS rebinding**: the `Host` header must be an IPv4 literal,
+- **CSRF**: the login and every state-changing request need
+  `X-Requested-With: rsos` (403 `csrf` otherwise, and a login without it is
+  not counted as a guess); a foreign page cannot add it without a CORS
+  preflight, which the server never answers, so it can neither change files
+  nor post PIN guesses from a LAN browser to lock the owner out. **DNS rebinding**: the `Host` header must be an IPv4 literal,
   `localhost`, `retrostone` or `retrostone.local` (421 otherwise).
 - **Paths**: the target folder comes from a fixed table; every name is checked
   by `transfer_name_check()` (no `.`/`..`, no leading dot, no `\ : * ? " < > |`,
-  valid UTF-8, <= 255 UTF-16 units, no DOS device names) after URL decoding
+  valid UTF-8, <= 255 UTF-16 units, no DOS device names; any other character,
+  e.g. `żaba.gb` or `一二.gb`, is fine) after URL decoding
   (`%00` rejected); directories are opened one component at a time with
   `O_NOFOLLOW` from a `/data` directory fd, so neither `..` nor a symlink can
   escape.
 - **Writes**: to a hidden temp file, `fsync`, rename, `fsync(dir)`; an aborted
   upload leaves nothing. Free space is checked against `Content-Length` + 16 MiB
-  before writing.
+  before writing. A replaced save or state keeps three generations (`.bak`,
+  `.bak2`, `.bak3`), and the same bytes again replace nothing: a retried
+  upload, or two saves of one name in a dropped folder, cannot push the
+  console's own save out (the USB import and backup keep one `.bak`).
 - **Not protected**: plain HTTP, so the PIN and the files cross the LAN in
   clear (same as the SMB guest shares of most consoles and NASes). TLS would
   need a certificate the browser does not trust. The page and the doc say "do
@@ -688,8 +700,9 @@ and defconfig changes (not my paths) and hardware testing. Exactly:
   Enterprise/Education editions since Windows 10 1709 and on Pro since
   Windows 11 24H2, and 24H2 requires SMB signing by default, which guest
   sessions cannot do ([Microsoft](https://techcommunity.microsoft.com/blog/filecab/accessing-a-third-party-nas-with-smb-in-windows-11-24h2-may-fail/4154300)).
-  Use user `retrostone` with the same on-screen PIN as password (new at every
-  start), signing on.
+  Use user `retrostone` with its own on-screen password (new at every start),
+  signing on. Not the web PIN: 6 digits are fine behind the web share's
+  lockout, but ksmbd only waits 5 s per failure after 10 of them.
 - Config in `/run/ksmbd/` (read-only root), started by the frontend (or a
   `rsos-smb` helper script) only while enabled:
   ```sh
@@ -701,15 +714,16 @@ and defconfig changes (not my paths) and hardware testing. Exactly:
   	server signing = mandatory
   	map to guest = never
   	restrict anonymous = 2
-  [RETROSTONE]
-  	path = /data
+  	max connections = 8
+  [roms]                           ; and saves, states, bios, themes: never /data
+  	path = /data/roms
   	read only = no
   	force user = root
   	force group = root
   	store dos attributes = no      ; exFAT has no xattrs
   	veto files = /.*/System Volume Information/$RECYCLE.BIN/
   EOF
-  ksmbd.adduser -C /run/ksmbd/ksmbd.conf -P /run/ksmbd/ksmbdpwd.db -a retrostone -p "$PIN"
+  ksmbd.adduser -C /run/ksmbd/ksmbd.conf -P /run/ksmbd/ksmbdpwd.db -a retrostone -p "$PASSWORD"
   modprobe ksmbd && ksmbd.mountd -C /run/ksmbd/ksmbd.conf -P /run/ksmbd/ksmbdpwd.db
   # stop: ksmbd.control --shutdown; modprobe -r ksmbd; rm -rf /run/ksmbd
   ```
@@ -726,23 +740,47 @@ already shuts ksmbd down at power-off). The helper `/usr/bin/rsos-smb`
 (`frontend/src/transfer/rsos-smb`, POSIX sh, installed by the frontend's
 `make install`):
 
-- `rsos-smb start PIN [NAME]`: writes `/run/ksmbd/ksmbd.conf` (the options
-  above; share `RetroStone` = `/data`, `valid users = retrostone`, `guest ok =
-  no`, netbios name = the console name in capitals), makes the user database
-  with `ksmbd.adduser -C conf -P /run/ksmbd/ksmbdpwd.db -a -p PIN retrostone`,
-  `modprobe ksmbd`, `ksmbd.mountd -C conf -P db`, then checks after 0.5 s that
-  ksmbd.mountd is still running (it leaves at once when the kernel server does
-  not answer). Prints `on`, or a message on stderr and exit 1 (no module, no
-  /data, a PIN that is not 4+ letters/digits); nothing is left behind on a
-  failure. Starting again stops the old server first (new PIN).
+- `rsos-smb start PASSWORD [NAME]`: writes `/run/ksmbd/ksmbd.conf` (the
+  options above plus `max connections = 8`; one share per folder, `roms`,
+  `saves`, `states`, `bios`, `themes` = `/data/<folder>` (made if missing),
+  each with `valid users = retrostone`, `guest ok = no`; netbios name = the
+  console name in capitals), makes the user database with `ksmbd.adduser -C
+  conf -P /run/ksmbd/ksmbdpwd.db -a -p PASSWORD retrostone`, `modprobe ksmbd`,
+  `ksmbd.mountd -C conf -P db`, then checks after 0.5 s that ksmbd.mountd is
+  still running (it leaves at once when the kernel server does not answer).
+  Prints `on`, or a message on stderr and exit 1 (no module, no /data, a
+  password that is not 8+ letters/digits/`-`); nothing is left behind on a
+  failure. Starting again stops the old server first (new password).
+  - **Only those folders** (security review): `/data` itself is not shared,
+    so `rsos/` (settings, `wpa_supplicant.conf` with the WiFi password, logs,
+    `update/`, `bluetooth.img`) cannot be read or changed over SMB. Not one
+    share of `/data` with `veto files = /rsos/`: ksmbd matches veto patterns
+    case-sensitively against the whole path and exFAT names are not
+    case-sensitive (`RSOS\settings.ini` would pass). In Explorer,
+    `\\RETROSTONE` shows the five folders.
+  - **No `hosts allow`**: ksmbd-tools 3.5.2 compares it with the client's
+    address as a plain string (`share.c`: "FIXME Do a real hosts lookup. IP
+    masks"), so `192.168.0.0/16` would refuse every client. The share is
+    off by default, runs only with the web transfer, and the password (below)
+    is long enough without a lockout.
 - `rsos-smb stop`: `ksmbd.control -s`, `modprobe -r ksmbd`, the run folder
   removed. `rsos-smb status`: `on`/`off`.
 - UI: Settings > Network > "Windows file share" (key `smb`, off; the item only
   exists when the helper is installed). When on, the share starts and stops
-  with "Transfer over network" (same PIN, which changes at every start); the
-  transfer screen shows `Windows: \\RETROSTONE (user retrostone)`
-  ("starting..." until the helper answers). A failure is a toast ("Windows file
-  share: <message>"); the web transfer keeps working.
+  with "Transfer over network"; the transfer screen shows
+  `Windows: \\RETROSTONE` and `User: retrostone, Password: XXXX-XXXX`
+  ("starting..." until the helper answers). The password is made by the menu
+  at every start: 8 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no
+  0/O, 1/I/L; about 2^39) with a `-` in the middle, typed as shown. It goes
+  to the helper as an argument, and the log shows only `rsos-smb start ...`
+  (hw.c logs a job's third argument only when it is `on`/`off`). A failure is
+  a toast ("Windows file share: <message>"); the web transfer keeps working.
+- One helper job at a time: a stop asked while the start runs (STOP right
+  after opening the screen) runs when the start ends, and a start asked
+  during a stop after it. A menu that crashed and restarted has `smb_state`
+  0 but a share may still run: the first time the menu sees the network
+  transfer off, it runs `rsos-smb stop` if `/run/ksmbd` or
+  `/sys/module/ksmbd` exists (`RSOS_SMB_RUN`/`RSOS_SMB_SYSMOD` in tests).
 - Verified (WSL, no ksmbd in its kernel, so partly): `make check-smb`
   (`tests/smb-test.sh`, stub commands: the configuration, the order, stop,
   failures); `make check-b2-ui` (the toggle, started with the transfer's PIN
@@ -753,8 +791,15 @@ already shuts ksmbd down at power-off). The helper `/usr/bin/rsos-smb`
   image has no gconv modules, the UCS-2LE fallback gives the same NT hash for
   an ASCII PIN), `ksmbd.mountd` parses it and then leaves (no kernel server),
   which `rsos-smb` reports as "ksmbd.mountd stopped at once".
-  TODO(hw): Windows 11 24H2 and 10 connecting with user retrostone + PIN
-  (signing), copy speed, `force user = root` on exFAT (bringup.md 7f).
+  Security review (2026-09-29): `tests/smb-test.sh` checks the five shares
+  (never `/data` or `rsos`), `max connections = 8`, no `hosts allow`, the
+  8+ character password; `tests/b2-ui.sh` the `XXXX-XXXX` password, its
+  absence from the log, the stop after a crash, and a stop during the start
+  run after it. The image's ARM `ksmbd.adduser` (qemu-arm) reads the new
+  configuration: it lists the five shares with user `retrostone`.
+  TODO(hw): Windows 11 24H2 and 10 connecting with user retrostone + the
+  on-screen password (signing), the five folders shown, copy speed, `force
+  user = root` on exFAT (bringup.md 7f).
 
 ### 3.4 SFTP (advanced)
 
@@ -944,10 +989,13 @@ transfer-arm-check`. Object sizes on ARM: ~78 KB of code and data, including the
   words, and a round trip through an independent reader for versions 2, 3, 5
   and 9 (9 has blocks of two lengths and version information), and the web
   share lifecycle (idle auto-stop, restart, no leaked descriptors).
-- `transfer-web-test` (`tests/webshare_test.sh`, 68 curl checks): page and CSP,
-  login, wrong PIN, cookie flags, token header, Host check, CSRF header,
-  3 uploads incl. UTF-8 and sub-folder names (content compared), mtime kept,
-  409/overwrite, BIOS, save `.bak`, empty file, a **256 MiB upload** (content
+- `transfer-web-test` (`tests/webshare_test.sh`, 86 curl checks): page and CSP,
+  login (refused without the CSRF header), wrong PIN, cookie flags, token
+  header, Host check, CSRF header, 3 uploads incl. UTF-8 and sub-folder names
+  (content compared), `żaba/一二.gb`, mtime kept, 409/overwrite, BIOS, save
+  `.bak` generations (the same save again keeps them; a third one: `.bak2`),
+  a deleted save or state takes its `.bak` files (a game's do not go), empty
+  file, a **256 MiB upload** (content
   identical; ~700-870 MB/s on the host, the A20 will be network-bound), 14
   traversal/bad-name attempts (all 400), a symlink planted in `/data` (not
   followed), chunked body (411), list/delete, an **aborted upload** (no file,

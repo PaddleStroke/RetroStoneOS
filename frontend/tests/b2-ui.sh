@@ -92,6 +92,8 @@ t "most played first, then by name" [ $? = 0 ]
 rm -f "$SET" "$W/data/rsos/gamedb.tsv"
 
 echo "b2-ui: the Windows file share next to the network transfer (fake helper)"
+# where the menu looks for a share left by a crashed menu (not the host's)
+export RSOS_SMB_RUN="$W/ksmbd-run" RSOS_SMB_SYSMOD="$W/ksmbd-module"
 cat > "$W/fake-smb.sh" <<EOF
 #!/bin/sh
 echo "\$*" >> "$W/smb.log"
@@ -101,9 +103,54 @@ chmod +x "$W/fake-smb.sh"
 pv "start down down expect:menu:Settings|Network a wait:300 expect:menu:Network|WiFi down down down down down down down \
 	down down expect:|Windows_file_share a wait:300 up up up up expect:|Transfer_over_network a wait:1500 \
 	shot:$W/web.png b wait:300 b wait:300 b b wait:800" --fake-transfer --smb-helper "$W/fake-smb.sh"
-t "the toggle saved, the share started with the transfer's PIN and the console name" \
-	sh -c "[ $? = 0 ] && grep -q '^smb *= *1\$' '$SET' && grep -q '^start 482913 retrostone\$' '$W/smb.log'"
+t "the toggle saved, the share started with a password XXXX-XXXX (not the PIN) and the console name" \
+	sh -c "[ $? = 0 ] && grep -q '^smb *= *1\$' '$SET' && \
+	grep -Eq '^start [A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4} retrostone\$' '$W/smb.log'"
 t "and stopped with it" grep -q '^stop$' "$W/smb.log"
+: > "$W/smb.log"
+"$UIP" --root "$W" --keys "start down down a wait:300 expect:menu:Network|WiFi down down down down down \
+	expect:|Transfer_over_network a wait:1500 a wait:500" --fake-transfer --smb-helper "$W/fake-smb.sh" \
+	> "$W/log.out" 2>&1
+pass=$(awk '/^start/ { print $2 }' "$W/smb.log")
+t "the password is not in the log (review: hw.c logged the job's arguments)" \
+	sh -c "[ -n '$pass' ] && grep -q 'job .* started: .*fake-smb.sh start \.\.\.' '$W/log.out' && \
+	! grep -q '$pass' '$W/log.out'"
+: > "$W/smb.log"
+mkdir -p "$RSOS_SMB_RUN"
+pv "wait:2500" --fake-transfer --smb-helper "$W/fake-smb.sh"
+t "a share left by a crashed menu is stopped when the menu starts" sh -c "[ \"\$(cat '$W/smb.log')\" = stop ]"
+rm -rf "$RSOS_SMB_RUN"
+: > "$W/smb.log"
+pv "wait:2500" --fake-transfer --smb-helper "$W/fake-smb.sh"
+t "none left: the helper is not run" [ ! -s "$W/smb.log" ]
+# a start that lasts until the screenshot after STOP (the preview's time is
+# virtual; a file it writes is the real-time signal), then the screenshots
+# give the menu real time to see its end and run the stop
+cat > "$W/slow-smb.sh" <<EOF
+#!/bin/sh
+echo "\$1 begin" >> "$W/smb.log"
+i=0
+while [ "\$1" = start ] && [ ! -e "$W/go.png" ] && [ \$i -lt 500 ]; do
+	sleep 0.01
+	i=\$((i + 1))
+done
+echo "\$1 end" >> "$W/smb.log"
+echo on
+EOF
+chmod +x "$W/slow-smb.sh"
+: > "$W/smb.log"
+rm -f "$W/go.png"
+shots=""
+for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+	shots="$shots wait:100 shot:$W/later.png"
+done
+pv "start down down a wait:300 expect:menu:Network|WiFi down down down down down expect:|Transfer_over_network \
+	a wait:200 a wait:100 shot:$W/go.png $shots wait:500" --fake-transfer --smb-helper "$W/slow-smb.sh"
+r=$?
+sleep 0.5
+t "STOP while the share starts: the stop runs after the start, not during it" \
+	sh -c "[ $r = 0 ] && [ \"\$(tr '\n' , < '$W/smb.log')\" = 'start begin,start end,stop begin,stop end,' ]"
+unset RSOS_SMB_RUN RSOS_SMB_SYSMOD
 pv "start down down a wait:300 expect:menu:Network|WiFi down down down down down down down down down expect:|WiFi" \
 	--fake-transfer
 t "no helper installed: the item is not there (the menu wraps to WiFi)" [ $? = 0 ]

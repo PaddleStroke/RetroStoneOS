@@ -3,12 +3,20 @@
 # docs/rom-transfer.md §3.3). Started by the menu only while the network
 # transfer runs with Settings > Network > Windows file share on; never at boot.
 #
-#   rsos-smb start PIN [NAME]   the share of /data as \\NAME\RetroStone (NAME:
-#                               the console name, default RETROSTONE), user
-#                               "retrostone" with the web share's PIN as its
-#                               password, SMB signing required, no guest
+#   rsos-smb start PASSWORD [NAME]
+#                               the folders roms, saves, states, bios and
+#                               themes of /data as \\NAME\roms ... (NAME: the
+#                               console name, default RETROSTONE), user
+#                               "retrostone" with PASSWORD (8+ letters, digits
+#                               or "-", made by the menu at every start), SMB
+#                               signing required, no guest
 #   rsos-smb stop               stop it and forget the configuration
 #   rsos-smb status             prints "on" or "off"
+#
+# Only those five folders: /data/rsos (settings, the WiFi password, logs,
+# updates) is never shared. One share per folder rather than /data with
+# "veto files": ksmbd matches veto patterns case-sensitively against the
+# whole path, and exFAT names are not case-sensitive (RSOS\settings.ini).
 #
 # Everything lives in /run/ksmbd (tmpfs, the root is read-only): a new
 # password at every start, nothing left after a reboot. Prints "on" / "off" on
@@ -25,6 +33,8 @@ export PATH
 CONF=$RUN/ksmbd.conf
 PWDDB=$RUN/ksmbdpwd.db
 USER_NAME=retrostone
+# the shared folders of /data (the web share's targets)
+FOLDERS="roms saves states bios themes"
 
 fail() {
 	echo "$*" >&2
@@ -49,21 +59,25 @@ do_stop() {
 
 case "$1" in
 start)
-	PIN=$2
+	PASS=$2
 	NAME=$(echo "${3:-retrostone}" | tr 'a-z' 'A-Z' | tr -cd 'A-Z0-9-' | cut -c1-15)
 	[ -n "$NAME" ] || NAME=RETROSTONE
-	case "$PIN" in
-	"" | *[!0-9A-Za-z]*) fail "rsos-smb: no PIN" ;;
+	case "$PASS" in
+	"" | *[!0-9A-Za-z-]*) fail "rsos-smb: no password" ;;
 	esac
-	[ ${#PIN} -ge 4 ] || fail "rsos-smb: the PIN is too short"
+	[ ${#PASS} -ge 8 ] || fail "rsos-smb: the password is too short"
 	[ -d "$SHARE" ] || fail "rsos-smb: $SHARE is not mounted"
 	command -v ksmbd.mountd > /dev/null 2>&1 || fail "ksmbd-tools are not installed"
 	if running; then
 		do_stop
 	fi
 	mkdir -p "$RUN" && chmod 700 "$RUN" || fail "rsos-smb: cannot create $RUN"
-	# Windows 11 24H2 refuses guest sessions and wants signing: a user, the
-	# PIN as its password, signing mandatory. exFAT has no extended
+	# Windows 11 24H2 refuses guest sessions and wants signing: a user, a
+	# password, signing mandatory. At most 8 connections (ksmbd itself waits
+	# 5 s after 10 wrong passwords). No "hosts allow": ksmbd-tools 3.5.2
+	# compares it with the client's address as a plain string (share.c
+	# "FIXME Do a real hosts lookup. IP masks"), so a range such as
+	# 192.168.0.0/16 would refuse everybody. exFAT has no extended
 	# attributes: no DOS attributes stored. The files belong to root.
 	cat > "$CONF" <<EOF || fail "rsos-smb: cannot write $CONF"
 ; RetroStoneOS: the Windows file share (rsos-smb), made at every start
@@ -74,9 +88,14 @@ start)
 	server signing = mandatory
 	map to guest = never
 	restrict anonymous = 2
-[RetroStone]
-	comment = RetroStone games, BIOS, saves
-	path = $SHARE
+	max connections = 8
+EOF
+	for f in $FOLDERS; do
+		mkdir -p "$SHARE/$f" 2> /dev/null
+		cat >> "$CONF" <<EOF || fail "rsos-smb: cannot write $CONF"
+[$f]
+	comment = RetroStone $f
+	path = $SHARE/$f
 	read only = no
 	browseable = yes
 	guest ok = no
@@ -86,8 +105,9 @@ start)
 	store dos attributes = no
 	veto files = /.Trashes/.fseventsd/.Spotlight-V100/System Volume Information/\$RECYCLE.BIN/
 EOF
+	done
 	rm -f "$PWDDB"
-	ksmbd.adduser -C "$CONF" -P "$PWDDB" -a -p "$PIN" "$USER_NAME" > /dev/null 2>&1 ||
+	ksmbd.adduser -C "$CONF" -P "$PWDDB" -a -p "$PASS" "$USER_NAME" > /dev/null 2>&1 ||
 		{ rm -rf "$RUN"; fail "rsos-smb: cannot add the user"; }
 	modprobe ksmbd > /dev/null 2>&1 || { rm -rf "$RUN"; fail "the ksmbd kernel module is missing"; }
 	ksmbd.mountd -C "$CONF" -P "$PWDDB" > /dev/null 2>&1 ||
@@ -106,7 +126,7 @@ status)
 	if running; then echo on; else echo off; fi
 	;;
 *)
-	echo "usage: rsos-smb start PIN [NAME] | stop | status" >&2
+	echo "usage: rsos-smb start PASSWORD [NAME] | stop | status" >&2
 	exit 2
 	;;
 esac
