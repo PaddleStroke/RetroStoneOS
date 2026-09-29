@@ -9,6 +9,13 @@
 # SD card. Static, an exec only maps the one binary. The rest of the system
 # (frontend, cores, tools) stays dynamic.
 CONFIG_STATIC=y
+# No CONFIG_PIE (review: udhcpc and ntpd parse network input as root): in
+# BusyBox 1.37 it "depends on !STATIC", so next to CONFIG_STATIC=y kconfig
+# drops it without a word, and the toolchain has no static-pie either (no
+# rcrt1.o: "-fPIE -static-pie" does not link; checked 2026-09-29). BIND_NOW
+# has nothing to bind in a static binary. Stack, heap and mmap are still
+# randomized; only the binary's own address is fixed. PIE would mean a
+# dynamic BusyBox again (the boot time above).
 # BusyBox's own /etc/passwd and /etc/group parser: a static glibc would
 # otherwise dlopen its NSS modules for user lookups (id, ls -l, the login
 # shell's prompt).

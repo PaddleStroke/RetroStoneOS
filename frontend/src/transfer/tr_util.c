@@ -131,7 +131,9 @@ static int utf8_next(const unsigned char *s, uint32_t *cp)
 
 static bool is_bad_char(uint32_t c)
 {
-	return c < 0x20 || c == 0x7f || strchr("/\\:*?\"<>|", (int)c) != NULL;
+	/* c < 0x80 first: strchr() takes a char, a code point above 0xff was
+	 * truncated (U+017C 'ż' became '|', U+4E00 became NUL) */
+	return c < 0x20 || c == 0x7f || (c < 0x80 && strchr("/\\:*?\"<>|", (int)c) != NULL);
 }
 
 /* CON, PRN, AUX, NUL, COM0-9, LPT0-9, with or without an extension. */
@@ -572,21 +574,74 @@ static int rename_noreplace(int dfd, const char *from, const char *to)
 	return renameat(dfd, from, dfd, to) < 0 ? -errno : 0;
 }
 
+/* dfd/a and dfd/b are regular files with the same bytes. */
+static bool same_content(int dfd, const char *a, const char *b)
+{
+	int fa = openat(dfd, a, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+	int fb = fa >= 0 ? openat(dfd, b, O_RDONLY | O_NOFOLLOW | O_CLOEXEC) : -1;
+	struct stat sa, sb;
+	bool same = fb >= 0 && fstat(fa, &sa) == 0 && fstat(fb, &sb) == 0 && S_ISREG(sa.st_mode) &&
+		    S_ISREG(sb.st_mode) && sa.st_size == sb.st_size && tr_same_content(fa, fb) == 1;
+
+	if (fa >= 0)
+		close(fa);
+	if (fb >= 0)
+		close(fb);
+	return same;
+}
+
+int tr_bak_name(char *out, size_t n, const char *name, int gen)
+{
+	char suffix[16] = ".bak";
+
+	if (gen > 1)
+		snprintf(suffix, sizeof(suffix), ".bak%d", gen % 1000);
+	if (tr_snprintf(out, n, "%s%s", name, suffix) < 0 || strlen(out) > 255)
+		return -ENAMETOOLONG;
+	return 0;
+}
+
 int tr_replace_file(int dfd, const char *tmp, const char *name, bool keep_bak, bool no_replace)
 {
-	char bak[300];
+	return tr_replace_file_gens(dfd, tmp, name, keep_bak ? 1 : 0, no_replace);
+}
+
+int tr_replace_file_gens(int dfd, const char *tmp, const char *name, int gens, bool no_replace)
+{
+	char bak[300], older[300], newer[300];
 	struct stat st;
 
 	if (no_replace)
 		return rename_noreplace(dfd, tmp, name);
-	if (!keep_bak || fstatat(dfd, name, &st, AT_SYMLINK_NOFOLLOW) < 0 || !S_ISREG(st.st_mode))
+	if (gens <= 0 || fstatat(dfd, name, &st, AT_SYMLINK_NOFOLLOW) < 0 || !S_ISREG(st.st_mode))
 		return renameat(dfd, tmp, dfd, name) < 0 ? -errno : 0;
+	/* The same save sent again (a retried upload): nothing to replace, and
+	 * the backups are not pushed out by a copy of the current file. */
+	if (same_content(dfd, tmp, name)) {
+		unlinkat(dfd, tmp, 0);
+		return 0;
+	}
 	/* The backup was promised: no backup, no replacement (review F-M8:
 	 * the rename to .bak was not checked, nor skipped quietly). */
-	if (tr_snprintf(bak, sizeof(bak), "%s.bak", name) < 0 || strlen(bak) > 255)
+	if (tr_bak_name(bak, sizeof(bak), name, 1) < 0)
 		return -ENAMETOOLONG;
-	if (unlinkat(dfd, bak, 0) < 0 && errno != ENOENT)
+	/* More generations (the web share: 3): .bak2 -> .bak3 (the oldest
+	 * dropped), .bak -> .bak2, so two different saves of the same name in
+	 * one transfer still leave the console's own copy (review: the one .bak
+	 * was lost). A name too long for them keeps one generation. */
+	if (gens > TR_BAK_GENERATIONS)
+		gens = TR_BAK_GENERATIONS;
+	if (gens > 1 && tr_bak_name(older, sizeof(older), name, gens) == 0) {
+		for (int g = gens; g > 1; g--) {
+			if (tr_bak_name(older, sizeof(older), name, g) < 0 ||
+			    tr_bak_name(newer, sizeof(newer), name, g - 1) < 0)
+				return -ENAMETOOLONG;
+			if (renameat(dfd, newer, dfd, older) < 0 && errno != ENOENT)
+				return -errno;
+		}
+	} else if (unlinkat(dfd, bak, 0) < 0 && errno != ENOENT) {
 		return -errno;
+	}
 	/* 1. hard links (ext4...): the old file also becomes name.bak, then one
 	 *    atomic rename: name exists at every moment */
 	if (linkat(dfd, name, dfd, bak, 0) == 0)
@@ -637,7 +692,8 @@ int tr_sink_commit(struct tr_sink *s, int64_t mtime_s, long mtime_ns, bool keep_
 		tr_sink_abort(s);
 		return e;
 	}
-	e = tr_replace_file(s->dirfd, s->tmp, s->name, keep_bak, s->no_replace);
+	e = tr_replace_file_gens(s->dirfd, s->tmp, s->name,
+				 !keep_bak ? 0 : s->bak_gens > 1 ? s->bak_gens : 1, s->no_replace);
 	if (e < 0) {
 		tr_sink_abort(s);
 		return e;

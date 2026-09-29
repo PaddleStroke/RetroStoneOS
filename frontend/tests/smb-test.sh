@@ -1,9 +1,10 @@
 #!/bin/sh
 # smb-test.sh WORKDIR: the Windows file share helper (src/transfer/rsos-smb)
 # with stub commands in place of modprobe and ksmbd-tools: the configuration
-# it writes (user, signing, no guest, the share of /data), the user database
-# made with the PIN, the start and stop order, a missing kernel module, a bad
-# PIN, and "status". The real ksmbd-tools reading this configuration are
+# it writes (user, signing, no guest, at most 8 connections, one share per
+# folder of /data and never /data or its rsos folder), the user database made
+# with the password, the start and stop order, a missing kernel module, a bad
+# or short password, and "status". The real ksmbd-tools reading this configuration are
 # checked separately (docs/rom-transfer.md §3.3: qemu-arm on the image's
 # binaries); the kernel server needs the device.
 set -u
@@ -44,29 +45,40 @@ export RSOS_SMB_RUN=$W/run RSOS_SMB_SHARE=$W/data RSOS_SMB_SYSMOD=$W/sysmod
 export RSOS_SMB_PATH="$W/bin:/usr/bin:/bin"
 CONF=$W/run/ksmbd.conf
 
-echo "rsos-smb: start (the PIN, the console name)"
-out=$(sh "$SMB" start 482913 retrostone-2 2> "$W/err")
+echo "rsos-smb: start (the password, the console name)"
+mkdir -p "$W/data/roms/nes" "$W/data/rsos"
+out=$(sh "$SMB" start KX7P-M3QD retrostone-2 2> "$W/err")
 check "start prints on" [ "$out" = on ]
 check "the configuration in the run folder" [ -s "$CONF" ]
 check "netbios name from the console name (uppercase)" grep -q 'netbios name = RETROSTONE-2' "$CONF"
 check "signing mandatory, no guest, SMB2 or newer" \
 	sh -c "grep -q 'server signing = mandatory' $CONF && grep -q 'map to guest = never' $CONF && \
 	grep -q 'server min protocol = SMB2_10' $CONF && grep -q 'guest ok = no' $CONF"
-check "the share is the data folder, written as root" \
-	sh -c "grep -q 'path = $W/data' $CONF && grep -q 'force user = root' $CONF && grep -q 'read only = no' $CONF"
-check "only user retrostone" grep -q 'valid users = retrostone' "$CONF"
+check "one share per folder: roms saves states bios themes, nothing else" \
+	sh -c "[ \"\$(grep '^\[' $CONF | tr -d '\n')\" = '[global][roms][saves][states][bios][themes]' ] && \
+	for f in roms saves states bios themes; do grep -qx \"	path = $W/data/\$f\" $CONF || exit 1; done"
+check "never /data itself nor /data/rsos (settings, WiFi password, logs)" \
+	sh -c "! grep -q 'path = $W/data/*\$' $CONF && ! grep -q '$W/data/rsos' $CONF"
+check "the shared folders exist (made when missing)" \
+	sh -c "for f in roms saves states bios themes; do [ -d $W/data/\$f ] || exit 1; done"
+check "every share written as root, writable" \
+	sh -c "[ \$(grep -c 'force user = root' $CONF) = 5 ] && [ \$(grep -c 'read only = no' $CONF) = 5 ]"
+check "only user retrostone, no guest, on every share" \
+	sh -c "[ \$(grep -c 'valid users = retrostone' $CONF) = 5 ] && [ \$(grep -c 'guest ok = no' $CONF) = 5 ]"
+check "at most 8 connections; no hosts allow (ksmbd-tools 3.5.2: exact addresses only)" \
+	sh -c "grep -q 'max connections = 8' $CONF && ! grep -q 'hosts allow' $CONF"
 check "\$RECYCLE.BIN vetoed literally" grep -q 'System Volume Information/\$RECYCLE.BIN/' "$CONF"
-check "user retrostone added with the PIN as password" \
-	grep -q "adduser -C $CONF -P $W/run/ksmbdpwd.db -a -p 482913 retrostone" "$LOG"
+check "user retrostone added with the password" \
+	grep -q "adduser -C $CONF -P $W/run/ksmbdpwd.db -a -p KX7P-M3QD retrostone" "$LOG"
 check "then the module, then ksmbd.mountd with the configuration" \
 	sh -c "grep -n . $LOG | grep -q '^2:modprobe ksmbd' && grep -n . $LOG | grep -q '^3:mountd -C $CONF -P $W/run/ksmbdpwd.db'"
 check "status: on" [ "$(sh "$SMB" status)" = on ]
 
-echo "rsos-smb: start again while it runs (a new PIN): stopped first"
+echo "rsos-smb: start again while it runs (a new password): stopped first"
 : > "$LOG"
-sh "$SMB" start 111111 > /dev/null 2>&1
+sh "$SMB" start ABCD-2345 > /dev/null 2>&1
 check "the old server is shut down before the new one" \
-	sh -c "grep -n . $LOG | grep -q '^1:control -s' && grep -q 'adduser .* -p 111111 retrostone' $LOG"
+	sh -c "grep -n . $LOG | grep -q '^1:control -s' && grep -q 'adduser .* -p ABCD-2345 retrostone' $LOG"
 check "default name RETROSTONE" grep -q 'netbios name = RETROSTONE$' "$CONF"
 
 echo "rsos-smb: stop"
@@ -79,19 +91,21 @@ check "nothing left in the run folder" [ ! -e "$W/run" ]
 check "status: off" [ "$(sh "$SMB" status)" = off ]
 
 echo "rsos-smb: failures"
-STUB_NO_MODULE=1 sh "$SMB" start 482913 > /dev/null 2> "$W/err"
+STUB_NO_MODULE=1 sh "$SMB" start KX7P-M3QD > /dev/null 2> "$W/err"
 rc=$?
 check "no kernel module: exit 1, a message, nothing left" \
 	sh -c "[ $rc = 1 ] && grep -q 'ksmbd kernel module is missing' $W/err && [ ! -e $W/run ]"
-STUB_MOUNTD_DIES=1 sh "$SMB" start 482913 > /dev/null 2> "$W/err"
+STUB_MOUNTD_DIES=1 sh "$SMB" start KX7P-M3QD > /dev/null 2> "$W/err"
 rc=$?
 check "ksmbd.mountd gone at once (no kernel server): exit 1, the module removed, nothing left" \
 	sh -c "[ $rc = 1 ] && grep -q 'stopped at once' $W/err && [ ! -e $W/run ] && [ ! -e $W/sysmod ]"
-sh "$SMB" start "12;rm" > /dev/null 2> "$W/err"
-check "a PIN with other characters is refused" [ $? = 1 ]
-sh "$SMB" start 12 > /dev/null 2> "$W/err"
-check "a short PIN is refused" [ $? = 1 ]
-RSOS_SMB_SHARE=$W/nowhere sh "$SMB" start 482913 > /dev/null 2> "$W/err"
+sh "$SMB" start "KX7P;rm -rf" > /dev/null 2> "$W/err"
+check "a password with other characters is refused" sh -c "[ $? = 1 ] && grep -q 'no password' $W/err"
+sh "$SMB" start ABCD-23 > /dev/null 2> "$W/err"
+check "a password under 8 characters is refused" sh -c "[ $? = 1 ] && grep -q 'too short' $W/err"
+sh "$SMB" start 482913 > /dev/null 2> "$W/err"
+check "a 6-digit PIN is refused" [ $? = 1 ]
+RSOS_SMB_SHARE=$W/nowhere sh "$SMB" start KX7P-M3QD > /dev/null 2> "$W/err"
 check "no /data: refused" [ $? = 1 ]
 sh "$SMB" bogus > /dev/null 2>&1
 check "unknown command: usage, exit 2" [ $? = 2 ]

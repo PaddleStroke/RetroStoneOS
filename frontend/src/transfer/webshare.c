@@ -26,7 +26,7 @@
  *     20 from any devices lock everybody out for 60 s (review F-L2);
  *   - after login, a random 128-bit session token in an HttpOnly,
  *     SameSite=Strict cookie (or the X-RSOS-Token header for scripts);
- *   - state-changing requests also need "X-Requested-With: rsos", which a
+ *   - the login and state-changing requests also need "X-Requested-With: rsos", which a
  *     foreign web page cannot send without a CORS preflight we never allow
  *     (CSRF), and the Host header must be an IP literal or our own name
  *     (DNS rebinding);
@@ -502,29 +502,48 @@ static int req_target(struct req *r, char *target, size_t tn, char *dir, size_t 
 /* ------------------------------------------------------------ handlers */
 
 /* The peer's lockout entry (S.lock held): found, or a free / the least
- * recently used one taken over. */
-static struct peer_fail *peer_entry(uint32_t addr)
+ * recently used unlocked one taken over. A locked entry is never taken
+ * over (review: 17 addresses reset each other's lock): with all of them
+ * locked, NULL, and the newcomer waits like them (login_locked). */
+static struct peer_fail *peer_entry(uint32_t addr, int64_t now)
 {
-	struct peer_fail *victim = &S.peers[0];
+	struct peer_fail *victim = NULL;
 
 	for (size_t i = 0; i < sizeof(S.peers) / sizeof(S.peers[0]); i++) {
 		struct peer_fail *p = &S.peers[i];
 
 		if (p->addr == addr)
 			return p;
-		if (!p->addr || (victim->addr && p->last < victim->last))
+		if (p->addr && p->lock_until > now)
+			continue;
+		if (!victim || !p->addr || (victim->addr && p->last < victim->last))
 			victim = p;
 	}
-	memset(victim, 0, sizeof(*victim));
-	victim->addr = addr;
+	if (victim) {
+		memset(victim, 0, sizeof(*victim));
+		victim->addr = addr;
+	}
 	return victim;
 }
 
-/* ms still locked for this peer (S.lock held), 0 = may try */
+/* ms still locked for this peer (S.lock held), 0 = may try; p NULL (the
+ * table full of locked peers): until the first of them is free */
 static int64_t login_locked(struct peer_fail *p, int64_t now)
 {
-	int64_t l = p->lock_until > S.lock_until ? p->lock_until : S.lock_until;
+	int64_t l = S.lock_until;
 
+	if (p) {
+		if (p->lock_until > l)
+			l = p->lock_until;
+	} else {
+		int64_t first = 0;
+
+		for (size_t i = 0; i < sizeof(S.peers) / sizeof(S.peers[0]); i++)
+			if (!first || S.peers[i].lock_until < first)
+				first = S.peers[i].lock_until;
+		if (first > l)
+			l = first;
+	}
 	return l > now ? l - now : 0;
 }
 
@@ -542,7 +561,8 @@ static void h_login(struct req *r)
 
 	/* early answer while locked (the body is not even read) */
 	pthread_mutex_lock(&S.lock);
-	locked = login_locked(peer_entry(addr), tr_now_ms());
+	now = tr_now_ms();
+	locked = login_locked(peer_entry(addr, now), now);
 	pthread_mutex_unlock(&S.lock);
 	if (locked) {
 		snprintf(body, sizeof(body), "{\"error\":\"locked\",\"wait\":%d}", (int)((locked + 999) / 1000));
@@ -581,18 +601,19 @@ static void h_login(struct req *r)
 	 * requests that all passed the early check each got a guess). */
 	pthread_mutex_lock(&S.lock);
 	now = tr_now_ms();
-	p = peer_entry(addr);
-	p->last = now;
+	p = peer_entry(addr, now);
 	locked = login_locked(p, now);
 	ok = !locked && strlen(pin) == strlen(S.pin) && ct_equal(pin, S.pin, strlen(S.pin));
-	if (locked) {
-		/* no guess while locked */
+	if (locked || !p) {
+		/* no guess while locked (p is NULL only then) */
 	} else if (ok) {
+		p->last = now;
 		p->failures = 0;
 		S.failures = 0;
 		S.st.sessions++;
 		S.last_activity = now;
 	} else {
+		p->last = now;
 		p->failures++;
 		S.failures++;
 		S.st.auth_failures++;
@@ -863,6 +884,9 @@ static void h_upload(struct req *r)
 	/* overwrite=0: the name must still be free at the commit (the USB
 	 * import may have written it meanwhile), atomically */
 	sink.no_replace = !overwrite;
+	/* a replaced save or state: .bak, .bak2, .bak3 (review: two saves of
+	 * one name in a dropped folder, or a retry, lost the console's copy) */
+	sink.bak_gens = TR_BAK_GENERATIONS;
 	if (r->expect && !strcasecmp(r->expect, "100-continue"))
 		send_all(r->fd, "HTTP/1.1 100 Continue\r\n\r\n", 25);
 
@@ -968,6 +992,14 @@ static void h_delete(struct req *r)
 		e = errno;
 		if (e == EISDIR || e == EPERM)      /* only empty folders */
 			e = unlinkat(dfd, base, AT_REMOVEDIR) < 0 ? errno : 0;
+	} else if (!strcmp(target, "saves") || !strcmp(target, "states")) {
+		/* its backups too: the game would load X.srm.bak back as the save
+		 * (the loaders fall back to it) */
+		char bak[300];
+
+		for (int g = 1; g <= TR_BAK_GENERATIONS; g++)
+			if (tr_bak_name(bak, sizeof(bak), base, g) == 0)
+				unlinkat(dfd, bak, 0);
 	}
 	if (!e)
 		fsync(dfd);
@@ -1019,7 +1051,13 @@ static void handle(struct req *r)
 	if (!strcmp(r->path, "/api/login")) {
 		if (strcmp(r->method, "POST"))
 			respond_err(r, 405, "method");
-		else
+		else if (!r->xrw || strcmp(r->xrw, "rsos")) {
+			/* a foreign page in a LAN browser could post guesses and
+			 * lock the owner out (review): the CSRF header here too */
+			respond_err(r, 403, "csrf");
+			if (r->clen > 0)
+				linger_close(r);
+		} else
 			h_login(r);
 		return;
 	}
