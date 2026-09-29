@@ -702,11 +702,21 @@ out:
 }
 
 /* ---------------------------------------------------------------- load */
+/* By display name, then by file: two games of the same name (Game.nes and
+ * Game.zip, the same name in two folders) keep one order on every machine,
+ * whatever order readdir() gave them in (it differs between filesystems). */
+static int cmp_names(const struct game *x, const struct game *y)
+{
+	int c = str_casecmp_natural(x->name, y->name);
+
+	if (c)
+		return c;
+	return strcmp(x->path ? x->path : "", y->path ? y->path : "");
+}
+
 static int cmp_name(const void *a, const void *b)
 {
-	const struct game *x = a, *y = b;
-
-	return str_casecmp_natural(x->name, y->name);
+	return cmp_names(a, b);
 }
 
 static int cmp_fav_name(const void *a, const void *b)
@@ -715,7 +725,7 @@ static int cmp_fav_name(const void *a, const void *b)
 
 	if (x->favorite != y->favorite)
 		return x->favorite ? -1 : 1;
-	return str_casecmp_natural(x->name, y->name);
+	return cmp_names(x, y);
 }
 
 void games_sort(struct gamelist *gl, bool favorites_first)
@@ -731,7 +741,7 @@ static int cmp_playtime(const void *a, const void *b)
 
 	if (x->playtime != y->playtime)
 		return x->playtime > y->playtime ? -1 : 1;
-	return str_casecmp_natural(x->name, y->name);
+	return cmp_names(x, y);
 }
 
 static int cmp_fav_playtime(const void *a, const void *b)
@@ -749,7 +759,7 @@ static int cmp_recent(const void *a, const void *b)
 
 	if (x->lastplayed != y->lastplayed)
 		return x->lastplayed > y->lastplayed ? -1 : 1;
-	return str_casecmp_natural(x->name, y->name);
+	return cmp_names(x, y);
 }
 
 static int cmp_fav_recent(const void *a, const void *b)

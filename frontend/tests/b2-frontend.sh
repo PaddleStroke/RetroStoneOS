@@ -205,7 +205,9 @@ t "CANCEL (selected) and B delete nothing" sh -c "[ $rc = 0 ] && [ -e '$W/data/r
 
 echo "b2-frontend: review: Delete a game whose save name another ROM shares (Echo.zip): the saves are kept"
 printf 'NES\032Echo' > "$W/data/roms/nes/Echo.nes"
-printf 'PK-not-listed' > "$W/data/roms/nes/Echo.zip"
+# (Echo.zip is listed too, as a second "Echo": the list orders games of the
+# same name by file, so Echo.nes comes first on every filesystem)
+printf 'PK-also-listed' > "$W/data/roms/nes/Echo.zip"
 printf 'SRAM' > "$W/data/saves/nes/Echo.srm"
 run "wait:300 a wait:500 down expect:game=Echo select wait:300 down down down down down down down \
 	expect:|Delete_this_game a wait:300 expect:dialog:Delete_\"Echo.nes\" left expect:|DELETE a wait:300 \

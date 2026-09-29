@@ -202,6 +202,26 @@ static void test_sort(void)
 	      "recently played: Charlie, Alpha, Delta, Bravo");
 	games_sort_by(&gl, false, GAMES_SORT_NAME);
 	CHECK(!strcmp(gs[0].name, "Alpha") && !strcmp(gs[3].name, "Delta"), "by name");
+	{
+		/* the same name (Echo.zip next to Echo.nes): by file, whatever the readdir order */
+		struct gamelist e;
+		struct game es[3];
+
+		es[0] = mkgame("nes", "Echo.zip", "Echo", 0, 0, false);
+		es[1] = mkgame("nes", "Echo.nes", "Echo", 0, 0, false);
+		es[2] = mkgame("nes", "Alpha.nes", "Alpha", 0, 0, false);
+		memset(&e, 0, sizeof(e));
+		e.games = es;
+		e.n = 3;
+		games_sort_by(&e, true, GAMES_SORT_NAME);
+		CHECK(!strcmp(es[0].rel, "Alpha.nes") && !strcmp(es[1].rel, "Echo.nes") && !strcmp(es[2].rel, "Echo.zip"),
+		      "the same name: by file (Echo.nes before Echo.zip, in any readdir order)");
+		es[0] = mkgame("nes", "Echo.zip", "Echo", 0, 0, false);
+		es[1] = mkgame("nes", "Alpha.nes", "Alpha", 0, 0, false);
+		es[2] = mkgame("nes", "Echo.nes", "Echo", 0, 0, false);
+		games_sort_by(&e, false, GAMES_SORT_PLAYTIME);
+		CHECK(!strcmp(es[1].rel, "Echo.nes") && !strcmp(es[2].rel, "Echo.zip"), "the same for most played");
+	}
 	CHECK(games_remove(&gl, "b") && gl.n == 3 && !strcmp(gs[1].name, "Charlie") && !games_remove(&gl, "zz"),
 	      "a game removed from a list");
 }

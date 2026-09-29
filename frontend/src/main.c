@@ -438,6 +438,9 @@ static void spawn_detached(const char *const argv[], int niceness)
  * The file is in /run (RAM): above LOG_ROTATE_BYTES it is renamed to
  * <file>.1 (the one before is dropped) and a new one is started, so a week
  * of uptime never fills the tmpfs (review). Only this thread writes it.
+ * It rotates before the write that would cross the cap, not after it: the
+ * current file then always ends with the latest lines (never left empty
+ * after the last write, e.g. the exit line) and stays under the cap.
  */
 #define LOG_ROTATE_BYTES (4 << 20)
 
@@ -481,13 +484,13 @@ static void *log_thread(void *arg)
 		if (L.console >= 0 && write(L.console, buf, (size_t)r) < 0) {
 			/* console gone: keep the file */
 		}
+		if (L.file >= 0 && L.size > 0 && L.size + r > L.limit)
+			log_rotate();
 		if (L.file >= 0 && write(L.file, buf, (size_t)r) < 0) {
 			close(L.file);
 			L.file = -1;
 		}
 		L.size += r;
-		if (L.file >= 0 && L.size > L.limit)
-			log_rotate();
 	}
 	return NULL;
 }
