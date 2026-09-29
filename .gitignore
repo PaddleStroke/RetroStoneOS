@@ -40,3 +40,6 @@ es-theme*.zip
 /buildroot-20*/
 /dl/
 /ci-test/
+
+# --- Local Claude Code worktrees (agents' private checkouts)
+/.claude/worktrees/
