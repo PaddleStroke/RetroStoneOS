@@ -7,12 +7,15 @@
  * usage: rsos-launch-test RSOS_RUN TESTCORE.so WORKDIR
  */
 #include <dirent.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <time.h>
 
 #include "../host.h"
 #include "../host_png.h"
@@ -35,36 +38,63 @@ static int failures;
  * a benchmark). Review F-M12: their default action killed the driver. */
 static int g_bench_sleeps;
 
+/* The game process has become the benchmark driver. */
+static bool child_is_driver(pid_t c)
+{
+	char p[64], cmd[4096];
+	FILE *f;
+	size_t n;
+
+	snprintf(p, sizeof(p), "/proc/%d/cmdline", (int)c);
+	f = fopen(p, "rb");
+	if (!f)
+		return false;
+	n = fread(cmd, 1, sizeof(cmd) - 1, f);
+	fclose(f);
+	cmd[n] = 0;
+	for (size_t i = 0; i < n; i += strlen(cmd + i) + 1)
+		if (!strcmp(cmd + i, "--bench-driver"))
+			return true;
+	return false;
+}
+
+/* Also the idle power-off notice and its cancel (review B1-3: no handler,
+ * their default action killed every unattended benchmark). */
 static bool sleep_wake_driver(void *user)
 {
 	static int phase;
 	pid_t c = host_child_pid();
-	char p[64], cmd[4096];
-	FILE *f;
-	size_t n;
 
 	(void)user;
 	if (c <= 0)
 		return false;
 	if (phase == 0) {
-		snprintf(p, sizeof(p), "/proc/%d/cmdline", (int)c);
-		f = fopen(p, "rb");
-		if (!f)
-			return false;
-		n = fread(cmd, 1, sizeof(cmd) - 1, f);
-		fclose(f);
-		for (size_t i = 0; i < n; i += strlen(cmd + i) + 1) {
-			cmd[n] = 0;
-			if (!strcmp(cmd + i, "--bench-driver")) {
-				kill(c, SIGRTMIN + 1);           /* RSOS_SIG_SLEEP */
-				phase = 1;
-				break;
-			}
+		if (child_is_driver(c)) {
+			kill(c, SIGRTMIN + 3);           /* RSOS_SIG_IDLE_WARN */
+			kill(c, SIGRTMIN + 1);           /* RSOS_SIG_SLEEP */
+			phase = 1;
 		}
 	} else if (phase++ == 3) {
 		kill(c, SIGRTMIN + 2);                   /* RSOS_SIG_WAKE */
+		kill(c, SIGRTMIN + 4);                   /* RSOS_SIG_IDLE_CANCEL */
 		g_bench_sleeps++;
 	}
+	return false;
+}
+
+/* A power-off (RSOS_SIG_POWEROFF) about 300 ms into the benchmark. */
+static bool poweroff_driver(void *user)
+{
+	static int phase;
+	pid_t c = host_child_pid();
+
+	(void)user;
+	if (c <= 0)
+		return false;
+	if (phase == 0 && child_is_driver(c))
+		phase = 1;
+	else if (phase > 0 && phase++ == 3)
+		kill(c, SIGUSR2);
 	return false;
 }
 
@@ -246,6 +276,161 @@ static void test_batch2(char **argv, const char *const *args, struct host_launch
 		host_png_free(px);
 	}
 	o->extra_args = args;
+}
+
+/* ------------------------------------------ battery saves and resume (B1) */
+
+/* path holds n bytes, all equal to c */
+static bool file_is(const char *path, char c, size_t n)
+{
+	size_t size = 0;
+	char *d = hread_file(path, &size);
+	bool ok = d && size == n;
+
+	for (size_t i = 0; ok && i < n; i++)
+		ok = d[i] == c;
+	free(d);
+	return ok;
+}
+
+static void put_save(const char *path, char c)
+{
+	char buf[1024];
+
+	memset(buf, c, sizeof(buf));
+	hwrite_atomic(path, buf, sizeof(buf), false);
+}
+
+static bool log_has(const char *log, const char *what)
+{
+	char *txt = hread_file(log, NULL);
+	bool ok = txt && strstr(txt, what);
+
+	free(txt);
+	return ok;
+}
+
+/*
+ * Review B1-1: resuming from an auto state older than the .srm (a "Start
+ * fresh" session saved in the game, a crash, auto-save on exit off) turned
+ * the card's newer save back into the state's copy. Review B1-4: a save
+ * memory the core exposes only after its first frame was written (fresh
+ * memory) over a .srm never loaded. Review B1-2: "nostate".
+ */
+static void test_saves_resume(char **argv, const char *const *args, struct host_launch_opts *o)
+{
+	char srm[600], bak[620], st[600], ref[620], set_on[600], log[600], rom[600];
+	const char *a2[64];
+	struct host_launch_result r;
+	int k;
+
+	snprintf(rom, sizeof(rom), "%s/roms/test/game.bin", argv[3]);
+	snprintf(srm, sizeof(srm), "%s/saves/test/game.srm", argv[3]);
+	snprintf(bak, sizeof(bak), "%s.bak", srm);
+	snprintf(st, sizeof(st), "%s/states/test/game.state.auto", argv[3]);
+	snprintf(ref, sizeof(ref), "%s.sram", st);
+	snprintf(set_on, sizeof(set_on), "%s/settings-b1.ini", argv[3]);
+	snprintf(log, sizeof(log), "%s/game.log", argv[3]);
+	hwrite_atomic(set_on, "autosave_exit = 1\n", 18, false);
+	for (k = 0; args[k] && k < 60; k++)
+		a2[k] = !strcmp(args[k], "/dev/null") ? set_on : !strcmp(args[k], "3000") ? "30" : args[k];
+	a2[k] = NULL;
+	o->extra_args = a2;
+
+	printf("resume and battery saves: a newer .srm is never lost to an older auto state\n");
+	setenv("RSOS_TESTCORE_SRAM", "state", 1);   /* the state carries its copy of the SRAM */
+	remove(st);
+	remove(ref);
+	remove(bak);
+	put_save(srm, 'A');
+	CHECK(host_launch(argv[2], rom, "test", o, &r) == 0 && r.status == HOST_EXIT_OK && r.auto_state_saved &&
+	      hfile_exists(ref) && file_is(srm, 'A', 1024),
+	      "session 1: auto state with the save 'A' in it, and its saves reference");
+	/* "Start fresh" then an in-game save: the card's .srm is newer */
+	put_save(srm, 'B');
+	o->resume = true;
+	CHECK(host_launch(argv[2], rom, "test", o, &r) == 0 && r.status == HOST_EXIT_OK && file_is(srm, 'B', 1024) &&
+	      file_is(bak, 'B', 1024) && log_has(log, "is newer than the auto state"),
+	      "resume from the older state: the newer .srm stays (given back to the core, kept as .bak)");
+	remove(bak);
+	CHECK(host_launch(argv[2], rom, "test", o, &r) == 0 && r.status == HOST_EXIT_OK && file_is(srm, 'B', 1024) &&
+	      !log_has(log, "is newer than the auto state") && !hfile_exists(bak),
+	      "resume again, nothing changed since the state: no backup, no re-apply");
+	/* a state without its reference (older version, copied from a backup):
+	 * the dates decide */
+	remove(ref);
+	{
+		struct timespec ts[2] = { { time(NULL) - 100, 0 }, { time(NULL) - 100, 0 } };
+
+		utimensat(AT_FDCWD, st, ts, 0);
+	}
+	put_save(srm, 'C');
+	CHECK(host_launch(argv[2], rom, "test", o, &r) == 0 && r.status == HOST_EXIT_OK && file_is(srm, 'C', 1024) &&
+	      file_is(bak, 'C', 1024),
+	      "no reference, the .srm newer than the state: the .srm stays (and its .bak)");
+	o->resume = false;
+	remove(bak);
+
+	printf("a save memory the core exposes after its first frame\n");
+	setenv("RSOS_TESTCORE_SRAM", "late", 1);
+	put_save(srm, 'L');
+	CHECK(host_launch(argv[2], rom, "test", o, &r) == 0 && r.status == HOST_EXIT_OK && file_is(srm, 'L', 1024) &&
+	      log_has(log, "when the core exposed the memory"),
+	      "loaded when it appears (frame 5), the .srm never overwritten with fresh memory");
+	unsetenv("RSOS_TESTCORE_SRAM");
+
+	printf("\"nostate\": a core without save states is reported\n");
+	g_status[0] = 0;
+	o->on_status = collect_status;
+	setenv("RSOS_TESTCORE", "nosavestates", 1);
+	CHECK(host_launch(argv[2], rom, "test", o, &r) == 0 && r.status == HOST_EXIT_OK &&
+	      count_lines(g_status, "nostate ") == 1 && !r.auto_state_saved,
+	      "\"nostate\" once, no auto state");
+	unsetenv("RSOS_TESTCORE");
+	g_status[0] = 0;
+	CHECK(host_launch(argv[2], rom, "test", o, &r) == 0 && r.status == HOST_EXIT_OK &&
+	      count_lines(g_status, "nostate ") == 0,
+	      "a core with save states: no \"nostate\"");
+	o->on_status = NULL;
+	remove(srm);
+	remove(st);
+	remove(ref);
+	o->extra_args = args;
+}
+
+/* Review B1-6: a crafted thumbnail (stb's default limit is 2^24 pixels a
+ * side) is refused before decoding. */
+static void test_png_caps(const char *dir)
+{
+	char p[600];
+	int w = 0, h = 0;
+	uint8_t *rgb = calloc(5000 * 3, 1), *px = NULL;
+	size_t size;
+	void *png;
+
+	printf("PNG thumbnails: size limits\n");
+	snprintf(p, sizeof(p), "%s/wide.png", dir);
+	png = rgb ? host_png_encode(rgb, 4096, 1, &size) : NULL;
+	CHECK(png && hwrite_atomic(p, png, size, false) == 0 && (px = host_png_read_rgb(p, &w, &h)) && w == 4096,
+	      "4096x1 decodes");
+	host_png_free(px);
+	free(png);
+	png = rgb ? host_png_encode(rgb, 5000, 1, &size) : NULL;
+	CHECK(png && hwrite_atomic(p, png, size, false) == 0 && !host_png_read_rgb(p, &w, &h),
+	      "5000x1 is refused (over %d pixels a side)", HOST_PNG_MAX_DIM);
+	free(png);
+	free(rgb);
+	{
+		size_t n = HOST_PNG_MAX_FILE + 1;
+		char *big = calloc(n, 1);
+
+		if (big)
+			memcpy(big, "\x89PNG\r\n\x1a\n", 8);
+		CHECK(big && hwrite_atomic(p, big, n, false) == 0 && !host_png_read_rgb(p, &w, &h),
+		      "a file over %d bytes is not even read", HOST_PNG_MAX_FILE);
+		free(big);
+	}
+	remove(p);
 }
 
 int main(int argc, char **argv)
@@ -520,10 +705,17 @@ int main(int argc, char **argv)
 		a2[k] = NULL;
 		o.extra_args = a2;
 		o.idle = sleep_wake_driver;
+		o.on_status = collect_status;
+		g_status[0] = 0;
 		CHECK(host_launch(argv[2], rom, "test", &o, &r) == 0 && r.status == HOST_EXIT_OK && !r.crashed,
 		      "benchmark then resume: status %d, exit %d, crashed %d", r.status, r.exit_code, r.crashed);
 		o.idle = NULL;
-		CHECK(g_bench_sleeps == 1, "a sleep + wake during the benchmark did not kill the driver");
+		o.on_status = NULL;
+		CHECK(g_bench_sleeps == 1,
+		      "a sleep + wake and an idle power-off notice + cancel during the benchmark did not kill the driver");
+		CHECK(count_lines(g_status, "busy bench\n") == 1 && count_lines(g_status, "busy off\n") == 1 &&
+		      strstr(g_status, "busy bench\n") < strstr(g_status, "busy off\n"),
+		      "\"busy bench\" while the benchmark runs, \"busy off\" before the results");
 		txt = hread_file(log, NULL);
 		CHECK(txt && strstr(txt, "bench driver: run 1/3") && strstr(txt, "bench driver: run 3/3"),
 		      "the driver ran the three configurations");
@@ -556,10 +748,45 @@ int main(int argc, char **argv)
 		CHECK(txt && strstr(txt, "testcore_cost = \"0\""), "\"Use this for this game\" wrote %s", gopt);
 		free(txt);
 		txt = NULL;
+
+		/* a power-off during the benchmark: the start state becomes the
+		 * auto state, reported like a game's own ("autostate") */
+		{
+			char st[600], ref[620], start[600];
+			size_t n1 = 0, n2 = 0;
+			char *d1, *d2;
+
+			snprintf(st, sizeof(st), "%s/test/game.state.auto", states);
+			snprintf(ref, sizeof(ref), "%s.sram", st);
+			snprintf(start, sizeof(start), "%s/bench/start.state", tmp);
+			remove(st);
+			remove(ref);
+			remove(gopt);
+			o.idle = poweroff_driver;
+			o.on_status = collect_status;
+			g_status[0] = 0;
+			CHECK(host_launch(argv[2], rom, "test", &o, &r) == 0 && r.status == HOST_EXIT_POWEROFF &&
+			      r.auto_state_saved && count_lines(g_status, "busy bench\n") == 1 &&
+			      count_lines(g_status, "autostate ") == 1 && count_lines(g_status, "poweroff ") == 1,
+			      "power-off during the benchmark: status %d, \"autostate\" reported %d", r.status,
+			      r.auto_state_saved);
+			o.idle = NULL;
+			o.on_status = NULL;
+			d1 = hread_file(st, &n1);
+			d2 = hread_file(start, &n2);
+			CHECK(d1 && d2 && n1 == n2 && !memcmp(d1, d2, n1) && hfile_exists(ref),
+			      "the auto state is the start state, with its saves reference");
+			free(d1);
+			free(d2);
+			remove(st);
+			remove(ref);
+		}
 		o.extra_args = args;
 	}
 
 	test_batch2(argv, args, &o);
+	test_saves_resume(argv, args, &o);
+	test_png_caps(argv[3]);
 	printf("%s (%d failure%s)\n", failures ? "FAILED" : "ALL OK", failures, failures == 1 ? "" : "s");
 	return failures ? 1 : 0;
 }

@@ -2,8 +2,12 @@
  * testcore.c - a minimal libretro core for the host's process-model tests.
  * RSOS_TESTCORE=segv crashes in retro_run() after 30 frames, =hang loops
  * forever there, =slow sleeps 20 ms per frame, =nostate refuses
- * retro_serialize(), anything else renders a
- * moving gradient and a 1 kHz tone.
+ * retro_serialize(), =nosavestates has no save states at all (state size
+ * 0), anything else renders a moving gradient and a 1 kHz tone.
+ * RSOS_TESTCORE_SRAM=state: the SRAM is left alone by retro_run() and is
+ * part of the state (as in real cores: loading a state brings its copy of
+ * the battery save back); =late: the same, and the SRAM is exposed only
+ * from frame 5 on (a core that gives its memory after the first frame).
  * It also declares v0 options and has 1 KB of SRAM (a frame counter):
  * testcore_speed (logged at load: the options regression test),
  * testcore_cost (busy milliseconds per frame: the benchmark test picks the
@@ -31,6 +35,19 @@ static double phase;
 static int cost_ms;
 static int crash;
 static retro_log_printf_t log_cb;
+
+static bool env_is(const char *name, const char *value)
+{
+	const char *v = getenv(name);
+
+	return v && !strcmp(v, value);
+}
+
+/* RSOS_TESTCORE_SRAM set: the SRAM is the game's save, not a frame counter */
+static bool sram_is_save(void)
+{
+	return env_is("RSOS_TESTCORE_SRAM", "state") || env_is("RSOS_TESTCORE_SRAM", "late");
+}
 
 static const char *var(const char *key)
 {
@@ -146,27 +163,46 @@ RETRO_API void retro_run(void)
 	}
 	audio(snd, 735);
 	frame++;
-	memcpy(sram, &frame, sizeof(frame));
+	if (!sram_is_save())
+		memcpy(sram, &frame, sizeof(frame));
 }
 
 RETRO_API void retro_reset(void) { frame = 0; }
-RETRO_API size_t retro_serialize_size(void) { return sizeof(frame); }
+RETRO_API size_t retro_serialize_size(void)
+{
+	if (env_is("RSOS_TESTCORE", "nosavestates"))
+		return 0;
+	return sizeof(frame) + (sram_is_save() ? sizeof(sram) : 0);
+}
 RETRO_API bool retro_serialize(void *d, size_t s)
 {
-	const char *mode = getenv("RSOS_TESTCORE");
-
 	/* =nostate: the core refuses to save a state (the host must keep the
 	 * previous .state.auto) */
-	if (s < sizeof(frame) || (mode && !strcmp(mode, "nostate")))
+	if (s < retro_serialize_size() || !s || env_is("RSOS_TESTCORE", "nostate"))
 		return false;
 	memcpy(d, &frame, sizeof(frame));
+	if (sram_is_save())
+		memcpy((uint8_t *)d + sizeof(frame), sram, sizeof(sram));
 	return true;
 }
-RETRO_API bool retro_unserialize(const void *d, size_t s) { if (s < sizeof(frame)) return false; memcpy(&frame, d, sizeof(frame)); return true; }
+RETRO_API bool retro_unserialize(const void *d, size_t s)
+{
+	if (s < sizeof(frame))
+		return false;
+	memcpy(&frame, d, sizeof(frame));
+	if (sram_is_save() && s >= sizeof(frame) + sizeof(sram))
+		memcpy(sram, (const uint8_t *)d + sizeof(frame), sizeof(sram));
+	return true;
+}
 RETRO_API void retro_cheat_reset(void) {}
 RETRO_API void retro_cheat_set(unsigned i, bool e, const char *c) { (void)i; (void)e; (void)c; }
 RETRO_API bool retro_load_game_special(unsigned t, const struct retro_game_info *g, size_t n) { (void)t; (void)g; (void)n; return false; }
 RETRO_API void retro_unload_game(void) {}
 RETRO_API unsigned retro_get_region(void) { return RETRO_REGION_NTSC; }
-RETRO_API void *retro_get_memory_data(unsigned id) { return id == RETRO_MEMORY_SAVE_RAM ? sram : NULL; }
-RETRO_API size_t retro_get_memory_size(unsigned id) { return id == RETRO_MEMORY_SAVE_RAM ? sizeof(sram) : 0; }
+/* =late: no memory before frame 5 */
+static bool sram_exposed(unsigned id)
+{
+	return id == RETRO_MEMORY_SAVE_RAM && (frame >= 5 || !env_is("RSOS_TESTCORE_SRAM", "late"));
+}
+RETRO_API void *retro_get_memory_data(unsigned id) { return sram_exposed(id) ? sram : NULL; }
+RETRO_API size_t retro_get_memory_size(unsigned id) { return sram_exposed(id) ? sizeof(sram) : 0; }

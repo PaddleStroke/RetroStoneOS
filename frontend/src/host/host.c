@@ -85,6 +85,12 @@ void host_supervisor_signals(bool block, int *sleep_sig, int *wake_sig, int *pow
 	sigprocmask(block ? SIG_BLOCK : SIG_UNBLOCK, &s, NULL);
 }
 
+void host_idle_signals(int *warn_sig, int *cancel_sig)
+{
+	*warn_sig = HOST_SIG_IDLE_WARN;
+	*cancel_sig = HOST_SIG_IDLE_CANCEL;
+}
+
 static struct audio_config audio_cfg;
 static enum audio_output audio_out;
 static bool audio_wanted;     /* the display asked for audio (ACQUIRE) */
@@ -950,7 +956,7 @@ static void take_screenshot(void)
 		host_toast("%s", _("No picture to save yet"));
 		return;
 	}
-	H.busy_ok = true;
+	host_busy(true);
 	rgb = frame_thumbnail(H.last_frame, (int)H.last_w, (int)H.last_h, (int)H.last_pitch, fmt, 4096, &tw, &th);
 	if (rgb && tw <= 240) {
 		uint8_t *big = scale2x_rgb(rgb, tw, th);
@@ -975,7 +981,7 @@ static void take_screenshot(void)
 	}
 	free(png);
 	free(rgb);
-	H.busy_ok = false;
+	host_busy(false);
 	if (r == 0) {
 		hlog(HLOG_INFO, "screenshot %s (%dx%d, %zu KB) in %lld ms", path, tw, th, (size + 1023) / 1024,
 		     (long long)(hnow_us() - t0) / 1000);
@@ -1227,7 +1233,7 @@ static void host_panel_picture(void)
 static void sleep_until_wake(void)
 {
 	hlog(HLOG_INFO, "sleep");
-	H.busy_ok = true;
+	host_busy(true);
 	host_play_pause(true);
 	sram_flush(false);
 	audio_close();          /* before the screen goes off (HDMI encoder) */
@@ -1265,7 +1271,7 @@ static void sleep_until_wake(void)
 		host_reevaluate_pacing();
 	H.next_frame_us = 0;
 	H.frame_time_last_us = 0;
-	H.busy_ok = false;
+	host_busy(false);
 	host_play_pause(false);
 }
 
@@ -1302,11 +1308,39 @@ void host_poll_signals(void)
 	}
 }
 
+/*
+ * A core without save states cannot write the auto state: an idle power-off
+ * would lose the game in progress. After the first frame (some cores know
+ * their state size only then), the menu is told once with the "nostate"
+ * status line (docs/host-design.md, "Status lines"); it holds its idle
+ * power-off while this game runs.
+ */
+static void report_state_support(void)
+{
+	static bool done;
+	const char *why = NULL;
+
+	if (done || H.frame == 0)
+		return;
+	done = true;
+	if (H.bench_step)
+		return;
+	if (!H.info.savestates)
+		why = "the core info says savestates = false";
+	else if (!H.core.serialize_size || !H.core.serialize_size())
+		why = "the core's state size is 0";
+	if (!why)
+		return;
+	hlog(HLOG_INFO, "save states unsupported (%s): no resume state, the menu holds its idle power-off", why);
+	host_status("nostate", "");
+}
+
 static void periodic(int64_t now_ms)
 {
 	char msg[128];
 	bool err;
 
+	report_state_support();
 	sram_tick(now_ms);
 	while (saves_next_message(msg, sizeof(msg), &err))
 		osd_toast(msg, err ? 4000 : 2000);
@@ -1553,7 +1587,7 @@ static void main_loop(void)
 		struct glprobe_stats g0 = { 0 };
 		double core_ms;
 
-		H.heartbeat++;
+		host_heartbeat();
 		host_poll_signals();
 		if (H.quit)
 			break;
@@ -1738,9 +1772,9 @@ static void bench_start(void)
 		bench_result_path(plan_path, i, rp, sizeof(rp));
 		unlink(rp);
 	}
-	H.busy_ok = true;
+	host_busy(true);
 	if (state_save_to(p.state) != 0) {
-		H.busy_ok = false;
+		host_busy(false);
 		host_toast("%s", _("Benchmark: this game cannot save a state now"));
 		return;
 	}
@@ -1756,7 +1790,7 @@ static void bench_start(void)
 		free(thumb);
 	}
 	if (bench_plan_write(plan_path, &p) != 0) {
-		H.busy_ok = false;
+		host_busy(false);
 		host_toast(_("Benchmark: cannot write %s"), plan_path);
 		return;
 	}
@@ -1765,6 +1799,10 @@ static void bench_start(void)
 	/* Hand the display and the devices over, then become the driver
 	 * (same pid: the UI keeps waiting for us). */
 	sram_flush(true);
+	/* the driver copies the start state as the auto state at a power-off:
+	 * its saves reference goes with it (the resume keeps a newer .srm) */
+	if (state_write_saves_ref(p.state) != 0)
+		hlog(HLOG_WARN, "bench: no saves reference for %s", p.state);
 	opts_autosave();
 	playtime_report();   /* this process is replaced: the play time so far */
 	audio_close();
@@ -2035,18 +2073,19 @@ static void bench_report_open(void)
 
 static void *watchdog(void *arg)
 {
-	uint64_t last = H.heartbeat;
+	uint32_t last = host_heartbeat_get(), now;
 	int stuck = 0;
 
 	(void)arg;
 	for (;;) {
 		sleep(1);
-		if (H.busy_ok) {
+		if (host_busy_get()) {
 			stuck = 0;
 			continue;
 		}
-		if (H.heartbeat != last) {
-			last = H.heartbeat;
+		now = host_heartbeat_get();
+		if (now != last) {
+			last = now;
 			stuck = 0;
 			continue;
 		}
@@ -2552,11 +2591,12 @@ int host_run(const struct host_config *cfg)
 	main_loop();
 
 	/* ---- shutdown: saves first ---- */
-	H.busy_ok = true;
+	host_busy(true);
 	ret = H.exit_code;
 	host_play_pause(true);
 	playtime_report();
 	hlog(HLOG_INFO, "play time this session: %lld s", (long long)(pt_total_ms(&H.pt, hnow_ms()) / 1000));
+	core_log_flush();
 	if (H.poweroff)
 		show_poweroff_frame();
 	if (sram_flush(true) < 0)

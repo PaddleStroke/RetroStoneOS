@@ -1,6 +1,7 @@
 /*
  * host_internal.h - state shared by the host's modules (single-threaded
- * except the save worker in saves.c, which never touches this struct).
+ * except the save worker in saves.c, which never touches this struct, and
+ * the hang watchdog, which reads heartbeat and busy_ok atomically).
  */
 #ifndef RSOS_HOST_INTERNAL_H
 #define RSOS_HOST_INTERNAL_H
@@ -139,8 +140,10 @@ struct host {
 	bool paused_disconnect;
 	int slot;
 	uint64_t frame;
-	volatile uint64_t heartbeat;
-	volatile bool busy_ok;     /* long operation in progress: watchdog waits */
+	/* Read by the watchdog thread: only through host_heartbeat() and
+	 * host_busy() (atomic; a 64-bit counter is not on 32-bit ARM). */
+	uint32_t heartbeat;
+	bool busy_ok;              /* long operation in progress: watchdog waits */
 	int ff_speed;              /* 0 = off, else runs per displayed frame */
 	int autosave;
 	bool show_stats;
@@ -190,6 +193,24 @@ struct host_bench_report {
 
 extern struct host H;
 
+/* The hang watchdog's inputs (host.c watchdog(), another thread). */
+static inline void host_heartbeat(void)
+{
+	__atomic_fetch_add(&H.heartbeat, 1u, __ATOMIC_RELAXED);
+}
+static inline uint32_t host_heartbeat_get(void)
+{
+	return __atomic_load_n(&H.heartbeat, __ATOMIC_RELAXED);
+}
+static inline void host_busy(bool busy)
+{
+	__atomic_store_n(&H.busy_ok, busy, __ATOMIC_RELAXED);
+}
+static inline bool host_busy_get(void)
+{
+	return __atomic_load_n(&H.busy_ok, __ATOMIC_RELAXED);
+}
+
 /* core.c */
 int core_open(const char *path);
 void core_close(void);
@@ -197,6 +218,8 @@ bool core_environment(unsigned cmd, void *data);
 void core_set_callbacks(void);
 void host_video_setup(void);
 void host_audio_setup(void);
+/* Logs how many core log lines the rate limit dropped (if any). */
+void core_log_flush(void);
 
 /* host.c */
 void host_toast(const char *fmt, ...) __attribute__((format(printf, 1, 2)));

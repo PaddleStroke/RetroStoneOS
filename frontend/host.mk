@@ -87,7 +87,8 @@ HOST_TEST_OBJS = $(BUILDDIR)/host/tests/test_host.o $(BUILDDIR)/host/pacing.o \
 	$(BUILDDIR)/audio/resampler.o $(BUILDDIR)/host/options.o $(BUILDDIR)/host/ini.o \
 	$(BUILDDIR)/host/hutil.o $(BUILDDIR)/host/md5.o $(BUILDDIR)/host/coreinfo.o \
 	$(BUILDDIR)/host/batt_overlay.o $(BUILDDIR)/font8x8.o $(BUILDDIR)/third_party/miniz.o \
-	$(BUILDDIR)/host/perf.o $(BUILDDIR)/host/bench.o $(BUILDDIR)/host/playtime.o
+	$(BUILDDIR)/host/perf.o $(BUILDDIR)/host/bench.o $(BUILDDIR)/host/playtime.o \
+	$(BUILDDIR)/host/draw.o
 # The player-assignment tests use the input layer's pure functions; the BIOS
 # check (coreinfo.o) translates its messages.
 HOST_TEST_OBJS += $(HOST_INPUT_EXTRA_OBJS)

@@ -770,7 +770,7 @@ static void menu_run(enum page start)
 		struct pollfd pfd[2];
 		int n = 0, to = hin_timeout_ms();
 
-		H.heartbeat++;
+		host_heartbeat();
 		if (dirty) {
 			draw();
 			display_present_copy(M.px, CW * 4);

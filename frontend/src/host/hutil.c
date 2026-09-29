@@ -21,6 +21,34 @@ void hlog_set_level(enum hlog_level max)
 	log_max = max;
 }
 
+bool hlog_enabled(enum hlog_level lvl)
+{
+	return lvl <= log_max;
+}
+
+bool hrate_take(struct hrate *r, int64_t now_ms, double rate, double burst, unsigned long *dropped)
+{
+	if (!r->started) {
+		r->started = true;
+		r->tokens = burst;
+		r->last_ms = now_ms;
+	}
+	if (now_ms > r->last_ms) {
+		r->tokens += (double)(now_ms - r->last_ms) * rate / 1000.0;
+		if (r->tokens > burst)
+			r->tokens = burst;
+		r->last_ms = now_ms;
+	}
+	if (r->tokens < 1.0) {
+		r->dropped++;
+		return false;
+	}
+	r->tokens -= 1.0;
+	*dropped = r->dropped;
+	r->dropped = 0;
+	return true;
+}
+
 void hlogv(enum hlog_level lvl, const char *fmt, va_list ap)
 {
 	static const char *tag[] = { "E", "W", "I", "D" };
