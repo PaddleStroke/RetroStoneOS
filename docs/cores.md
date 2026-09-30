@@ -1124,11 +1124,13 @@ folder: full description in [vc-games.md](vc-games.md).
 
 | Game | Core (package) | Source | Build flags | Expected on A20 | Save RAM | Save states |
 |---|---|---|---|---|---|---|
-| Bomber Mole (1 player) | bombermole (`rsos-vc-games`) | RetroStone VC `games/bombermole` (all rights reserved, 8BCraft) + SDK (MIT) | the RetroStone VC `Makefile`'s cross target with Buildroot's `CC`/`CFLAGS` (-O2; the wrapper's Cortex-A7 NEON flags) | designed for 60 fps on one 1 GHz A7: RetroStone VC's spec estimates 6-8 ms per frame on average, 13-17 ms for the worst frame of the heaviest scenes (host `make bench` x15-x20); TODO(hw): measure | `/data/saves/retrostone/Bomber Mole.srm` (32 KiB) | no (`retro_serialize()` returns false in the SDK) |
-| Leady Squid (1-2 players) | leadysquid (`rsos-vc-games`) | RetroStone VC `games/leadysquid` (all rights reserved, 8BCraft) + SDK (MIT) | the same | the same renderer and 60 fps target (4 layers, raster effects, colour math); TODO(hw): measure | `/data/saves/retrostone/Leady Squid.srm` | no |
+| Bomber Mole (1 player) | bombermole (`rsos-vc-games`) | RetroStone VC `games/bombermole` (all rights reserved, 8BCraft) + SDK (MIT) | the RetroStone VC `Makefile`'s cross target with Buildroot's `CC`/`CFLAGS` (-O2; the wrapper's Cortex-A7 NEON flags) | designed for 60 fps on one 1 GHz A7: RetroStone VC's spec estimates 6-8 ms per frame on average, 13-17 ms for the worst frame of the heaviest scenes (host `make bench` x15-x20); TODO(hw): measure | `/data/saves/retrostone/Bomber Mole.srm` (32 KiB) | yes: the SDK saves the whole console (about 350 KB), `/data/states/retrostone/Bomber Mole.state*` |
+| Leady Squid (1-2 players) | leadysquid (`rsos-vc-games`) | RetroStone VC `games/leadysquid` (all rights reserved, 8BCraft) + SDK (MIT) | the same | the same renderer and 60 fps target (4 layers, raster effects, colour math); TODO(hw): measure | `/data/saves/retrostone/Leady Squid.srm` | yes (about 300 KB) |
 
 - **Metadata**: `no_content = true` (see [Core metadata files](#core-metadata-files)), `systems = retrostone`,
-  `extensions = <core id>` (each menu entry's extension picks its core), `savestates = false`.
+  `extensions = <core id>` (each menu entry's extension picks its core), `savestates = true`: the auto state, the
+  resume, the in-game slots and the game switcher work as for any core. A state never holds the `.srm`, and a state
+  of another build of the game is refused ([vc-games.md](vc-games.md), "Save states").
 - **Architectures**: one build line for every board (no platform switch in the Makefile): Cortex-A7 armhf on the
   RetroStone2/RetroStone1 and the 32-bit boards, aarch64 elsewhere. NEEDED: libc, libm only.
 - **Licences**: `RSOS_VC_GAMES_REDISTRIBUTE = NO` (the games are proprietary; `legal-info` keeps their licence texts

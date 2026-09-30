@@ -51,7 +51,7 @@ Each game is a libretro core with the game built in: there is no ROM file to cop
 - **Installed:**
   - `/usr/lib/libretro/<game>_libretro.so` (stripped on the RetroStone2: Bomber Mole 403 KB, Leady Squid 231 KB, assets included);
   - `/usr/share/rsos/cores/<game>.ini`: `systems = retrostone`, `extensions = <game>`, **`no_content = true`**,
-    `savestates = false`;
+    `savestates = true`;
   - `/usr/share/rsos/games/retrostone/`: the two menu entries (small text files, never read), `gamelist.xml`
     (names, descriptions, genre, players, developer; `package/rsos-vc-games/gamelist.xml`) and
     `media/images/<name>.png` (the title screens of the games' `docs/screenshots/`, 640x480);
@@ -99,18 +99,32 @@ Each game is a libretro core with the game built in: there is no ROM file to cop
   - **Save RAM** (the games' progress, 32 KiB): `/data/saves/retrostone/Bomber Mole.srm`, loaded before the first
     frame (the SDK starts its runtime at the first `retro_run()`, after the host has filled the SRAM) and written
     like every core's SRAM (periodically when it changes, at exit, at a power-off).
-  - **Save states, auto state, resume** (the in-game menu's slots, "Resume where you left off?", the boot offer of
-    `resume.ini`): they would be `/data/states/retrostone/<name>.state*`, found by `host_auto_state_path()` from the
-    entry path, and the checks prove it with a test core (below). **But the RetroStone VC SDK does not implement
-    `retro_serialize()` yet** (`sdk/frontends/libretro/rs_libretro.c` returns `false`), so the `.ini` says
-    `savestates = false`: no save-state items, no auto state, and so no resume for these two games until the SDK
-    serializes its state (a TODO for RetroStone VC; then set `savestates = true`). Like any core without save
-    states, the game sends the `nostate` status line (docs/host-design.md, "Status lines"), so the menu holds its
-    idle power-off while it runs (an idle power-off could not keep the game in progress); the `.srm` is still
-    written at a power-off.
+  - **Save states, auto state, resume** (the in-game menu's slots with their thumbnails, "Resume where you left
+    off?", the boot offer of `resume.ini`, the game switcher): as for any core, in
+    `/data/states/retrostone/<name>.state*` (`.state.auto`, its `.png` thumbnail and its `.sram` saves reference),
+    found by `host_auto_state_path()` from the entry path. The game does not send the `nostate` status line, so an
+    idle power-off during it works as during any other game: the auto state is written first, and the next boot
+    offers to resume it (see "Save states" below).
   - Play time, last played, favorites: `gamedb.tsv`, key `retrostone` + `Bomber Mole.bombermole`.
   - The game switcher (Select+Y), screenshots (`/data/screenshots/retrostone/`), the CPU profile, scaling: as for
     any game. Rumble: the games do not use it.
+
+## Save states
+
+The RetroStone VC SDK implements `retro_serialize()` (RetroStone VC `docs/spec.md`, "Save states"): a state is the
+whole console at a frame boundary (VRAM, maps, palettes, sprites, the PPU registers and split-screen viewports, the
+voices, the echo, the music track and row, the pads' edges, the frame counter and RNG) plus the objects each game
+registers, so a game resumes exactly: the same level, positions, enemies, timers, bombs, score, battle round or
+2-player race. The format: a 64-byte header (`RSVC`, format version, game id, game version, the game's state
+version, a **build hash** over the saved objects' names and sizes and the game's asset pack, the payload size and a
+checksum), then tagged sections (`CORE`, `PPU `, `APU `, `MUS `, `TEXT`, `GAME`, `PTRS`, `END `), about 350 KB
+(Bomber Mole) or 300 KB (Leady Squid), a fixed size per build. **Versioning:** a state of another game, of another
+version or build of the game (any change of its saved objects or assets), truncated or corrupted is refused
+before anything changes: the load says "Cannot load the state", the game goes on, and the resume starts the game
+fresh. A system update that changes a game therefore drops its states (not its progress). The battery save is
+**not** in the state: progress (cleared levels, best times, medals) stays in the `.srm`, and loading an older state
+never takes it back (the host's B1 guard has nothing to restore for these cores). The music restarts at the saved
+row (the notes held at that moment start again on the next row).
 
 ## Controls
 
@@ -147,9 +161,15 @@ release notes say so. Set-up for the owner: [ci.md](ci.md), section 4b.
 - `make check` (frontend): `check-host` (`rsos-launch-test`, "a game built into its core"): the test core with
   `no_content = true` gets `retro_load_game(NULL)`, its SRAM is `saves/retrostone/Test Game.srm`, its auto state
   `states/retrostone/Test Game.state.auto`, the resume starts from it, and without the key the same file is ordinary
-  content. `check-frontend` step 8: the menu lists the system from the read-only folder (no `roms/retrostone/`),
-  opens it, launches the entry with the right core and no content, the saves and the play land in the right places;
-  8a: the menu finds the auto state and resumes it.
+  content; with save states, as any game: no `nostate`, the auto state's thumbnail and `.sram` saves reference, the
+  in-game menu's Save state / Load state (slot 1, `Test Game.state1` and its thumbnail), the game switcher leaving
+  it (its auto state written). `check-frontend` step 8: the menu lists the system from the read-only folder (no
+  `roms/retrostone/`), opens it, launches the entry with the right core and no content, the saves, the auto state
+  (thumbnail, saves reference) and the play land in the right places, no idle power-off hold; 8a: the menu finds
+  the auto state and resumes it; 8b: an idle power-off during the game writes the auto state first and records the
+  entry in `resume.ini`; 8c: the next boot offers "Resume Test VC Game?" and resumes it without content.
+- RetroStone VC's own tests (`make check`, `make leadysquid-check`, `make SAN=1 check`): each game saved at many
+  points, the same frames replayed after a load, in the same process and in a fresh one, bad states refused.
 - `make check-asan`: the same under ASan/UBSan.
 - `scripts/ci/check-defconfigs.sh`: `BR2_PACKAGE_RSOS_VC_GAMES=y` (with its source path) and `=n` both survive
   `olddefconfig` for every board.
@@ -163,4 +183,7 @@ release notes say so. Set-up for the owner: [ci.md](ci.md), section 4b.
   (... is a menu entry)", 320x240 at 60 fps, 32 kHz audio, exit 0; the Bomber Mole frame dump shows its title screen.
 - `make rsos-vc-games-legal-info`: the four licence texts, no source; `rom-folders` has no `retrostone`.
 - Not verified: the games on the device. TODO(hw): play both on the RetroStone2 (frame times, the SRAM after a
-  cleared level, Leady Squid for two with an external pad).
+  cleared level, Leady Squid for two with an external pad). Save states (since RetroStone VC `savestates`): the
+  time of a save and a load of about 350 KB on the SD card, a Bomber Mole battle resumed mid-round after an idle
+  power-off, a co-op level and a boss resumed, a Leady Squid race for two resumed, the slots' thumbnails, the music
+  after a load.
