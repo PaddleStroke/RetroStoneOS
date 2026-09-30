@@ -86,7 +86,9 @@ layer cake, and every setting lives in one menu.
 | Game engines and ports | ScummVM, Doom (Freedoom included), Cave Story, PICO-8 (fake-08) |
 | Others | Atari 2600/7800/Lynx, WonderSwan (Color), ColecoVision |
 
-Free homebrew games are pre-installed, so the console is fun out of the box (see [docs/homebrew.md](docs/homebrew.md)).
+Pre-installed games, so the console is fun out of the box: the **RetroStone** system (Bomber Mole, Leady Squid),
+**µCity** (Game Boy Color, GPL-3.0+ / CC BY-SA 4.0) and **Freedoom** (Doom, BSD-3-Clause); see
+[docs/homebrew.md](docs/homebrew.md) and [docs/vc-games.md](docs/vc-games.md).
 BIOS files go in `RETROSTONE/bios/` (see [docs/cores.md](docs/cores.md)). No commercial games or BIOS files are included.
 
 ## Supported hardware
@@ -128,7 +130,8 @@ make
 # -> output/images/sdcard.img
 ```
 
-A clone of this repository has no homebrew games: set `BR2_PACKAGE_RSOS_HOMEBREW=n` (docs/homebrew.md). The menu
+The RetroStone games build from a [RetroStone VC](https://github.com/PaddleStroke/RetroStoneVC) checkout next to
+this one (`../RetroStoneVC`; or set `BR2_PACKAGE_RSOS_VC_GAMES=n`, docs/vc-games.md). The menu
 program also builds and tests on a PC: `cd frontend && make check`. Details: [docs/build.md](docs/build.md).
 
 ## Documentation
@@ -158,7 +161,8 @@ program also builds and tests on a PC: `cd frontend && make check`. Details: [do
 
 The RetroStoneOS code is under the [MIT License](LICENSE). Bundled third-party components keep their own licences (the
 Linux kernel and U-Boot under GPL-2.0, the emulator cores under various licences including some non-commercial ones,
-and the Carbon/gbz35 theme art under CC BY-NC-SA). See [LICENSE](LICENSE) for the details, and each release's
+the Carbon/gbz35 theme art under CC BY-NC-SA, and the RetroStone games under MIT (code) and CC BY-NC-SA 4.0 (art,
+music, levels)). See [LICENSE](LICENSE) for the details, and each release's
 `legal-info` archive for the full sources and licence texts. The hardware files in `hardware/` (RetroStone2 and
 RetroStone1) are open hardware under the [CERN-OHL-P-2.0](hardware/LICENSE.txt) (see [hardware/README.md](hardware/README.md)).
 
@@ -174,4 +178,4 @@ or a kit). Sharing the images for free is fine.
   [linux-sunxi](https://linux-sunxi.org/) community and the mainline kernel developers.
 - Olimex, for the original A20 HDMI audio driver work.
 - Themes: rxbrad (gbz35) and Rookervik (Carbon, RetroPie).
-- Homebrew authors who allowed their games to be included (see [docs/homebrew.md](docs/homebrew.md)), and the Freedoom project.
+- Antonio Niño Díaz for µCity, and the Freedoom project (see [docs/homebrew.md](docs/homebrew.md)).

@@ -883,9 +883,7 @@ nice -n 10 make O=~/rsos/output-release -j16
 `/etc/rsos/build.env` on the target says which variant it is (`RSOS_RELEASE`,
 `RSOS_UART_SHELL`). The same switch works for other boards (the boot logger,
 the UART and the version string are common; the Raspberry Pi's command line
-has no debug arguments). Not part of the switch yet: `BR2_REPRODUCIBLE`, and
-`BR2_PACKAGE_RSOS_HOMEBREW` still needs the gitignored `homebrew/license ok/`
-folder (turn it off in a fresh clone).
+has no debug arguments). Not part of the switch yet: `BR2_REPRODUCIBLE`.
 
 ## Adding packages
 
@@ -905,11 +903,13 @@ started by init, plus the tools `rsos-run`, `rsos-kmstest`, `rsos-display-selfte
 `/usr/share/rsos/update.pub` and `/etc/rsos/version.env`; it selects `zstd`,
 `mbedtls` and `ca-certificates` for the updater, about 2.2 MB in the root
 filesystem: docs/updates.md), the 25 libretro cores (installed
-to `/usr/lib/libretro/`, metadata in `/usr/share/rsos/cores/`) and
-`rsos-homebrew`. **rsos-homebrew builds from the gitignored
-`homebrew/license ok/` folder: in a fresh clone without it, set
-`BR2_PACKAGE_RSOS_HOMEBREW` to n** (`make O=~/rsos/output menuconfig`, or edit
-the defconfig), or the build stops.
+to `/usr/lib/libretro/`, metadata in `/usr/share/rsos/cores/`), the bundled
+games (`rsos-homebrew`, the first-boot seeding; `rsos-ucity` and
+`rsos-freedoom`, downloaded like any source: docs/homebrew.md) and
+`rsos-vc-games`. **rsos-vc-games builds from a RetroStone VC checkout next to
+this one (`../RetroStoneVC`, https://github.com/PaddleStroke/RetroStoneVC):
+without it, set `BR2_PACKAGE_RSOS_VC_GAMES` to n** (`make O=~/rsos/output
+menuconfig`, or edit the defconfig), or the build stops.
 
 Device tree overlays: every `board/retrostone2/dts/overlays/*.dtso` is built
 by the kernel and installed as `/boot/overlays/<name>.dtbo` (glob in

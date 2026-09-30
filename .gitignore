@@ -6,8 +6,8 @@ images/**/*.rsu
 images/**/*.sha256
 *.img
 
-# --- Homebrew games: permission-only, fetched by CI from the private
-#     PaddleStroke/RetroStoneOS-homebrew repository (docs/homebrew.md)
+# --- Homebrew ROMs of local test folders (the permission-only set was
+#     dropped on 2026-09-30; docs/homebrew.md): never in git
 /homebrew/
 /*.gb
 /*.gbc
@@ -44,6 +44,6 @@ es-theme*.zip
 # --- Local Claude Code worktrees (agents' private checkouts)
 /.claude/worktrees/
 
-# --- RetroStone VC games: proprietary, fetched by CI from the private
-#     PaddleStroke/RetroStoneVC repository (docs/vc-games.md)
+# --- RetroStone VC games: the checkout of the public PaddleStroke/RetroStoneVC
+#     that CI makes here (docs/vc-games.md)
 /.vc-games-src/

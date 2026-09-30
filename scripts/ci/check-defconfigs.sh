@@ -5,8 +5,8 @@
 # it. For each configs/*_defconfig: make <board>_defconfig in a scratch
 # output directory, then check that every BR2_ line of the defconfig (the
 # last assignment when a symbol is set twice, as the release defconfig does)
-# is in the .config, and that the homebrew and RetroStone VC games switches of
-# build-board.sh work.
+# is in the .config, and that the RetroStone VC games switch of
+# build-board.sh works.
 #   scripts/ci/check-defconfigs.sh [board ...]
 set -u
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -48,24 +48,9 @@ for b in "$@"; do
 	unset_bad=$(sed -n 's/^# \(BR2_[A-Za-z0-9_]*\) is not set$/\1/p' "$O.expected" | while read -r s; do
 		grep -q "^$s=" "$O/.config" && echo "$s (set, but the defconfig unsets it)"
 	done)
-	# the CI homebrew switch (build-board.sh): y (every board gets the games
-	# when the secret is there) and n must both survive olddefconfig
+	# the CI switch of the RetroStone VC games (build-board.sh): y (with its
+	# source path) and n must both survive olddefconfig
 	hb=ok
-	for v in y n; do
-		sed -i '/^BR2_PACKAGE_RSOS_HOMEBREW=/d; /^# BR2_PACKAGE_RSOS_HOMEBREW is not set$/d' "$O/.config"
-		if [ "$v" = y ]; then
-			echo 'BR2_PACKAGE_RSOS_HOMEBREW=y' >> "$O/.config"
-		else
-			echo '# BR2_PACKAGE_RSOS_HOMEBREW is not set' >> "$O/.config"
-		fi
-		make -C "$BR_DIR" O="$O" olddefconfig > /dev/null 2>&1
-		if [ "$v" = y ]; then
-			grep -q '^BR2_PACKAGE_RSOS_HOMEBREW=y$' "$O/.config" || hb="BR2_PACKAGE_RSOS_HOMEBREW=y does not stick"
-		else
-			grep -q '^BR2_PACKAGE_RSOS_HOMEBREW=' "$O/.config" && hb="BR2_PACKAGE_RSOS_HOMEBREW=n does not stick"
-		fi
-	done
-	# the same for the RetroStone VC games switch (and its source path)
 	for v in y n; do
 		sed -i '/^BR2_PACKAGE_RSOS_VC_GAMES=/d; /^# BR2_PACKAGE_RSOS_VC_GAMES is not set$/d' "$O/.config"
 		sed -i '/^BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR=/d' "$O/.config"

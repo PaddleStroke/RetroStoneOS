@@ -54,16 +54,18 @@ writing anything. Other boards (Raspberry Pi): flash the new image.
 
 **Free, non-commercial distribution only.** RetroStoneOS is a free download; it is not sold, and it does not come
 with the hardware. The images contain emulator cores and theme art whose licences forbid commercial use: Snes9x
-(snes9x2005, snes9x2010), PicoDrive, MAME 2003-Plus and FBNeo, and the gbz35 themes and the Carbon system art (CC
-BY-NC-SA). So **these images must not be sold, and must not be preloaded on hardware that is sold** (a console, an
+(snes9x2005, snes9x2010), PicoDrive, MAME 2003-Plus and FBNeo, and the gbz35 themes, the Carbon system art and the
+RetroStone games' art, music and levels (CC BY-NC-SA). So **these images must not be sold, and must not be preloaded on hardware that is sold** (a console, an
 SD card or a kit). Sharing them for free, unchanged, is fine.
 
 - The RetroStoneOS code (frontend, build tree, scripts) is under the MIT licence
   ([LICENSE]({{REPO_URL}}/blob/{{TAG}}/LICENSE)).
 - The Linux kernel, U-Boot, BusyBox and the other system packages keep their own licences (GPL-2.0 and others).
 - The other emulator cores keep their own licences (GPL, zlib, BSD and others).
-- The bundled homebrew games are shipped with their authors' permission (µCity under GPL-3.0+ / CC BY-SA 4.0). Do
-  not redistribute them separately from these images.
+- The pre-installed games: µCity (GPL-3.0+ code, BSD-2-Clause GBT Player, CC BY-SA 4.0 graphics and music) and
+  Freedoom (BSD-3-Clause); their source is in the legal-info archives.
+- The RetroStone system (Bomber Mole, Leady Squid, [RetroStone VC](https://github.com/PaddleStroke/RetroStoneVC)):
+  code under MIT, art, music, sound and levels under CC BY-NC-SA 4.0. The names and logos are not licensed.
 - Per-package licences: `legal-info/manifest.csv` in the archives below.
 
 ### Source code (GPL)

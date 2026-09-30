@@ -41,6 +41,11 @@ defaults:
   run:
     shell: bash
 
+env:
+  # The RetroStone VC ref the images are built from: "main", or a tag or
+  # commit to pin a release to.
+  RETROSTONE_VC_REF: main
+
 jobs:
   boards:
     name: board list
@@ -84,8 +89,6 @@ jobs:
       matrix: ${{ fromJSON(needs.boards.outputs.matrix) }}
     env:
       BOARD: ${{ matrix.board }}
-      HAVE_HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN != '' }}
-      HAVE_VC_GAMES_TOKEN: ${{ secrets.VC_GAMES_TOKEN != '' }}
       # only used by a defconfig that selects the UART password login
       RSOS_UART_PASSWORD: ${{ secrets.UART_PASSWORD }}
       # LLVM and Clang (host and target) need more room than a plain board
@@ -146,52 +149,22 @@ jobs:
           restore-keys: |
             br-ccache-${{ matrix.board }}-
 
-      # The owner-approved homebrew games live in a private repository
-      # (docs/ci.md, "Homebrew games"). Without the secret the images are built
-      # without them (BR2_PACKAGE_RSOS_HOMEBREW=n).
-      - name: Fetch the homebrew games (private repository)
-        if: env.HAVE_HOMEBREW_TOKEN == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: PaddleStroke/RetroStoneOS-homebrew
-          token: ${{ secrets.HOMEBREW_TOKEN }}
-          path: .homebrew-src
-          persist-credentials: false
-
-      - name: Stage the homebrew games
-        run: |
-          if [ "$HAVE_HOMEBREW_TOKEN" = true ]; then
-            sh scripts/ci/stage-homebrew.sh .homebrew-src
-            rm -rf .homebrew-src
-            echo "RSOS_CI_HOMEBREW=yes" >> "$GITHUB_ENV"
-          else
-            echo "::notice::HOMEBREW_TOKEN is not set: $BOARD is built without the homebrew games"
-            echo "RSOS_CI_HOMEBREW=no" >> "$GITHUB_ENV"
-          fi
-
-      # The RetroStone VC games (Bomber Mole, Leady Squid: all rights reserved,
-      # 8BCraft) live in the private PaddleStroke/RetroStoneVC (docs/ci.md,
-      # "RetroStone VC games"). Without the secret the images are built
-      # without them (BR2_PACKAGE_RSOS_VC_GAMES=n: no RetroStone system).
-      - name: Fetch the RetroStone VC games (private repository)
-        if: env.HAVE_VC_GAMES_TOKEN == 'true'
+      # The RetroStone VC games (Bomber Mole, Leady Squid; docs/vc-games.md)
+      # are built from the public PaddleStroke/RetroStoneVC, at the ref of
+      # RETROSTONE_VC_REF (top of this file: a branch, a tag or a commit).
+      - name: Fetch RetroStone VC
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: PaddleStroke/RetroStoneVC
-          token: ${{ secrets.VC_GAMES_TOKEN }}
+          ref: ${{ env.RETROSTONE_VC_REF }}
           path: .vc-games-src
           persist-credentials: false
 
       - name: RetroStone VC games
         run: |
-          if [ "$HAVE_VC_GAMES_TOKEN" = true ]; then
-            echo "RetroStone VC $(git -C .vc-games-src rev-parse --short=12 HEAD)"
-            echo "RSOS_CI_VC_GAMES=yes" >> "$GITHUB_ENV"
-            echo "RSOS_CI_VC_GAMES_DIR=$GITHUB_WORKSPACE/.vc-games-src" >> "$GITHUB_ENV"
-          else
-            echo "::notice::VC_GAMES_TOKEN is not set: $BOARD is built without the RetroStone VC games (no RetroStone system)"
-            echo "RSOS_CI_VC_GAMES=no" >> "$GITHUB_ENV"
-          fi
+          echo "RetroStone VC $RETROSTONE_VC_REF: $(git -C .vc-games-src rev-parse --short=12 HEAD)"
+          echo "RSOS_CI_VC_GAMES=yes" >> "$GITHUB_ENV"
+          echo "RSOS_CI_VC_GAMES_DIR=$GITHUB_WORKSPACE/.vc-games-src" >> "$GITHUB_ENV"
 
       - name: Configure (make ${{ matrix.board }}_defconfig)
         id: configure
@@ -292,7 +265,6 @@ jobs:
         run: |
           {
             echo "### $BOARD ($BOARD_NAME, $BOARD_STATUS)"
-            echo "homebrew games: ${RSOS_CI_HOMEBREW:-?}"
             echo "RetroStone VC games: ${RSOS_CI_VC_GAMES:-?}"
             echo '```'
             ls -l "$RSOS_CI_WORK/artifacts" 2>/dev/null || echo "no artifacts"
@@ -364,16 +336,6 @@ jobs:
           done
           df -h "$RSOS_CI_WORK" | tail -n 1
 
-      - name: Source of the bundled GPL homebrew game
-        # µCity is GPL-3.0+: its source goes next to the images that ship it
-        # (docs/homebrew.md).
-        run: |
-          D=$RSOS_CI_WORK/dist
-          if grep -qs "^HOMEBREW='y'" "$D"/*.info; then
-            wget -q -O "$D/ucity-1.2-source.tar.gz" https://github.com/AntonioND/ucity/archive/refs/tags/v1.2.tar.gz
-            echo "9ffdd325294ebbd8a4adcc5a5bb40a2ea4b981cb8e4889a5392ef4796cdb2dc1  $D/ucity-1.2-source.tar.gz" | sha256sum -c -
-          fi
-
       - name: Release notes and SHA256SUMS
         run: |
           D=$RSOS_CI_WORK/dist
@@ -386,7 +348,7 @@ jobs:
           sh scripts/ci/release-notes.sh "$TAG" "$D" > "$RUNNER_TEMP/notes.md"
           cat "$RUNNER_TEMP/notes.md"
           mkdir -p "$U"
-          for f in "$D"/*.img.xz "$D"/*.rsu "$D"/legal-info-* "$D"/*-source.tar.gz; do
+          for f in "$D"/*.img.xz "$D"/*.rsu "$D"/legal-info-*; do
             [ -f "$f" ] || continue
             case $f in *.sha256) continue ;; esac
             mv "$f" "$U"/

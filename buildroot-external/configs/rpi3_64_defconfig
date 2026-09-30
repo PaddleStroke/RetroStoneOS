@@ -125,10 +125,11 @@ BR2_PACKAGE_HOST_MTOOLS=y
 # RetroStoneOS frontend and libretro cores (the RetroStone2's set; the
 # platform/dynarec per architecture is in package/libretro-common.mk)
 BR2_PACKAGE_RSOS_FRONTEND=y
-# Needs the gitignored homebrew/license ok/ folder: set to n in a fresh clone.
+# Bundled games (docs/homebrew.md): the first-boot seeding, and µCity (gbc).
 BR2_PACKAGE_RSOS_HOMEBREW=y
+BR2_PACKAGE_RSOS_UCITY=y
 # The RetroStone VC games (docs/vc-games.md): needs a RetroStone VC checkout
-# next to this tree (../RetroStoneVC): set to n without it (CI does).
+# next to this tree (../RetroStoneVC; CI checks out the public repository).
 BR2_PACKAGE_RSOS_VC_GAMES=y
 BR2_PACKAGE_LIBRETRO_FCEUMM=y
 BR2_PACKAGE_LIBRETRO_SNES9X2005=y
@@ -156,7 +157,7 @@ BR2_PACKAGE_LIBRETRO_BEETLE_SUPAFAUST=y
 BR2_PACKAGE_LIBRETRO_CLOWNMDEMU=y
 BR2_PACKAGE_LIBRETRO_GEOLITH=y
 # Third batch: computers, fantasy consoles, game engines (docs/cores.md).
-# rsos-freedoom (free Doom IWADs) is seeded to /data/roms/doom like rsos-homebrew;
+# rsos-freedoom (free Doom IWADs) is seeded to /data/roms/doom like rsos-ucity;
 # the Cave Story data (BR2_PACKAGE_LIBRETRO_NXENGINE_CAVESTORY) stays off: owner
 # decision (docs/homebrew.md).
 BR2_PACKAGE_LIBRETRO_PRBOOM=y

@@ -83,6 +83,7 @@ menu "RetroStoneOS packages"
 source "$BR2_EXTERNAL_RETROSTONE_PATH/package/rsos-frontend/Config.in"
 source "$BR2_EXTERNAL_RETROSTONE_PATH/package/libretro-cores.Config.in"
 source "$BR2_EXTERNAL_RETROSTONE_PATH/package/rsos-homebrew/Config.in"
+source "$BR2_EXTERNAL_RETROSTONE_PATH/package/rsos-ucity/Config.in"
 source "$BR2_EXTERNAL_RETROSTONE_PATH/package/rsos-vc-games/Config.in"
 
 endmenu

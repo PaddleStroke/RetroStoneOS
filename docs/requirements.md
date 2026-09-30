@@ -314,7 +314,7 @@ non-commercial).
 | Frontend's own licence | M | P0 | It is linked in-process with GPL-2.0-only (gambatte) and GPL-3 (future cores) code, so pick **MIT** (or GPL-2.0-or-later). Not GPL-3-only |
 | Firmware blobs | P | P1 | linux-firmware brcm/cypress: redistributable, include LICENCE. **Armbian `BCM20710A1.hcd`: provenance and licence unknown**, check or replace |
 | Themes and assets | M | P1 | Many EmulationStation themes and system logos are CC BY-NC(-SA) or trademarked (Nintendo/Sega/Sony logos). Use only assets with a licence compatible with the distribution model. Record them in `frontend/third_party/` |
-| ROMs and BIOS | C (never shipped) | P0 | Never ship or preload ROMs or BIOS (the MAME/FBNeo clauses also forbid shipping with illegal ROMs). Only homebrew with explicit permission |
+| ROMs and BIOS | C (never shipped) | P0 | Never ship or preload ROMs or BIOS (the MAME/FBNeo clauses also forbid shipping with illegal ROMs). Only homebrew under an open licence (docs/homebrew.md) |
 | Kernel patch authorship | C (kernel-patches.md: no SoB, credit Stefan Mavrodiev) | - | - |
 | Names | M | P2 | Do not use "RetroPie" or "EmulationStation" branding. "RetroStone" is 8BCraft's |
 

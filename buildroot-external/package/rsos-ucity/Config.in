@@ -1,0 +1,21 @@
+config BR2_PACKAGE_RSOS_UCITY
+	bool "rsos-ucity"
+	depends on BR2_PACKAGE_RSOS_HOMEBREW # rsos-seed-homebrew copies the game
+	help
+	  µCity 1.2 (Antonio Niño Díaz), an open-source city builder
+	  for the Game Boy Color, pre-installed so that the "gbc"
+	  system has a game out of the box. Code GPL-3.0+, GBT Player
+	  BSD-2-Clause, graphics and music CC BY-SA 4.0.
+
+	  Downloads the upstream v1.2 release ROM and the source of the
+	  tag (for "make legal-info"), both hash-checked. Installs the
+	  ROM to /usr/share/rsos/homebrew/gbc/ with a gamelist.xml, and
+	  the licences and NOTICE to /usr/share/rsos/licenses/ucity/.
+	  rsos-seed-homebrew (rsos-homebrew) copies the game to
+	  /data/roms/gbc/ on the first boot. 128 KB.
+
+	  https://github.com/AntonioND/ucity
+	  See docs/homebrew.md.
+
+comment "rsos-ucity needs rsos-homebrew (first-boot seeding)"
+	depends on !BR2_PACKAGE_RSOS_HOMEBREW

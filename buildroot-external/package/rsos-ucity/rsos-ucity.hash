@@ -1,0 +1,9 @@
+# From https://github.com/AntonioND/ucity/releases/tag/v1.2 (locally computed)
+# The source of the release (tag v1.2), for "make legal-info"
+sha256  9ffdd325294ebbd8a4adcc5a5bb40a2ea4b981cb8e4889a5392ef4796cdb2dc1  rsos-ucity-1.2.tar.gz
+# The ROM of the release
+sha256  39a254f95672c3dafe8ae0e12763366b990bc9993fab13bd0c8283b0459be102  ucity.gbc
+# Licences
+sha256  8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903  gpl-3.0.txt
+sha256  22654a375072f3eeceb3b8b99b8e33fcec5e8c533643db581893ff34e3c2170b  readme.rst
+sha256  272f95ce37ceb01d48daa963797dd170242f9ab94d9c3e095909abe0c7955c84  source/engine/gbt_player.asm

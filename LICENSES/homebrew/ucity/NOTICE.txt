@@ -27,6 +27,7 @@ Corresponding Source (GPL-3.0, section 6)
   or firmware image containing this program is distributed, 8BCraft will
   give anyone who asks a complete machine-readable copy of that source code,
   for no more than the cost of physically performing the transfer. The
-  source is also published next to the RetroStoneOS firmware downloads.
-  TODO(owner): put the contact address for source requests here, and mirror
-  the archive above on the firmware download page.
+  source is also published with every RetroStoneOS release: the rsos-ucity
+  package downloads the archive above, and "make legal-info" puts it in the
+  legal-info archive of each board, attached to the release.
+  TODO(owner): put the contact address for source requests here.

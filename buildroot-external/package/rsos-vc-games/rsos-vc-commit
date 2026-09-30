@@ -1,0 +1,44 @@
+#!/bin/sh
+# rsos-vc-commit <RetroStone VC checkout>: print its commit (12 hex digits,
+# plus "-dirty" when git can tell), for rsos-vc-games.mk.
+#   1. RSOS_VC_COMMIT, when set (e.g. make RSOS_VC_COMMIT=c72df57...): taken as is;
+#   2. git describe;
+#   3. when git cannot read the checkout (a git worktree made on Windows: its
+#      .git file says "gitdir: C:/...", which Linux or WSL git cannot open),
+#      the HEAD ref read from the files, with C:/ mapped to /mnt/c/;
+#   4. "unknown".
+src=${1:?usage: rsos-vc-commit <checkout>}
+if [ -n "${RSOS_VC_COMMIT:-}" ]; then
+	echo "$RSOS_VC_COMMIT"
+	exit 0
+fi
+c=$(git -c safe.directory='*' -c core.fileMode=false -C "$src" describe --always --dirty --abbrev=12 2>/dev/null) &&
+	[ -n "$c" ] && { echo "$c"; exit 0; }
+
+g=$src/.git
+if [ -f "$g" ]; then
+	g=$(sed -n 's/^gitdir: *//p' "$g" | tr -d '\r' |
+		sed 's|^\([A-Za-z]\):/|/mnt/\1/|' | sed 's|^/mnt/\([A-Z]\)/|/mnt/\L\1/|')
+	case $g in /*) ;; *) g=$src/$g ;; esac
+fi
+head=$(tr -d '\r' < "$g/HEAD" 2>/dev/null) || { echo unknown; exit 0; }
+case $head in
+"ref: "*)
+	ref=${head#ref: }
+	common=$g
+	if [ -f "$g/commondir" ]; then
+		common=$(tr -d '\r' < "$g/commondir")
+		case $common in /*) ;; *) common=$g/$common ;; esac
+	fi
+	c=
+	for d in "$g" "$common"; do
+		[ -f "$d/$ref" ] && { c=$(tr -d '\r' < "$d/$ref"); break; }
+	done
+	[ -n "$c" ] || c=$(grep " $ref\$" "$common/packed-refs" 2>/dev/null | cut -d' ' -f1)
+	;;
+*) c=$head ;;
+esac
+case $c in
+[0-9a-f]*) printf '%s\n' "$c" | cut -c1-12 ;;
+*) echo unknown ;;
+esac

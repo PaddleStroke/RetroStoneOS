@@ -14,16 +14,19 @@ Each game is a libretro core with the game built in: there is no ROM file to cop
 
 ## Source and licences
 
-- The source is the **RetroStone VC** repository (a separate git repository, private: `PaddleStroke/RetroStoneVC`):
-  `sdk/` (the runtime, the libretro frontend; **MIT**, (c) 2026 Pierre-Louis Boyer (8BCraft)), `tools/` (MIT), the
-  vendored third-party code of `sdk/third_party/` (libxmp-lite MIT, stb MIT/public domain, libretro.h MIT;
-  `THIRD_PARTY.md`), and the games in `games/bombermole/` and `games/leadysquid/`: **all rights reserved, 8BCraft**
-  (`games/<game>/LICENSE`).
-- **The games are not in this public repository and never will be.** Local builds use a checkout next to this one;
-  CI fetches the private repository with a secret (below, and [ci.md](ci.md) section 4b).
-- `RSOS_VC_GAMES_LICENSE` lists the proprietary games and the MIT parts; `RSOS_VC_GAMES_REDISTRIBUTE = NO`, so
-  `make legal-info` copies the licence texts (`LICENSE-MIT`, `THIRD_PARTY.md`, the two game `LICENSE` files) but
-  never the source. Nothing in the image needs a source offer (no GPL code in the cores).
+- The source is the **RetroStone VC** repository, a separate public git repository,
+  [PaddleStroke/RetroStoneVC](https://github.com/PaddleStroke/RetroStoneVC): `sdk/` (the runtime, the libretro
+  frontend; **MIT**, (c) 2026 Pierre-Louis Boyer (8BCraft)), `tools/` (MIT), the vendored third-party code of
+  `sdk/third_party/` (libxmp-lite MIT, stb MIT/public domain, libretro.h MIT; `THIRD_PARTY.md`), and the games in
+  `games/bombermole/` and `games/leadysquid/`: the game **code under MIT**, the game **art, music, sound, levels and
+  design documents under CC BY-NC-SA 4.0** (`games/<game>/LICENSE` lists the paths; `LICENSE-CC-BY-NC-SA-4.0.txt`).
+  The names and logos "Bomber Mole", "Leady Squid", "RetroStone" and "8BCraft" are not licensed: a fork must rename.
+- Local builds use a checkout next to this one; CI checks out the public repository (below, and [ci.md](ci.md)
+  section 4).
+- `RSOS_VC_GAMES_LICENSE` lists MIT (the SDK, tools and game code) and CC-BY-NC-SA-4.0 (the game assets), and the
+  package is redistributed (no `_REDISTRIBUTE = NO`): `make legal-info` saves the licence texts (`LICENSE-MIT`,
+  `LICENSE-CC-BY-NC-SA-4.0.txt`, `THIRD_PARTY.md`, the two game `LICENSE` files) and the source (the synced
+  checkout, without the art inbox). The CC BY-NC-SA art is one more reason the images must not be sold.
 - On the device: `/usr/share/rsos/licenses/retrostone-vc/` (the same texts, and `COMMIT`: the RetroStone VC commit
   the cores were built from, also in the `commit =` line of each core's `.ini`).
 
@@ -31,7 +34,7 @@ Each game is a libretro core with the game built in: there is no ROM file to cop
 
 | Option | Default | |
 |---|---|---|
-| `BR2_PACKAGE_RSOS_VC_GAMES` | `y` in every defconfig | CI turns it off when the private repository is not available |
+| `BR2_PACKAGE_RSOS_VC_GAMES` | `y` in every defconfig | `scripts/ci/build-board.sh` turns it off when there is no checkout (`RSOS_CI_VC_GAMES=auto`) |
 | `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR` | `$(BR2_EXTERNAL_RETROSTONE_PATH)/../../RetroStoneVC` | the checkout (Buildroot's `local` site method) |
 | `BR2_PACKAGE_RSOS_VC_GAMES_BOMBERMOLE`, `..._LEADYSQUID` | `y` | one core per game |
 
@@ -63,7 +66,11 @@ Each game is a libretro core with the game built in: there is no ROM file to cop
 - **Which version.** A local build takes the checkout **as it is**, uncommitted changes included (the recorded commit
   then ends in `-dirty`). For an image made from a given commit while the checkout is being worked on, clone it
   (`git clone ~/path/to/RetroStoneVC ~/rsos/vc-head`, `git -C ~/rsos/vc-head checkout <commit>`) and point
-  `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR` at the clone. CI builds the `main` of the private repository.
+  `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR` at the clone. CI builds `RETROSTONE_VC_REF` (`main`) of the public repository.
+- **The recorded commit** comes from `package/rsos-vc-games/rsos-vc-commit`: `git describe` of the checkout; when
+  git cannot read it (a git worktree made on Windows, whose `.git` file points at a `C:/` path that WSL git cannot
+  open), the HEAD ref read from the files (`C:/` mapped to `/mnt/c/`, no `-dirty` then); or the value of
+  `RSOS_VC_COMMIT` when it is set (`make RSOS_VC_COMMIT=<sha> rsos-vc-games-rebuild`).
 - **Rebuild** after a change in RetroStone VC: `make O=~/rsos/output rsos-vc-games-rebuild all` (the rebuild copies
   the checkout again). To build from another tree without touching the defconfig: set
   `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR` with `make menuconfig`, or put
@@ -151,14 +158,12 @@ mapped by position as well. The frontend's hotkeys use Select + a button (Select
 Select+L/R the save-state slots...). A plain Select reaches the game, and the hotkeys only fire for a button pressed
 **while** Select is held: for Bomber Mole's L+R+Select, hold L and R first, then press Select.
 
-## CI (private repository)
+## CI
 
-`.github/workflows/images.yml` checks out `PaddleStroke/RetroStoneVC` into `.vc-games-src` with the
-**`VC_GAMES_TOKEN`** secret and passes it to `scripts/ci/build-board.sh` (`RSOS_CI_VC_GAMES=yes`,
-`RSOS_CI_VC_GAMES_DIR`), which sets `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR`. Without the secret (forks, pull requests,
-before the owner sets it up) the step logs "VC_GAMES_TOKEN is not set: <board> is built without the RetroStone VC
-games (no RetroStone system)" and the image is built with `BR2_PACKAGE_RSOS_VC_GAMES=n`; the job summary and the
-release notes say so. Set-up for the owner: [ci.md](ci.md), section 4b.
+`.github/workflows/images.yml` checks out the public `PaddleStroke/RetroStoneVC` (no token) at `RETROSTONE_VC_REF`
+(`main` by default; a tag or commit pins a release) into `.vc-games-src` and passes it to
+`scripts/ci/build-board.sh` (`RSOS_CI_VC_GAMES=yes`, `RSOS_CI_VC_GAMES_DIR`), which sets
+`BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR`. The configure step prints the commit it builds. See [ci.md](ci.md), section 4.
 
 ## Tests
 

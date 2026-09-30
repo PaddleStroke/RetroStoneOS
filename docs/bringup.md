@@ -76,7 +76,7 @@ a first boot with no progress at all for 3 minutes lets the hardware watchdog re
   `rsos_verbose=1` it prints its banner and loads `boot.scr`).
 - [ ] The kernel boots to a `#` prompt on the UART. **Save the full log.**
 - [ ] First boot: the data partition grows (a message from `data-partition`). Check with `df -h /data` (it should show the card size), then
-  `ls /data/roms/*`: the homebrew games are there (gb, gbc, nes, megadrive).
+  `ls /data/roms/*`: the bundled games are there (gbc: µCity, doom: Freedoom).
 
 What the screen should show (there is no U-Boot or kernel picture: the LCD stays dark until the frontend's first
 modeset):

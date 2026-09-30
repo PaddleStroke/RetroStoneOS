@@ -43,19 +43,19 @@ for info in "$DIST"/*.info; do
 done
 [ -s "$T/rows" ] || { echo "release-notes: no *.info in $DIST" >&2; exit 1; }
 {
-	echo "| Board | Image | Download size | Status | Homebrew games |"
+	echo "| Board | Image | Download size | Status | Bundled games |"
 	echo "|---|---|---|---|---|"
 	sort "$T/rows" | cut -f 2-
 } > "$T/BOARDS_TABLE"
 hb_yes=$(grep -c '^y ' "$T/hb" || true)
 hb_no=$(grep -c '^n ' "$T/hb" || true)
 if [ "$hb_no" = 0 ]; then
-	echo "- A few free homebrew games come with the images: the first boot copies them to \`roms/\`." > "$T/HOMEBREW"
+	echo "- Two free games come with the images, copied to \`roms/\` at the first boot: µCity (Game Boy Color) and Freedoom (Doom)." > "$T/HOMEBREW"
 elif [ "$hb_yes" = 0 ]; then
-	echo "- These images were built **without** the bundled homebrew games; \`roms/\` starts empty." > "$T/HOMEBREW"
+	echo "- These images were built **without** the bundled free games (µCity, Freedoom); \`roms/\` starts empty." > "$T/HOMEBREW"
 else
 	# shellcheck disable=SC2016 # Markdown backquotes
-	printf -- '- The bundled homebrew games (copied to `roms/` at the first boot) are only in some images: %s.\n' \
+	printf -- '- The bundled free games (µCity, Freedoom; copied to `roms/` at the first boot) are only in some images: %s.\n' \
 		"$(sed 's/^y \(.*\)/\1: yes/; s/^n \(.*\)/\1: no/' "$T/hb" | paste -sd ';' - | sed 's/;/; /g')" > "$T/HOMEBREW"
 fi
 # the RetroStone VC games (docs/vc-games.md), in the same block
@@ -102,9 +102,6 @@ fi
 		echo "- \`${f##*/}\` ($(mib "$(stat -c %s "$f")"))"
 	done
 	[ "$found" = 1 ] || echo "- (no legal-info archive in this release)"
-	for f in "$DIST"/*-source.tar.*; do
-		[ -f "$f" ] && echo "- \`${f##*/}\`: source of a bundled GPL homebrew game"
-	done
 	true
 } > "$T/LEGAL_FILES"
 

@@ -5,25 +5,22 @@
 ################################################################################
 
 # The RetroStone VC games (docs/vc-games.md): each game is a libretro core
-# built from the RetroStone VC source, the MIT SDK (sdk/) plus the game
-# (games/<game>/, all rights reserved, 8BCraft). The games are not in this
-# repository: the package syncs a local checkout
-# (BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR, by default ../RetroStoneVC next to
-# the RetroStoneOS checkout; CI fetches the private PaddleStroke/RetroStoneVC,
-# docs/ci.md). Without the local method, a developer can also point
-# RSOS_VC_GAMES_OVERRIDE_SRCDIR at another tree in local.mk.
+# built from the RetroStone VC source (https://github.com/PaddleStroke/RetroStoneVC):
+# the SDK and tools (MIT) plus the game (games/<game>/: code MIT, art, music,
+# sound, levels and design CC BY-NC-SA 4.0). The package syncs a local
+# checkout (BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR, by default ../RetroStoneVC
+# next to the RetroStoneOS checkout; CI checks out the public repository,
+# docs/ci.md). A developer can also point RSOS_VC_GAMES_OVERRIDE_SRCDIR at
+# another tree in local.mk.
 RSOS_VC_GAMES_VERSION = local
 RSOS_VC_GAMES_SITE = $(call qstrip,$(BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR))
 RSOS_VC_GAMES_SITE_METHOD = local
 RSOS_VC_GAMES_LICENSE = \
-	Proprietary (Bomber Mole, Leady Squid: all rights reserved, 8BCraft), \
-	MIT (RetroStone VC SDK and tools), MIT (libxmp-lite), \
-	MIT or Public Domain (stb), MIT (libretro.h)
-RSOS_VC_GAMES_LICENSE_FILES = LICENSE-MIT THIRD_PARTY.md \
+	MIT (RetroStone VC SDK, tools and game code), \
+	CC-BY-NC-SA-4.0 (Bomber Mole, Leady Squid: art, music, sound, levels, design), \
+	MIT (libxmp-lite), MIT or Public Domain (stb), MIT (libretro.h)
+RSOS_VC_GAMES_LICENSE_FILES = LICENSE-MIT LICENSE-CC-BY-NC-SA-4.0.txt THIRD_PARTY.md \
 	games/bombermole/LICENSE games/leadysquid/LICENSE
-# The games may only be shipped inside RetroStoneOS images: "make
-# legal-info" keeps their licence texts, never the source.
-RSOS_VC_GAMES_REDISTRIBUTE = NO
 # Not copied into the build directory: the developer's own builds, the
 # deliverables, the image agent's art inbox (tens of MB, not used by the
 # build: the games build with their committed art sets, e.g. Bomber Mole's
@@ -31,6 +28,24 @@ RSOS_VC_GAMES_REDISTRIBUTE = NO
 RSOS_VC_GAMES_OVERRIDE_SRCDIR_RSYNC_EXCLUSIONS = \
 	--exclude /build --exclude /dist --exclude /docs/art-preview \
 	--exclude '/games/*/art/incoming' --exclude __pycache__ --exclude '*.srm'
+
+# "make legal-info" saves the source. Buildroot's own archive of a local
+# package copies the whole checkout, a developer's build/ and dist/ (host
+# binaries, the SDL2 package) included: it is replaced by one made with the
+# exclusions above, i.e. exactly what the build used.
+RSOS_VC_GAMES_LEGAL_TMP = $(BUILD_DIR)/rsos-vc-games-legal-info
+define RSOS_VC_GAMES_SAVE_SOURCE
+	rm -rf $(RSOS_VC_GAMES_LEGAL_TMP)
+	mkdir -p $(RSOS_VC_GAMES_LEGAL_TMP)/$(RSOS_VC_GAMES_BASENAME_RAW)
+	rsync -a --chmod=u=rwX,go=rX $(RSOS_VC_GAMES_OVERRIDE_SRCDIR_RSYNC_EXCLUSIONS) $(RSYNC_VCS_EXCLUSIONS) \
+		$(call qstrip,$(RSOS_VC_GAMES_OVERRIDE_SRCDIR))/ \
+		$(RSOS_VC_GAMES_LEGAL_TMP)/$(RSOS_VC_GAMES_BASENAME_RAW)/
+	tar -C $(RSOS_VC_GAMES_LEGAL_TMP) --sort=name --owner=0 --group=0 --numeric-owner \
+		-cf - $(RSOS_VC_GAMES_BASENAME_RAW) | gzip -9n \
+		> $(RSOS_VC_GAMES_REDIST_SOURCES_DIR)/$(RSOS_VC_GAMES_BASENAME_RAW).tar.gz
+	rm -rf $(RSOS_VC_GAMES_LEGAL_TMP)
+endef
+RSOS_VC_GAMES_POST_LEGAL_INFO_HOOKS += RSOS_VC_GAMES_SAVE_SOURCE
 
 RSOS_VC_GAMES_LIST = \
 	$(if $(BR2_PACKAGE_RSOS_VC_GAMES_BOMBERMOLE),bombermole) \
@@ -49,11 +64,12 @@ RSOS_VC_GAMES_SHOT_leadysquid = games/leadysquid/docs/screenshots/title.png
 RSOS_VC_GAMES_PYTHON ?= /usr/bin/python3
 
 # The source's commit, for the .ini files and the licence folder ("-dirty":
-# local changes). Taken from the original tree: the copy has no .git.
+# local changes), taken from the original tree (the copy has no .git) by
+# rsos-vc-commit: git, else the HEAD ref files (a worktree made on Windows,
+# which WSL git cannot open), or RSOS_VC_COMMIT (make RSOS_VC_COMMIT=<sha>).
 define RSOS_VC_GAMES_RECORD_COMMIT
-	git -c safe.directory='*' -c core.fileMode=false -C '$(call qstrip,$(SRCDIR))' \
-		describe --always --dirty --abbrev=12 > $(@D)/.rsos-vc-commit 2>/dev/null || \
-		echo unknown > $(@D)/.rsos-vc-commit
+	RSOS_VC_COMMIT='$(RSOS_VC_COMMIT)' sh $(RSOS_VC_GAMES_PKGDIR)/rsos-vc-commit \
+		'$(call qstrip,$(SRCDIR))' > $(@D)/.rsos-vc-commit
 	@echo "rsos-vc-games: RetroStone VC $$(cat $(@D)/.rsos-vc-commit) from $(call qstrip,$(SRCDIR))"
 endef
 RSOS_VC_GAMES_POST_RSYNC_HOOKS += RSOS_VC_GAMES_RECORD_COMMIT
@@ -106,7 +122,8 @@ define RSOS_VC_GAMES_INSTALL_TARGET_CMDS
 	mkdir -p $(RSOS_VC_GAMES_TARGET_GAMES)/media/images $(RSOS_VC_GAMES_TARGET_LICENSES)
 	$(INSTALL) -m 0644 $(RSOS_VC_GAMES_PKGDIR)/gamelist.xml $(RSOS_VC_GAMES_TARGET_GAMES)/gamelist.xml
 	$(foreach g,$(RSOS_VC_GAMES_LIST),$(call RSOS_VC_GAMES_INSTALL_GAME,$(g))$(sep))
-	$(INSTALL) -m 0644 $(@D)/LICENSE-MIT $(@D)/THIRD_PARTY.md $(RSOS_VC_GAMES_TARGET_LICENSES)/
+	$(INSTALL) -m 0644 $(@D)/LICENSE-MIT $(@D)/LICENSE-CC-BY-NC-SA-4.0.txt $(@D)/THIRD_PARTY.md \
+		$(RSOS_VC_GAMES_TARGET_LICENSES)/
 	cp $(@D)/.rsos-vc-commit $(RSOS_VC_GAMES_TARGET_LICENSES)/COMMIT
 endef
 

@@ -7,8 +7,10 @@ config BR2_PACKAGE_RSOS_VC_GAMES
 	  carousel (docs/vc-games.md).
 
 	  Each game is a libretro core built from the RetroStone VC
-	  source (the MIT SDK plus the game, all rights reserved,
-	  8BCraft): the game is inside the core, there is no ROM.
+	  source (https://github.com/PaddleStroke/RetroStoneVC): the
+	  SDK, the tools and the game code are MIT; the games' art,
+	  music, sound, levels and design are CC BY-NC-SA 4.0. The game
+	  is inside the core, there is no ROM.
 	  Installs:
 	  - /usr/lib/libretro/<game>_libretro.so and
 	    /usr/share/rsos/cores/<game>.ini (no_content = true);
@@ -17,8 +19,7 @@ config BR2_PACKAGE_RSOS_VC_GAMES
 	    reads), gamelist.xml and media/images/ (title screens);
 	  - /usr/share/rsos/licenses/retrostone-vc/.
 
-	  The games are proprietary: the package is never
-	  redistributed by "make legal-info" (only the licence texts).
+	  "make legal-info" saves the source (the synced checkout).
 	  The build needs python3 with Pillow on the build host
 	  (python3-pil) for the games' asset step.
 
@@ -29,8 +30,8 @@ config BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR
 	default "$(BR2_EXTERNAL_RETROSTONE_PATH)/../../RetroStoneVC"
 	help
 	  The RetroStone VC repository (sdk/, games/, Makefile): by
-	  default a checkout next to the RetroStoneOS one. CI fetches
-	  the private PaddleStroke/RetroStoneVC and sets this path
+	  default a checkout next to the RetroStoneOS one. CI checks
+	  out the public PaddleStroke/RetroStoneVC and sets this path
 	  (scripts/ci/build-board.sh, docs/ci.md). The build copies it
 	  without build/, dist/, the art inbox and .git.
 

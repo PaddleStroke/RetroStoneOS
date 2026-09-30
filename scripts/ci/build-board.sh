@@ -4,8 +4,8 @@
 # <board>: a defconfig name without "_defconfig" (retrostone2_release, rpi4_64).
 # Steps (default: all = configure source build package legal-info):
 #   configure   get Buildroot (sha256 checked), make <board>_defconfig, set the
-#               homebrew and RetroStone VC games options (and the UART
-#               password, if the defconfig asks for one), make olddefconfig
+#               RetroStone VC games options (and the UART password, if the
+#               defconfig asks for one), make olddefconfig
 #   source      download every source (make source), 3 tries
 #   build       make (full log in <out>/build.log, ">>>" lines on stdout)
 #   package     <artifacts>/retrostoneos-<version>-<image>.img.xz (xz -T0 -9),
@@ -23,14 +23,12 @@
 #   RSOS_CI_ARTIFACTS   where the files to publish go (default $RSOS_CI_WORK/artifacts)
 #   BR2_DL_DIR          download cache (default $RSOS_CI_WORK/dl; overrides the defconfig)
 #   BR2_CCACHE_DIR      ccache directory (default $RSOS_CI_WORK/ccache)
-#   RSOS_CI_HOMEBREW    auto (default): the approved homebrew games are built in
-#                       when homebrew/license ok/ holds them; yes: they must be
-#                       there; no: BR2_PACKAGE_RSOS_HOMEBREW=n
-#   RSOS_CI_VC_GAMES    auto (default): the RetroStone VC games (rsos-vc-games) are
+#   RSOS_CI_VC_GAMES   auto (default): the RetroStone VC games (rsos-vc-games) are
 #                       built in when RSOS_CI_VC_GAMES_DIR holds a RetroStone VC
 #                       checkout; yes: it must be there; no: BR2_PACKAGE_RSOS_VC_GAMES=n
 #   RSOS_CI_VC_GAMES_DIR  the RetroStone VC checkout (default ../RetroStoneVC next
-#                       to the repository, where the defconfigs expect it)
+#                       to the repository, where the defconfigs expect it;
+#                       images.yml checks out the public PaddleStroke/RetroStoneVC)
 #   RSOS_CI_VERSION     version in the file names (default: git describe)
 #   RSOS_CI_OS_VERSION  a release tag's version (0.2.0): the version the
 #                       image reports (BR2_RETROSTONE_VERSION); it also makes a
@@ -66,7 +64,6 @@ OUT=${RSOS_CI_OUT:-$WORK/output-$BOARD}
 ART=${RSOS_CI_ARTIFACTS:-$WORK/artifacts}
 export BR2_DL_DIR="${BR2_DL_DIR:-$WORK/dl}"
 export BR2_CCACHE_DIR="${BR2_CCACHE_DIR:-$WORK/ccache}"
-HOMEBREW_DIR="$REPO/homebrew/license ok"
 VC_DIR=${RSOS_CI_VC_GAMES_DIR:-$(dirname "$REPO")/RetroStoneVC}
 VERSION=${RSOS_CI_VERSION:-$(git -C "$REPO" describe --tags --always --dirty 2>/dev/null || date -u +%Y%m%d)}
 VERSION=$(printf '%s' "$VERSION" | tr -c 'A-Za-z0-9._+-' '-')
@@ -99,9 +96,6 @@ kconfig_is() { # <symbol> y|n
 	fi
 	grep -q "^$1=$2\$" "$OUT/.config"
 }
-homebrew_present() {
-	[ -d "$HOMEBREW_DIR" ] && [ -n "$(find "$HOMEBREW_DIR" -mindepth 1 -maxdepth 1 ! -name '.git*' | head -n 1)" ]
-}
 vc_present() {
 	[ -f "$VC_DIR/Makefile" ] && [ -d "$VC_DIR/sdk" ] && [ -d "$VC_DIR/games" ]
 }
@@ -112,17 +106,7 @@ step_configure() {
 	mkdir -p "$OUT"
 	brmake BR2_EXTERNAL="$EXT" "${BOARD}_defconfig"
 
-	case ${RSOS_CI_HOMEBREW:-auto} in
-	yes)
-		homebrew_present || { error "RSOS_CI_HOMEBREW=yes but $HOMEBREW_DIR is empty or missing"; exit 1; }
-		hb=y ;;
-	no) hb=n ;;
-	auto) if homebrew_present; then hb=y; else hb=n; fi ;;
-	*) error "RSOS_CI_HOMEBREW must be auto, yes or no"; exit 1 ;;
-	esac
-	set_kconfig BR2_PACKAGE_RSOS_HOMEBREW "$hb"
-
-	# the RetroStone VC games (proprietary: a private repository, docs/ci.md)
+	# the RetroStone VC games (the public PaddleStroke/RetroStoneVC, docs/ci.md)
 	case ${RSOS_CI_VC_GAMES:-auto} in
 	yes)
 		vc_present || { error "RSOS_CI_VC_GAMES=yes but $VC_DIR is not a RetroStone VC checkout"; exit 1; }
@@ -169,10 +153,8 @@ step_configure() {
 		[ "$VARIANT" = default ] && set_kconfig BR2_RETROSTONE_RELEASE y
 	fi
 	brmake olddefconfig > /dev/null
-	kconfig_is BR2_PACKAGE_RSOS_HOMEBREW "$hb" || {
-		error "BR2_PACKAGE_RSOS_HOMEBREW=$hb did not survive olddefconfig"
-		exit 1
-	}
+	# the bundled games (µCity, Freedoom; docs/homebrew.md): as the defconfig says
+	if kconfig_is BR2_PACKAGE_RSOS_HOMEBREW y; then hb=y; else hb=n; fi
 	kconfig_is BR2_PACKAGE_RSOS_VC_GAMES "$vc" || {
 		error "BR2_PACKAGE_RSOS_VC_GAMES=$vc did not survive olddefconfig"
 		exit 1
@@ -191,7 +173,7 @@ step_configure() {
 	if [ "$vc" = y ]; then
 		echo "RetroStone VC games: yes, from $VC_DIR ($(git -C "$VC_DIR" describe --always --dirty --abbrev=12 2>/dev/null || echo "no git"))"
 	else
-		echo "RetroStone VC games: no (no RetroStone VC checkout at $VC_DIR: the VC_GAMES_TOKEN secret is not set, or RSOS_CI_VC_GAMES=no); the image has no RetroStone system"
+		echo "RetroStone VC games: no (no RetroStone VC checkout at $VC_DIR, or RSOS_CI_VC_GAMES=no); the image has no RetroStone system"
 	fi
 	echo "downloads: $BR2_DL_DIR, ccache: $BR2_CCACHE_DIR"
 	endgroup

@@ -1055,6 +1055,7 @@ Checked in the pinned trees.
 |---|---|---|
 | `libretro-prboom` | GPL-2.0+ (`COPYING`) | `prboom.wad` compiled in (GPL) |
 | `rsos-freedoom` | BSD-3-Clause (`COPYING.txt`) | Freedoom 0.13.0; `COPYING.txt`, `CREDITS.txt`, `CREDITS-MUSIC.txt` installed to `/usr/share/rsos/licenses/freedoom/` |
+| `rsos-ucity` | GPL-3.0+ (`gpl-3.0.txt`), BSD-2-Clause (GBT Player, `source/engine/gbt_player.asm`), CC-BY-SA-4.0 (graphics, music; `readme.rst`) | µCity 1.2: the release ROM, the tag's source for legal-info; `LICENSES/homebrew/ucity/` installed to `/usr/share/rsos/licenses/ucity/` |
 | `libretro-fake08` | MIT (`LICENSE.MD`, which also lists zepto8 WTFPL and tac08 MIT); z8lua MIT (Lua notice in `lua.h`); miniz MIT; lodepng zlib | not related to Lexaloffle; no PICO-8 code or data |
 | `libretro-dosbox-pure` | GPL-2.0+ (`LICENSE`) | |
 | `libretro-scummvm` | GPL-3.0+ (`COPYING`, `COPYRIGHT`); bundled code under BSD, LGPL, MIT, ISC, Lua, OFL (`LICENSES/`); libretro-deps libraries under their own licences | source offer as for the other GPL cores |
@@ -1124,8 +1125,8 @@ folder: full description in [vc-games.md](vc-games.md).
 
 | Game | Core (package) | Source | Build flags | Expected on A20 | Save RAM | Save states |
 |---|---|---|---|---|---|---|
-| Bomber Mole (1 player) | bombermole (`rsos-vc-games`) | RetroStone VC `games/bombermole` (all rights reserved, 8BCraft) + SDK (MIT) | the RetroStone VC `Makefile`'s cross target with Buildroot's `CC`/`CFLAGS` (-O2; the wrapper's Cortex-A7 NEON flags) | designed for 60 fps on one 1 GHz A7: RetroStone VC's spec estimates 6-8 ms per frame on average, 13-17 ms for the worst frame of the heaviest scenes (host `make bench` x15-x20); TODO(hw): measure | `/data/saves/retrostone/Bomber Mole.srm` (32 KiB) | yes: the SDK saves the whole console (about 350 KB), `/data/states/retrostone/Bomber Mole.state*` |
-| Leady Squid (1-2 players) | leadysquid (`rsos-vc-games`) | RetroStone VC `games/leadysquid` (all rights reserved, 8BCraft) + SDK (MIT) | the same | the same renderer and 60 fps target (4 layers, raster effects, colour math); TODO(hw): measure | `/data/saves/retrostone/Leady Squid.srm` | yes (about 300 KB) |
+| Bomber Mole (1 player) | bombermole (`rsos-vc-games`) | RetroStone VC `games/bombermole` (code MIT, assets CC BY-NC-SA 4.0) + SDK (MIT) | the RetroStone VC `Makefile`'s cross target with Buildroot's `CC`/`CFLAGS` (-O2; the wrapper's Cortex-A7 NEON flags) | designed for 60 fps on one 1 GHz A7: RetroStone VC's spec estimates 6-8 ms per frame on average, 13-17 ms for the worst frame of the heaviest scenes (host `make bench` x15-x20); TODO(hw): measure | `/data/saves/retrostone/Bomber Mole.srm` (32 KiB) | yes: the SDK saves the whole console (about 350 KB), `/data/states/retrostone/Bomber Mole.state*` |
+| Leady Squid (1-2 players) | leadysquid (`rsos-vc-games`) | RetroStone VC `games/leadysquid` (code MIT, assets CC BY-NC-SA 4.0) + SDK (MIT) | the same | the same renderer and 60 fps target (4 layers, raster effects, colour math); TODO(hw): measure | `/data/saves/retrostone/Leady Squid.srm` | yes (about 300 KB) |
 
 - **Metadata**: `no_content = true` (see [Core metadata files](#core-metadata-files)), `systems = retrostone`,
   `extensions = <core id>` (each menu entry's extension picks its core), `savestates = true`: the auto state, the
@@ -1133,6 +1134,8 @@ folder: full description in [vc-games.md](vc-games.md).
   of another build of the game is refused ([vc-games.md](vc-games.md), "Save states").
 - **Architectures**: one build line for every board (no platform switch in the Makefile): Cortex-A7 armhf on the
   RetroStone2/RetroStone1 and the 32-bit boards, aarch64 elsewhere. NEEDED: libc, libm only.
-- **Licences**: `RSOS_VC_GAMES_REDISTRIBUTE = NO` (the games are proprietary; `legal-info` keeps their licence texts
-  only). The SDK's third-party code is MIT / public domain (libxmp-lite 4.7.3, stb, libretro.h).
-- Not a download: CI builds them only with the `VC_GAMES_TOKEN` secret ([ci.md](ci.md) section 4b).
+- **Licences**: the game code, the SDK and the tools are MIT; the games' art, music, sound and levels are CC BY-NC-SA
+  4.0. `legal-info` saves the source. The SDK's third-party code is MIT / public domain (libxmp-lite 4.7.3, stb,
+  libretro.h).
+- Source: the public [RetroStone VC](https://github.com/PaddleStroke/RetroStoneVC) repository, checked out by CI
+  ([ci.md](ci.md) section 4).

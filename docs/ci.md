@@ -22,7 +22,7 @@ repository).
 | frontend make check / check-asan | yes | `make -C frontend check` and `check-asan` (host build, Ubuntu's libdrm and alsa-lib, and libzstd, mbedTLS, `zstd` and `signify-openbsd` for the system updater's `check-update`). For ASan the job sets `vm.mmap_rnd_bits=28` (the Ubuntu 24.04 kernel's 32-bit mmap randomization breaks the GCC 13 sanitizer runtime). |
 | frontend cross-compile | yes | `scripts/ci/frontend-cross.sh`: the whole `make all` for `arm-linux-gnueabihf` (Cortex-A7, 64-bit `off_t`/`time_t` as Buildroot builds it) and `aarch64-linux-gnu` (Cortex-A72), linked against the armhf/arm64 libdrm and alsa-lib from ports.ubuntu.com (multiarch), plus the modules' own ARM checks (`ui-arm-check`, `transfer-arm-check`, `power-arm-check`). Compiler warnings are reported, not fatal. |
 | board script tests | yes | `scripts/ci/run-tests.sh host`: every `buildroot-external/board/common/tests/*.sh` (board.sh, rsos-boot-ok with the U-Boot 2026.07 host tools built from the checked tarball, the release defconfig check). |
-| defconfigs and packages | yes, except check-package | `scripts/ci/check-defconfigs.sh`: every `configs/*_defconfig` goes through `make <board>_defconfig` without kconfig dropping a line (a symbol whose dependencies are not met disappears silently otherwise), and the CI homebrew switch works on it. `scripts/ci/check-package.sh`: Buildroot's `utils/check-package` on the external tree, **report only** (about 55 style findings when this was written, mostly Config.in help-text width and the `.hash` format of rsos-homebrew). |
+| defconfigs and packages | yes, except check-package | `scripts/ci/check-defconfigs.sh`: every `configs/*_defconfig` goes through `make <board>_defconfig` without kconfig dropping a line (a symbol whose dependencies are not met disappears silently otherwise), and the CI switch of the RetroStone VC games works on it. `scripts/ci/check-package.sh`: Buildroot's `utils/check-package` on the external tree, **report only** (about 55 style findings when this was written, mostly Config.in help-text width and the `.hash` format). |
 | lint | yes, except shellcheck | `scripts/ci/check-modes.sh`: scripts are executable in git (see "Executable bits"). `scripts/ci/actionlint.sh`: the workflows (actionlint 1.7.12, sha256-checked, with shellcheck on the `run:` blocks). `scripts/ci/shellcheck.sh`: shellcheck on `board/**/*.sh`, the scripts of the rootfs overlays and packages, and `scripts/ci/`: **report only** for the existing scripts (61 findings in 34 scripts when this was written: 5 errors, 15 warnings, 41 notes; the most in `bootlog` and `rcK`), but `scripts/ci/` itself must stay clean. Each finding is an annotation on the commit; the step summary has the count per file. |
 
 To make shellcheck or check-package a gate once the findings are fixed, add `--strict` to their line in `ci.yml`.
@@ -65,9 +65,9 @@ defconfig is committed. `scripts/ci/board-info.sh <board>` shows what CI derives
 
    Caches are scoped by ref: a tag's run reads those of the default branch, so a manual run on `main` before
    tagging (section 7) warms the download cache and the heavy boards' ccache.
-4. Homebrew games: see section 4; the RetroStone VC games: section 4b.
+4. "Fetch RetroStone VC": a checkout of the public `PaddleStroke/RetroStoneVC` (section 4).
 5. `build-board.sh <board> configure`: downloads Buildroot 2026.02.3 and checks its sha256 (`scripts/ci/buildroot.env`,
-   the value of docs/build.md), `make <board>_defconfig`, sets `BR2_PACKAGE_RSOS_HOMEBREW` in `.config` (never in the
+   the value of docs/build.md), `make <board>_defconfig`, sets the RetroStone VC source path in `.config` (never in the
    defconfig) and, on a tag, `BR2_RETROSTONE_VERSION` (and `BR2_RETROSTONE_RELEASE=y` for a board without a release
    defconfig, see "Which boards"), then `make olddefconfig`. The log line says `release build` or
    `development build`.
@@ -89,8 +89,8 @@ defconfig is committed. `scripts/ci/board-info.sh <board>` shows what CI derives
    artifact `image-<board>`.
 9. `legal-info` (tags, or by hand): `make legal-info` -> `legal-info-<image>-<version>.tar.xz` (split into
    1900 MiB parts if it exceeds GitHub's 2 GiB per file; the RetroStone2 one was 1.53 GiB when this was written,
-   mostly already-compressed source tarballs such as linux-firmware and the kernel). The permission-only homebrew
-   ROMs are never in it (`RSOS_HOMEBREW_REDISTRIBUTE = NO`), and the NXEngine source is saved without the Cave Story
+   mostly already-compressed source tarballs such as linux-firmware and the kernel). It holds the sources of the
+   RetroStone VC games and of µCity (GPL-3.0+), and the NXEngine source is saved without the Cave Story
    game data of its tarball (`libretro-nxengine.mk`: `REDISTRIBUTE = NO` and a hook that saves the tree without
    `datafiles/`).
 10. Image tests (not a gate yet; last, so that a slow test cannot cost the release files their time):
@@ -104,9 +104,7 @@ defconfig is committed. `scripts/ci/board-info.sh <board>` shows what CI derives
 
 Once every board succeeded (a heavy board may have failed: it is then left out, with a warning), it runs
 `free-disk.sh` (the legal-info archives of all the boards are about 15 GB) and downloads the artifacts (images,
-`.rsu` update packages, legal-info) to the work directory, refuses any `*-unsigned.rsu`, adds
-`ucity-1.2-source.tar.gz` (the GPL source of the
-bundled µCity, sha256-checked) when an image contains the homebrew games, writes `SHA256SUMS`, renders
+`.rsu` update packages, legal-info) to the work directory, refuses any `*-unsigned.rsu`, writes `SHA256SUMS`, renders
 `.github/release-notes.md` (`scripts/ci/release-notes.sh`: the boards table with sizes and status, flashing with
 balenaEtcher/Rufus/Raspberry Pi Imager, first-boot notes, licences, the source offer, and the commits since the
 previous `v*` tag), creates the release as a **draft**, uploads the files, then publishes it. A tag with `-rc`,
@@ -136,86 +134,21 @@ stops with an error); a leftover draft is completed.
    above the release (`0.1` -> `0.1.1` after `v0.1.0`, or the next planned version) and commit: development
    builds report `<RSOS_FRONTEND_VERSION>-dev`, and must sort after the release they follow.
 
-## 4. Homebrew games: the `HOMEBREW_TOKEN` secret
+## 4. RetroStone VC and the bundled games: no secret needed
 
-The owner-approved homebrew games (docs/homebrew.md) must not be in the public repository. The images get them
-from a **private** repository at build time. Owner decision (2026-09-27): **every board's image** includes them when
-the secret is available; without it, every image is built with `BR2_PACKAGE_RSOS_HOMEBREW=n` (the release notes say
-so, and `roms/` starts empty). The seeding at the first boot is in `board/common` (`data-partition` runs
-`rsos-seed-homebrew`), so it works on every board.
+Everything the images contain comes from public sources:
 
-The authors' permissions cover the RetroStoneOS images of every board (docs/homebrew.md), not the ROMs on their own:
-that is why they live in a private repository.
+- **The RetroStone system** (Bomber Mole, Leady Squid; [vc-games.md](vc-games.md)) is built from the public
+  [PaddleStroke/RetroStoneVC](https://github.com/PaddleStroke/RetroStoneVC). `images.yml` checks it out into
+  `.vc-games-src` at the ref of `RETROSTONE_VC_REF` (the workflow's top-level `env`: `main`, or a tag or commit to
+  pin a release), and `scripts/ci/build-board.sh` builds it in (`RSOS_CI_VC_GAMES=yes`, `RSOS_CI_VC_GAMES_DIR` ->
+  `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR`). The configure step prints the RetroStone VC commit it builds, which also
+  goes to `/usr/share/rsos/licenses/retrostone-vc/COMMIT` and the cores' `.ini` files. Push RetroStone VC's `main`
+  before tagging a release.
+- **The bundled games** (µCity, Freedoom; [homebrew.md](homebrew.md)) are ordinary packages that download the
+  authors' GitHub releases, checked against their `.hash` files, like any other source.
 
-One-time set-up (as the owner, on github.com):
-
-1. **Create the private repository**: "New repository", owner `PaddleStroke`, name `RetroStoneOS-homebrew`,
-   **Private**, no README.
-2. **Upload the games**: the *contents* of the local `homebrew/license ok/` folder go to the root of that repository
-   (the ROMs, covers, `ReadMe.txt`, `Espionage.zip`, ...). With git (Git Bash, in `homebrew/license ok/`):
-   ```sh
-   git init -b main && git add -A && git commit -m "Approved homebrew set"
-   git remote add origin https://github.com/PaddleStroke/RetroStoneOS-homebrew.git
-   git push -u origin main
-   ```
-   (or "Add file > Upload files" on the website). A copy of the whole `homebrew/` folder also works: CI takes its
-   `license ok/` subfolder. Every file of `package/rsos-homebrew/rsos-homebrew.hash` must be there, unchanged; the
-   build checks them.
-3. **Create a fine-grained token**: your avatar > Settings > Developer settings > Personal access tokens >
-   Fine-grained tokens > "Generate new token":
-   - Token name `RetroStoneOS CI homebrew`, an expiration (e.g. 1 year; put a reminder in your calendar);
-   - Resource owner `PaddleStroke`; Repository access: **Only select repositories** > `RetroStoneOS-homebrew`;
-   - Permissions > Repository permissions > **Contents: Read-only** (Metadata: read-only is added automatically).
-     Nothing else.
-   - "Generate token" and copy it (it is shown once).
-4. **Add it as a secret of the public repository**: `PaddleStroke/RetroStoneOS` > Settings > Secrets and variables >
-   Actions > "New repository secret": name `HOMEBREW_TOKEN`, value the token.
-5. Check: Actions > Images > "Run workflow" with `boards` = `retrostone2_release`: the "Stage the homebrew games" step
-   prints the number of files, and the job summary says `homebrew games: yes`.
-
-When the token expires, the next build fails at "Fetch the homebrew games": generate a new one (step 3) and update
-the secret (step 4). To build without the games for a while, delete the secret.
-
-Secrets are never given to workflows started by pull requests from forks, and `images.yml` does not run on pull
-requests at all; the token can only read that one repository.
-
-## 4b. RetroStone VC games: the `VC_GAMES_TOKEN` secret
-
-The RetroStone system (Bomber Mole, Leady Squid: all rights reserved, 8BCraft; [vc-games.md](vc-games.md)) is built
-from the RetroStone VC repository, which must stay **private**: the games are proprietary, only their MIT SDK could
-be public. `images.yml` checks it out into `.vc-games-src` with the `VC_GAMES_TOKEN` secret, and
-`scripts/ci/build-board.sh` builds it in (`RSOS_CI_VC_GAMES=yes`, `RSOS_CI_VC_GAMES_DIR` ->
-`BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR`). **Without the secret the images are built without the games**: the step
-"RetroStone VC games" logs `VC_GAMES_TOKEN is not set: <board> is built without the RetroStone VC games (no
-RetroStone system)`, the configure step `RetroStone VC games: no (...)`, `BR2_PACKAGE_RSOS_VC_GAMES=n`, and the job
-summary and the release notes say so. With it, the configure step prints the RetroStone VC commit it builds.
-`make legal-info` never copies the games' source (`RSOS_VC_GAMES_REDISTRIBUTE = NO`).
-
-One-time set-up (as the owner):
-
-1. **Create the private repository** on github.com: "New repository", owner `PaddleStroke`, name `RetroStoneVC`,
-   **Private**, no README, no licence, no .gitignore (the local repository has them).
-2. **Push the local repository** (Git Bash, in `C:\Users\<you>\Desktop\RetroStoneVC`; it has no remote yet):
-   ```sh
-   git remote add origin https://github.com/PaddleStroke/RetroStoneVC.git
-   git push -u origin main
-   ```
-   (the art inbox `games/bombermole/art/incoming/` is 65 MB of PNGs in git: fine for GitHub, which refuses only
-   files over 100 MB). CI builds `main` as it is on GitHub: push before tagging a release.
-3. **A token**: either add `RetroStoneVC` to the homebrew token (section 4, step 3: edit the token, "Repository
-   access" > add the repository; the permissions stay **Contents: Read-only**), or generate a second fine-grained
-   token the same way (name `RetroStoneOS CI VC games`, **Only select repositories** > `RetroStoneVC`,
-   **Contents: Read-only**, an expiration and a calendar reminder).
-4. **Add the secret** to the public repository: `PaddleStroke/RetroStoneOS` > Settings > Secrets and variables >
-   Actions > "New repository secret": name **`VC_GAMES_TOKEN`**, value the token (the same value as
-   `HOMEBREW_TOKEN` if you used one token for both).
-5. Check: Actions > Images > "Run workflow" with `boards` = `retrostone2_release`: the step "RetroStone VC games"
-   prints `RetroStone VC <commit>`, the configure step `RetroStone VC games: yes, from ...`, and the job summary
-   `RetroStone VC games: yes`.
-
-When the token expires, "Fetch the RetroStone VC games" fails: renew it and update the secret. To release without the
-games for a while, delete the secret. Like `HOMEBREW_TOKEN`, it is never given to pull requests from forks, and it can
-only read the repositories it lists.
+`make legal-info` saves the source of all of them (the RetroStone VC checkout, the µCity tag, the Freedoom zip).
 
 ## 5. Building by hand (workflow_dispatch)
 
@@ -279,40 +212,15 @@ tag's run usually fits.
 
 On github.com, repository `PaddleStroke/RetroStoneOS`:
 
-1. **Actions settings** (Settings > Actions > General): "Actions permissions": allow actions created by GitHub (the
-   workflows only use `actions/checkout`, `cache`, `upload-artifact`, `download-artifact`, pinned by commit);
-   "Workflow permissions": **Read repository contents** (the release job asks for `contents: write` itself); "Fork
-   pull request workflows": keep "Require approval for first-time contributors".
-2. **The signing key in a `release` environment** (Settings > Environments > "New environment", name `release`):
-   - "Deployment branches and tags": **Selected branches and tags** > add a **tag** rule `v*` (only tag builds can
-     then use it);
-   - "Environment secrets" > `UPDATE_SIGNING_KEY` = the whole content (both lines) of
-     `RetroStoneOS-keys\update-signing.key` on the owner's PC (docs/updates.md §3; keep an offline backup). Its
-     public half must be `frontend/assets/update.pub`: `rsos-mkupdate pubkey -s update-signing.key` prints it, and
-     its last line must equal the last line of `update.pub`;
-   - optional: "Required reviewers" = yourself (each tag build then waits for your approval);
-   - delete any repository-level `UPDATE_SIGNING_KEY` secret (Settings > Secrets and variables > Actions), so that
-     only the environment holds the key.
-3. **Homebrew games** (section 4): the private repository `PaddleStroke/RetroStoneOS-homebrew`, a fine-grained PAT
-   (that repository only, Contents: read-only) and the repository secret `HOMEBREW_TOKEN`. **RetroStone VC games**
-   (section 4b): the private repository `PaddleStroke/RetroStoneVC`, pushed, and the repository secret
-   `VC_GAMES_TOKEN`. Both are repository secrets, not secrets of the `release` environment, so that the dry run
-   (step 6) builds the same images as the tag.
-4. **Release immutability** (Settings > General > Releases > "Enable release immutability"): a published release's
-   files and tag can no longer change, so a download always matches `SHA256SUMS` (the workflow publishes through a
-   draft, as immutability requires).
-5. **A `v*` tag ruleset** (Settings > Rules > Rulesets > New tag ruleset, target `v*`): restrict creation, update
-   and deletion of release tags to the maintainers.
-6. **A dry run**: Actions > Images > "Run workflow" on `main` with `boards` = `release` and `legal_info` = on. Every
-   board should build (the Orange Pi 5 may time out: section 6); the update packages are `*-unsigned.rsu` (manual
-   runs are never signed). Flash the `image-retrostone2_release` artifact and test it on the console (first boot,
-   menu, a game, the RetroStone system with its two games, an unsigned `.rsu` is refused).
-7. **After tagging**: raise `RSOS_FRONTEND_VERSION` (`buildroot-external/package/rsos-frontend/rsos-frontend.mk`)
-   above the release, so that later development builds sort after it (section 3).
-
-Optional: the secret `UART_PASSWORD` (only if a defconfig selects `BR2_RETROSTONE_UART_SHELL_PASSWORD`; the build
-stops without it); the variables `IMAGES_RUNNER` and `IMAGES_RUNNER_HEAVY` (section 6); branch protection of `main`
-(require the `CI` checks); a `.github/dependabot.yml` (`github-actions` ecosystem) for the pinned actions.
+1. **Settings > Actions > General**: allow actions created by GitHub; "Workflow permissions": **Read repository
+   contents**.
+2. **Settings > Environments > New environment `release`**: "Deployment branches and tags" > **Selected** > a tag
+   rule `v*`; environment secret **`UPDATE_SIGNING_KEY`** = the whole content of `update-signing.key`, whose public
+   half is `frontend/assets/update.pub` (docs/updates.md §3; keep an offline backup). The only secret needed.
+3. **Settings > General > Releases**: enable release immutability.
+4. **A dry run**: Actions > Images > "Run workflow" on `main` (`boards` = `release`, `legal_info` on); flash the
+   `image-retrostone2_release` artifact and test it on the console.
+5. **After tagging**: raise `RSOS_FRONTEND_VERSION` in `rsos-frontend.mk` above the release (section 3).
 
 ## 8. Executable bits
 
@@ -348,8 +256,8 @@ H=~/rsos/output/host/bin CROSS_CC=$H/arm-linux-gcc CROSS_AR=$H/arm-linux-ar CROS
 ```
 
 `build-board.sh` builds in `$RSOS_CI_WORK/output-<board>` and writes the files to publish to
-`$RSOS_CI_WORK/artifacts`; `RSOS_CI_HOMEBREW=auto` (the default) builds the games in when `homebrew/license ok/`
-exists, as it does on the build host.
+`$RSOS_CI_WORK/artifacts`; `RSOS_CI_VC_GAMES=auto` (the default) builds the RetroStone VC games in when `RSOS_CI_VC_GAMES_DIR`
+(default `../RetroStoneVC`) is a RetroStone VC checkout.
 
 ## 10. Troubleshooting
 
@@ -357,12 +265,9 @@ exists, as it does on the build host.
 |---|---|
 | "Buildroot tarball ... does not match scripts/ci/buildroot.env" | the download is corrupt or the release was changed upstream: re-run; when moving to a new Buildroot release, update `buildroot.env` (version and sha256, checked against the signed `.sign` file) |
 | `make source` fails 3 times | an upstream site is down (GitHub archive, kernel.org, sourceforge): re-run later. A hash mismatch means the upstream file changed: check it and update the package's `.hash` |
-| "RSOS_CI_HOMEBREW=yes but ... is empty" / "stage-homebrew: missing <file>" | the homebrew repository lacks a file of `rsos-homebrew.hash` or has it in another folder (section 4, step 2) |
-| "Fetch the homebrew games": "repository not found" / 401 | the token expired, or it does not include `RetroStoneOS-homebrew`, or lacks Contents: read (section 4, step 3) |
-| rsos-homebrew: `sha256sum: WARNING ... did NOT match` | a ROM in the private repository differs from the approved one: restore the approved file |
-| "Fetch the RetroStone VC games": "repository not found" / 401 | the token expired, or does not include `RetroStoneVC`, or lacks Contents: read (section 4b, step 3) |
+| "Fetch RetroStone VC": "repository not found" / "couldn't find remote ref" | `PaddleStroke/RetroStoneVC` is not public, or `RETROSTONE_VC_REF` in `images.yml` names a branch, tag or commit it does not have (section 4) |
 | "rsos-vc-games: /usr/bin/python3 with Pillow is needed" | the build host lacks `python3-pil` (`install-deps.sh buildroot` installs it; docs/build.md) |
-| "RSOS_CI_VC_GAMES=yes but ... is not a RetroStone VC checkout" | the checkout step did not run or the repository is empty: push `main` (section 4b, step 2) |
+| "RSOS_CI_VC_GAMES=yes but ... is not a RetroStone VC checkout" | the checkout step did not run or RetroStone VC is empty: push its `main` (section 4) |
 | "selects a UART password login: set the UART_PASSWORD secret" | the defconfig uses `BR2_RETROSTONE_UART_SHELL_PASSWORD`: add the secret (no `"`, `\` or `$` in it) |
 | "Permission denied" running `post-build.sh` or `post-image.sh` | the executable bit is missing in git: section 8 |
 | No space left on device | a board outgrew the runner: check the "Free disk space" output; drop `legal_info` for manual runs, or use a larger runner |
