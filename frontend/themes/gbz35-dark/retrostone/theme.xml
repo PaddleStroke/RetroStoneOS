@@ -1,0 +1,27 @@
+<theme>
+    <!-- RetroStoneOS addition (not part of the upstream theme): the RetroStone system
+         (the RetroStone VC games, docs/vc-games.md). system.png is the RetroStone2 logo
+         without the "2" and background.png its stones, both 8BCraft (frontend/assets/splash). -->
+    <formatVersion>4</formatVersion>
+    <include>./../gbz35.xml</include>
+
+    <view name="system, basic, detailed, video">
+		<image name="logo">
+			<path>./system.png</path>
+		</image>
+		<image name="background_pattern" extra="true">
+			<path>./background.png</path>
+			<origin>0.5 0.5</origin>
+			<pos>0.5 0.5</pos>
+			<size>1 1</size>
+			<color>aeaeae</color>
+			<tile>false</tile>
+		</image>
+		<textlist name="gamelist">
+			<selectorColor>3A2144</selectorColor>
+		</textlist>
+	</view>
+    <view name="basic"></view>
+    <view name="detailed"></view>
+
+</theme>

@@ -469,6 +469,7 @@ check-splash: $(MKSPLASH) $(SPLASH) $(FRONTEND)
 # screen-off, a button wakes it (swallowed), the next button must act; then
 # a short power-key press powers off.
 FE_CHECK_DIR = $(BUILDDIR)/frontend-check
+FE_VC_DIR = $(FE_CHECK_DIR)/usr/share/rsos/games/retrostone
 FE_LOG = $(FE_CHECK_DIR)/run/rsos/frontend.log
 FE_GAME_LOG = $(FE_CHECK_DIR)/run/rsos/game.log
 FE_RESUME = $(FE_CHECK_DIR)/data/rsos/resume.ini
@@ -779,6 +780,36 @@ check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
 	! grep -q 'EXPECT FAILED' $(FE_LOG)
 	grep -q 'board Test HDMI box (' $(FE_LOG) && grep -q 'board Test HDMI box (' $(FE_GAME_LOG)
 	cp $(BOARD_INI_RS2) $(FE_CHECK_DIR)/etc/rsos/board.ini
+	@echo "check-frontend: 8. the RetroStone system (games built into their core, docs/vc-games.md): listed from the read-only folder, launched without content, saves named after the entry, the resume found"
+	mkdir -p $(FE_VC_DIR) $(FE_CHECK_DIR)/usr/lib/libretro
+	cp $(HOST_TESTCORE) $(FE_CHECK_DIR)/usr/lib/libretro/vctest_libretro.so
+	printf '[core]\nid = vctest\ndisplay_name = VC test game\nlibrary = %s\nsystems = retrostone\ndefault_systems = retrostone\nextensions = vctest\nno_content = true\nsavestates = true\n' \
+		"$(FE_CHECK_DIR)/usr/lib/libretro/vctest_libretro.so" > $(FE_CHECK_DIR)/usr/share/rsos/cores/vctest.ini
+	printf 'RetroStone VC menu entry (never read)\n' > "$(FE_VC_DIR)/Test VC Game.vctest"
+	printf '<?xml version="1.0"?>\n<gameList>\n\t<game>\n\t\t<path>./Test VC Game.vctest</path>\n\t\t<name>Test VC Game</name>\n\t\t<players>1-2</players>\n\t</game>\n</gameList>\n' \
+		> $(FE_VC_DIR)/gamelist.xml
+	rm -rf $(FE_LOG) $(FE_GAME_LOG) $(FE_CHECK_DIR)/data/saves/retrostone $(FE_CHECK_DIR)/data/states/retrostone \
+		$(FE_CHECK_DIR)/data/roms/retrostone
+	$(FE_RUN) --script "wait:500 left wait:300 a wait:500 expect:list:retrostone_game=Test_VC_Game a wait:1500 \
+		expect:list:retrostone term"
+	! grep -q 'EXPECT FAILED' $(FE_LOG)
+	grep -q 'ui: launch "Test VC Game" (.*/usr/share/rsos/games/retrostone/Test VC Game.vctest) with vctest' $(FE_LOG)
+	grep -q 'content: none (Test VC Game.vctest is a menu entry' $(FE_GAME_LOG)
+	grep -q 'testcore: content none' $(FE_GAME_LOG)
+	test -s "$(FE_CHECK_DIR)/data/saves/retrostone/Test VC Game.srm"
+	test -s "$(FE_CHECK_DIR)/data/states/retrostone/Test VC Game.state.auto"
+	grep -q '^retrostone.Test VC Game.vctest.' $(FE_CHECK_DIR)/data/rsos/gamedb.tsv
+	test ! -e $(FE_CHECK_DIR)/data/roms/retrostone
+	@echo "check-frontend: 8a. the menu finds its auto state: resumed (resume_mode always), still without content"
+	sed -i '/^resume_mode/d' $(FE_SETTINGS) && printf 'resume_mode = always\n' >> $(FE_SETTINGS)
+	rm -f $(FE_LOG) $(FE_GAME_LOG)
+	$(FE_RUN) --script "wait:500 a wait:500 expect:list:retrostone a wait:1500 expect:list:retrostone term"
+	! grep -q 'EXPECT FAILED' $(FE_LOG)
+	grep -q 'resume_mode always: resuming' $(FE_LOG)
+	grep -q 'load state .*retrostone/Test VC Game.state.auto (.*): ok' $(FE_GAME_LOG)
+	grep -q 'testcore: content none' $(FE_GAME_LOG)
+	sed -i '/^resume_mode/d' $(FE_SETTINGS)
+	rm -f $(FE_CHECK_DIR)/usr/share/rsos/cores/vctest.ini
 	@echo "check-frontend: OK"
 
 # The whole `check` under AddressSanitizer + UndefinedBehaviorSanitizer (a

@@ -91,6 +91,10 @@ static const char *const g_rsos_theme_texts[] __attribute__((unused)) = {
 	/* TRANSLATORS: tagline under the carousel of the built-in themes:
 	 * ScummVM runs the classic point-and-click adventure games (uppercase) */
 	NC_("theme", "Adventure engines · 2001"),
+	/* TRANSLATORS: tagline under the carousel of the built-in themes: the
+	 * RetroStone system, games made for this console by its maker
+	 * (uppercase, one line, ~35 characters) */
+	NC_("theme", "Original games · 2026"),
 	/* TRANSLATORS: game metadata label of the built-in themes, uppercase,
 	 * ~7 characters wide: the time spent playing the game */
 	NC_("theme", "Played"),

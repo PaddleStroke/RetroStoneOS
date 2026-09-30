@@ -1082,9 +1082,11 @@ int main(int argc, char **argv)
 		if (!cores[0])
 			snprintf(cores, sizeof(cores), "%s/usr/share/rsos/cores", root);
 		{
-			static char env[1024], ps[1024], wpa[1024];
+			static char env[1024], ps[1024], wpa[1024], games[1024];
 
 			snprintf(env, sizeof(env), "%s/boot/rsos.env", root);
+			snprintf(games, sizeof(games), "%s/usr/share/rsos/games", root);
+			cfg.builtin_games_dir = games;
 			snprintf(ps, sizeof(ps), "%s/sys/class/power_supply", root);
 			snprintf(wpa, sizeof(wpa), "%s/data/rsos/wpa_supplicant.conf", root);
 			cfg.boot_env = env;

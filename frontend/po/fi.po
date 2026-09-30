@@ -2493,3 +2493,14 @@ msgstr ""
 #. TRANSLATORS: the second question before formatting the storage
 msgid "Erase everything on the storage? All games, saves and settings on it are lost. This cannot be undone."
 msgstr ""
+
+msgctxt "system"
+msgid "RetroStone"
+msgstr ""
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. RetroStone system, games made for this console by its maker
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Original games · 2026"
+msgstr "Alkuperäiset pelit · 2026"

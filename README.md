@@ -75,6 +75,7 @@ layer cake, and every setting lives in one menu.
 
 | Family | Systems |
 |---|---|
+| RetroStone | 8BCraft's own games, built in: Bomber Mole, Leady Squid (RetroStone VC, [docs/vc-games.md](docs/vc-games.md)) |
 | Nintendo | NES, Famicom Disk System, SNES, Nintendo 64, Game Boy, Game Boy Color, Game Boy Advance, Pokémon mini |
 | Sega | Master System, Mega Drive/Genesis, Game Gear, SG-1000, 32X, Mega-CD, Pico |
 | Sony | PlayStation |
@@ -146,6 +147,7 @@ program also builds and tests on a PC: `cd frontend && make check`. Details: [do
 | [power.md](docs/power.md) | Battery, charging, shutdown |
 | [translating.md](docs/translating.md) | Adding or fixing a translation |
 | [homebrew.md](docs/homebrew.md) | The bundled games and their licences |
+| [vc-games.md](docs/vc-games.md) | The RetroStone system: 8BCraft's own games (RetroStone VC) |
 | [ci.md](docs/ci.md) | CI, releases and the repository secrets |
 | [hardware-pinmap.md](docs/hardware-pinmap.md) · [kernel-patches.md](docs/kernel-patches.md) | RetroStone2 hardware and kernel patches |
 | [bringup.md](docs/bringup.md) | Hardware test script ([bring-up logs](docs/bringup-logs/)) |

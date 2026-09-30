@@ -76,6 +76,7 @@ struct loader {
 	int64_t worker_us;
 	/* ---- worker configuration (read-only while it runs) ---- */
 	char roms_dir[1024], cache_dir[1024], alt[1024];
+	char builtin_dir[1024];          /* read-only <dir>/<system>/ folders ("" = none) */
 	bool use_cache;
 	int64_t delay_us;              /* test hook: RSOS_LOADER_DELAY_MS per system */
 	/* ---- main thread only ---- */
@@ -111,9 +112,17 @@ struct loader {
 static const char *const g_coll_names[2] = { "favorites", "lastplayed" };
 
 /* ---------------------------------------------------------------- helpers */
-/* The ROM folder of a system: its name, then its aliases (thread-safe). */
-static bool find_rom_folder(const char *roms_dir, const struct sysdef *sd, char *out, size_t n)
+/* The ROM folder of a system (thread-safe): its read-only folder in the
+ * root filesystem when it has one (the RetroStone VC games: always there,
+ * whatever the card holds), then its name, then its aliases. */
+static bool find_rom_folder(const char *builtin_dir, const char *roms_dir, const struct sysdef *sd,
+			    char *out, size_t n)
 {
+	if (builtin_dir && *builtin_dir) {
+		snprintf(out, n, "%s/%s", builtin_dir, sd->name);
+		if (dir_exists(out))
+			return true;
+	}
 	snprintf(out, n, "%s/%s", roms_dir, sd->name);
 	if (dir_exists(out))
 		return true;
@@ -138,10 +147,13 @@ static struct lres *load_one(struct loader *L, int sidx)
 	if (!sd)
 		return r;
 	if (L->empty_mt[sidx]) {
-		/* empty last time: one stat() says whether it still is */
+		/* empty last time: one stat() says whether it still is (and
+		 * one more that no read-only folder came with a system update) */
 		struct stat st;
 
-		if (stat(L->empty_dir[sidx], &st) == 0 && S_ISDIR(st.st_mode) &&
+		snprintf(dir, sizeof(dir), "%s/%s", L->builtin_dir, sd->name);
+		if ((!L->builtin_dir[0] || !dir_exists(dir)) &&
+		    stat(L->empty_dir[sidx], &st) == 0 && S_ISDIR(st.st_mode) &&
 		    (int64_t)st.st_mtim.tv_sec * 1000000000 + st.st_mtim.tv_nsec == L->empty_mt[sidx]) {
 			r->gl = xcalloc(1, sizeof(*r->gl));
 			arena_init(&r->gl->arena, 256);
@@ -158,7 +170,7 @@ static struct lres *load_one(struct loader *L, int sidx)
 			return r;
 		}
 	}
-	if (!find_rom_folder(L->roms_dir, sd, dir, sizeof(dir))) {
+	if (!find_rom_folder(L->builtin_dir, L->roms_dir, sd, dir, sizeof(dir))) {
 		r->st.dir_us = r->st.total_us = ui_now_us() - t0;
 		return r;
 	}
@@ -982,6 +994,7 @@ void loader_init(struct ui *ui)
 	for (int s = 0; s < L->nsys; s++)
 		L->snap_count[s] = -1;
 	strlcpy_(L->roms_dir, ui->cfg.roms_dir, sizeof(L->roms_dir));
+	strlcpy_(L->builtin_dir, ui->cfg.builtin_games_dir ? ui->cfg.builtin_games_dir : "", sizeof(L->builtin_dir));
 	strlcpy_(L->cache_dir, ui->cfg.cache_dir, sizeof(L->cache_dir));
 	snprintf(L->alt, sizeof(L->alt), "%s/gamelists", ui->cfg.data_dir);
 	L->use_cache = ui->cfg.cache_dir[0] != 0;

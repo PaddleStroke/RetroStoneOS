@@ -488,6 +488,7 @@ Licence: `themes/rsos-{dark,light}/LICENSE.txt` (the Carbon art CC BY-NC-SA, the
 | dos → `pc` | Carbon's art (Carbon's folder name) |
 | doom, cavestory → `ports` | alias (Carbon's "ports" keyboard art; it has no art for them) |
 | pico8 → `icon-pico8`, pokemini → `icon-pokemini` | our own icons (`_art/`, project licence; Carbon has no art for them) |
+| retrostone → `icon-retrostone` | the stones of the RetroStone2 logo as pixel art (`_art/`, 8BCraft; docs/vc-games.md) |
 | auto-favorites, auto-lastplayed, auto-allgames | Carbon's collection folders (star, clock, grid) |
 | anything else | our `icon-console.svg` |
 
@@ -497,7 +498,9 @@ RetroStoneOS is free and open source with public builds and the console is sold 
 favourite theme ships in the image under its licence (CC BY-NC-SA 3.0: attribution, non-commercial, share-alike).
 `themes/gbz35` and `themes/gbz35-dark` are the upstream zips (`es-theme-gbz35-master.zip` commit `300c4b6`,
 `es-theme-gbz35-dark-master.zip` commit `aefbbb2`) unmodified, minus `.gitattributes`, plus a `LICENSE.txt`
-(author rxbrad; Carbon by Rookervik, Spare by Matt Kennedy, SimpleBigArt by Ewzzy). Note: gbz35's `system.svg`
+(author rxbrad; Carbon by Rookervik, Spare by Matt Kennedy, SimpleBigArt by Ewzzy). One addition: a `retrostone/` folder
+(`system.png`, the RetroStone2 logo without the "2", and `background.png`, its stones; 8BCraft) for the RetroStone
+system (docs/vc-games.md), in the style of the other folders. Note: gbz35's `system.svg`
 files are the **system logos** (trademarked wordmarks) and its console art is the cropped `background.png`
 behind the carousel; the console vectors themselves come from Carbon (above).
 
@@ -509,7 +512,9 @@ to the default, then to the first theme found. The default stays `rsos-dark` (pr
 ## 7. Game lists
 
 - **Systems** come from the core .ini files (`/usr/share/rsos/cores/*.ini`): a system is shown if a core lists it
-  and its ROM folder has at least one game. A built-in table gives display names, theme folder aliases, the
+  and its ROM folder has at least one game. **RetroStone** (8BCraft's own games, docs/vc-games.md) comes first; its games
+  are read from the read-only `/usr/share/rsos/games/retrostone/` (the UI's `builtin_games_dir`, read before
+  `/data/roms/<system>/` for any system that has such a folder), and they cannot be deleted from the game options. A built-in table gives display names, theme folder aliases, the
   default core and ROM folder aliases for RetroPie/RetrOrangePi users (`genesis`→megadrive, `fba`→fbneo,
   `sg-1000`→sg1000, `mame-libretro`→arcade, `32x`, `megacd`, `ps1`, `tg16`, `lynx`, `colecovision`, `neogeocd`...);
   the first existing folder is used. Systems only named in a .ini still work (generic name). Without any .ini (dev
@@ -906,6 +911,7 @@ auto-scroll and the help bar follow ES closely but not pixel-exactly. TODO(hw): 
 | `i18n-<lang>-system.png`, `i18n-<lang>-gamelist.png`, `i18n-<lang>-settings.png`, `i18n-<lang>-dialog.png` for fr, de, ru, ja, zh_CN | translations (§17), rsos-dark, 640x480, 6 bits per channel |
 | `i18n-fr-*.png`: `game-options`, `display`, `controls`, `network`, `keyboard`, `keyboard-accents`, `settings-games`, `storage`, `info`, `datetime`, `power`, `language`, `toast`, `charging`, `button-test`, `resume-prompt`, `usb-dialog`, `usb-import`, `web-transfer`, `lcd-dialog`, `first-boot-language`, `ingame-menu`, `ingame-menu-options`; `i18n-en-first-boot-language.png` | every French screen touched, for the owner's review; the first-boot picker in English (as it opens) and on Français |
 | `b2-fr-switcher.png` (rsos-run `--switcher-shot`), `b2-fr-resume-boot-4.png` (headless frontend), `b2-fr-search.png`, `b2-fr-letter-jump.png`, `b2-fr-game-options.png`, `b2-fr-playtime.png`, `b2-fr-settings-games.png`, `b2-fr-carousel-new-systems.png` | batch 2 in French: the game switcher (Select+Y), the 4-choice boot offer, a live search, jump to letter, the game options (scaling, CPU profile, hide, delete, play time), the play time in the detailed view, Settings > Games, a new system (MS-DOS) in the carousel |
+| `vc-rsos-dark-system-retrostone.png`, `vc-rsos-light-system-retrostone.png`, `vc-gbz35-system-retrostone.png`, `vc-i18n-fr-system-retrostone.png` | the RetroStone system (docs/vc-games.md) first in the carousel: its icon, gbz35 logo and background, the tagline in French (no game art: the games are proprietary) |
 
 ## 17. Languages (2026-09-27)
 

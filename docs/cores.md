@@ -105,6 +105,7 @@ Recommended layout: `/data/roms/<folder>`. The frontend maps a folder to a syste
 | `pokemini` | Pokémon mini | pokemini | |
 | `doom` | Doom engine IWADs/PWADs (Freedoom pre-installed) | prboom | |
 | `cavestory` | Cave Story (`Doukutsu.exe` + `data/`) | nxengine | |
+| (none: `/usr/share/rsos/games/retrostone/`) | RetroStone: 8BCraft's own games, built in (no ROM files; [RetroStone](#retrostone-the-retrostone-vc-games)) | bombermole, leadysquid (one core per game) | |
 
 `pcengine` and `pcenginecd` also offer mednafen_supergrafx as a per-game alternative. The third-batch folders and
 how to fill them: [Third batch](#third-batch-computers-fantasy-consoles-and-game-engines).
@@ -368,6 +369,9 @@ savestates = true                 ; retro_serialize() is implemented
 renderer = software               ; software | gles2 (gles2: needs SET_HW_RENDER, see "Nintendo 64")
 pixel_format = rgb565             ; formats the core may request, first = usual one
 system_files = <abs path>, ...    ; optional: copy into the system directory if missing (parallel_n64)
+no_content = false                ; true: the game is built into the core (RetroStone VC). The menu entry is
+                                  ; a stub file in /usr/share/rsos/games/<system>/ that is never read:
+                                  ; retro_load_game(NULL), the saves named after it (docs/vc-games.md)
 
 [bios:disksys.rom]                ; one section per file, path relative to the system directory
 md5 = ca30b50f880eb660a320674ed365ef7a   ; absent for arcade zip sets
@@ -1111,3 +1115,22 @@ cores.
 
 Not verified: running them. TODO(hw): load a game per system on the RetroStone2, check save states where supported,
 the on-screen keyboards, and frame times (a protected-mode DOS game, a SCI32 game, a C64 game with disk loading).
+
+## RetroStone (the RetroStone VC games)
+
+The **RetroStone** system, first in the carousel, holds 8BCraft's own games for RetroStone VC, a virtual console
+with the feel of a Super Nintendo. Each game is its own libretro core with the game built in, so there is no ROM
+folder: full description in [vc-games.md](vc-games.md).
+
+| Game | Core (package) | Source | Build flags | Expected on A20 | Save RAM | Save states |
+|---|---|---|---|---|---|---|
+| Bomber Mole (1 player) | bombermole (`rsos-vc-games`) | RetroStone VC `games/bombermole` (all rights reserved, 8BCraft) + SDK (MIT) | the RetroStone VC `Makefile`'s cross target with Buildroot's `CC`/`CFLAGS` (-O2; the wrapper's Cortex-A7 NEON flags) | designed for 60 fps on one 1 GHz A7: RetroStone VC's spec estimates 6-8 ms per frame on average, 13-17 ms for the worst frame of the heaviest scenes (host `make bench` x15-x20); TODO(hw): measure | `/data/saves/retrostone/Bomber Mole.srm` (32 KiB) | no (`retro_serialize()` returns false in the SDK) |
+| Leady Squid (1-2 players) | leadysquid (`rsos-vc-games`) | RetroStone VC `games/leadysquid` (all rights reserved, 8BCraft) + SDK (MIT) | the same | the same renderer and 60 fps target (4 layers, raster effects, colour math); TODO(hw): measure | `/data/saves/retrostone/Leady Squid.srm` | no |
+
+- **Metadata**: `no_content = true` (see [Core metadata files](#core-metadata-files)), `systems = retrostone`,
+  `extensions = <core id>` (each menu entry's extension picks its core), `savestates = false`.
+- **Architectures**: one build line for every board (no platform switch in the Makefile): Cortex-A7 armhf on the
+  RetroStone2/RetroStone1 and the 32-bit boards, aarch64 elsewhere. NEEDED: libc, libm only.
+- **Licences**: `RSOS_VC_GAMES_REDISTRIBUTE = NO` (the games are proprietary; `legal-info` keeps their licence texts
+  only). The SDK's third-party code is MIT / public domain (libxmp-lite 4.7.3, stb, libretro.h).
+- Not a download: CI builds them only with the `VC_GAMES_TOKEN` secret ([ci.md](ci.md) section 4b).

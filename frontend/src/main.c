@@ -3228,6 +3228,7 @@ int main(int argc, char **argv)
 	board_apply_ui(board_get(), &uc);
 	if (M.root && *M.root) {
 		uc.roms_dir = P("/data/roms");
+		uc.builtin_games_dir = P("/usr/share/rsos/games");
 		uc.data_dir = P("/data/rsos");
 		uc.cache_dir = P("/data/rsos/cache");
 		uc.themes_user = P("/data/themes");

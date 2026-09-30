@@ -12,12 +12,17 @@
 #include "../i18n/i18n.h"
 #include "util.h"
 
-/* Carousel order: by maker, then by age; the consoles and handhelds, then
+/* Carousel order: the RetroStone VC games first (our own games), then by
+ * maker and by age; the consoles and handhelds, then
  * the home computers (and the PC game engines), the arcade systems, the
  * fantasy console and the ports (third batch of cores, docs/cores.md). */
 /* Display names: English, marked for the translations' per-language table of
  * regional names (C_("system", ...) where shown; most languages keep them). */
 static const struct sysdef g_systems[] = {
+	/* First: our own games (RetroStone VC, docs/vc-games.md). One core per
+	 * game, each with its own entry extension; the entries are in the
+	 * read-only /usr/share/rsos/games/retrostone/, not on the card. */
+	{ "retrostone", NC_("system", "RetroStone"), "8BCraft", { "retrostone", NULL }, { NULL }, "", "", 2026 },
 	{ "nes", NC_("system", "Nintendo Entertainment System"), "Nintendo", { "nes", "famicom", NULL }, { "famicom", NULL }, "fceumm", "nes,unf,unif", 1983 },
 	{ "fds", NC_("system", "Famicom Disk System"), "Nintendo", { "fds", "famicom", "nes", NULL }, { NULL }, "fceumm", "fds", 1986 },
 	{ "snes", NC_("system", "Super Nintendo"), "Nintendo", { "snes", "sfc", NULL }, { "sfc", "superfamicom", NULL }, "snes9x2005", "smc,sfc,fig,swc", 1990 },

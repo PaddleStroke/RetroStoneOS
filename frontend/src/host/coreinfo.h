@@ -30,6 +30,10 @@ struct core_info {
 	bool block_extract;
 	bool savestates;
 	bool experimental;     /* never the automatic default (docs/cores.md) */
+	/* no_content = true: a game built into the core (RetroStone VC). Its menu
+	 * entry is a stub file (never read): retro_load_game(NULL), the saves
+	 * named after the stub (docs/vc-games.md). */
+	bool no_content;
 	char renderer[16];     /* "software" | "gles2" */
 	char system_files[512];
 	char system_tree[512];  /* directory copied into the system dir (bluemsx) */

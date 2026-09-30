@@ -121,12 +121,17 @@ fi
 # --- roms/<system> folders for a fresh data partition: every system listed by
 # an installed core ("systems =" in the [core] section of
 # /usr/share/rsos/cores/*.ini), plus folders for systems whose cores are on
-# their way. Read by /usr/libexec/rsos/data-partition.
+# their way. Read by /usr/libexec/rsos/data-partition. A core whose games are
+# built in ("no_content = true", the RetroStone VC games) has no ROM folder:
+# its entries are in /usr/share/rsos/games/<system>/ (docs/vc-games.md).
 EXTRA_ROM_FOLDERS="atari2600 pcengine"
 mkdir -p "$TARGET/usr/share/rsos"
 {
 	for ini in "$TARGET"/usr/share/rsos/cores/*.ini; do
 		[ -f "$ini" ] || continue
+		if grep -Eq '^[[:space:]]*no_content[[:space:]]*=[[:space:]]*(true|yes|1)' "$ini"; then
+			continue
+		fi
 		awk '
 			/^\[/ { core = ($0 == "[core]") }
 			core && /^[ \t]*systems[ \t]*=/ {

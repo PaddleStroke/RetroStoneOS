@@ -105,14 +105,16 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g)
 
 	struct retro_log_callback lc;
 
-	(void)g;
 	if (env(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &lc))
 		log_cb = lc.log;
 	cost_ms = atoi(var("testcore_cost"));
 	crash = !strcmp(var("testcore_crash"), "yes");
-	if (log_cb)
+	if (log_cb) {
 		log_cb(RETRO_LOG_INFO, "testcore: testcore_speed=%s testcore_cost=%d testcore_crash=%d\n",
 			   var("testcore_speed"), cost_ms, crash);
+		/* the no-content tests (RetroStone VC games) */
+		log_cb(RETRO_LOG_INFO, "testcore: content %s\n", !g ? "none" : g->path ? g->path : "(data only)");
+	}
 	return env(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &f);
 }
 

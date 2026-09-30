@@ -5,7 +5,8 @@
 # it. For each configs/*_defconfig: make <board>_defconfig in a scratch
 # output directory, then check that every BR2_ line of the defconfig (the
 # last assignment when a symbol is set twice, as the release defconfig does)
-# is in the .config, and that the homebrew switch of build-board.sh works.
+# is in the .config, and that the homebrew and RetroStone VC games switches of
+# build-board.sh work.
 #   scripts/ci/check-defconfigs.sh [board ...]
 set -u
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -62,6 +63,25 @@ for b in "$@"; do
 			grep -q '^BR2_PACKAGE_RSOS_HOMEBREW=y$' "$O/.config" || hb="BR2_PACKAGE_RSOS_HOMEBREW=y does not stick"
 		else
 			grep -q '^BR2_PACKAGE_RSOS_HOMEBREW=' "$O/.config" && hb="BR2_PACKAGE_RSOS_HOMEBREW=n does not stick"
+		fi
+	done
+	# the same for the RetroStone VC games switch (and its source path)
+	for v in y n; do
+		sed -i '/^BR2_PACKAGE_RSOS_VC_GAMES=/d; /^# BR2_PACKAGE_RSOS_VC_GAMES is not set$/d' "$O/.config"
+		sed -i '/^BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR=/d' "$O/.config"
+		if [ "$v" = y ]; then
+			echo 'BR2_PACKAGE_RSOS_VC_GAMES=y' >> "$O/.config"
+			echo 'BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR="/ci/.vc-games-src"' >> "$O/.config"
+		else
+			echo '# BR2_PACKAGE_RSOS_VC_GAMES is not set' >> "$O/.config"
+		fi
+		make -C "$BR_DIR" O="$O" olddefconfig > /dev/null 2>&1
+		if [ "$v" = y ]; then
+			grep -q '^BR2_PACKAGE_RSOS_VC_GAMES=y$' "$O/.config" &&
+				grep -q '^BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR="/ci/.vc-games-src"$' "$O/.config" ||
+				hb="BR2_PACKAGE_RSOS_VC_GAMES=y (with its source path) does not stick"
+		else
+			grep -q '^BR2_PACKAGE_RSOS_VC_GAMES=' "$O/.config" && hb="BR2_PACKAGE_RSOS_VC_GAMES=n does not stick"
 		fi
 	done
 	if [ -z "$missing" ] && [ -z "$unset_bad" ] && [ "$hb" = ok ]; then

@@ -9,6 +9,9 @@ RetroStoneOS or a licence that allows commercial redistribution. Nothing with an
 `HOMEBREW_TOKEN` secret and stages it with `scripts/ci/stage-homebrew.sh` (set-up: [ci.md](ci.md), section 4).
 Without the secret (forks, local clones), the images are built without the games.
 
+8BCraft's own games (Bomber Mole, Leady Squid) are not homebrew ROMs: they are the RetroStone system, built into
+the image from the private RetroStone VC repository and never copied to `roms/` ([vc-games.md](vc-games.md)).
+
 There are two sets:
 
 | Set | Buildroot option | Default | Source of the files | Legal basis |

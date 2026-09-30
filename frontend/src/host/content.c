@@ -123,6 +123,17 @@ int content_prepare(char *err, size_t n)
 		snprintf(err, n, "%s", _("Game file not found"));
 		return -ENOENT;
 	}
+	if (H.info.no_content) {
+		/* A game built into the core (RetroStone VC, docs/vc-games.md):
+		 * the file is only its menu entry. retro_load_game(NULL); the
+		 * saves, states and resume are named after the entry, as for a
+		 * ROM ("Bomber Mole.bombermole" -> "Bomber Mole.srm"). */
+		H.content_path[0] = 0;
+		hpath_stem(H.rom_path, H.game, sizeof(H.game));
+		hlog(HLOG_INFO, "content: none (%s is a menu entry: the game is built into the core)",
+		     hpath_base(H.rom_path));
+		return 0;
+	}
 	hstrlcpy(H.content_path, H.rom_path, sizeof(H.content_path));
 	hpath_stem(H.rom_path, H.game, sizeof(H.game));
 	hpath_ext(H.rom_path, ext, sizeof(ext));

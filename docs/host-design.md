@@ -241,7 +241,7 @@ of the first batch, including parallel-n64. The second-batch cores use a subset 
 | `GET_PERF_INTERFACE` | snes9x2005, gpsp, mame, n64 | time, NEON flag, counters |
 | `SET_MESSAGE`, `SET_MESSAGE_EXT`, `GET_MESSAGE_INTERFACE_VERSION` (1) | most | OSD toasts (LOG target: log only) |
 | `SET_PERFORMANCE_LEVEL` | fceumm, snes9x2010, picodrive, gambatte, pcsx, mame | logged |
-| `SET_SUPPORT_NO_GAME` | n64 | honoured (`--rom` optional) |
+| `SET_SUPPORT_NO_GAME` | n64, the RetroStone VC games | honoured (`--rom` optional); a core `.ini` with `no_content = true` also gets `retro_load_game(NULL)` when launched with its menu entry file (docs/vc-games.md) |
 | `SET_DISK_CONTROL_INTERFACE`, `_EXT_INTERFACE`, `GET_DISK_CONTROL_INTERFACE_VERSION` (1) | picodrive, pcsx | disc swap in the in-game menu (eject, index, insert) |
 | `SET_AUDIO_BUFFER_STATUS_CALLBACK` | snes9x×2, picodrive, gpsp, pcsx, mame, fbneo, parallel-n64 (patch 0001) | called before every `retro_run()`: active, ALSA fill 0-100, underrun likely below 25 % (the cores' auto frameskip; parallel-n64 skips below 40 %) |
 | `GET_CLEAR_ALL_THREAD_WAITS_CB`, `POLL_TYPE_OVERRIDE` (RetroArch block `0x800000`) | mupen64plus-next (threaded GLideN64) | a no-op callback (our audio never blocks the core's thread), accepted; the core's audio buffer is locked (`core_audio_lock()`) |
@@ -316,6 +316,10 @@ and warnings. `n64.bench.ini` is the benchmark plan (section 18). Requirement do
   the name of the file inside it.
 - `need_fullpath = false` (also per extension via `SET_CONTENT_INFO_OVERRIDE`): the file is read into memory; the path
   is passed as well.
+- **Games built into the core** (`no_content = true` in the core `.ini`, the RetroStone VC games): the `--rom` file is
+  only the menu entry. It is not read, `retro_load_game(NULL)` is called (the core must declare
+  `SET_SUPPORT_NO_GAME`), and the game name (saves, states, resume, screenshots, the per-game options) is the
+  entry's basename: `/data/saves/retrostone/Bomber Mole.srm` for `Bomber Mole.bombermole` (docs/vc-games.md).
 - **Core choice** (`host_pick_core()` / `coreinfo_pick()`): per-game (`[<system>/<rom stem>] core = ...`) then
   per-system (`[<system>] core = ...`) choice in `/data/rsos/cores.ini`, if that core accepts the file's extension
   (experimental cores allowed there); otherwise the automatic default among the candidates whose `systems` list the

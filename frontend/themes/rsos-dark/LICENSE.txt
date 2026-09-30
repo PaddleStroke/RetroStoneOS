@@ -49,3 +49,11 @@ icon-pokemini.svg, stars, panels) are original work for
 RetroStoneOS, under the RetroStoneOS project licence (the licence of the
 frontend source; see the repository root). The fonts come from the
 frontend (":/fonts", Roboto Condensed, Apache License 2.0).
+
+3. The RetroStone system icon: _art/icon-retrostone.svg
+--------------------------------------------------------
+The three stones of the RetroStone2 logo (frontend/assets/splash/
+retrostone2-logo.png) redrawn as one-colour pixel art for the RetroStone
+system (the RetroStone VC games, docs/vc-games.md). The RetroStone name and
+logo belong to 8BCraft; the file is part of RetroStoneOS under its project
+licence, the logo itself is not licensed for other uses.

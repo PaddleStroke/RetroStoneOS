@@ -2965,3 +2965,14 @@ msgstr "Cette mise à jour est une version de développement : elle ne peut pas
 #. (its first-boot setup finishes at the next start)
 msgid "Storage is read-only until the console restarts"
 msgstr "Stockage en lecture seule jusqu'au redémarrage de la console"
+
+msgctxt "system"
+msgid "RetroStone"
+msgstr ""
+
+#. TRANSLATORS: tagline under the carousel of the built-in themes: the
+#. RetroStone system, games made for this console by its maker
+#. (uppercase, one line, ~35 characters)
+msgctxt "theme"
+msgid "Original games · 2026"
+msgstr "Jeux originaux · 2026"

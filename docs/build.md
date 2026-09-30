@@ -22,7 +22,10 @@ Bootlin armv7-eabihf glibc "stable" 2025.08-1 (GCC 14, C++, kernel headers 5.4),
 so no compiler is built.
 
 Ubuntu packages needed (already installed): `build-essential bc cpio file git
-libncurses-dev libssl-dev python3 rsync unzip wget`.
+libncurses-dev libssl-dev python3 rsync unzip wget`, and `python3-pil` for the
+RetroStone VC games (the rsos-vc-games asset step, docs/vc-games.md). The
+games also need a RetroStone VC checkout next to this repository
+(`../RetroStoneVC`); without one, set `BR2_PACKAGE_RSOS_VC_GAMES=n`.
 
 ### First-time setup (inside WSL)
 
@@ -93,6 +96,7 @@ Buildroot does not notice edits in the external tree by itself. From
 | a libretro core's `.mk` or `package/libretro-common.mk` | `make O=~/rsos/output libretro-<name>-dirclean all` |
 | the defconfig | re-run the `retrostone2_defconfig` step, then `make ... all` |
 | `frontend/` (the menu, `rsos-update`: docs/updates.md) | `make O=~/rsos/output rsos-frontend-rebuild all` |
+| the RetroStone VC checkout (the games, docs/vc-games.md) | `make O=~/rsos/output rsos-vc-games-rebuild all` |
 | a package's `Config.in` (e.g. the `select`s of rsos-frontend) | `make O=~/rsos/output olddefconfig`, then `make ... all` |
 
 The tree is split between `board/common/` (init scripts, data partition,

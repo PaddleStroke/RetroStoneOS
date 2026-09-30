@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!-- The RetroStone VC games (docs/vc-games.md). releasedate: the first RetroStoneOS image with them. -->
+<gameList>
+	<game>
+		<path>./Bomber Mole.bombermole</path>
+		<name>Bomber Mole</name>
+		<desc>A mole with a miner's helmet and a pocket full of bombs digs through meadows on three depths at once: the grass surface and two undergrounds. Collect every golden grub to open the exit molehill, while ferrets hunt you in the tunnels and cats prowl the grass. Four seasons of levels, each with its own weather, hazards and boss.</desc>
+		<image>./media/images/Bomber Mole.png</image>
+		<releasedate>20260930T000000</releasedate>
+		<developer>8BCraft</developer>
+		<publisher>8BCraft</publisher>
+		<genre>Action, Puzzle</genre>
+		<players>1</players>
+	</game>
+	<game>
+		<path>./Leady Squid.leadysquid</path>
+		<name>Leady Squid</name>
+		<desc>A grumpy little squid put on far too many lead diving weights and sinks like a stone. Every tap shoots a jet of water that sends it back up for a moment: swim through the gaps between kelp, coral, ship masts and anchor chains for as long as you can. One button, instant retry, a best score to beat, and a race for two players.</desc>
+		<image>./media/images/Leady Squid.png</image>
+		<releasedate>20260930T000000</releasedate>
+		<developer>8BCraft</developer>
+		<publisher>8BCraft</publisher>
+		<genre>Action</genre>
+		<players>1-2</players>
+	</game>
+</gameList>

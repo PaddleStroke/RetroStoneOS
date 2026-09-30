@@ -156,6 +156,9 @@ BR2_PACKAGE_UBOOT_TOOLS_FWPRINTENV=y
 BR2_PACKAGE_RSOS_FRONTEND=y
 # Needs the gitignored homebrew/license ok/ folder: set to n in a fresh clone.
 BR2_PACKAGE_RSOS_HOMEBREW=y
+# The RetroStone VC games (docs/vc-games.md): needs a RetroStone VC checkout
+# next to this tree (../RetroStoneVC): set to n without it (CI does).
+BR2_PACKAGE_RSOS_VC_GAMES=y
 BR2_PACKAGE_LIBRETRO_FCEUMM=y
 BR2_PACKAGE_LIBRETRO_SNES9X2005=y
 BR2_PACKAGE_LIBRETRO_SNES9X2010=y

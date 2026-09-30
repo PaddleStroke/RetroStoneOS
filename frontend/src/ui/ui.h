@@ -257,6 +257,10 @@ static inline void ui_transfer_api_from_module(struct ui_transfer_api *a)
 
 struct ui_config {
 	const char *roms_dir;        /* "/data/roms" */
+	/* Read-only game folders in the root filesystem, <dir>/<system>/: a
+	 * system that has one reads its games from there, not from roms_dir
+	 * (the RetroStone VC games, docs/vc-games.md). */
+	const char *builtin_games_dir; /* "/usr/share/rsos/games" */
 	const char *data_dir;        /* "/data/rsos" (settings.ini, gamedb, input/) */
 	const char *cache_dir;       /* "/data/rsos/cache" */
 	const char *themes_builtin;  /* "/usr/share/rsos/themes" */

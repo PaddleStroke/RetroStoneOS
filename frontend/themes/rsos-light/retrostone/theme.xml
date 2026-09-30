@@ -1,0 +1,10 @@
+<!-- RetroStoneOS rsos-light: retrostone (the RetroStone VC games, docs/vc-games.md) sets its accent color, icon (_art/icon-retrostone.svg: the stones of the RetroStone2 logo, 8BCraft) and tagline. -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<variables>
+		<accent>9b59b6</accent>
+		<icon>icon-retrostone</icon>
+		<tagline>Original games · 2026</tagline>
+	</variables>
+	<include>./../theme.xml</include>
+</theme>

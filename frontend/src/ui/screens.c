@@ -2261,6 +2261,17 @@ static void delete_answer(struct ui *ui, int choice, void *user)
 	dialog_select(d, 0);
 }
 
+/* A game of a read-only folder of the system (the RetroStone VC games in
+ * <builtin_games_dir>/<system>/): part of the image, never deleted. A path
+ * prefix only counts up to a '/' ("/usr/share/rsos/games2" is not in it). */
+static bool game_is_builtin(const struct ui *ui, const struct game *g)
+{
+	const char *b = ui->cfg.builtin_games_dir;
+	size_t l = b ? strlen(b) : 0;
+
+	return l && g->path && !strncmp(g->path, b, l) && g->path[l] == '/';
+}
+
 static void game_delete_ask(struct ui *ui, struct game *g)
 {
 	const char *buttons[3], *ext = strrchr(path_basename(g->path), '.');
@@ -2269,6 +2280,8 @@ static void game_delete_ask(struct ui *ui, struct game *g)
 	const struct core_info *ci = systems_core(ui_game_core(ui, g, &core_name));
 	struct screen *d;
 
+	if (game_is_builtin(ui, g))
+		return;   /* no Delete item for it (game_options_open) */
 	memset(&g_del, 0, sizeof(g_del));
 	strlcpy_(g_del.system, g->system, sizeof(g_del.system));
 	strlcpy_(g_del.path, g->path, sizeof(g_del.path));
@@ -2464,8 +2477,11 @@ void game_options_open(struct ui *ui, struct sysent *se, struct game *g)
 	 * Game lists > Show hidden games brings it back) */
 	it = menu_add(m, MI_TOGGLE, ID_GHIDE, _("Hide this game"));
 	it->on = g->hidden;
-	/* TRANSLATORS: game options: delete the game's file from the SD card (asks first) */
-	menu_add(m, MI_ACTION, ID_GDELETE, _("Delete this game"));
+	/* not for a game of a read-only folder of the system (the RetroStone VC
+	 * games): it is part of the system, hiding it is the way */
+	if (!game_is_builtin(ui, g))
+		/* TRANSLATORS: game options: delete the game's file from the SD card (asks first) */
+		menu_add(m, MI_ACTION, ID_GDELETE, _("Delete this game"));
 	/* TRANSLATORS: game options: the time spent playing this game */
 	it = menu_add(m, MI_INFO, ID_GPLAYTIME, _("Play time"));
 	ui_format_playtime(g->playtime, it->value, sizeof(it->value));

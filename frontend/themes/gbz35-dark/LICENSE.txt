@@ -39,3 +39,13 @@ Roboto Condensed at run time, and uses the folder of a related console for
 systems this theme has no folder for (pcenginecd -> pcengine, neocd ->
 neogeo, wonderswancolor -> wonderswan, pico -> megadrive); the files are
 untouched.
+
+RetroStoneOS addition: retrostone/
+----------------------------------
+The retrostone/ folder is not part of the upstream theme: it is the
+RetroStone system of RetroStoneOS (8BCraft's own games, docs/vc-games.md),
+written for RetroStoneOS in the style of this theme. system.png is the
+RetroStone2 logo without the "2" and background.png its three stones in two
+flat colours, both made from frontend/assets/splash/retrostone2-logo.png
+(the RetroStone name and logo belong to 8BCraft); theme.xml follows the
+other system folders. The upstream files are untouched.

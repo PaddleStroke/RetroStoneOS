@@ -1,0 +1,56 @@
+config BR2_PACKAGE_RSOS_VC_GAMES
+	bool "rsos-vc-games"
+	depends on !BR2_STATIC_LIBS # libretro cores, loaded with dlopen()
+	help
+	  The RetroStone VC games (8BCraft): Bomber Mole and Leady
+	  Squid, the "RetroStone" system at the start of the menu's
+	  carousel (docs/vc-games.md).
+
+	  Each game is a libretro core built from the RetroStone VC
+	  source (the MIT SDK plus the game, all rights reserved,
+	  8BCraft): the game is inside the core, there is no ROM.
+	  Installs:
+	  - /usr/lib/libretro/<game>_libretro.so and
+	    /usr/share/rsos/cores/<game>.ini (no_content = true);
+	  - /usr/share/rsos/games/retrostone/: one menu entry per game
+	    ("Bomber Mole.bombermole", a stub file the host never
+	    reads), gamelist.xml and media/images/ (title screens);
+	  - /usr/share/rsos/licenses/retrostone-vc/.
+
+	  The games are proprietary: the package is never
+	  redistributed by "make legal-info" (only the licence texts).
+	  The build needs python3 with Pillow on the build host
+	  (python3-pil) for the games' asset step.
+
+# Defined even when the package is disabled: the .mk sets the local SITE from
+# it at parse time, and Buildroot parses every package .mk.
+config BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR
+	string "RetroStone VC checkout"
+	default "$(BR2_EXTERNAL_RETROSTONE_PATH)/../../RetroStoneVC"
+	help
+	  The RetroStone VC repository (sdk/, games/, Makefile): by
+	  default a checkout next to the RetroStoneOS one. CI fetches
+	  the private PaddleStroke/RetroStoneVC and sets this path
+	  (scripts/ci/build-board.sh, docs/ci.md). The build copies it
+	  without build/, dist/, the art inbox and .git.
+
+if BR2_PACKAGE_RSOS_VC_GAMES
+
+config BR2_PACKAGE_RSOS_VC_GAMES_BOMBERMOLE
+	bool "Bomber Mole"
+	default y
+	help
+	  A mole who drops bombs to open the way, on three depths at
+	  once, through four seasons. 1 player.
+
+config BR2_PACKAGE_RSOS_VC_GAMES_LEADYSQUID
+	bool "Leady Squid"
+	default y
+	help
+	  A one-button "flap" game: a squid with too many lead weights
+	  swims through the gaps of a sunken world. 1-2 players.
+
+endif
+
+comment "rsos-vc-games needs a toolchain w/ dynamic library"
+	depends on BR2_STATIC_LIBS

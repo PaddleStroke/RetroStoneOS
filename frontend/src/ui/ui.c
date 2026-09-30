@@ -41,6 +41,7 @@ void ui_config_defaults(struct ui_config *cfg)
 {
 	memset(cfg, 0, sizeof(*cfg));
 	cfg->roms_dir = "/data/roms";
+	cfg->builtin_games_dir = "/usr/share/rsos/games";
 	cfg->data_dir = "/data/rsos";
 	cfg->cache_dir = "/data/rsos/cache";
 	cfg->themes_builtin = "/usr/share/rsos/themes";
@@ -998,6 +999,7 @@ struct ui *ui_create(const struct ui_config *cfg)
 	ui->cfg.wpa_conf = keep(ui, 12, ui->cfg.wpa_conf, def.wpa_conf);
 	ui->cfg.version = keep(ui, 13, ui->cfg.version, def.version);
 	ui->cfg.default_theme = keep(ui, 14, ui->cfg.default_theme, def.default_theme);
+	ui->cfg.builtin_games_dir = keep(ui, 16, ui->cfg.builtin_games_dir, "");
 
 	/* The exFAT folders read before the first menu frame, in a few large
 	 * reads (a cold folder costs ~110 ms otherwise, see fswarm.h). */

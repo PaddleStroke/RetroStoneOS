@@ -4,8 +4,8 @@
 # <board>: a defconfig name without "_defconfig" (retrostone2_release, rpi4_64).
 # Steps (default: all = configure source build package legal-info):
 #   configure   get Buildroot (sha256 checked), make <board>_defconfig, set the
-#               homebrew option (and the UART password, if the defconfig asks
-#               for one), make olddefconfig
+#               homebrew and RetroStone VC games options (and the UART
+#               password, if the defconfig asks for one), make olddefconfig
 #   source      download every source (make source), 3 tries
 #   build       make (full log in <out>/build.log, ">>>" lines on stdout)
 #   package     <artifacts>/retrostoneos-<version>-<image>.img.xz (xz -T0 -9),
@@ -26,6 +26,11 @@
 #   RSOS_CI_HOMEBREW    auto (default): the approved homebrew games are built in
 #                       when homebrew/license ok/ holds them; yes: they must be
 #                       there; no: BR2_PACKAGE_RSOS_HOMEBREW=n
+#   RSOS_CI_VC_GAMES    auto (default): the RetroStone VC games (rsos-vc-games) are
+#                       built in when RSOS_CI_VC_GAMES_DIR holds a RetroStone VC
+#                       checkout; yes: it must be there; no: BR2_PACKAGE_RSOS_VC_GAMES=n
+#   RSOS_CI_VC_GAMES_DIR  the RetroStone VC checkout (default ../RetroStoneVC next
+#                       to the repository, where the defconfigs expect it)
 #   RSOS_CI_VERSION     version in the file names (default: git describe)
 #   RSOS_CI_OS_VERSION  a release tag's version (0.2.0): the version the
 #                       image reports (BR2_RETROSTONE_VERSION); it also makes a
@@ -62,6 +67,7 @@ ART=${RSOS_CI_ARTIFACTS:-$WORK/artifacts}
 export BR2_DL_DIR="${BR2_DL_DIR:-$WORK/dl}"
 export BR2_CCACHE_DIR="${BR2_CCACHE_DIR:-$WORK/ccache}"
 HOMEBREW_DIR="$REPO/homebrew/license ok"
+VC_DIR=${RSOS_CI_VC_GAMES_DIR:-$(dirname "$REPO")/RetroStoneVC}
 VERSION=${RSOS_CI_VERSION:-$(git -C "$REPO" describe --tags --always --dirty 2>/dev/null || date -u +%Y%m%d)}
 VERSION=$(printf '%s' "$VERSION" | tr -c 'A-Za-z0-9._+-' '-')
 FILE=retrostoneos-$VERSION-$IMAGE
@@ -96,6 +102,9 @@ kconfig_is() { # <symbol> y|n
 homebrew_present() {
 	[ -d "$HOMEBREW_DIR" ] && [ -n "$(find "$HOMEBREW_DIR" -mindepth 1 -maxdepth 1 ! -name '.git*' | head -n 1)" ]
 }
+vc_present() {
+	[ -f "$VC_DIR/Makefile" ] && [ -d "$VC_DIR/sdk" ] && [ -d "$VC_DIR/games" ]
+}
 
 step_configure() {
 	group "configure $BOARD (Buildroot $BR_VERSION)"
@@ -112,6 +121,23 @@ step_configure() {
 	*) error "RSOS_CI_HOMEBREW must be auto, yes or no"; exit 1 ;;
 	esac
 	set_kconfig BR2_PACKAGE_RSOS_HOMEBREW "$hb"
+
+	# the RetroStone VC games (proprietary: a private repository, docs/ci.md)
+	case ${RSOS_CI_VC_GAMES:-auto} in
+	yes)
+		vc_present || { error "RSOS_CI_VC_GAMES=yes but $VC_DIR is not a RetroStone VC checkout"; exit 1; }
+		vc=y ;;
+	no) vc=n ;;
+	auto) if vc_present; then vc=y; else vc=n; fi ;;
+	*) error "RSOS_CI_VC_GAMES must be auto, yes or no"; exit 1 ;;
+	esac
+	set_kconfig BR2_PACKAGE_RSOS_VC_GAMES "$vc"
+	if [ "$vc" = y ]; then
+		case $VC_DIR in
+		*" "* | *\"* | *\\*) error "RSOS_CI_VC_GAMES_DIR must not contain spaces, quotes or backslashes"; exit 1 ;;
+		esac
+		set_kconfig BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR "\"$VC_DIR\""
+	fi
 
 	if grep -q '^BR2_RETROSTONE_UART_SHELL_PASSWORD=y$' "$OUT/.config"; then
 		if [ -n "${RSOS_UART_PASSWORD:-}" ]; then
@@ -147,6 +173,10 @@ step_configure() {
 		error "BR2_PACKAGE_RSOS_HOMEBREW=$hb did not survive olddefconfig"
 		exit 1
 	}
+	kconfig_is BR2_PACKAGE_RSOS_VC_GAMES "$vc" || {
+		error "BR2_PACKAGE_RSOS_VC_GAMES=$vc did not survive olddefconfig"
+		exit 1
+	}
 	if [ -n "${RSOS_CI_OS_VERSION:-}" ] && [ "$VARIANT" != dev ] && ! kconfig_is BR2_RETROSTONE_RELEASE y; then
 		error "$BOARD on a tag: BR2_RETROSTONE_RELEASE=y did not survive olddefconfig"
 		exit 1
@@ -154,9 +184,15 @@ step_configure() {
 	if kconfig_is BR2_RETROSTONE_RELEASE y; then build=release; else build=development; fi
 	{
 		echo "HOMEBREW=$hb"
+		echo "VC_GAMES=$vc"
 		echo "CONFIGURED=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 	} > "$OUT/rsos-ci.env"
 	echo "board $BOARD -> $FILE, $build build, version ${RSOS_CI_OS_VERSION:-(package default)}, homebrew games: $hb, output $OUT"
+	if [ "$vc" = y ]; then
+		echo "RetroStone VC games: yes, from $VC_DIR ($(git -C "$VC_DIR" describe --always --dirty --abbrev=12 2>/dev/null || echo "no git"))"
+	else
+		echo "RetroStone VC games: no (no RetroStone VC checkout at $VC_DIR: the VC_GAMES_TOKEN secret is not set, or RSOS_CI_VC_GAMES=no); the image has no RetroStone system"
+	fi
 	echo "downloads: $BR2_DL_DIR, ccache: $BR2_CCACHE_DIR"
 	endgroup
 }
@@ -229,12 +265,14 @@ step_package() {
 		rsu=$FILE-unsigned.rsu
 	fi
 	hb=$(sed -n 's/^HOMEBREW=//p' "$OUT/rsos-ci.env" 2>/dev/null || echo n)
+	vc=$(sed -n 's/^VC_GAMES=//p' "$OUT/rsos-ci.env" 2>/dev/null || echo n)
 	{
 		printf "BOARD='%s'\nIMAGE='%s'\nSTATUS='%s'\nFILE='%s'\nHOMEBREW='%s'\nVERSION='%s'\n" \
 			"$BOARD" "$IMAGE" "$STATUS" "$FILE.img.xz" "$hb" "$VERSION"
 		printf "NAME='%s'\n" "$(printf '%s' "$NAME" | sed "s/'/'\\\\''/g")"
 		printf "SIZE=%s\nRAW_SIZE=%s\n" "$(stat -c %s "$ART/$FILE.img.xz")" "$(stat -c %s "$IMG")"
 		printf "COMMIT='%s'\n" "$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+		printf "VC_GAMES='%s'\n" "${vc:-n}"
 		printf "RSU='%s'\nRSU_SIGNED='%s'\n" "$rsu" "$signed"
 		[ -n "$rsu" ] && printf "RSU_SIZE=%s\n" "$(stat -c %s "$ART/$rsu")"
 		true

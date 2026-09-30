@@ -38,6 +38,7 @@ for info in "$DIST"/*.info; do
 		printf '%s\t| %s | `%s` | %s | %s | %s |\n' "$o$NAME" "$NAME" "$FILE" "$(mib "$SIZE")" \
 			"$STATUS" "$hb" >> "$T/rows"
 		echo "$HOMEBREW $NAME" >> "$T/hb"
+		echo "${VC_GAMES:-n} $NAME" >> "$T/vc"
 	)
 done
 [ -s "$T/rows" ] || { echo "release-notes: no *.info in $DIST" >&2; exit 1; }
@@ -56,6 +57,17 @@ else
 	# shellcheck disable=SC2016 # Markdown backquotes
 	printf -- '- The bundled homebrew games (copied to `roms/` at the first boot) are only in some images: %s.\n' \
 		"$(sed 's/^y \(.*\)/\1: yes/; s/^n \(.*\)/\1: no/' "$T/hb" | paste -sd ';' - | sed 's/;/; /g')" > "$T/HOMEBREW"
+fi
+# the RetroStone VC games (docs/vc-games.md), in the same block
+vc_yes=$(grep -c '^y ' "$T/vc" || true)
+vc_no=$(grep -c '^n ' "$T/vc" || true)
+if [ "$vc_no" = 0 ]; then
+	echo "- **RetroStone**, first in the menu: Bomber Mole and Leady Squid, 8BCraft's own games, are part of the system." >> "$T/HOMEBREW"
+elif [ "$vc_yes" != 0 ]; then
+	printf -- '- The RetroStone games (Bomber Mole, Leady Squid) are only in some images: %s.\n' \
+		"$(sed 's/^y \(.*\)/\1: yes/; s/^n \(.*\)/\1: no/' "$T/vc" | paste -sd ';' - | sed 's/;/; /g')" >> "$T/HOMEBREW"
+else
+	echo "- These images were built **without** the RetroStone games (Bomber Mole, Leady Squid): the menu has no RetroStone system." >> "$T/HOMEBREW"
 fi
 
 # ---- system update packages (docs/updates.md)

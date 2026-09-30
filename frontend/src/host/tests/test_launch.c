@@ -433,6 +433,63 @@ static void test_png_caps(const char *dir)
 	remove(p);
 }
 
+/*
+ * A game built into its core (the RetroStone VC games, docs/vc-games.md):
+ * the core .ini says no_content = true, the menu launches a stub entry
+ * file. The core must get retro_load_game(NULL), and the SRAM, the auto
+ * state and the resume must be named after the entry, in the system's
+ * folders (saves/retrostone/<entry name>.srm).
+ */
+static void test_no_content(char **argv, const char *const *args, struct host_launch_opts *o)
+{
+	static const char ini[] = "[core]\nsystems = retrostone\nextensions = vctest\nno_content = true\n";
+	static const char stub[] = "RetroStone VC menu entry (never read)\n";
+	char info_ini[600], dir[600], entry[700], srm[600], st[700], states[600], log[600];
+	char *txt = NULL;
+	struct host_launch_result r;
+
+	printf("a game built into its core (no_content): no content, saves named after the menu entry\n");
+	snprintf(info_ini, sizeof(info_ini), "%s/cores/rsos-testcore.ini", argv[3]);
+	snprintf(dir, sizeof(dir), "%s/games/retrostone", argv[3]);
+	snprintf(entry, sizeof(entry), "%s/Test Game.vctest", dir);
+	snprintf(srm, sizeof(srm), "%s/saves/retrostone/Test Game.srm", argv[3]);
+	snprintf(states, sizeof(states), "%s/states", argv[3]);
+	snprintf(st, sizeof(st), "%s/retrostone/Test Game.state.auto", states);
+	snprintf(log, sizeof(log), "%s/game.log", argv[3]);
+	hmkdir_p(dir, 0755);
+	hwrite_atomic(entry, stub, sizeof(stub) - 1, false);
+	hwrite_atomic(info_ini, ini, sizeof(ini) - 1, false);
+	remove(srm);
+	remove(st);
+	o->extra_args = args;
+	CHECK(host_launch(argv[2], entry, "retrostone", o, &r) == 0 && r.status == HOST_EXIT_OK && !r.crashed &&
+	      (txt = hread_file(log, NULL)) && strstr(txt, "testcore: content none") &&
+	      strstr(txt, "Test Game.vctest is a menu entry"),
+	      "the core gets retro_load_game(NULL) (status %d)", r.status);
+	free(txt);
+	txt = NULL;
+	CHECK(hfile_size(srm) == 1024, "SRAM in saves/retrostone/Test Game.srm (%lld bytes)", hfile_size(srm));
+	/* (the menu looks for the same name: host_auto_state_path() takes the
+	 * entry's stem, check-frontend step 8) */
+	CHECK(r.auto_state_saved && hfile_exists(st), "auto state states/retrostone/Test Game.state.auto");
+	o->resume = true;
+	CHECK(host_launch(argv[2], entry, "retrostone", o, &r) == 0 && r.status == HOST_EXIT_OK &&
+	      (txt = hread_file(log, NULL)) && strstr(txt, "testcore: content none") &&
+	      strstr(txt, "Test Game.state.auto") && strstr(txt, "): ok"),
+	      "resume: the game starts from its auto state, still without content");
+	free(txt);
+	o->resume = false;
+	/* without the key, the same file is ordinary content */
+	remove(info_ini);
+	CHECK(host_launch(argv[2], entry, "retrostone", o, &r) == 0 && r.status == HOST_EXIT_OK &&
+	      (txt = hread_file(log, NULL)) && strstr(txt, "testcore: content ") &&
+	      !strstr(txt, "testcore: content none"),
+	      "without no_content the entry is passed as content (the key is what makes the difference)");
+	free(txt);
+	remove(srm);
+	remove(st);
+}
+
 int main(int argc, char **argv)
 {
 	struct host_launch_opts o;
@@ -784,6 +841,7 @@ int main(int argc, char **argv)
 		o.extra_args = args;
 	}
 
+	test_no_content(argv, args, &o);
 	test_batch2(argv, args, &o);
 	test_saves_resume(argv, args, &o);
 	test_png_caps(argv[3]);

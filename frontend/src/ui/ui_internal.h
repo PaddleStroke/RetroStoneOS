@@ -249,7 +249,7 @@ void prefetch_stats(const struct ui *ui, int *jobs, int64_t *work_us, int *queue
 
 struct ui {
 	struct ui_config cfg;
-	char paths[16][1024];         /* storage for the config strings */
+	char paths[17][1024];         /* storage for the config strings */
 	int w, h;
 	int64_t now;
 	bool dirty;
