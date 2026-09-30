@@ -45,6 +45,10 @@ Each game is a libretro core with the game built in: there is no ROM file to cop
   Buildroot has no host package for it, so the package runs the build host's `/usr/bin/python3`
   (`RSOS_VC_GAMES_PYTHON`, apt package `python3-pil`; `scripts/ci/install-deps.sh buildroot` installs it) and stops
   with "rsos-vc-games: /usr/bin/python3 with Pillow is needed" without it.
+- **Art.** The package passes no `ART` or `CHAR_SIZE`, so the games build with RetroStone VC's default art: for
+  Bomber Mole the committed set `games/bombermole/art-ai/` (the AI-generated art, placeholders only for the strips
+  still to draw, 24-px characters; `make art-ai` there regenerates it from the inbox). The console shows the same
+  art as the owner's Windows build. The validated-only look would be `ART=art` in `RSOS_VC_GAMES_MAKE_OPTS`.
 - **Copy.** The checkout is copied without `build/` and `dist/` (the developer's own builds: an x86 object must never
   reach the target build), the image agent's art inbox `games/*/art/incoming/` (65 MB, not used by the build),
   `docs/art-preview/` and `.git`.

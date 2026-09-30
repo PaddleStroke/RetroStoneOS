@@ -26,7 +26,8 @@ RSOS_VC_GAMES_LICENSE_FILES = LICENSE-MIT THIRD_PARTY.md \
 RSOS_VC_GAMES_REDISTRIBUTE = NO
 # Not copied into the build directory: the developer's own builds, the
 # deliverables, the image agent's art inbox (tens of MB, not used by the
-# build) and the art previews.
+# build: the games build with their committed art sets, e.g. Bomber Mole's
+# games/bombermole/art-ai/) and the art previews.
 RSOS_VC_GAMES_OVERRIDE_SRCDIR_RSYNC_EXCLUSIONS = \
 	--exclude /build --exclude /dist --exclude /docs/art-preview \
 	--exclude '/games/*/art/incoming' --exclude __pycache__ --exclude '*.srm'
@@ -62,6 +63,8 @@ RSOS_VC_GAMES_POST_RSYNC_HOOKS += RSOS_VC_GAMES_RECORD_COMMIT
 # the CPU flags: Cortex-A7 NEON on the RetroStone2, the right ARMv8 CPU on the
 # 64-bit boards). ARM_FLAGS replaces its own Cortex-A7 default; the output is
 # build/armhf/<game>_libretro.so whatever the architecture.
+# No ART or CHAR_SIZE: the RetroStone VC defaults (Bomber Mole: the AI art of
+# games/bombermole/art-ai/, 24-px characters, like the owner's Windows build).
 RSOS_VC_GAMES_MAKE_OPTS = \
 	ARM_CC="$(TARGET_CC)" \
 	ARM_AR="$(TARGET_AR)" \
