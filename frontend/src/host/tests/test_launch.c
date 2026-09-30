@@ -434,6 +434,88 @@ static void test_png_caps(const char *dir)
 }
 
 /*
+ * The RetroStone VC games have save states (the SDK serializes the whole
+ * console): with no content they must work like any other game. No
+ * "nostate" (the idle power-off is not held), the auto state's thumbnail and
+ * saves reference (B1), the in-game menu's slots with their thumbnails, and
+ * the game switcher, all named after the menu entry in the system's folders.
+ */
+static void test_no_content_states(char **argv, const char *const *args, struct host_launch_opts *o,
+				   const char *entry, const char *srm, const char *st)
+{
+	char png[800], ref[800], slot[800], slot_png[800], sw[600], other[600], log[600], *txt = NULL;
+	const char *a2[64];
+	struct host_launch_result r;
+	struct host_switch_entry e[2];
+
+	snprintf(png, sizeof(png), "%s.png", st);
+	snprintf(ref, sizeof(ref), "%s.sram", st);
+	snprintf(slot, sizeof(slot), "%s/states/retrostone/Test Game.state1", argv[3]);
+	snprintf(slot_png, sizeof(slot_png), "%s.png", slot);
+	snprintf(sw, sizeof(sw), "%s/switcher-vc.tsv", argv[3]);
+	snprintf(other, sizeof(other), "%s/roms/test/other.bin", argv[3]);
+	snprintf(log, sizeof(log), "%s/game.log", argv[3]);
+	hwrite_atomic(other, "y", 1, false);
+
+	printf("a game built into its core, with save states: as any game\n");
+	remove(st);
+	remove(png);
+	remove(ref);
+	g_status[0] = 0;
+	o->on_status = collect_status;
+	o->extra_args = args;
+	CHECK(host_launch(argv[2], entry, "retrostone", o, &r) == 0 && r.status == HOST_EXIT_OK &&
+	      count_lines(g_status, "nostate ") == 0 && r.auto_state_saved,
+	      "no \"nostate\" status line (the idle power-off is not held), the auto state written");
+	o->on_status = NULL;
+	CHECK(hfile_size(png) > 100 && (txt = hread_file(ref, NULL)) && strstr(txt, "\nsrm ") &&
+	      !strstr(txt, "srm none"),
+	      "its thumbnail and its saves reference (Test Game.state.auto.png, .sram with the .srm's hash)");
+	free(txt);
+	txt = NULL;
+
+	remove(slot);
+	remove(slot_png);
+	o->extra_args = more_args(args, a2, 64, "--menu-script", "sel=Save state,r,a", "--frames", "40", NULL);
+	CHECK(host_launch(argv[2], entry, "retrostone", o, &r) == 0 && r.status == HOST_EXIT_OK &&
+	      hfile_size(slot) > 0 && hfile_size(slot_png) > 100,
+	      "in-game menu > Save state, slot 1: states/retrostone/Test Game.state1 and its thumbnail");
+	o->extra_args = more_args(args, a2, 64, "--menu-script", "sel=Load state,r,a", "--frames", "40", NULL);
+	CHECK(host_launch(argv[2], entry, "retrostone", o, &r) == 0 && r.status == HOST_EXIT_OK &&
+	      (txt = hread_file(log, NULL)) && strstr(txt, "retrostone/Test Game.state1 (") &&
+	      strstr(strstr(txt, "retrostone/Test Game.state1 ("), "): ok") && strstr(txt, "testcore: content none"),
+	      "in-game menu > Load state, slot 1: loaded, still without content");
+	free(txt);
+	txt = NULL;
+	CHECK(hfile_size(srm) == 1024, "the .srm is still there (%lld bytes)", hfile_size(srm));
+
+	printf("the game switcher leaves a game built into its core: saved, resumed there later\n");
+	memset(e, 0, sizeof(e));
+	snprintf(e[0].name, sizeof(e[0].name), "Test Game");
+	snprintf(e[0].system, sizeof(e[0].system), "retrostone");
+	snprintf(e[0].rom, sizeof(e[0].rom), "%s", entry);
+	snprintf(e[0].core, sizeof(e[0].core), "vctest");
+	e[0].current = true;
+	snprintf(e[1].name, sizeof(e[1].name), "Other");
+	snprintf(e[1].system, sizeof(e[1].system), "test");
+	snprintf(e[1].rom, sizeof(e[1].rom), "%s", other);
+	host_switcher_write(sw, e, 2);
+	remove(st);
+	remove(png);
+	o->extra_args = more_args(args, a2, 64, "--switcher", sw, "--switcher-pick", "1", "--no-autosave", NULL);
+	CHECK(host_launch(argv[2], entry, "retrostone", o, &r) == 0 && r.status == HOST_EXIT_SWITCH &&
+	      r.switch_to == 1 && r.auto_state_saved && hfile_exists(st) && hfile_size(png) > 100,
+	      "entry 1 picked: exit %d, the auto state and its thumbnail written (auto-save on exit off)",
+	      r.exit_code);
+	o->extra_args = args;
+	remove(slot);
+	remove(slot_png);
+	remove(sw);
+	remove(ref);
+	remove(png);
+}
+
+/*
  * A game built into its core (the RetroStone VC games, docs/vc-games.md):
  * the core .ini says no_content = true, the menu launches a stub entry
  * file. The core must get retro_load_game(NULL), and the SRAM, the auto
@@ -478,7 +560,9 @@ static void test_no_content(char **argv, const char *const *args, struct host_la
 	      strstr(txt, "Test Game.state.auto") && strstr(txt, "): ok"),
 	      "resume: the game starts from its auto state, still without content");
 	free(txt);
+	txt = NULL;
 	o->resume = false;
+	test_no_content_states(argv, args, o, entry, srm, st);
 	/* without the key, the same file is ordinary content */
 	remove(info_ini);
 	CHECK(host_launch(argv[2], entry, "retrostone", o, &r) == 0 && r.status == HOST_EXIT_OK &&

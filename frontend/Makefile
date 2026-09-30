@@ -798,6 +798,10 @@ check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
 	grep -q 'testcore: content none' $(FE_GAME_LOG)
 	test -s "$(FE_CHECK_DIR)/data/saves/retrostone/Test VC Game.srm"
 	test -s "$(FE_CHECK_DIR)/data/states/retrostone/Test VC Game.state.auto"
+	test -s "$(FE_CHECK_DIR)/data/states/retrostone/Test VC Game.state.auto.png"
+	grep -q '^srm [0-9a-f]\{16\} ' "$(FE_CHECK_DIR)/data/states/retrostone/Test VC Game.state.auto.sram"
+	! grep -q 'save states unsupported' $(FE_GAME_LOG)
+	! grep -q "the game's core cannot save a state" $(FE_LOG)
 	grep -q '^retrostone.Test VC Game.vctest.' $(FE_CHECK_DIR)/data/rsos/gamedb.tsv
 	test ! -e $(FE_CHECK_DIR)/data/roms/retrostone
 	@echo "check-frontend: 8a. the menu finds its auto state: resumed (resume_mode always), still without content"
@@ -809,6 +813,28 @@ check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
 	grep -q 'load state .*retrostone/Test VC Game.state.auto (.*): ok' $(FE_GAME_LOG)
 	grep -q 'testcore: content none' $(FE_GAME_LOG)
 	sed -i '/^resume_mode/d' $(FE_SETTINGS)
+	@echo "check-frontend: 8b. idle power-off during it: not held (the core saves states), the auto state first, resume.ini names the entry"
+	rm -f $(FE_LOG) $(FE_GAME_LOG) $(FE_RESUME) "$(FE_CHECK_DIR)/data/states/retrostone/Test VC Game.state.auto"* \
+		$(FE_CHECK_DIR)/run/rsos/shutdown-signal
+	RSOS_TESTCORE=slow $(FE_RUN) --script "wait:500 a wait:500 expect:list:retrostone a game:wait:100 game:idlepoweroff:1"
+	! grep -q 'EXPECT FAILED' $(FE_LOG)
+	! grep -q 'idle power-off held' $(FE_LOG)
+	grep -q 'idle power-off: notice (10 s)' $(FE_LOG)
+	grep -q 'auto state saved (power-off)' $(FE_GAME_LOG)
+	grep -q 'resume: recorded Test VC Game' $(FE_LOG) && grep -q '^reason = idle$$' $(FE_RESUME)
+	grep -q '^rom = .*/usr/share/rsos/games/retrostone/Test VC Game.vctest$$' $(FE_RESUME)
+	test -s "$(FE_CHECK_DIR)/data/states/retrostone/Test VC Game.state.auto"
+	test -s "$(FE_CHECK_DIR)/data/states/retrostone/Test VC Game.state.auto.png"
+	test $$(grep -n 'resume: recorded' $(FE_LOG) | cut -d: -f1) -lt $$(grep -n 'powering off (idle)' $(FE_LOG) | cut -d: -f1)
+	@echo "check-frontend: 8c. next boot: \"Resume Test VC Game?\" -> resumed from the auto state, without content"
+	rm -f $(FE_LOG) $(FE_GAME_LOG)
+	$(FE_RUN) --script "wait:400 expect:dialog:Resume_Test_VC_Game?|RESUME a wait:1500 expect:carousel term"
+	! grep -q 'EXPECT FAILED' $(FE_LOG)
+	grep -q 'resume: offering Test VC Game' $(FE_LOG)
+	grep -q 'launch Test VC Game .*, resuming (boot offer)' $(FE_LOG)
+	grep -q 'load state .*retrostone/Test VC Game.state.auto (.*): ok' $(FE_GAME_LOG)
+	grep -q 'testcore: content none' $(FE_GAME_LOG)
+	test ! -e $(FE_RESUME)
 	rm -f $(FE_CHECK_DIR)/usr/share/rsos/cores/vctest.ini
 	@echo "check-frontend: OK"
 
