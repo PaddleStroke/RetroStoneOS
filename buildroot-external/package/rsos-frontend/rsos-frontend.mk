@@ -8,7 +8,7 @@
 # from the tag). Raise it right after each release tag (docs/ci.md,
 # "Making a release"): development builds report <this>-dev and must sort
 # after the release they follow.
-RSOS_FRONTEND_VERSION = 0.1
+RSOS_FRONTEND_VERSION = 0.1.1
 RSOS_FRONTEND_SITE = $(BR2_EXTERNAL_RETROSTONE_PATH)/../frontend
 RSOS_FRONTEND_SITE_METHOD = local
 
