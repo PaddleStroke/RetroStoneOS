@@ -2,9 +2,8 @@ config BR2_PACKAGE_RSOS_VC_GAMES
 	bool "rsos-vc-games"
 	depends on !BR2_STATIC_LIBS # libretro cores, loaded with dlopen()
 	help
-	  The RetroStone VC games (8BCraft): Bomber Mole and Leady
-	  Squid, the "RetroStone" system at the start of the menu's
-	  carousel (docs/vc-games.md).
+	  The seven RetroStone VC games (8BCraft), the "RetroStone"
+	  system at the start of the menu's carousel (docs/vc-games.md).
 
 	  Each game is a libretro core built from the RetroStone VC
 	  source (https://github.com/PaddleStroke/RetroStoneVC): the
@@ -49,7 +48,44 @@ config BR2_PACKAGE_RSOS_VC_GAMES_LEADYSQUID
 	default y
 	help
 	  A one-button "flap" game: a squid with too many lead weights
-	  swims through the gaps of a sunken world. 1-2 players.
+	  swims through the gaps of a sunken world. 1-4 players.
+
+config BR2_PACKAGE_RSOS_VC_GAMES_DUCKPARADE
+	bool "Duck Parade"
+	default y
+	help
+	  Guide a family of ducks through ponds, roads and rivers. Up to
+	  four parents cooperate to bring the ducklings home.
+
+config BR2_PACKAGE_RSOS_VC_GAMES_BLUEBERRYTUMBLE
+	bool "Blueberry Tumble"
+	default y
+	help
+	  Roll a blueberry down a changing mountain landscape. Dodge
+	  obstacles, collect dew and race with up to four players.
+
+config BR2_PACKAGE_RSOS_VC_GAMES_BEAVERRUSH
+	bool "Beaver Rush"
+	default y
+	help
+	  Chop trees, dodge hazards and build your score. A fast arcade
+	  challenge for one player or a race for up to four.
+
+config BR2_PACKAGE_RSOS_VC_GAMES_PANCAKETOWER
+	bool "Pancake Tower"
+	default y
+	help
+	  Stack falling pancakes as precisely as possible, from the
+	  kitchen to outer space. Build the tallest tower in solo play
+	  or compete with up to four chefs.
+
+config BR2_PACKAGE_RSOS_VC_GAMES_POGOMAMIE
+	bool "Pogo Mamie"
+	default y
+	help
+	  Bounce across the rooftops of Paris on a pogo stick. Avoid
+	  aerial hazards, stomp pigeons and race with up to four
+	  grannies.
 
 endif
 

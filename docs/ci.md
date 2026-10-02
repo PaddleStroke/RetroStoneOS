@@ -138,7 +138,7 @@ stops with an error); a leftover draft is completed.
 
 Everything the images contain comes from public sources:
 
-- **The RetroStone system** (Bomber Mole, Leady Squid; [vc-games.md](vc-games.md)) is built from the public
+- **The RetroStone system** (seven games; [vc-games.md](vc-games.md)) is built from the public
   [PaddleStroke/RetroStoneVC](https://github.com/PaddleStroke/RetroStoneVC). `images.yml` checks it out into
   `.vc-games-src` at the ref of `RETROSTONE_VC_REF` (the workflow's top-level `env`: `main`, or a tag or commit to
   pin a release), and `scripts/ci/build-board.sh` builds it in (`RSOS_CI_VC_GAMES=yes`, `RSOS_CI_VC_GAMES_DIR` ->

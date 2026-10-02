@@ -17,10 +17,15 @@ RSOS_VC_GAMES_SITE = $(call qstrip,$(BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR))
 RSOS_VC_GAMES_SITE_METHOD = local
 RSOS_VC_GAMES_LICENSE = \
 	MIT (RetroStone VC SDK, tools and game code), \
-	CC-BY-NC-SA-4.0 (Bomber Mole, Leady Squid: art, music, sound, levels, design), \
+	CC-BY-NC-SA-4.0 (RetroStone VC games: art, music, sound, levels, design), \
 	MIT (libxmp-lite), MIT or Public Domain (stb), MIT (libretro.h)
 RSOS_VC_GAMES_LICENSE_FILES = LICENSE-MIT LICENSE-CC-BY-NC-SA-4.0.txt THIRD_PARTY.md \
-	games/bombermole/LICENSE games/leadysquid/LICENSE
+	games/bombermole/LICENSE games/leadysquid/LICENSE \
+	games/duckparade/LICENSE \
+	games/blueberrytumble/LICENSE \
+	games/beaverrush/LICENSE \
+	games/pancaketower/LICENSE \
+	games/pogomamie/LICENSE
 # Not copied into the build directory: the developer's own builds, the
 # deliverables, the image agent's art inbox (tens of MB, not used by the
 # build: the games build with their committed art sets, e.g. Bomber Mole's
@@ -49,13 +54,28 @@ RSOS_VC_GAMES_POST_LEGAL_INFO_HOOKS += RSOS_VC_GAMES_SAVE_SOURCE
 
 RSOS_VC_GAMES_LIST = \
 	$(if $(BR2_PACKAGE_RSOS_VC_GAMES_BOMBERMOLE),bombermole) \
-	$(if $(BR2_PACKAGE_RSOS_VC_GAMES_LEADYSQUID),leadysquid)
+	$(if $(BR2_PACKAGE_RSOS_VC_GAMES_LEADYSQUID),leadysquid) \
+	$(if $(BR2_PACKAGE_RSOS_VC_GAMES_DUCKPARADE),duckparade) \
+	$(if $(BR2_PACKAGE_RSOS_VC_GAMES_BLUEBERRYTUMBLE),blueberrytumble) \
+	$(if $(BR2_PACKAGE_RSOS_VC_GAMES_BEAVERRUSH),beaverrush) \
+	$(if $(BR2_PACKAGE_RSOS_VC_GAMES_PANCAKETOWER),pancaketower) \
+	$(if $(BR2_PACKAGE_RSOS_VC_GAMES_POGOMAMIE),pogomamie)
 # The menu entry name (the game's name: the saves are named after it) and
 # the picture of the game list (the title screen, 640x480).
 RSOS_VC_GAMES_NAME_bombermole = Bomber Mole
 RSOS_VC_GAMES_SHOT_bombermole = docs/screenshots/title.png
 RSOS_VC_GAMES_NAME_leadysquid = Leady Squid
 RSOS_VC_GAMES_SHOT_leadysquid = games/leadysquid/docs/screenshots/title.png
+RSOS_VC_GAMES_NAME_duckparade = Duck Parade
+RSOS_VC_GAMES_SHOT_duckparade = games/duckparade/docs/screenshots/title.png
+RSOS_VC_GAMES_NAME_blueberrytumble = Blueberry Tumble
+RSOS_VC_GAMES_SHOT_blueberrytumble = games/blueberrytumble/docs/screenshots/title.png
+RSOS_VC_GAMES_NAME_beaverrush = Beaver Rush
+RSOS_VC_GAMES_SHOT_beaverrush = games/beaverrush/docs/screenshots/title.png
+RSOS_VC_GAMES_NAME_pancaketower = Pancake Tower
+RSOS_VC_GAMES_SHOT_pancaketower = games/pancaketower/docs/screenshots/title.png
+RSOS_VC_GAMES_NAME_pogomamie = Pogo Mamie
+RSOS_VC_GAMES_SHOT_pogomamie = games/pogomamie/docs/screenshots/title.png
 
 # The asset step (games/<game>/tools/build_assets.py) needs Pillow, which
 # Buildroot has no host package for: the build host's own python3
@@ -115,7 +135,7 @@ define RSOS_VC_GAMES_INSTALL_GAME
 	$(INSTALL) -D -m 0644 $(@D)/games/$(1)/LICENSE $(RSOS_VC_GAMES_TARGET_LICENSES)/$(1)/LICENSE
 endef
 
-# gamelist.xml lists both games; the menu drops an entry without its file
+# gamelist.xml lists all seven games; the menu drops an entry without its file
 # (a game turned off in menuconfig).
 define RSOS_VC_GAMES_INSTALL_TARGET_CMDS
 	rm -rf $(RSOS_VC_GAMES_TARGET_GAMES) $(RSOS_VC_GAMES_TARGET_LICENSES)

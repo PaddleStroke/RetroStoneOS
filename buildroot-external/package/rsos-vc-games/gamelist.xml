@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-<!-- The RetroStone VC games (docs/vc-games.md). releasedate: the first RetroStoneOS image with them. -->
+<?xml version='1.0' encoding='utf-8'?>
 <gameList>
 	<game>
 		<path>./Bomber Mole.bombermole</path>
@@ -15,12 +14,67 @@
 	<game>
 		<path>./Leady Squid.leadysquid</path>
 		<name>Leady Squid</name>
-		<desc>A grumpy little squid put on far too many lead diving weights and sinks like a stone. Every tap shoots a jet of water that sends it back up for a moment: swim through the gaps between kelp, coral, ship masts and anchor chains for as long as you can. One button, instant retry, a best score to beat, and a race for two players.</desc>
+		<desc>A grumpy little squid put on far too many lead diving weights and sinks like a stone. Every tap shoots a jet of water that sends it back up for a moment: swim through the gaps between kelp, coral, ship masts and anchor chains for as long as you can. One button, instant retry, a best score to beat, and a race for up to four players.</desc>
 		<image>./media/images/Leady Squid.png</image>
 		<releasedate>20260930T000000</releasedate>
 		<developer>8BCraft</developer>
 		<publisher>8BCraft</publisher>
 		<genre>Action</genre>
-		<players>1-2</players>
+		<players>1-4</players>
+	</game>
+	<game>
+		<path>./Duck Parade.duckparade</path>
+		<name>Duck Parade</name>
+		<desc>Guide a family of ducks through ponds, roads and rivers. Up to four parents cooperate to bring the ducklings home.</desc>
+		<image>./media/images/Duck Parade.png</image>
+		<releasedate>20261002T000000</releasedate>
+		<developer>8BCraft</developer>
+		<publisher>8BCraft</publisher>
+		<genre>Action</genre>
+		<players>1-4</players>
+	</game>
+	<game>
+		<path>./Blueberry Tumble.blueberrytumble</path>
+		<name>Blueberry Tumble</name>
+		<desc>Roll a blueberry down a changing mountain landscape. Dodge obstacles, collect dew and race with up to four players.</desc>
+		<image>./media/images/Blueberry Tumble.png</image>
+		<releasedate>20261002T000000</releasedate>
+		<developer>8BCraft</developer>
+		<publisher>8BCraft</publisher>
+		<genre>Action, Racing</genre>
+		<players>1-4</players>
+	</game>
+	<game>
+		<path>./Beaver Rush.beaverrush</path>
+		<name>Beaver Rush</name>
+		<desc>Chop trees, dodge hazards and build your score. A fast arcade challenge for one player or a race for up to four.</desc>
+		<image>./media/images/Beaver Rush.png</image>
+		<releasedate>20261002T000000</releasedate>
+		<developer>8BCraft</developer>
+		<publisher>8BCraft</publisher>
+		<genre>Action</genre>
+		<players>1-4</players>
+	</game>
+	<game>
+		<path>./Pancake Tower.pancaketower</path>
+		<name>Pancake Tower</name>
+		<desc>Stack falling pancakes as precisely as possible, from the kitchen to outer space. Build the tallest tower in solo play or compete with up to four chefs.</desc>
+		<image>./media/images/Pancake Tower.png</image>
+		<releasedate>20261002T000000</releasedate>
+		<developer>8BCraft</developer>
+		<publisher>8BCraft</publisher>
+		<genre>Action, Puzzle</genre>
+		<players>1-4</players>
+	</game>
+	<game>
+		<path>./Pogo Mamie.pogomamie</path>
+		<name>Pogo Mamie</name>
+		<desc>Bounce across the rooftops of Paris on a pogo stick. Avoid aerial hazards, stomp pigeons and race with up to four grannies.</desc>
+		<image>./media/images/Pogo Mamie.png</image>
+		<releasedate>20261002T000000</releasedate>
+		<developer>8BCraft</developer>
+		<publisher>8BCraft</publisher>
+		<genre>Action, Platform</genre>
+		<players>1-4</players>
 	</game>
 </gameList>

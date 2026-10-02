@@ -75,7 +75,7 @@ layer cake, and every setting lives in one menu.
 
 | Family | Systems |
 |---|---|
-| RetroStone | 8BCraft's own games, built in: Bomber Mole, Leady Squid (RetroStone VC, [docs/vc-games.md](docs/vc-games.md)) |
+| RetroStone | 8BCraft's own games, built in: Bomber Mole, Leady Squid, Duck Parade, Blueberry Tumble, Beaver Rush, Pancake Tower and Pogo Mamie (RetroStone VC, [docs/vc-games.md](docs/vc-games.md)) |
 | Nintendo | NES, Famicom Disk System, SNES, Nintendo 64, Game Boy, Game Boy Color, Game Boy Advance, Pokémon mini |
 | Sega | Master System, Mega Drive/Genesis, Game Gear, SG-1000, 32X, Mega-CD, Pico |
 | Sony | PlayStation |
@@ -86,7 +86,7 @@ layer cake, and every setting lives in one menu.
 | Game engines and ports | ScummVM, Doom (Freedoom included), Cave Story, PICO-8 (fake-08) |
 | Others | Atari 2600/7800/Lynx, WonderSwan (Color), ColecoVision |
 
-Pre-installed games, so the console is fun out of the box: the **RetroStone** system (Bomber Mole, Leady Squid),
+Pre-installed games, so the console is fun out of the box: the **RetroStone** system (Bomber Mole, Leady Squid, Duck Parade, Blueberry Tumble, Beaver Rush, Pancake Tower and Pogo Mamie),
 **µCity** (Game Boy Color, GPL-3.0+ / CC BY-SA 4.0) and **Freedoom** (Doom, BSD-3-Clause); see
 [docs/homebrew.md](docs/homebrew.md) and [docs/vc-games.md](docs/vc-games.md).
 BIOS files go in `RETROSTONE/bios/` (see [docs/cores.md](docs/cores.md)). No commercial games or BIOS files are included.

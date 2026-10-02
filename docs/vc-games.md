@@ -7,7 +7,12 @@ of the menu's carousel:
 | Game | Players | Core | Menu entry (read-only) |
 |---|---|---|---|
 | **Bomber Mole**: a mole drops bombs to open the way, on three depths at once, through four seasons | 1 | `bombermole_libretro.so` | `/usr/share/rsos/games/retrostone/Bomber Mole.bombermole` |
-| **Leady Squid**: a one-button "flap" game in a sunken world, a race for two | 1-2 | `leadysquid_libretro.so` | `/usr/share/rsos/games/retrostone/Leady Squid.leadysquid` |
+| **Leady Squid**: a one-button "flap" game in a sunken world, a race for up to four | 1-4 | `leadysquid_libretro.so` | `/usr/share/rsos/games/retrostone/Leady Squid.leadysquid` |
+| **Duck Parade** | 1-4 | `duckparade_libretro.so` | `/usr/share/rsos/games/retrostone/Duck Parade.duckparade` |
+| **Blueberry Tumble** | 1-4 | `blueberrytumble_libretro.so` | `/usr/share/rsos/games/retrostone/Blueberry Tumble.blueberrytumble` |
+| **Beaver Rush** | 1-4 | `beaverrush_libretro.so` | `/usr/share/rsos/games/retrostone/Beaver Rush.beaverrush` |
+| **Pancake Tower** | 1-4 | `pancaketower_libretro.so` | `/usr/share/rsos/games/retrostone/Pancake Tower.pancaketower` |
+| **Pogo Mamie** | 1-4 | `pogomamie_libretro.so` | `/usr/share/rsos/games/retrostone/Pogo Mamie.pogomamie` |
 
 Each game is a libretro core with the game built in: there is no ROM file to copy, the games are part of the system
 (and of its updates).
@@ -18,14 +23,14 @@ Each game is a libretro core with the game built in: there is no ROM file to cop
   [PaddleStroke/RetroStoneVC](https://github.com/PaddleStroke/RetroStoneVC): `sdk/` (the runtime, the libretro
   frontend; **MIT**, (c) 2026 Pierre-Louis Boyer (8BCraft)), `tools/` (MIT), the vendored third-party code of
   `sdk/third_party/` (libxmp-lite MIT, stb MIT/public domain, libretro.h MIT; `THIRD_PARTY.md`), and the games in
-  `games/bombermole/` and `games/leadysquid/`: the game **code under MIT**, the game **art, music, sound, levels and
+  `games/<game>/` for all seven games: the game **code under MIT**, the game **art, music, sound, levels and
   design documents under CC BY-NC-SA 4.0** (`games/<game>/LICENSE` lists the paths; `LICENSE-CC-BY-NC-SA-4.0.txt`).
   The names and logos "Bomber Mole", "Leady Squid", "RetroStone" and "8BCraft" are not licensed: a fork must rename.
 - Local builds use a checkout next to this one; CI checks out the public repository (below, and [ci.md](ci.md)
   section 4).
 - `RSOS_VC_GAMES_LICENSE` lists MIT (the SDK, tools and game code) and CC-BY-NC-SA-4.0 (the game assets), and the
   package is redistributed (no `_REDISTRIBUTE = NO`): `make legal-info` saves the licence texts (`LICENSE-MIT`,
-  `LICENSE-CC-BY-NC-SA-4.0.txt`, `THIRD_PARTY.md`, the two game `LICENSE` files) and the source (the synced
+  `LICENSE-CC-BY-NC-SA-4.0.txt`, `THIRD_PARTY.md`, all seven game `LICENSE` files) and the source (the synced
   checkout, without the art inbox). The CC BY-NC-SA art is one more reason the images must not be sold.
 - On the device: `/usr/share/rsos/licenses/retrostone-vc/` (the same texts, and `COMMIT`: the RetroStone VC commit
   the cores were built from, also in the `commit =` line of each core's `.ini`).
@@ -36,7 +41,7 @@ Each game is a libretro core with the game built in: there is no ROM file to cop
 |---|---|---|
 | `BR2_PACKAGE_RSOS_VC_GAMES` | `y` in every defconfig | `scripts/ci/build-board.sh` turns it off when there is no checkout (`RSOS_CI_VC_GAMES=auto`) |
 | `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR` | `$(BR2_EXTERNAL_RETROSTONE_PATH)/../../RetroStoneVC` | the checkout (Buildroot's `local` site method) |
-| `BR2_PACKAGE_RSOS_VC_GAMES_BOMBERMOLE`, `..._LEADYSQUID` | `y` | one core per game |
+| `BR2_PACKAGE_RSOS_VC_GAMES_BOMBERMOLE`, `..._LEADYSQUID`, `..._DUCKPARADE`, `..._BLUEBERRYTUMBLE`, `..._BEAVERRUSH`, `..._PANCAKETOWER`, `..._POGOMAMIE` | `y` | one core per game |
 
 - **Build.** The RetroStone VC `Makefile`'s cross target, once per game:
   `make GAME=<game> ARM_CC=$(TARGET_CC) ARM_AR=$(TARGET_AR) ARM_FLAGS="$(TARGET_CFLAGS)" build/armhf/<game>_libretro.so`.
@@ -59,14 +64,14 @@ Each game is a libretro core with the game built in: there is no ROM file to cop
   - `/usr/lib/libretro/<game>_libretro.so` (stripped on the RetroStone2: Bomber Mole 403 KB, Leady Squid 231 KB, assets included);
   - `/usr/share/rsos/cores/<game>.ini`: `systems = retrostone`, `extensions = <game>`, **`no_content = true`**,
     `savestates = true`;
-  - `/usr/share/rsos/games/retrostone/`: the two menu entries (small text files, never read), `gamelist.xml`
+  - `/usr/share/rsos/games/retrostone/`: the seven menu entries (small text files, never read), `gamelist.xml`
     (names, descriptions, genre, players, developer; `package/rsos-vc-games/gamelist.xml`) and
     `media/images/<name>.png` (the title screens of the games' `docs/screenshots/`, 640x480);
   - `/usr/share/rsos/licenses/retrostone-vc/`.
 - **Which version.** A local build takes the checkout **as it is**, uncommitted changes included (the recorded commit
   then ends in `-dirty`). For an image made from a given commit while the checkout is being worked on, clone it
   (`git clone ~/path/to/RetroStoneVC ~/rsos/vc-head`, `git -C ~/rsos/vc-head checkout <commit>`) and point
-  `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR` at the clone. CI builds `RETROSTONE_VC_REF` (`main`) of the public repository.
+  `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR` at the clone. CI builds the exact commit in `RETROSTONE_VC_REF` of the public repository.
 - **The recorded commit** comes from `package/rsos-vc-games/rsos-vc-commit`: `git describe` of the checkout; when
   git cannot read it (a git worktree made on Windows, whose `.git` file points at a `C:/` path that WSL git cannot
   open), the HEAD ref read from the files (`C:/` mapped to `/mnt/c/`, no `-dirty` then); or the value of
@@ -126,7 +131,7 @@ The RetroStone VC SDK implements `retro_serialize()` (RetroStone VC `docs/spec.m
 whole console at a frame boundary (VRAM, maps, palettes, sprites, the PPU registers and split-screen viewports, the
 voices, the echo, the music track and row, the pads' edges, the frame counter and RNG) plus the objects each game
 registers, so a game resumes exactly: the same level, positions, enemies, timers, bombs, score, battle round or
-2-player race. The format: a 64-byte header (`RSVC`, format version, game id, game version, the game's state
+multiplayer race. The format: a 64-byte header (`RSVC`, format version, game id, game version, the game's state
 version, a **build hash** over the saved objects' names and sizes and the game's asset pack, the payload size and a
 checksum), then tagged sections (`CORE`, `PPU `, `APU `, `MUS `, `TEXT`, `GAME`, `PTRS`, `END `), about 350 KB
 (Bomber Mole) or 300 KB (Leady Squid), a fixed size per build. **Versioning:** a state of another game, of another
@@ -153,7 +158,7 @@ Start/Select), which is the SNES layout the games expect, so there is no remap f
 | Select | Select | back; in the pause menu: resume | pause during a run |
 | L1 / R1 | L / R | level select: L+R+Select unlocks every level | |
 
-Leady Squid: player 2 joins with a swim button on pad 2. Players 2-4 are external pads (docs/input-design.md §2),
+The six arcade games use the title screen as the lobby: A joins on pads 2-4, B leaves; player 1 starts with A. On game over, A returns to the title, keeping the lobby. Players 2-4 are external pads (docs/input-design.md §2),
 mapped by position as well. The frontend's hotkeys use Select + a button (Select+Start quits, Select+X the menu,
 Select+L/R the save-state slots...). A plain Select reaches the game, and the hotkeys only fire for a button pressed
 **while** Select is held: for Bomber Mole's L+R+Select, hold L and R first, then press Select.
@@ -161,11 +166,13 @@ Select+L/R the save-state slots...). A plain Select reaches the game, and the ho
 ## CI
 
 `.github/workflows/images.yml` checks out the public `PaddleStroke/RetroStoneVC` (no token) at `RETROSTONE_VC_REF`
-(`main` by default; a tag or commit pins a release) into `.vc-games-src` and passes it to
+(pinned to the tested game commit) into `.vc-games-src` and passes it to
 `scripts/ci/build-board.sh` (`RSOS_CI_VC_GAMES=yes`, `RSOS_CI_VC_GAMES_DIR`), which sets
 `BR2_PACKAGE_RSOS_VC_GAMES_SOURCE_DIR`. The configure step prints the commit it builds. See [ci.md](ci.md), section 4.
 
 ## Tests
+
+- `scripts/ci/check-vc-games.py <target> <.config>` gates image builds: every enabled game must have its core, no-content/save-state metadata, menu entry, title image, licence and the pinned source commit.
 
 - `make check` (frontend): `check-host` (`rsos-launch-test`, "a game built into its core"): the test core with
   `no_content = true` gets `retro_load_game(NULL)`, its SRAM is `saves/retrostone/Test Game.srm`, its auto state
@@ -183,7 +190,18 @@ Select+L/R the save-state slots...). A plain Select reaches the game, and the ho
 - `scripts/ci/check-defconfigs.sh`: `BR2_PACKAGE_RSOS_VC_GAMES=y` (with its source path) and `=n` both survive
   `olddefconfig` for every board.
 
-## Verification (2026-09-30, image `retrostoneos-dev-20260930-vcgames.img`)
+## Verification (2026-10-02, release game integration)
+
+- Source pinned to RetroStone VC `c60b905bbf2bfebc58980d8bc20833fa7fefe47a`.
+- All seven cores built and installed with the RetroStone2 Buildroot ARM toolchain. Menu entries, core metadata,
+  title images and licences passed `check-vc-games.py`; `make rsos-vc-games-legal-info` archived the source and
+  all seven game licences.
+- All seven launched without content using the ARM image frontend under `qemu-arm`, ran 300 frames and passed
+  the frontend's save-state replay comparison (save at frame 150, compare frame 300).
+- The six arcade games' gameplay, multiplayer menus and state regressions also passed in RetroStone VC before
+  the Windows executables were playtested. Device playtesting of the new games remains a hardware check.
+
+## Historical verification (2026-09-30, image `retrostoneos-dev-20260930-vcgames.img`)
 
 - RetroStone VC `97aded521fde` (main HEAD, a clean clone), `retrostone2_defconfig`, Bootlin armv7-eabihf GCC 14.
 - Both cores: `ELF 32-bit ARM, EABI5`, `Tag_CPU_name: 7-A`, VFPv4, NEON with FMA, `GNU_STACK RW`, no TEXTREL, the

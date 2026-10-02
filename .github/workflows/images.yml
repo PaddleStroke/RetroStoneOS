@@ -44,7 +44,7 @@ defaults:
 env:
   # The RetroStone VC ref the images are built from: "main", or a tag or
   # commit to pin a release to.
-  RETROSTONE_VC_REF: main
+  RETROSTONE_VC_REF: c60b905bbf2bfebc58980d8bc20833fa7fefe47a
 
 jobs:
   boards:
@@ -149,7 +149,7 @@ jobs:
           restore-keys: |
             br-ccache-${{ matrix.board }}-
 
-      # The RetroStone VC games (Bomber Mole, Leady Squid; docs/vc-games.md)
+      # The seven RetroStone VC games (docs/vc-games.md)
       # are built from the public PaddleStroke/RetroStoneVC, at the ref of
       # RETROSTONE_VC_REF (top of this file: a branch, a tag or a commit).
       - name: Fetch RetroStone VC
@@ -187,6 +187,9 @@ jobs:
         id: build
         timeout-minutes: 300
         run: sh scripts/ci/build-board.sh "$BOARD" build
+
+      - name: Verify built-in RetroStone games
+        run: python3 scripts/ci/check-vc-games.py "$RSOS_CI_WORK/output-$BOARD/target" "$RSOS_CI_WORK/output-$BOARD/.config" "$RETROSTONE_VC_REF"
 
       - name: Save the ccache
         if: always() && steps.configure.outcome == 'success' && (matrix.heavy || steps.build.outcome != 'success')
