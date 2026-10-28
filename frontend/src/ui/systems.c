@@ -67,6 +67,9 @@ static const struct sysdef g_systems[] = {
 	{ "pico8", NC_("system", "PICO-8"), "Fantasy console", { "pico8", "pico-8", NULL }, { "pico-8", NULL }, "fake08", "p8,png", 2015 },
 	{ "doom", NC_("system", "Doom"), "Ports", { "doom", "ports", NULL }, { "prboom", NULL }, "prboom", "wad,iwad,pwad", 1993 },
 	{ "cavestory", NC_("system", "Cave Story"), "Ports", { "cavestory", "ports", NULL }, { "nxengine", NULL }, "nxengine", "exe", 2004 },
+	/* native games: programs built for this console, no emulator (one
+	 * launch script per game, docs/native-games.md) */
+	{ "native", NC_("system", "Native games"), "Ports", { "native", "ports", NULL }, { NULL }, "", "sh", 0 },
 };
 
 /* Used only when no core .ini is installed (development host). */
@@ -247,6 +250,11 @@ const struct sysdef *systems_find(const char *name)
 	return NULL;
 }
 
+bool systems_is_native(const char *system)
+{
+	return system && !strcmp(system, "native");
+}
+
 static bool any_core_runs(const char *system)
 {
 	for (int i = 0; i < g_ncores; i++)
@@ -260,7 +268,7 @@ static void build_list(void)
 	g_list = xrealloc(g_list, sizeof(*g_list) * (ARRAY_SIZE(g_systems) + 64));
 	g_nlist = 0;
 	for (size_t i = 0; i < ARRAY_SIZE(g_systems); i++) {
-		if (any_core_runs(g_systems[i].name))
+		if (any_core_runs(g_systems[i].name) || systems_is_native(g_systems[i].name))
 			g_list[g_nlist++] = &g_systems[i];
 		else
 			LOGD("systems: no core for %s", g_systems[i].name);
@@ -353,7 +361,11 @@ const struct core_info *systems_core(const char *id)
 bool systems_ext_ok(const char *system, const char *ext)
 {
 	const struct core_info *cs[MAX_CORES_PER_SYSTEM];
-	int n = systems_cores_for(system, cs, MAX_CORES_PER_SYSTEM);
+	int n;
+
+	if (systems_is_native(system))
+		return !strcasecmp(ext, "sh");
+	n = systems_cores_for(system, cs, MAX_CORES_PER_SYSTEM);
 
 	for (int i = 0; i < n; i++)
 		if (list_has(cs[i]->exts, ext))

@@ -832,7 +832,7 @@ static void switch_launch(struct ui *ui)
 		req.core = ui->switch_req.core;
 		req.core_path = ci ? ci->library : "";
 	}
-	if (!req.core[0]) {
+	if (!req.core[0] && !systems_is_native(req.system)) {
 		message_open(ui, _("No emulator is installed for this system."));
 		return;
 	}
@@ -935,7 +935,7 @@ void ui_launch_game(struct ui *ui, struct sysent *se, struct game *g)
 	buttons[1] = _("START FRESH");
 	buttons[2] = NULL;
 	fill_launch(ui, g, &req);
-	if (!req.core[0]) {
+	if (!req.core[0] && !systems_is_native(req.system)) {
 		message_open(ui, _("No emulator is installed for this system."));
 		return;
 	}

@@ -76,6 +76,8 @@ static const struct sysmap g_sys[] = {
 	{ "pico8", "PICO-8", { "p8", "fake08", NULL } },
 	{ "doom", "Doom", { "prboom", "gzdoom", NULL } },
 	{ "cavestory", "Cave Story", { "nxengine", "doukutsu", NULL } },
+	/* not "ports": RetroPie's port scripts start its own emulators */
+	{ "native", "Native games", { "nativegames", NULL } },
 };
 
 #define NSYS ((int)(sizeof(g_sys) / sizeof(g_sys[0])))
