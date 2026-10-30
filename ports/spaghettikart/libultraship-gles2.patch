@@ -1,0 +1,872 @@
+diff --git a/cmake/dependencies/linux.cmake b/cmake/dependencies/linux.cmake
+index 02301f1..8e231e1 100644
+--- a/cmake/dependencies/linux.cmake
++++ b/cmake/dependencies/linux.cmake
+@@ -2,7 +2,10 @@
+ find_package(SDL2 REQUIRED)
+ target_link_libraries(ImGui PUBLIC SDL2::SDL2)
+ 
+-if (USE_OPENGLES)
++if (USE_GLES2)
++    target_link_libraries(ImGui PUBLIC GLESv2)
++    add_compile_definitions(IMGUI_IMPL_OPENGL_ES2)
++elseif (USE_OPENGLES)
+     target_link_libraries(ImGui PUBLIC ${OPENGL_GLESv2_LIBRARY})
+     add_compile_definitions(IMGUI_IMPL_OPENGL_ES3)
+ else()
+diff --git a/include/fast/backends/gfx_opengl.h b/include/fast/backends/gfx_opengl.h
+index af24c70..efdf5c5 100644
+--- a/include/fast/backends/gfx_opengl.h
++++ b/include/fast/backends/gfx_opengl.h
+@@ -16,6 +16,10 @@
+ #elif __APPLE__
+ #include <SDL2/SDL.h>
+ #include <GL/glew.h>
++#elif defined(USE_GLES2)
++#include <SDL2/SDL.h>
++#include <GLES2/gl2.h>
++#include <GLES2/gl2ext.h>
+ #elif USE_OPENGLES
+ #include <SDL2/SDL.h>
+ #include <GLES3/gl3.h>
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 45989b6..0209da4 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -11,6 +11,11 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
+ 
+ set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+ option(USE_OPENGLES "Enable GLES3" OFF)
++# OpenGL ES 2.0 (Mali-400 and other GLES2-only GPUs); implies USE_OPENGLES
++option(USE_GLES2 "Enable GLES2" OFF)
++if (USE_GLES2)
++    set(USE_OPENGLES ON)
++endif()
+ option(GFX_DEBUG_DISASSEMBLER "Enable libgfxd" OFF)
+ 
+ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+@@ -208,6 +213,7 @@ else()
+         $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
+         SPDLOG_ACTIVE_LEVEL=${SPDLOG_MIN_CUTOFF}
+         $<$<BOOL:${USE_OPENGLES}>:USE_OPENGLES>
++        $<$<BOOL:${USE_GLES2}>:USE_GLES2>
+         $<$<BOOL:${GFX_DEBUG_DISASSEMBLER}>:GFX_DEBUG_DISASSEMBLER>
+     )
+ endif()
+diff --git a/src/fast/Fast3dGui.cpp b/src/fast/Fast3dGui.cpp
+index 237a502..8c939c0 100644
+--- a/src/fast/Fast3dGui.cpp
++++ b/src/fast/Fast3dGui.cpp
+@@ -146,6 +146,8 @@ void Fast3dGui::ImGuiBackendInit() {
+         case WindowBackend::FAST3D_SDL_OPENGL:
+ #ifdef __APPLE__
+             ImGui_ImplOpenGL3_Init("#version 410 core");
++#elif defined(USE_GLES2)
++            ImGui_ImplOpenGL3_Init("#version 100");
+ #elif USE_OPENGLES
+             ImGui_ImplOpenGL3_Init("#version 300 es");
+ #else
+diff --git a/src/fast/backends/gfx_opengl.cpp b/src/fast/backends/gfx_opengl.cpp
+index ad9b1dd..2f6e080 100644
+--- a/src/fast/backends/gfx_opengl.cpp
++++ b/src/fast/backends/gfx_opengl.cpp
+@@ -27,6 +27,52 @@
+ #include "fast/interpreter.h"
+ #include "ship/config/ConsoleVariable.h"
+ 
++// a texture was bound outside SelectTexture(): its cache no longer says what is bound
++#define FORGET_TEXTURE_BINDINGS() do { mLastActiveTexture = -1; for (GLuint& bound : mLastBoundTextures) bound = (GLuint)-1; } while (0)
++
++#include <cstring>
++
++#ifdef USE_GLES2
++/*
++ * OpenGL ES 2.0: no sized texture formats, no multisampling, no blits and no
++ * depth reads. Multisampling stays off (mMaxMsaaLevel 1), so the multisample
++ * calls below are never reached; CopyFramebuffer and GetPixelDepth have their
++ * own GLES2 versions. Depth: packed depth+stencil when the driver has
++ * GL_OES_packed_depth_stencil, else a 16-bit depth buffer.
++ */
++#define GL_RGB8 GL_RGB
++#define GL_RGBA8 GL_RGBA
++#define GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
++#define GL_DEPTH_STENCIL GL_DEPTH_STENCIL_OES
++#define GL_UNSIGNED_INT_24_8 GL_UNSIGNED_INT_24_8_OES
++#define GL_READ_FRAMEBUFFER GL_FRAMEBUFFER
++#define GL_DRAW_FRAMEBUFFER GL_FRAMEBUFFER
++#define glBlitFramebuffer(...) ((void)0)
++#define glReadBuffer(b) ((void)0)
++#define glRenderbufferStorageMultisample(target, samples, format, w, h) glRenderbufferStorage(target, format, w, h)
++static bool sPackedDepthStencil = true;
++#endif
++
++namespace Fast {
++static void RenderbufferDepthStorage(GLsizei width, GLsizei height) {
++#ifdef USE_GLES2
++    glRenderbufferStorage(GL_RENDERBUFFER, sPackedDepthStencil ? GL_DEPTH24_STENCIL8_OES : GL_DEPTH_COMPONENT16,
++                          width, height);
++#else
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
++#endif
++}
++
++static void FramebufferDepthAttach(GLuint rb) {
++#ifdef USE_GLES2
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rb);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sPackedDepthStencil ? rb : 0);
++#else
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rb);
++#endif
++}
++} // namespace Fast
++
+ namespace Fast {
+ int GfxRenderingAPIOGL::GetMaxTextureSize() {
+     GLint max_texture_size;
+@@ -42,7 +88,17 @@ GfxClipParameters GfxRenderingAPIOGL::GetClipParameters() {
+     return { false, mFrameBuffers[mCurrentFrameBuffer].invertY };
+ }
+ 
+-static void VertexArraySetAttribs(ShaderProgram* prg) {
++#ifdef USE_GLES2
++static ShaderProgram* sClientArrayProgram;
++static const float* sClientArrayBase;
++#endif
++
++static void VertexArraySetAttribs(ShaderProgram* prg, const float* clientArray = nullptr) {
++#ifdef USE_GLES2
++    if (clientArray == nullptr) {
++        sClientArrayProgram = nullptr; // set for a buffer object: the next draw sets them again
++    }
++#endif
+     size_t numFloats = prg->numFloats;
+     size_t pos = 0;
+ 
+@@ -50,7 +106,9 @@ static void VertexArraySetAttribs(ShaderProgram* prg) {
+         if (prg->attribLocations[i] >= 0) {
+             glEnableVertexAttribArray(prg->attribLocations[i]);
+             glVertexAttribPointer(prg->attribLocations[i], prg->attribSizes[i], GL_FLOAT, GL_FALSE,
+-                                  numFloats * sizeof(float), (void*)(pos * sizeof(float)));
++                                  numFloats * sizeof(float),
++                                  clientArray != nullptr ? (const void*)(clientArray + pos)
++                                                         : (const void*)(pos * sizeof(float)));
+         }
+         pos += prg->attribSizes[i];
+     }
+@@ -285,13 +343,23 @@ std::string GfxRenderingAPIOGL::BuildFsShader(const CCFeatures& cc_features) {
+         { "attr", "in" },
+         { "opengles", false },
+         { "core_opengl", true },
++        { "gles2", false },
+         { "texture", "texture" },
+         { "vOutColor", "vOutColor" },
++#elif defined(USE_GLES2)
++        { "GLSL_VERSION", "#version 100\nprecision mediump float;" },
++        { "attr", "varying" },
++        { "opengles", false },
++        { "core_opengl", false },
++        { "gles2", true },
++        { "texture", "texture2D" },
++        { "vOutColor", "gl_FragColor" },
+ #elif defined(USE_OPENGLES)
+         { "GLSL_VERSION", "#version 300 es\nprecision mediump float;" },
+         { "attr", "in" },
+         { "opengles", true },
+         { "core_opengl", false },
++        { "gles2", false },
+         { "texture", "texture" },
+         { "vOutColor", "vOutColor" },
+ #else
+@@ -299,6 +367,7 @@ std::string GfxRenderingAPIOGL::BuildFsShader(const CCFeatures& cc_features) {
+         { "attr", "varying" },
+         { "opengles", false },
+         { "core_opengl", false },
++        { "gles2", false },
+         { "texture", "texture2D" },
+         { "vOutColor", "gl_FragColor" },
+ #endif
+@@ -356,6 +425,11 @@ static std::string BuildVsShader(const CCFeatures& cc_features) {
+                                      { "attr", "in" },
+                                      { "out", "out" },
+                                      { "opengles", false }
++#elif defined(USE_GLES2)
++                                     { "GLSL_VERSION", "#version 100" },
++                                     { "attr", "attribute" },
++                                     { "out", "varying" },
++                                     { "opengles", false }
+ #elif defined(USE_OPENGLES)
+                                      { "GLSL_VERSION", "#version 300 es" },
+                                      { "attr", "in" },
+@@ -420,9 +494,8 @@ ShaderProgram* GfxRenderingAPIOGL::CreateAndLoadNewShader(uint64_t shader_id0, u
+         GLint max_length = 0;
+         glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &max_length);
+         char error_log[1024];
+-        // fprintf(stderr, "Vertex shader compilation failed\n");
+-        glGetShaderInfoLog(vertex_shader, max_length, &max_length, &error_log[0]);
+-        // fprintf(stderr, "%s\n", &error_log[0]);
++        glGetShaderInfoLog(vertex_shader, sizeof(error_log), nullptr, error_log);
++        fprintf(stderr, "Vertex shader compilation failed:\n%s\n%s\n", error_log, vs_buf.c_str());
+         abort();
+     }
+ 
+@@ -434,9 +507,8 @@ ShaderProgram* GfxRenderingAPIOGL::CreateAndLoadNewShader(uint64_t shader_id0, u
+         GLint max_length = 0;
+         glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &max_length);
+         char error_log[1024];
+-        fprintf(stderr, "Fragment shader compilation failed\n");
+-        glGetShaderInfoLog(fragment_shader, max_length, &max_length, &error_log[0]);
+-        fprintf(stderr, "%s\n", &error_log[0]);
++        glGetShaderInfoLog(fragment_shader, sizeof(error_log), nullptr, error_log);
++        fprintf(stderr, "Fragment shader compilation failed:\n%s\n%s\n", error_log, fs_buf.c_str());
+         abort();
+     }
+ 
+@@ -559,6 +631,7 @@ GLuint GfxRenderingAPIOGL::NewTexture() {
+ 
+ void GfxRenderingAPIOGL::DeleteTexture(uint32_t texID) {
+     glDeleteTextures(1, &texID);
++    FORGET_TEXTURE_BINDINGS(); // deleting unbinds it, and the name comes back with the next texture
+ }
+ 
+ void GfxRenderingAPIOGL::SelectTexture(int tile, GLuint texture_id) {
+@@ -583,7 +656,9 @@ void GfxRenderingAPIOGL::UploadTexture(const uint8_t* rgba32_buf, uint32_t width
+     textures[mCurrentTextureIds[mCurrentTile]].height = height;
+ }
+ 
+-#ifdef USE_OPENGLES
++#ifdef USE_GLES2
++#define GL_MIRROR_CLAMP_TO_EDGE GL_MIRRORED_REPEAT
++#elif defined(USE_OPENGLES)
+ #define GL_MIRROR_CLAMP_TO_EDGE 0x8743
+ #endif
+ 
+@@ -703,7 +778,17 @@ void GfxRenderingAPIOGL::DrawTriangles(float buf_vbo[], size_t buf_vbo_len, size
+     SetPerDrawUniforms();
+ 
+     // printf("flushing %d tris\n", buf_vbo_num_tris);
++#ifdef USE_GLES2
++    // the pointers stay valid until the program changes or ImGui draws (after the frame)
++    if (mCurrentShaderProgram != sClientArrayProgram || buf_vbo != sClientArrayBase) {
++        glBindBuffer(GL_ARRAY_BUFFER, 0);
++        VertexArraySetAttribs(mCurrentShaderProgram, buf_vbo);
++        sClientArrayProgram = mCurrentShaderProgram;
++        sClientArrayBase = buf_vbo;
++    }
++#else
+     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * buf_vbo_len, buf_vbo, GL_STREAM_DRAW);
++#endif
+     glDrawArrays(GL_TRIANGLES, 0, 3 * buf_vbo_num_tris);
+ }
+ 
+@@ -715,7 +800,16 @@ void GfxRenderingAPIOGL::Init() {
+     glGenBuffers(1, &mOpenglVbo);
+     glBindBuffer(GL_ARRAY_BUFFER, mOpenglVbo);
+ 
+-#if defined(__APPLE__) || defined(USE_OPENGLES)
++#ifdef USE_GLES2
++    {
++        const char* ext = (const char*)glGetString(GL_EXTENSIONS);
++
++        sPackedDepthStencil = ext != nullptr && strstr(ext, "GL_OES_packed_depth_stencil") != nullptr;
++        SPDLOG_INFO("OpenGL ES 2.0: {} ({}), depth buffer {}", (const char*)glGetString(GL_RENDERER),
++                    (const char*)glGetString(GL_VERSION), sPackedDepthStencil ? "24-bit + stencil" : "16-bit");
++    }
++#endif
++#if defined(__APPLE__) || (defined(USE_OPENGLES) && !defined(USE_GLES2))
+     glGenVertexArrays(1, &mOpenglVao);
+     glBindVertexArray(mOpenglVao);
+ #endif
+@@ -730,17 +824,21 @@ void GfxRenderingAPIOGL::Init() {
+ 
+     glGenRenderbuffers(1, &mPixelDepthRb);
+     glBindRenderbuffer(GL_RENDERBUFFER, mPixelDepthRb);
+-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1, 1);
++    RenderbufferDepthStorage(1, 1);
+     glBindRenderbuffer(GL_RENDERBUFFER, 0);
+ 
+     glGenFramebuffers(1, &mPixelDepthFb);
+     glBindFramebuffer(GL_FRAMEBUFFER, mPixelDepthFb);
+-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mPixelDepthRb);
++    FramebufferDepthAttach(mPixelDepthRb);
+     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+ 
+     mPixelDepthRbSize = 1;
+ 
++#ifdef USE_GLES2
++    mMaxMsaaLevel = 1;
++#else
+     glGetIntegerv(GL_MAX_SAMPLES, &mMaxMsaaLevel);
++#endif
+ }
+ 
+ void GfxRenderingAPIOGL::OnResize() {
+@@ -748,6 +846,9 @@ void GfxRenderingAPIOGL::OnResize() {
+ 
+ void GfxRenderingAPIOGL::StartFrame() {
+     mFrameCount++;
++#ifdef USE_GLES2
++    sClientArrayProgram = nullptr; // ImGui drew with its own arrays
++#endif
+ }
+ 
+ void GfxRenderingAPIOGL::EndFrame() {
+@@ -764,7 +865,12 @@ int GfxRenderingAPIOGL::CreateFramebuffer() {
+     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++#ifdef USE_GLES2
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++#endif
+     glBindTexture(GL_TEXTURE_2D, 0);
++    FORGET_TEXTURE_BINDINGS();
+ 
+     GLuint clrbufMsaa;
+     glGenRenderbuffers(1, &clrbufMsaa);
+@@ -772,7 +878,7 @@ int GfxRenderingAPIOGL::CreateFramebuffer() {
+     GLuint rbo;
+     glGenRenderbuffers(1, &rbo);
+     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1, 1);
++    RenderbufferDepthStorage(1, 1);
+     glBindRenderbuffer(GL_RENDERBUFFER, 0);
+ 
+     GLuint fbo;
+@@ -806,6 +912,7 @@ void GfxRenderingAPIOGL::UpdateFramebufferParameters(int fb_id, uint32_t width,
+                 glBindTexture(GL_TEXTURE_2D, fb.clrbuf);
+                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+                 glBindTexture(GL_TEXTURE_2D, 0);
++                FORGET_TEXTURE_BINDINGS();
+                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb.clrbuf, 0);
+             } else {
+                 glBindRenderbuffer(GL_RENDERBUFFER, fb.clrbufMsaa);
+@@ -819,7 +926,7 @@ void GfxRenderingAPIOGL::UpdateFramebufferParameters(int fb_id, uint32_t width,
+             (fb.width != width || fb.height != height || fb.msaa_level != msaa_level || !fb.has_depth_buffer)) {
+             glBindRenderbuffer(GL_RENDERBUFFER, fb.rbo);
+             if (msaa_level <= 1) {
+-                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
++                RenderbufferDepthStorage(width, height);
+             } else {
+                 glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa_level, GL_DEPTH24_STENCIL8, width, height);
+             }
+@@ -827,9 +934,9 @@ void GfxRenderingAPIOGL::UpdateFramebufferParameters(int fb_id, uint32_t width,
+         }
+ 
+         if (!fb.has_depth_buffer && has_depth_buffer) {
+-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb.rbo);
++            FramebufferDepthAttach(fb.rbo);
+         } else if (fb.has_depth_buffer && !has_depth_buffer) {
+-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
++            FramebufferDepthAttach(0);
+         }
+     }
+ 
+@@ -932,6 +1039,35 @@ void GfxRenderingAPIOGL::CopyFramebuffer(int fb_dst_id, int fb_src_id, int srcX0
+     FramebufferOGL src = mFrameBuffers[fb_src_id];
+     const FramebufferOGL& dst = mFrameBuffers[fb_dst_id];
+ 
++#ifdef USE_GLES2
++    // No blits: copy into the destination's colour texture, unscaled and in the
++    // same orientation only (G_COPYFB effects; Starship does not use them).
++    if (fb_dst_id == 0 || srcX1 - srcX0 != dstX1 - dstX0 || srcY1 - srcY0 != dstY1 - dstY0 ||
++        src.invertY != dst.invertY) {
++        static bool warned;
++        if (!warned) {
++            SPDLOG_WARN("GLES2: scaled, flipped or on-screen framebuffer copies are not supported");
++            warned = true;
++        }
++        return;
++    }
++    // OpenGL's origin is the bottom left, as in the blit path below
++    if (!src.invertY) {
++        int h = srcY1 - srcY0;
++        srcY1 = src.height - srcY0;
++        srcY0 = srcY1 - h;
++    }
++    glDisable(GL_SCISSOR_TEST);
++    glBindFramebuffer(GL_FRAMEBUFFER, src.fbo);
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_2D, dst.clrbuf);
++    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, dstX0, dstY0, srcX0, srcY0, srcX1 - srcX0, srcY1 - srcY0);
++    glBindFramebuffer(GL_FRAMEBUFFER, mFrameBuffers[mCurrentFrameBuffer].fbo);
++    glEnable(GL_SCISSOR_TEST);
++    FORGET_TEXTURE_BINDINGS();
++    return;
++#endif
++
+     // Adjust y values for non-inverted source frame buffers because opengl uses bottom left for origin
+     if (!src.invertY) {
+         int temp = srcY1 - srcY0;
+@@ -1024,6 +1160,14 @@ std::unordered_map<std::pair<float, float>, uint16_t, hash_pair_ff>
+ GfxRenderingAPIOGL::GetPixelDepth(int fb_id, const std::set<std::pair<float, float>>& coordinates) {
+     std::unordered_map<std::pair<float, float>, uint16_t, hash_pair_ff> res;
+ 
++#ifdef USE_GLES2
++    // GLES2 cannot read the depth buffer: every point is reported at the far plane
++    for (const auto& coord : coordinates) {
++        res.emplace(coord, 0xFFFC);
++    }
++    return res;
++#endif
++
+     FramebufferOGL& fb = mFrameBuffers[fb_id];
+ 
+     // When looking up one value and the framebuffer is single-sampled, we can read pixels directly
+@@ -1045,8 +1189,8 @@ GfxRenderingAPIOGL::GetPixelDepth(int fb_id, const std::set<std::pair<float, flo
+             glDeleteRenderbuffers(1, &mPixelDepthRb);
+             glGenRenderbuffers(1, &mPixelDepthRb);
+             glBindRenderbuffer(GL_RENDERBUFFER, mPixelDepthRb);
+-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, coordinates.size(), 1);
+-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mPixelDepthRb);
++            RenderbufferDepthStorage(coordinates.size(), 1);
++            FramebufferDepthAttach(mPixelDepthRb);
+             glBindRenderbuffer(GL_RENDERBUFFER, 0);
+ 
+             mPixelDepthRbSize = coordinates.size();
+diff --git a/src/fast/backends/gfx_sdl2.cpp b/src/fast/backends/gfx_sdl2.cpp
+index 15c5415..95233a9 100644
+--- a/src/fast/backends/gfx_sdl2.cpp
++++ b/src/fast/backends/gfx_sdl2.cpp
+@@ -351,6 +351,13 @@ void GfxWindowBackendSDL2::Init(const char* gameName, const char* gfxApiName, bo
+     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+ #endif
++#if defined(USE_GLES2)
++    // an OpenGL ES 2.0 context (without it, Mesa drivers such as lima give
++    // desktop OpenGL 2.1, whose GLSL 1.20 compiles none of our shaders)
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
++#endif
+ 
+ #ifdef _WIN32
+     // Use high-resolution mTimer by default on Windows 10 (so that NtSetTimerResolution (...) hacks are not needed)
+diff --git a/src/fast/interpreter.cpp b/src/fast/interpreter.cpp
+index 04dff04..58c9380 100644
+--- a/src/fast/interpreter.cpp
++++ b/src/fast/interpreter.cpp
+@@ -7,6 +7,11 @@
+ #include <stdbool.h>
+ #include <assert.h>
+ #include <stdio.h>
++#ifndef _WIN32
++#include <dlfcn.h>
++#include <sys/mman.h>
++#include <unistd.h>
++#endif
+ 
+ #include <any>
+ #include <map>
+@@ -131,6 +136,64 @@ void GfxSetInstance(std::shared_ptr<Interpreter> gfx) {
+ // N64 prim_depth is 15-bit (0 near, 0x7FFF far).
+ static constexpr float N64_PRIM_DEPTH_MAX = 32767.0f;
+ 
++// Alternate ("alt/") assets are unloaded and loaded again as new objects; with any in the
++// archives, nothing is kept (decided once: archives are added at start only)
++static bool NoAltAssetFiles() {
++    static const bool none =
++        Ship::Context::GetRawInstance()->GetResourceManager()->GetArchiveManager()->ListFiles("alt/*")->empty();
++    return none;
++}
++
++static std::unordered_map<uint64_t, std::shared_ptr<Ship::IResource>> sHashResourceCache;
++
++// texture paths named by pointer: kept per pointer, checked against a copy of the path
++struct ResolvedPath {
++    std::string path;
++    std::shared_ptr<Ship::IResource> res;
++};
++static std::unordered_map<const char*, ResolvedPath> sPathResourceCache;
++
++static std::shared_ptr<Ship::IResource> CachedResourceByHash(uint64_t hash) {
++    if (!NoAltAssetFiles()) {
++        return Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(hash);
++    }
++    auto it = sHashResourceCache.find(hash);
++    if (it != sHashResourceCache.end()) {
++        return it->second;
++    }
++    auto res = Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(hash);
++    if (res != nullptr) {
++        if (sHashResourceCache.size() >= 4096) {
++            sHashResourceCache.clear();
++        }
++        sHashResourceCache.emplace(hash, res);
++    }
++    return res;
++}
++
++static std::shared_ptr<Ship::IResource> CachedResourceByPath(const char* path) {
++    if (!NoAltAssetFiles()) {
++        return Ship::Context::GetRawInstance()->GetResourceManager()->LoadResourceProcess(path);
++    }
++    auto found = sPathResourceCache.find(path);
++    if (found != sPathResourceCache.end() && found->second.path == path) {
++        return found->second.res;
++    }
++    auto res = Ship::Context::GetRawInstance()->GetResourceManager()->LoadResourceProcess(path);
++    if (res != nullptr) {
++        if (sPathResourceCache.size() >= 4096) {
++            sPathResourceCache.clear();
++        }
++        sPathResourceCache[path] = { path, res };
++    }
++    return res;
++}
++
++static void* CachedResourceRawPointer(uint64_t hash) {
++    auto res = CachedResourceByHash(hash);
++    return res != nullptr ? res->GetRawPointer() : nullptr;
++}
++
+ void Interpreter::Flush() {
+     if (mBufVboLen > 0) {
+         mRapi->SetCurrentPrimDepth((float)mRdp->prim_depth / N64_PRIM_DEPTH_MAX);
+@@ -447,6 +510,8 @@ void Interpreter::TextureCacheClear() {
+     }
+     mTextureCache.map.clear();
+     mTextureCache.lru.clear();
++    sHashResourceCache.clear();
++    sPathResourceCache.clear();
+     // Pre-allocate buckets so the map never rehashes during normal operation.
+     // Rehashing invalidates all iterators, including those stored in LRU entries.
+     mTextureCache.map.reserve(TEXTURE_CACHE_MAX_SIZE);
+@@ -1242,6 +1307,7 @@ void Interpreter::ImportTexture(int i, int tile, bool importReplacement) {
+         if (fbIt != mFbTextures.end()) {
+             Flush();
+             mRapi->SelectTextureFb(fbIt->second);
++            mRenderingState.mTextures[i] = nullptr;
+             mRdp->textures_changed[i] = false;
+             return;
+         }
+@@ -1285,6 +1351,15 @@ void Interpreter::ImportTexture(int i, int tile, bool importReplacement) {
+         key = { origAddr, {}, fmt, siz, paletteIndex, origSizeBytes };
+     }
+ 
++    // The texture already bound to this slot: the triangles so far can keep going (selected
++    // again in case the backend lost its bindings)
++    if (!importReplacement && mRenderingState.mTextures[i] != nullptr &&
++        mRenderingState.mTextures[i]->first == key) {
++        mRapi->SelectTexture(i, mRenderingState.mTextures[i]->second.texture_id);
++        return;
++    }
++    Flush();
++
+     if (TextureCacheLookup(i, key)) {
+         return;
+     }
+@@ -1886,9 +1961,11 @@ void Interpreter::GfxSpTri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx
+     if (use_grayscale) {
+         cc_options |= SHADER_OPT(GRAYSCALE);
+     }
++#ifndef USE_GLES2
+     if (use_prim_depth) {
+         cc_options |= SHADER_OPT(PRIM_DEPTH);
+     }
++#endif
+ 
+     if (!mShaderStack.empty()) {
+         cc_options |= (mShaderStack.top() << SHADER_ID_SHIFT);
+@@ -1916,8 +1993,9 @@ void Interpreter::GfxSpTri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx
+     ColorCombiner* comb = LookupOrCreateColorCombiner(key);
+ 
+     uint32_t tm = 0;
+-    uint32_t tex_width[2], tex_height[2], tex_width2[2], tex_height2[2];
+-    uint32_t effective_tile[2];
++    uint32_t tex_width[2] = { 1, 1 }, tex_height[2] = { 1, 1 }, tex_width2[2] = { 1, 1 },
++             tex_height2[2] = { 1, 1 };
++    uint32_t effective_tile[2] = { mRdp->first_tile_index, mRdp->first_tile_index };
+ 
+     for (int i = 0; i < 2; i++) {
+         uint32_t tile = mRdp->first_tile_index + i;
+@@ -1930,12 +2008,13 @@ void Interpreter::GfxSpTri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx
+ 
+         if (comb->usedTextures[i]) {
+             if (mRdp->textures_changed[i]) {
+-                Flush();
+-                ImportTexture(i, tile, false);
++                ImportTexture(i, tile, false); // flushes if the texture changes
+                 if (mRdp->loaded_texture[i].masked) {
++                    Flush();
+                     ImportTextureMask(SHADER_FIRST_MASK_TEXTURE + i, tile);
+                 }
+                 if (mRdp->loaded_texture[i].blended) {
++                    Flush();
+                     ImportTexture(SHADER_FIRST_REPLACEMENT_TEXTURE + i, tile, true);
+                 }
+                 mRdp->textures_changed[i] = false;
+@@ -2044,6 +2123,15 @@ void Interpreter::GfxSpTri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx
+         }
+     }
+ 
++    for (int i = 0; i < 2; i++) {
++        if (!comb->usedTextures[i] && comb->usedTextures[i ^ 1]) {
++            tex_width[i] = tex_width[i ^ 1];
++            tex_height[i] = tex_height[i ^ 1];
++            tex_width2[i] = tex_width2[i ^ 1];
++            tex_height2[i] = tex_height2[i ^ 1];
++        }
++    }
++
+     struct ShaderProgram* prg = comb->prg[tm];
+     if (prg == NULL) {
+         comb->prg[tm] = prg =
+@@ -2069,6 +2157,11 @@ void Interpreter::GfxSpTri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx
+ 
+     for (int i = 0; i < 3; i++) {
+         float z = v_arr[i]->z, w = v_arr[i]->w;
++#ifdef USE_GLES2
++        if (use_prim_depth) {
++            z = ((float)mRdp->prim_depth / N64_PRIM_DEPTH_MAX * 2.0f - 1.0f) * w;
++        }
++#endif
+         if (clip_parameters.z_is_from_0_to_1) {
+             z = (z + w) / 2.0f;
+         }
+@@ -3382,7 +3475,7 @@ bool gfx_mtx_otr_handler_custom_f3dex2(F3DGfx** cmd0) {
+ 
+     const uint64_t hash = ((uint64_t)cmd->words.w0 << 32) + cmd->words.w1;
+     const int32_t* mtx =
+-        (const int32_t*)Ship::Context::GetRawInstance()->GetResourceManager()->GetResourceRawPointer(hash);
++        (const int32_t*)CachedResourceRawPointer(hash);
+ 
+     if (mtx != NULL) {
+         Interpreter* gfx = mInstance.lock().get();
+@@ -3401,7 +3494,7 @@ bool gfx_mtx_otr_handler_custom_f3d(F3DGfx** cmd0) {
+ 
+     const uint64_t hash = ((uint64_t)cmd->words.w0 << 32) + cmd->words.w1;
+     const int32_t* mtx =
+-        (const int32_t*)Ship::Context::GetRawInstance()->GetResourceManager()->GetResourceRawPointer(hash);
++        (const int32_t*)CachedResourceRawPointer(hash);
+     if (mtx != nullptr) {
+         cmd--;
+         gfx->GfxSpMatrix(C0(16, 8), mtx);
+@@ -3468,10 +3561,10 @@ bool gfx_movemem_handler_otr(F3DGfx** cmd0) {
+ 
+     if (ucode_handler_index == ucode_f3dex2) {
+         gfx->GfxSpMovememF3dex2(index, offset,
+-                                Ship::Context::GetRawInstance()->GetResourceManager()->GetResourceRawPointer(hash));
++                                CachedResourceRawPointer(hash));
+     } else {
+         auto light =
+-            (Fast::LightEntry*)Ship::Context::GetRawInstance()->GetResourceManager()->GetResourceRawPointer(hash);
++            (Fast::LightEntry*)CachedResourceRawPointer(hash);
+         uintptr_t data = (uintptr_t)&light->Ambient;
+         gfx->GfxSpMovememF3d(index, offset, (void*)(data + (hasOffset == 1 ? 0x8 : 0)));
+     }
+@@ -3610,7 +3703,7 @@ bool gfx_vtx_hash_handler_custom(F3DGfx** cmd0) {
+         gfx->GfxSpVertex(C0(12, 8), C0(1, 7) - C0(12, 8), (F3DVtx*)offset);
+         (*cmd0)++;
+     } else {
+-        F3DVtx* vtx = (F3DVtx*)Ship::Context::GetRawInstance()->GetResourceManager()->GetResourceRawPointer(hash);
++        F3DVtx* vtx = (F3DVtx*)CachedResourceRawPointer(hash);
+ 
+         if (vtx != NULL) {
+             vtx = (F3DVtx*)((char*)vtx + offset);
+@@ -3702,7 +3795,7 @@ bool gfx_dl_otr_hash_handler_custom(F3DGfx** cmd0) {
+ 
+         uint64_t hash = ((uint64_t)(*cmd0)->words.w0 << 32) + (*cmd0)->words.w1;
+ 
+-        F3DGfx* gfx = (F3DGfx*)Ship::Context::GetRawInstance()->GetResourceManager()->GetResourceRawPointer(hash);
++        F3DGfx* gfx = (F3DGfx*)CachedResourceRawPointer(hash);
+ 
+         if (gfx != 0) {
+             g_exec_stack.call(cmd, gfx);
+@@ -3760,7 +3853,7 @@ bool gfx_branch_z_otr_handler_f3dex2(F3DGfx** cmd0) {
+         (gfx->mRsp->extra_geometry_mode & G_EX_ALWAYS_EXECUTE_BRANCH) != 0) {
+         uint64_t hash = ((uint64_t)(*cmd0)->words.w0 << 32) + (*cmd0)->words.w1;
+ 
+-        F3DGfx* gfx = (F3DGfx*)Ship::Context::GetRawInstance()->GetResourceManager()->GetResourceRawPointer(hash);
++        F3DGfx* gfx = (F3DGfx*)CachedResourceRawPointer(hash);
+ 
+         if (gfx != 0) {
+             (*cmd0) = gfx;
+@@ -3934,6 +4027,35 @@ bool gfx_othermode_h_handler_f3d(F3DGfx** cmd0) {
+     return false;
+ }
+ 
++// A resolved address still in the N64 segmented range (<= 0x0FFFFFFF) usually means SegAddr
++// failed to resolve it (segment not set up). Keep it only if it belongs to a loaded module,
++// where it's a real low pointer (e.g. a static TLUT) rather than an unresolved segment addr.
++static bool IsValidResolvedAddress(uintptr_t addr) {
++    if (addr > 0x0FFFFFFF) {
++        return true;
++    }
++
++    // Still in the N64 segmented range, but might be a false positive (a real low pointer).
++#ifdef _WIN32
++    // For Windows, check whether the address belongs to a dll.
++    HMODULE module = nullptr;
++    return GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
++                              reinterpret_cast<LPCSTR>(addr), &module) != 0;
++#else
++    // For non-Windows platforms, check whether the address belongs to a loaded object.
++#if UINTPTR_MAX <= 0xFFFFFFFFu
++    // 32-bit: the heap and mappings live below 0x10000000 as well; a mapped page is a real address.
++    // mincore is one cheap system call (dladdr searched symbol tables: 3% of the CPU time on an A20).
++    static const uintptr_t pageSize = (uintptr_t)sysconf(_SC_PAGESIZE);
++    unsigned char resident;
++    return mincore(reinterpret_cast<void*>(addr & ~(pageSize - 1)), 1, &resident) == 0;
++#else
++    Dl_info info;
++    return dladdr(reinterpret_cast<void*>(addr), &info) != 0;
++#endif
++#endif
++}
++
+ bool gfx_set_timg_handler_rdp(F3DGfx** cmd0) {
+     Interpreter* gfx = mInstance.lock().get();
+     F3DGfx* cmd = *cmd0;
+@@ -3946,11 +4068,12 @@ bool gfx_set_timg_handler_rdp(F3DGfx** cmd0) {
+     // from the resource, but raw textures would leave them at 0.
+     rawTexMetdata.h_byte_scale = 1;
+     rawTexMetdata.v_pixel_scale = 1;
++    bool fromResource = false;
+ 
+     if ((i & 1) != 1) {
+         if (gfx_check_image_signature(imgData) == 1) {
+-            std::shared_ptr<Fast::Texture> tex = std::static_pointer_cast<Fast::Texture>(
+-                Ship::Context::GetRawInstance()->GetResourceManager()->LoadResourceProcess(imgData));
++            std::shared_ptr<Fast::Texture> tex =
++                std::static_pointer_cast<Fast::Texture>(CachedResourceByPath(imgData));
+ 
+             if (tex == nullptr) {
+                 (*cmd0)++;
+@@ -3965,26 +4088,13 @@ bool gfx_set_timg_handler_rdp(F3DGfx** cmd0) {
+             rawTexMetdata.v_pixel_scale = tex->VPixelScale;
+             rawTexMetdata.type = tex->Type;
+             rawTexMetdata.resource = tex;
++            fromResource = true;
+         }
+     }
+ 
+-    // If the resolved address is still in the N64 segmented range, SegAddr
+-    // failed to resolve it (segment not set up). Skip to avoid dereferencing
+-    // invalid memory.
+-    // For Windows, also check if the address is not from a dll because this validation returns a false positive caused
+-    // by how the virtual memory is allocated.
+-#ifdef _WIN32
+-    HMODULE module = nullptr;
+-    if (i <= 0x0FFFFFFF &&
+-        !(GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+-                             reinterpret_cast<LPCSTR>(i), &module))) {
+-        return false;
+-    }
+-#else
+-    if (i <= 0x0FFFFFFF) {
++    if (!fromResource && !IsValidResolvedAddress(i)) {
+         return false;
+     }
+-#endif
+ 
+     gfx->GfxDpSetTextureImage(C0(21, 3), C0(19, 2), C0(0, 12) + 1, imgData, texFlags, rawTexMetdata, (void*)i);
+ 
+@@ -4007,8 +4117,7 @@ bool gfx_set_timg_otr_hash_handler_custom(F3DGfx** cmd0) {
+     }
+ 
+     std::shared_ptr<Fast::Texture> texture = std::static_pointer_cast<Fast::Texture>(
+-        Ship::Context::GetRawInstance()->GetResourceManager()->LoadResourceProcess(
+-            Ship::Context::GetRawInstance()->GetResourceManager()->GetArchiveManager()->HashToCString(hash)));
++        CachedResourceByHash(hash));
+     if (texture != nullptr) {
+         texFlags = texture->Flags;
+         rawTexMetadata.width = texture->Width;
+diff --git a/src/fast/shaders/opengl/default.shader.glsl b/src/fast/shaders/opengl/default.shader.glsl
+index 1fe86aa..ff45672 100644
+--- a/src/fast/shaders/opengl/default.shader.glsl
++++ b/src/fast/shaders/opengl/default.shader.glsl
+@@ -134,14 +134,18 @@
+ 
+     float random(in vec3 value) {
+         float random = dot(sin(value), vec3(12.9898, 78.233, 37.719));
++        @if(gles2)
++        return fract(sin(random) * 43758.5453);
++        @else
+         return fract(sin(random) * 143758.5453);
++        @end
+     }
+ 
+     vec4 fromLinear(vec4 linearRGB){
+         bvec3 cutoff = lessThan(linearRGB.rgb, vec3(0.0031308));
+         vec3 higher = vec3(1.055)*pow(linearRGB.rgb, vec3(1.0/2.4)) - vec3(0.055);
+         vec3 lower = linearRGB.rgb * vec3(12.92);
+-        return vec4(mix(higher, lower, cutoff), linearRGB.a);
++        return vec4(mix(higher, lower, vec3(cutoff)), linearRGB.a);
+     }
+ 
+     vec4 filter3point(in sampler2D tex, in vec2 texCoord, in vec2 texSize) {
+@@ -187,7 +191,9 @@
+                 vec4 texVal@{i} = hookTexture2D(@{i}, uTex@{i}, vTexCoordAdj@{i}, texSize@{i});
+ 
+                 @if(o_masks[i])
+-                    @if(opengles) 
++                    @if(gles2)
++                        vec2 maskSize@{i} = texSize@{i};
++                    @elseif(opengles)
+                         vec2 maskSize@{i} = vec2(textureSize(uTexMask@{i}, 0));
+                     @else 
+                         vec2 maskSize@{i} = textureSize(uTexMask@{i}, 0);
+diff --git a/src/libultraship/controller/controldevice/controller/mapping/ControllerDefaultMappings.cpp b/src/libultraship/controller/controldevice/controller/mapping/ControllerDefaultMappings.cpp
+index c431c34..35f66b2 100644
+--- a/src/libultraship/controller/controldevice/controller/mapping/ControllerDefaultMappings.cpp
++++ b/src/libultraship/controller/controldevice/controller/mapping/ControllerDefaultMappings.cpp
+@@ -80,6 +80,11 @@ void ControllerDefaultMappings::SetDefaultSDLButtonToButtonMappings(
+         { BTN_DDOWN, { SDL_CONTROLLER_BUTTON_DPAD_DOWN } },
+         { BTN_DLEFT, { SDL_CONTROLLER_BUTTON_DPAD_LEFT } },
+         { BTN_DRIGHT, { SDL_CONTROLLER_BUTTON_DPAD_RIGHT } },
++#ifdef USE_GLES2
++        { BTN_CDOWN, { SDL_CONTROLLER_BUTTON_Y } },
++        { BTN_CLEFT, { SDL_CONTROLLER_BUTTON_X } },
++        { BTN_CRIGHT, { SDL_CONTROLLER_BUTTON_RIGHTSHOULDER } },
++#endif
+     });
+ }
+ 
+diff --git a/src/ship/audio/Audio.cpp b/src/ship/audio/Audio.cpp
+index 8cc5b12..604a30c 100644
+--- a/src/ship/audio/Audio.cpp
++++ b/src/ship/audio/Audio.cpp
+@@ -36,8 +36,11 @@ void Audio::InitAudioPlayer() {
+ 
+     if (mAudioPlayer && !mAudioPlayer->Init()) {
+         // Failed to initialize system audio player.
+-        // Fallback to Null if the native system player does not work.
+-        SetCurrentAudioBackend(AudioBackend::NUL);
++        // Fallback to Null if the native system player does not work: for this run only,
++        // the saved backend stays and the next start tries it again
++        mAudioBackend = AudioBackend::NUL;
++        mAudioPlayer = std::make_shared<NullAudioPlayer>(this->mAudioSettings);
++        mAudioPlayer->Init();
+     }
+ }
+ 
+diff --git a/src/ship/debug/CrashHandler.cpp b/src/ship/debug/CrashHandler.cpp
+index 39d76be..c4cec84 100644
+--- a/src/ship/debug/CrashHandler.cpp
++++ b/src/ship/debug/CrashHandler.cpp
+@@ -2,6 +2,9 @@
+ #include "ship/utils/StringHelper.h"
+ #include "ship/debug/CrashHandler.h"
+ #include "ship/Context.h"
++#ifndef _WIN32
++#include <unistd.h> // _exit
++#endif
+ 
+ #ifdef _WIN32
+ #include <windows.h>
+@@ -199,11 +202,13 @@ static void ErrorHandler(int sig, siginfo_t* sigInfo, void* data) {
+ 
+     Context::GetRawInstance()->GetLogger()->flush();
+     spdlog::shutdown();
+-    exit(1);
++    _exit(128 + sig);
+ }
+ 
+ static void ShutdownHandler(int sig, siginfo_t* sigInfo, void* data) {
+-    exit(1);
++    SDL_Event event;
++    event.type = SDL_QUIT;
++    SDL_PushEvent(&event);
+ }
+ 
+ #elif _WIN32

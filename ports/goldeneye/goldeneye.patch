@@ -1,0 +1,733 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2df2e82..f9e4c61 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -7,13 +7,18 @@ project(ge007 C)
+ 
+ set(CMAKE_C_STANDARD 11)
+ 
++if(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
++    set(GE_ARM ON)
++    add_compile_options(-ffp-contract=off)
++else()
++    set(GE_ARM OFF)
++    add_compile_options(-m32 -msse2 -mfpmath=sse)
++endif()
++
+ add_compile_options(
+-    -m32
+     # Use SSE scalar floats so every operation rounds to single precision like
+     # the N64 FPU; x87's 80-bit excess precision flips borderline comparisons
+     # (it broke the stan.c tile-walk edge test and room visibility in Egypt).
+-    -msse2
+-    -mfpmath=sse
+     -fno-strict-aliasing
+     -fwrapv
+     -funsigned-char
+@@ -50,7 +55,11 @@ if(WIN32)
+                      -Wl,--stack,16777216)
+     link_libraries(dbghelp)
+ else()
+-    add_link_options(-m32 -no-pie)
++    if(GE_ARM)
++        add_link_options(-no-pie -Wl,-Ttext-segment=0x10000000)
++    else()
++        add_link_options(-m32 -no-pie)
++    endif()
+ endif()
+ 
+ add_compile_definitions(
+@@ -175,7 +184,6 @@ set(GU_SRC
+ # oddtextures texel data are big-endian blobs.
+ set(ASSET_C_FLAGS
+     -std=gnu11
+-    -m32 -malign-data=abi
+     -fms-extensions -ffreestanding -fno-strict-aliasing -fwrapv -funsigned-char
+     -fno-common -fno-zero-initialized-in-bss -fno-toplevel-reorder -fno-pic
+     -Og -w
+@@ -192,6 +200,15 @@ set(ASSET_C_FLAGS
+     -I${CMAKE_SOURCE_DIR}/port/include
+     -I${CMAKE_SOURCE_DIR}/src/libultra)
+ 
++if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 14)
++    list(APPEND ASSET_C_FLAGS -fpermissive)
++    add_compile_options($<$<COMPILE_LANGUAGE:C>:-fpermissive>)
++endif()
++
++if(NOT GE_ARM)
++    list(APPEND ASSET_C_FLAGS -m32 -malign-data=abi)
++endif()
++
+ if(NOT CMAKE_OBJCOPY)
+     set(CMAKE_OBJCOPY objcopy)
+ endif()
+@@ -359,6 +376,10 @@ list(APPEND PORT_SRC src/libultrare/io/vitbl.c)
+ # GE microcode opcode work lands (docs/port/ge-microcode.md); the null
+ # renderer in pcsched.c stays the headless default.
+ option(GE_VIDEO "Build the fast3d renderer (SDL2 + OpenGL)" OFF)
++option(GE_GLES2 "fast3d on OpenGL ES 2.0 (no framebuffer effects)" OFF)
++if(GE_GLES2)
++    add_compile_definitions(USE_GLES2)
++endif()
+ 
+ # Testing convenience: every solo mission, bonus stage and difficulty
+ # (incl. 007 mode) selectable regardless of save state. Progression logic
+@@ -388,6 +409,11 @@ if(GE_VIDEO)
+         port/fast3d/glad/glad.c
+     )
+     add_compile_definitions(GE_VIDEO=1)
++    if(GE_ARM)
++        set_source_files_properties(${FAST3D_SRC} PROPERTIES
++            COMPILE_OPTIONS "-O3;-fno-math-errno;-funsafe-math-optimizations")
++        set_source_files_properties(port/src/audio_pc.c PROPERTIES COMPILE_OPTIONS "-O3")
++    endif()
+ else()
+     set(FAST3D_SRC)
+     # video.c/input_pc.c/raphnet.c are GE_VIDEO-only; exclude them from the port glob.
+@@ -448,7 +474,10 @@ if(GE_VIDEO)
+         # 32-bit SDL2: needs libsdl2-dev:i386 (+ libgl-dev:i386), or set
+         # SDL2_LINUX_ROOT to a self-built prefix (e.g. CI's cached, user-writable
+         # install, avoiding a system-wide /usr install).
+-        if(SDL2_LINUX_ROOT)
++        if(GE_GLES2)
++            find_package(SDL2 REQUIRED)
++            target_link_libraries(ge SDL2::SDL2 dl pthread)
++        elseif(SDL2_LINUX_ROOT)
+             target_include_directories(ge PRIVATE ${SDL2_LINUX_ROOT}/include/SDL2)
+             target_link_libraries(ge ${SDL2_LINUX_ROOT}/lib/i386-linux-gnu/libSDL2.so GL dl pthread)
+             set_target_properties(ge PROPERTIES BUILD_RPATH ${SDL2_LINUX_ROOT}/lib/i386-linux-gnu)
+diff --git a/port/fast3d/gfx_opengl.cpp b/port/fast3d/gfx_opengl.cpp
+index e1efb53..269376f 100644
+--- a/port/fast3d/gfx_opengl.cpp
++++ b/port/fast3d/gfx_opengl.cpp
+@@ -67,6 +67,8 @@ struct ShaderProgram {
+     GLint frame_count_location;
+     GLint noise_scale_location;
+     GLint three_point_filter_locations[2];
++    GLint tex_size_locations[2]; /* GLSL < 1.30: uTexSize0/1 */
++    float tex_size_pushed[2][2];
+     /* GE retained geometry (below): the fragment shader object outlives the
+      * link so the twin program can share it, plus the ids its features come from */
+     GLuint fragment_shader;
+@@ -91,6 +93,11 @@ static GLuint opengl_vao;
+ static bool current_depth_mask;
+ 
+ static uint32_t frame_count;
++#ifdef USE_GLES2
++#define GL_FRAME_COUNT ((GLint)(frame_count & 63))
++#else
++#define GL_FRAME_COUNT ((GLint)frame_count)
++#endif
+ 
+ static std::vector<Framebuffer> framebuffers;
+ static size_t current_framebuffer;
+@@ -120,6 +127,24 @@ static void gl_set_has_mips(GLuint id, uint8_t v) {
+     }
+     gl_tex_has_mips[id] = v;
+ }
++/* each texture object's size (GLSL < 1.30 shaders get it as a uniform) */
++static std::vector<std::pair<uint16_t, uint16_t>> gl_tex_size;
++static void gl_set_tex_size(GLuint id, uint32_t w, uint32_t h) {
++    if (id >= gl_tex_size.size()) {
++        gl_tex_size.resize((size_t)id + 64, std::make_pair((uint16_t)1, (uint16_t)1));
++    }
++    gl_tex_size[id] = std::make_pair((uint16_t)w, (uint16_t)h);
++}
++static void gl_tex_size_of(GLuint id, float out[2]) {
++    if (id < gl_tex_size.size()) {
++        out[0] = gl_tex_size[id].first;
++        out[1] = gl_tex_size[id].second;
++    } else {
++        out[0] = out[1] = 1.0f;
++    }
++}
++/* push the bound textures' sizes into a program whose cache says otherwise */
++static void gl_sync_tex_size(const GLint loc[2], float pushed[2][2]);
+ static bool gl_has_mips(GLuint id) {
+     return id < gl_tex_has_mips.size() && gl_tex_has_mips[id] != 0;
+ }
+@@ -129,6 +154,7 @@ static char gl_glsl_version_str[16] = "130";
+ static GLenum gl_mirror_clamp = GL_MIRROR_CLAMP_TO_EDGE;
+ static bool gl_es = false;
+ static bool gl_core_profile = false;
++static bool gl_npot = true; /* GLES2 without OES_texture_npot: no mipmaps on NPOT textures */
+ 
+ static void gl_ret_restore(void); /* GE retained geometry: back to the interpreter's VBO / program (defined below) */
+ static struct ShaderProgram* gl_current_prg_set(struct ShaderProgram* prg);
+@@ -163,7 +189,7 @@ static void gfx_opengl_vertex_array_set_attribs(struct ShaderProgram* prg) {
+ 
+ static void gfx_opengl_set_uniforms(struct ShaderProgram* prg) {
+     if (prg->frame_count_location >= 0) {
+-        glUniform1i(prg->frame_count_location, frame_count);
++        glUniform1i(prg->frame_count_location, GL_FRAME_COUNT);
+     }
+     if (prg->noise_scale_location >= 0) {
+         glUniform1f(prg->noise_scale_location, current_noise_scale);
+@@ -387,6 +413,8 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
+          * to the fragment stage; both interpolate perspective-correct, so
+          * z/w is the fragment's true NDC depth. No extra attribute. */
+         append_line(vs_buf, &vs_len, "OUTPUT vec2 vGeZw;");
++        if (gl_glsl_version < 130)
++            append_line(vs_buf, &vs_len, "OUTPUT float vGeFar;");
+     }
+     if (cc_features.opt_ge_pixfog) {
+         /* fog register curve (mul, offset) rides as a constant attribute */
+@@ -445,6 +473,8 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
+ 
+     if (cc_features.opt_ge_farclip || cc_features.opt_ge_pixfog) {
+         append_line(vs_buf, &vs_len, "    vGeZw = aVtxPos.zw;");
++        if (gl_glsl_version < 130)
++            append_line(vs_buf, &vs_len, "    vGeFar = aVtxPos.w - aVtxPos.z;");
+     }
+     if (cc_features.opt_ge_pixfog) {
+         append_line(vs_buf, &vs_len, "    vGeFogP = aGeFogP;");
+@@ -455,7 +485,7 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
+     append_line(vs_buf, &vs_len, "    gl_Position = aVtxPos;");
+     if (!GLAD_GL_ARB_depth_clamp) {
+         // HACK: workaround for no GL_DEPTH_CLAMP
+-        append_line(vs_buf, &vs_len, "    gl_Position.z *= 0.3f;");
++        append_line(vs_buf, &vs_len, "    gl_Position.z *= 0.3;");
+     }
+     append_line(vs_buf, &vs_len, "}");
+ 
+@@ -499,6 +529,8 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
+     }
+     if (cc_features.opt_ge_farclip || cc_features.opt_ge_pixfog) {
+         append_line(fs_buf, &fs_len, "INPUT vec2 vGeZw;");
++        if (gl_glsl_version < 130)
++            append_line(fs_buf, &fs_len, "INPUT float vGeFar;");
+     }
+     if (cc_features.opt_ge_pixfog) {
+         append_line(fs_buf, &fs_len, "INPUT vec2 vGeFogP;");
+@@ -515,11 +547,15 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
+ 
+     if (cc_features.used_textures[0]) {
+         append_line(fs_buf, &fs_len, "uniform sampler2D uTex0;");
++        if (gl_glsl_version < 130)
++            append_line(fs_buf, &fs_len, "uniform vec2 uTexSize0;");
+         if (current_filter_mode == FILTER_THREE_POINT)
+             append_line(fs_buf, &fs_len, "uniform int three_point_filter0;");
+     }
+     if (cc_features.used_textures[1]) {
+         append_line(fs_buf, &fs_len, "uniform sampler2D uTex1;");
++        if (gl_glsl_version < 130)
++            append_line(fs_buf, &fs_len, "uniform vec2 uTexSize1;");
+         if (current_filter_mode == FILTER_THREE_POINT)
+             append_line(fs_buf, &fs_len, "uniform int three_point_filter1;");
+     }
+@@ -528,8 +564,13 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
+     append_line(fs_buf, &fs_len, "uniform float noise_scale;");
+ 
+     append_line(fs_buf, &fs_len, "float random(in vec3 value) {");
+-    append_line(fs_buf, &fs_len, "    float random = dot(sin(value), vec3(12.9898, 78.233, 37.719));");
+-    append_line(fs_buf, &fs_len, "    return fract(sin(random) * 143758.5453);");
++    if (gl_glsl_version < 130) {
++        append_line(fs_buf, &fs_len, "    float n = fract(dot(value.xy, vec2(0.06711056, 0.00583715)) + value.z * 0.618034);");
++        append_line(fs_buf, &fs_len, "    return fract(52.9829189 * n);");
++    } else {
++        append_line(fs_buf, &fs_len, "    float random = dot(sin(value), vec3(12.9898, 78.233, 37.719));");
++        append_line(fs_buf, &fs_len, "    return fract(sin(random) * 143758.5453);");
++    }
+     append_line(fs_buf, &fs_len, "}");
+ 
+     if (current_filter_mode == FILTER_THREE_POINT) {
+@@ -555,7 +596,7 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
+ 
+         append_line(fs_buf, &fs_len, "    lowp vec4 cw = vec4(0.0);");
+         append_line(fs_buf, &fs_len, "    for (int i = 0; i < 16; ++i) {");
+-        append_line(fs_buf, &fs_len, "        vec2 xy = vec2(float(i & 3), float(i >> 2));");
++        append_line(fs_buf, &fs_len, "        vec2 xy = vec2(mod(float(i), 4.0), floor(float(i) / 4.0));");
+         append_line(fs_buf, &fs_len, "        lowp float w = 0.009947 - length(xy) * 0.001;");
+         append_line(fs_buf, &fs_len, "        vec2 scaled_uv = uv + (vec2(-1.5) + xy) / texSize;");
+ 
+@@ -589,14 +630,20 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
+     if (cc_features.opt_ge_farclip) {
+         /* GE far clip: fragment past the projection far plane - the console
+          * clips fogless geometry there. */
+-        append_line(fs_buf, &fs_len, "    if (vGeZw.x > vGeZw.y) discard;");
++        if (gl_glsl_version < 130)
++            append_line(fs_buf, &fs_len, "    if (vGeFar < 0.0) discard;");
++        else
++            append_line(fs_buf, &fs_len, "    if (vGeZw.x > vGeZw.y) discard;");
+     }
+ 
+     for (int i = 0; i < 2; i++) {
+         if (cc_features.used_textures[i]) {
+             bool s = cc_features.clamp[i][0], t = cc_features.clamp[i][1];
+ 
+-            fs_len += sprintf(fs_buf + fs_len, "    vec2 texSize%d = vec2(textureSize(uTex%d, 0));\n", i, i);
++            if (gl_glsl_version < 130)
++                fs_len += sprintf(fs_buf + fs_len, "    vec2 texSize%d = uTexSize%d;\n", i, i);
++            else
++                fs_len += sprintf(fs_buf + fs_len, "    vec2 texSize%d = vec2(textureSize(uTex%d, 0));\n", i, i);
+ 
+             /* GE sky/water per-pixel divide: S/W and T/W by 1/W at this pixel,
+              * as the RDP does (the old CPU grid only approximated it). q is
+@@ -858,6 +905,9 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
+     prg->noise_scale_location = glGetUniformLocation(shader_program, "noise_scale");
+     prg->three_point_filter_locations[0] = glGetUniformLocation(shader_program, "three_point_filter0");
+     prg->three_point_filter_locations[1] = glGetUniformLocation(shader_program, "three_point_filter1");
++    prg->tex_size_locations[0] = glGetUniformLocation(shader_program, "uTexSize0");
++    prg->tex_size_locations[1] = glGetUniformLocation(shader_program, "uTexSize1");
++    prg->tex_size_pushed[0][0] = prg->tex_size_pushed[1][0] = -1.0f;
+ 
+     gfx_opengl_load_shader(prg);
+ 
+@@ -1001,7 +1051,12 @@ static void gfx_opengl_upload_texture(const uint8_t* rgba32_buf, uint32_t width,
+     }
+     g_GfxUpDrainUs = portProfNow() - up_t;
+     up_t += g_GfxUpDrainUs;
++#ifdef USE_GLES2
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba32_buf);
++#else
+     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba32_buf);
++#endif
++    gl_set_tex_size(current_texture_ids[last_selected_tile], width, height);
+     g_GfxUpTexUs = portProfNow() - up_t;
+     up_t += g_GfxUpTexUs;
+     /* a fresh level 0 invalidates any older chain on this object; the N64
+@@ -1053,7 +1108,11 @@ static uint32_t gfx_cm_to_opengl(uint32_t val) {
+     switch (val) {
+         case 0x10: /* GE_TX_BORDER (gfx_pc.cpp): a grown font glyph - outside the
+                     * texture is GL's default border colour, transparent black */
++#ifdef USE_GLES2
++            return GL_CLAMP_TO_EDGE;
++#else
+             return GL_CLAMP_TO_BORDER;
++#endif
+         case G_TX_NOMIRROR | G_TX_CLAMP:
+             return GL_CLAMP_TO_EDGE;
+         case G_TX_MIRROR | G_TX_WRAP:
+@@ -1069,6 +1128,16 @@ static uint32_t gfx_cm_to_opengl(uint32_t val) {
+ extern "C" int ge_sky_tri_active; /* gfx_pc: inside an RDP-triangle (sky/water) draw */
+ extern "C" int ge_mip_active;     /* gfx_pc: this sampler serves a G_TL_LOD draw - minify through mips */
+ 
++static bool gl_can_mip(GLuint id) {
++    if (gl_npot) {
++        return true;
++    }
++    float sz[2];
++    gl_tex_size_of(id, sz);
++    const uint32_t w = (uint32_t)sz[0], h = (uint32_t)sz[1];
++    return (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
++}
++
+ static void gfx_opengl_set_sampler_parameters(int tile, bool linear_filter, uint32_t cms, uint32_t cmt) {
+     const GLint filter = linear_filter && (current_filter_mode == FILTER_LINEAR) ? GL_LINEAR : GL_NEAREST;
+     /* THIS is the value the draw actually wants - gfx_pc computes it per draw
+@@ -1103,7 +1172,7 @@ static void gfx_opengl_set_sampler_parameters(int tile, bool linear_filter, uint
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gfx_cm_to_opengl(cmt));
+         return;
+     }
+-    if (ge_mip_active && !ge_sky_tri_active) {
++    if (ge_mip_active && !ge_sky_tri_active && gl_can_mip(current_texture_ids[tile])) {
+         /* GE N64 mipmaps: the RDP walked a mip chain for this draw, so give GL
+          * one (once per upload, box-filtered like GE's own builder) and minify
+          * through it to avoid moire. Bilerp becomes trilinear and point /
+@@ -1138,7 +1207,7 @@ static void gfx_opengl_set_sampler_parameters(int tile, bool linear_filter, uint
+             const char* e = getenv("GE_SKY_NOMIP");
+             skynomip = (e != NULL) && (e[0] != '0');
+         }
+-        if (skynomip) {
++        if (skynomip || !gl_can_mip(current_texture_ids[tile])) {
+             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+         } else {
+             glGenerateMipmap(GL_TEXTURE_2D);
+@@ -1283,6 +1352,24 @@ static void gfx_opengl_set_use_alpha(bool use_alpha, bool modulate) {
+  * room decals keep the one-sided test. GE_DEC_CLIP=0 = old behaviour,
+  * GE_DEC_TOL=<world units> (default 8). */
+ extern float gfx_ge_dec_b, gfx_ge_dec_d;
++static void gl_stream_vertices(const float* data, size_t len) {
++#ifdef USE_GLES2
++    struct ShaderProgram* prg = gl_current_prg;
++    glBindBuffer(GL_ARRAY_BUFFER, 0);
++    size_t pos = 0;
++    for (int i = 0; i < prg->num_attribs; i++) {
++        if (prg->attrib_locations[i] >= 0) {
++            glVertexAttribPointer(prg->attrib_locations[i], prg->attrib_sizes[i], GL_FLOAT, GL_FALSE,
++                                  prg->num_floats * sizeof(float), data + pos);
++        }
++        pos += prg->attrib_sizes[i];
++    }
++    (void)len;
++#else
++    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * len, data, GL_STREAM_DRAW);
++#endif
++}
++
+ static void gfx_opengl_draw_triangles(float buf_vbo[], size_t buf_vbo_len, size_t buf_vbo_num_tris) {
+     // printf("flushing %d tris\n", buf_vbo_num_tris);
+     static int clip = -1;
+@@ -1294,8 +1381,11 @@ static void gfx_opengl_draw_triangles(float buf_vbo[], size_t buf_vbo_len, size_
+         if (e != NULL && atof(e) > 0.0) tol = (float)atof(e);
+     }
+     gl_ret_restore(); /* after a retained draw: the stream VBO + this program's arrays again */
++    if (gl_current_prg != nullptr) {
++        gl_sync_tex_size(gl_current_prg->tex_size_locations, gl_current_prg->tex_size_pushed);
++    }
+     if (!clip || !ge_dec_draw || gfx_ge_dec_b >= 0.0f || buf_vbo_num_tris == 0) {
+-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * buf_vbo_len, buf_vbo, GL_STREAM_DRAW);
++        gl_stream_vertices(buf_vbo, buf_vbo_len);
+         glDrawArrays(GL_TRIANGLES, 0, 3 * buf_vbo_num_tris);
+         return;
+     }
+@@ -1326,14 +1416,14 @@ static void gfx_opengl_draw_triangles(float buf_vbo[], size_t buf_vbo_len, size_
+     glDisable(GL_POLYGON_OFFSET_FILL);
+     glStencilFunc(GL_ALWAYS, 1, 0xFF);
+     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * buf_vbo_len, pushed.data(), GL_STREAM_DRAW);
++    gl_stream_vertices(pushed.data(), buf_vbo_len);
+     glDrawArrays(GL_TRIANGLES, 0, nv);
+     /* 2. draw */
+     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+     gfx_opengl_set_depth_mode(ge_dm_args[0], ge_dm_args[1], ge_dm_args[2], ge_dm_args[3], ge_dm_zmode);
+     glStencilFunc(GL_EQUAL, 1, 0xFF);
+     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * buf_vbo_len, buf_vbo, GL_STREAM_DRAW);
++    gl_stream_vertices(buf_vbo, buf_vbo_len);
+     glDrawArrays(GL_TRIANGLES, 0, nv);
+     /* 3. clear */
+     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+@@ -1490,7 +1580,11 @@ static void gfx_opengl_init_extensions(void) {
+ }
+ 
+ static void gfx_opengl_init(void) {
++#ifdef USE_GLES2
++    if (!gladLoadGLES2Loader(gl_load_proc) || glGetString == NULL || glEnable == NULL) {
++#else
+     if (!gladLoadGLLoader(gl_load_proc) || glGetString == NULL || glEnable == NULL) {
++#endif
+         sysFatalError("Could not load OpenGL.\nReported SDL error: %s", SDL_GetError());
+     }
+ 
+@@ -1509,13 +1603,22 @@ static void gfx_opengl_init(void) {
+     // name the GPU (iGPU vs dGPU is the first question on any fps report)
+     gfx_opengl_log_info();
+ 
+-    if (GLVersion.major < 2 || (GLVersion.major == 2 && GLVersion.minor < 1)) {
++    if (!gl_es && (GLVersion.major < 2 || (GLVersion.major == 2 && GLVersion.minor < 1))) {
+         const char *ver = (const char *)glGetString(GL_VERSION);
+         sysFatalError("Could not load OpenGL 2.1.\nReported version: %d.%d (%s)",
+             GLVersion.major, GLVersion.minor, ver ? ver : "unknown");
+     }
+ 
+-    if (!gfx_opengl_supports_shaders()) {
++#ifdef USE_GLES2
++    // framebuffer effects need blits and multisampling: everything draws to the screen
++    gfx_framebuffers_enabled = false;
++    {
++        const char *ext = (const char *)glGetString(GL_EXTENSIONS);
++        gl_npot = ext && strstr(ext, "GL_OES_texture_npot");
++        sysLogPrintf(LOG_NOTE, "GL: OES_texture_npot: %s", gl_npot ? "yes" : "no");
++    }
++#endif
++    if (!gl_es && !gfx_opengl_supports_shaders()) {
+         sysLogPrintf(LOG_WARNING, "GL: GLSL 1.30 may be unsupported");
+         // maybe replace this with sysFatalError, though the GLSL compiler will cause that later anyway
+     }
+@@ -1552,12 +1655,16 @@ static void gfx_opengl_init(void) {
+         }
+         snprintf(gl_glsl_version_str, sizeof(gl_glsl_version_str), "%d core", gl_glsl_version);
+     }
++#ifdef USE_GLES2
++    gl_glsl_version = 100;
++    snprintf(gl_glsl_version_str, sizeof(gl_glsl_version_str), "100");
++#endif
+     sysLogPrintf(LOG_NOTE, "GL: using GLSL version %s", gl_glsl_version_str);
+ 
+     glGenBuffers(1, &opengl_vbo);
+     glBindBuffer(GL_ARRAY_BUFFER, opengl_vbo);
+ 
+-    if (gl_core_profile || gl_es) {
++    if (gl_core_profile || (gl_es && glGenVertexArrays != NULL)) {
+         // warn user that funny things can happen
+         sysLogPrintf(LOG_WARNING, "GL: using core profile or ES, watch out for errors");
+         // core/es will explode if we don't use a VAO for our VBO
+@@ -1747,6 +1854,11 @@ static void gfx_opengl_update_framebuffer_parameters(int fb_id, uint32_t width,
+ }
+ 
+ bool gfx_opengl_start_draw_to_framebuffer(int fb_id, float noise_scale) {
++#ifdef USE_GLES2
++    if (!gfx_framebuffers_enabled && noise_scale != 0.0f) {
++        current_noise_scale = 1.0f / noise_scale;
++    }
++#endif
+     if (gfx_framebuffers_enabled && fb_id < (int)framebuffers.size()) {
+         Framebuffer& fb = framebuffers[fb_id];
+         if (noise_scale != 0.0f) {
+@@ -1962,6 +2074,11 @@ void gfx_opengl_copy_framebuffer(int fb_dst, int fb_src, int left, int top, bool
+ }
+ 
+ void gfx_opengl_set_texture_filter(FilteringMode mode) {
++#ifdef USE_GLES2
++    if (mode == FILTER_THREE_POINT) {
++        mode = FILTER_LINEAR;
++    }
++#endif
+     current_filter_mode = mode;
+ }
+ 
+@@ -2033,6 +2150,8 @@ struct GlRetainedProgram {
+     int num_attribs = 0;
+     GLint u_mats, u_mats1, u_fixup, u_fogp, u_fogsel, u_fogrgb, u_decal, u_light, u_shade, u_kind, u_prim, u_env, u_lod;
+     GLint frame_count_location, noise_scale_location, three_point_filter_locations[2];
++    GLint tex_size_locations[2] = { -1, -1 };
++    float tex_size_pushed[2][2] = { { -1.0f, -1.0f }, { -1.0f, -1.0f } };
+     /* uniform value cache: a program object keeps its uniforms between binds,
+      * so a retained draw uploads only what changed since this program's last
+      * one (the per-draw GL call count is the PC's cost, not the triangles) */
+@@ -2132,6 +2251,8 @@ static GlRetainedProgram* gl_ret_program_get(struct ShaderProgram* prg) {
+     }
+     if (cc.opt_ge_farclip || cc.opt_ge_pixfog) {
+         append_line(vs_buf, &vs_len, "OUTPUT vec2 vGeZw;");
++        if (gl_glsl_version < 130)
++            append_line(vs_buf, &vs_len, "OUTPUT float vGeFar;");
+     }
+     if (cc.opt_ge_pixfog) {
+         append_line(vs_buf, &vs_len, "INPUT vec2 aGeFogP;");
+@@ -2210,13 +2331,15 @@ static GlRetainedProgram* gl_ret_program_get(struct ShaderProgram* prg) {
+     }
+     if (cc.opt_ge_farclip || cc.opt_ge_pixfog) {
+         append_line(vs_buf, &vs_len, "    vGeZw = clip.zw;");
++        if (gl_glsl_version < 130)
++            append_line(vs_buf, &vs_len, "    vGeFar = clip.w - clip.z;");
+     }
+     if (cc.opt_ge_pixfog) {
+         append_line(vs_buf, &vs_len, "    vGeFogP = uFogP.xy * 255.0;"); /* the frame's registers, not the captured pair */
+     }
+     append_line(vs_buf, &vs_len, "    gl_Position = clip;");
+     if (!GLAD_GL_ARB_depth_clamp) {
+-        append_line(vs_buf, &vs_len, "    gl_Position.z *= 0.3f;");
++        append_line(vs_buf, &vs_len, "    gl_Position.z *= 0.3;");
+     }
+     append_line(vs_buf, &vs_len, "}");
+     vs_buf[vs_len] = '\0';
+@@ -2314,6 +2437,8 @@ static GlRetainedProgram* gl_ret_program_get(struct ShaderProgram* prg) {
+     rp.noise_scale_location = glGetUniformLocation(program, "noise_scale");
+     rp.three_point_filter_locations[0] = glGetUniformLocation(program, "three_point_filter0");
+     rp.three_point_filter_locations[1] = glGetUniformLocation(program, "three_point_filter1");
++    rp.tex_size_locations[0] = glGetUniformLocation(program, "uTexSize0");
++    rp.tex_size_locations[1] = glGetUniformLocation(program, "uTexSize1");
+     /* back to the interpreter's program: the caller expects it current */
+     if (gl_current_prg != nullptr) {
+         glUseProgram(gl_current_prg->opengl_program_id);
+@@ -2593,9 +2718,9 @@ static void gl_ret_draw(int desc, const uint16_t* idx, uint32_t nidx, const floa
+             glUniform1iv(rp->u_kind, d.prg->num_inputs, kinds);
+         }
+     }
+-    if (rp->frame_count_location >= 0 && rp->c_frame_count != (GLint)frame_count) {
+-        rp->c_frame_count = (GLint)frame_count;
+-        glUniform1i(rp->frame_count_location, frame_count);
++    if (rp->frame_count_location >= 0 && rp->c_frame_count != GL_FRAME_COUNT) {
++        rp->c_frame_count = GL_FRAME_COUNT;
++        glUniform1i(rp->frame_count_location, GL_FRAME_COUNT);
+     }
+     if (rp->noise_scale_location >= 0 && rp->c_noise != current_noise_scale) {
+         rp->c_noise = current_noise_scale;
+@@ -2607,6 +2732,7 @@ static void gl_ret_draw(int desc, const uint16_t* idx, uint32_t nidx, const floa
+             glUniform1i(rp->three_point_filter_locations[t], current_textures_linear_filter[t]);
+         }
+     }
++    gl_sync_tex_size(rp->tex_size_locations, rp->tex_size_pushed);
+     rp->c_valid = true;
+     /* Backface cull on the GPU: front = COUNTER-clockwise in GL's y-up window
+      * space, verified against a cull-off reference. The clockwise reading of
+@@ -2676,6 +2802,20 @@ extern "C" void gfx_opengl_retained_stats(unsigned* draws, unsigned* tris, unsig
+     gl_ret_dbg_draws = gl_ret_dbg_tris = 0;
+ }
+ 
++static void gl_sync_tex_size(const GLint loc[2], float pushed[2][2]) {
++    for (int t = 0; t < 2; t++) {
++        if (loc[t] >= 0) {
++            float sz[2];
++            gl_tex_size_of(current_texture_ids[t], sz);
++            if (pushed[t][0] != sz[0] || pushed[t][1] != sz[1]) {
++                pushed[t][0] = sz[0];
++                pushed[t][1] = sz[1];
++                glUniform2f(loc[t], sz[0], sz[1]);
++            }
++        }
++    }
++}
++
+ static struct ShaderProgram* gl_current_prg_set(struct ShaderProgram* prg) {
+     gl_current_prg = prg;
+     return prg;
+diff --git a/port/fast3d/gfx_sdl2.cpp b/port/fast3d/gfx_sdl2.cpp
+index 52a8146..841b240 100644
+--- a/port/fast3d/gfx_sdl2.cpp
++++ b/port/fast3d/gfx_sdl2.cpp
+@@ -325,7 +325,11 @@ static void gfx_sdl_init(const struct GfxWindowInitSettings *set) {
+     }
+ 
+     // we will unhide the window once the GL context is successfully created
++#ifdef USE_GLES2
++    Uint32 flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
++#else
+     Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
++#endif
+ 
+     // if fullscreen was requested, start the window in fullscreen right away
+     if (set->fullscreen) {
+@@ -383,6 +387,12 @@ static void gfx_sdl_init(const struct GfxWindowInitSettings *set) {
+ 
+     // ideally we need 3.0 compat
+     // if that doesn't work, try 3.2 core in case we're on mac, 2.1 compat as a last resort
++#ifdef USE_GLES2
++    static u32 glver[][3] = {
++        { 0, 0, 0                         }, // for command line override
++        { 2, 0, SDL_GL_CONTEXT_PROFILE_ES },
++    };
++#else
+     static u32 glver[][3] = {
+         { 0, 0, 0                                    }, // for command line override
+         { 3, 0, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY }, // 3.0: default, has all the features required
+@@ -391,6 +401,7 @@ static void gfx_sdl_init(const struct GfxWindowInitSettings *set) {
+         { 3, 0, SDL_GL_CONTEXT_PROFILE_ES            }, // es3: don't really support ES properly, but we can try
+         { 2, 1, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY }, // 2.1: absolute last resort, will still require GLSL130 as an extension
+     };
++#endif
+ 
+     u32 verstart = 1;
+     const u32 verend = sizeof(glver) / sizeof(*glver);
+@@ -794,7 +805,21 @@ static void gfx_sdl_maybe_screenshot(void) {
+     uint8_t *px = (uint8_t *)SDL_calloc(1, padded * h);
+     if (!px) return;
+     glPixelStorei(GL_PACK_ALIGNMENT, 1);
++#ifdef USE_GLES2
++    {
++        uint8_t *rgba = (uint8_t *)SDL_malloc((size_t)w * h * 4);
++        if (!rgba) { SDL_free(px); return; }
++        glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
++        for (size_t i = 0; i < (size_t)w * h; i++) {
++            px[i * 3 + 0] = rgba[i * 4 + 0];
++            px[i * 3 + 1] = rgba[i * 4 + 1];
++            px[i * 3 + 2] = rgba[i * 4 + 2];
++        }
++        SDL_free(rgba);
++    }
++#else
+     glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, px);
++#endif
+     /* repack in place bottom-up rows into padded stride, RGB->BGR */
+     for (int y = h - 1; y >= 0; y--) {
+         uint8_t *src = px + (size_t)y * stride;
+diff --git a/port/src/main.c b/port/src/main.c
+index 71ff41d..145b875 100644
+--- a/port/src/main.c
++++ b/port/src/main.c
+@@ -514,6 +514,36 @@ static void portArmWatchpoints(void)
+ }
+ #else
+ #include <execinfo.h>
++#if defined(__arm__)
++#include <signal.h>
++#include <sys/syscall.h>
++#include <ucontext.h>
++#include <unistd.h>
++extern char __executable_start[], etext[];
++static void portCrashHandlerArm(int sig, siginfo_t *si, void *ucv)
++{
++    const ucontext_t *uc = (const ucontext_t *) ucv;
++    const struct sigcontext *m = &uc->uc_mcontext;
++    const unsigned long *sp = (const unsigned long *) m->arm_sp;
++    int i, k = 0;
++
++    fprintf(stderr, "\nge: fatal signal %d (thread %ld) at pc 0x%08lx lr 0x%08lx sp 0x%08lx, fault address %p\n",
++            sig, (long) syscall(SYS_gettid), m->arm_pc, m->arm_lr, m->arm_sp, si->si_addr);
++    fprintf(stderr, "ge: r0 %08lx r1 %08lx r2 %08lx r3 %08lx r4 %08lx r5 %08lx r6 %08lx r7 %08lx\n",
++            m->arm_r0, m->arm_r1, m->arm_r2, m->arm_r3, m->arm_r4, m->arm_r5, m->arm_r6, m->arm_r7);
++    fprintf(stderr, "ge: r8 %08lx r9 %08lx r10 %08lx fp %08lx ip %08lx\nge: return addresses on the stack:",
++            m->arm_r8, m->arm_r9, m->arm_r10, m->arm_fp, m->arm_ip);
++    for (i = 0; i < 512 && k < 24; i++) {
++        if (sp[i] >= (unsigned long) __executable_start && sp[i] < (unsigned long) etext) {
++            fprintf(stderr, " %08lx", sp[i]);
++            k++;
++        }
++    }
++    fprintf(stderr, "\n");
++    fflush(NULL);
++    _exit(128 + sig);
++}
++#endif
+ 
+ /* Bring-up crash handler: print a raw backtrace (addresses decode with
+  * addr2line -e build_pc/ge) so crashes are diagnosable without gdb. */
+@@ -793,6 +823,18 @@ int main(int argc, char **argv)
+ #endif
+     signal(SIGFPE, portCrashHandler);
+     signal(SIGILL, portCrashHandler);
++#if defined(__arm__) && !defined(_WIN32)
++    {
++        struct sigaction sa;
++        memset(&sa, 0, sizeof(sa));
++        sa.sa_sigaction = portCrashHandlerArm;
++        sa.sa_flags = SA_SIGINFO;
++        sigaction(SIGSEGV, &sa, NULL);
++        sigaction(SIGBUS, &sa, NULL);
++        sigaction(SIGILL, &sa, NULL);
++        sigaction(SIGFPE, &sa, NULL);
++    }
++#endif
+ #ifdef _WIN32
+     /* GE_STALLTEST=1: park the main thread here forever so the stall
+      * watchdog's boot-grace path + loader-lock-free module naming can be
+diff --git a/port/src/video.c b/port/src/video.c
+index b883b42..8dcb2fa 100644
+--- a/port/src/video.c
++++ b/port/src/video.c
+@@ -71,7 +71,11 @@ static int s_CfgWidescreen = 1;       /* 0 Stretch, 1 Wide (widen FOV to the win
+ /* [display] render_thread: -1 auto (on when tickhz != 60), 0 off, 1 on; GE_RENDERTHREAD
+  * overrides. Re-applied at the next frame boundary when it or the tick changes
+  * (see portRenderThreadFollowTick). */
++#ifdef USE_GLES2
++static int s_CfgRenderThread = 1;
++#else
+ static int s_CfgRenderThread = -1;
++#endif
+ static int s_CfgAdzy = 0;        /* [display] adzy: Siberian Special Forces + snow cuff */
+ static int s_CfgUnlockAll = 0;   /* [display] unlock_all: every mission/difficulty/cheat available */
+ static int s_CfgPausePillars = 0; /* [display] pause_pillars: animated 4:3 pillarbox while the watch is up */
+@@ -4904,6 +4908,7 @@ s32 videoInit(void)
+             s_CfgTriHoist = (e[0] != '0');
+             gfx_tri_hoist = s_CfgTriHoist ? 1u : 0u;
+         }
++        portRoomCacheSetMode(s_CfgRoomCache);
+         portConLogf("ge: video: room_cache=%d tri_hoist=%d\n", s_CfgRoomCache, s_CfgTriHoist);
+     }
+     { /* [display] hw_mipmaps: N64 mip chains on G_TL_LOD draws (reduces Low Res
+diff --git a/src/game/stan.c b/src/game/stan.c
+index df375ec..b323780 100644
+--- a/src/game/stan.c
++++ b/src/game/stan.c
+@@ -163,7 +163,7 @@ const char aStanlinelog[] = "-stanlinelog";
+ // forward declarations
+ 
+ s32 stanIsSpecialBit1Set(StandTile *arg0, struct StandTileLocusCallbackRecord* arg1);
+-s32 stanCheckLinkedSpecialTile(StandTile *tile, s32 pointIdx, s32 arg2, s32 arg3, s32 arg4, s32 *outFlags);
++s32 stanCheckLinkedSpecialTile(StandTile *tile, s32 pointIdx, f32 arg2, f32 arg3, f32 arg4, s32 *outFlags);
+ s32 sub_GAME_7F0B21B0(StandTile **tileStack, f32 target_x, f32 target_z, f32 radius, s32 *rooms, s32 *count_rtn, s32 bufMax);
+ f32 getShortest2dDispToInfTripleEdge(StandTile *tile, s32 start3index, f32 p_x, f32 p_z);
+ StanCollisionResult sub_GAME_7F0B1DDC(struct StandTile**, f32, f32, f32, standTileLocusCallback_A_t, standTileLocusCallback_B_t, standTileLocusCallback_C_t, struct StandTileLocusCallbackRecord*);
+@@ -2716,7 +2716,7 @@ s32 stanIsSpecialBit1Set(StandTile *arg0, struct StandTileLocusCallbackRecord *a
+ /**
+  * Address: 7F0B2274
+  */
+-s32 stanCheckLinkedSpecialTile(StandTile *tile, s32 pointIdx, s32 arg2, s32 arg3, s32 arg4, s32 *outFlags)
++s32 stanCheckLinkedSpecialTile(StandTile *tile, s32 pointIdx, f32 arg2, f32 arg3, f32 arg4, s32 *outFlags)
+ {
+     u16 link;
+     StandTile *target;
+diff --git a/tools/gamecontrollerdefault.txt b/tools/gamecontrollerdefault.txt
+index a7d777e..8f5ee5a 100644
+--- a/tools/gamecontrollerdefault.txt
++++ b/tools/gamecontrollerdefault.txt
+@@ -79,6 +79,8 @@
+ # The N64-adapter layouts below are not paired: an N64 pad has only N64
+ # controls, so its Standard and its Pro would be the same line.
+ 
++RetroStone2 | name=RetroStoneOS Gamepad, n64 | stick_x=leftx+; stick_y=lefty-; a=a; b=b; z=righttrigger,x; r=rightshoulder,y; l=leftshoulder,lefttrigger; start=start; c_up=dpup; c_down=dpdown; c_left=dpleft; c_right=dpright
++
+ NSO N64 (BT) | name=Nintendo N64 Controller, n64 | stick_x=leftx+; stick_y=lefty-; a=a; b=b; z=lefttrigger; start=start; l=leftshoulder; r=rightshoulder; c_up=y; c_down=righttrigger; c_left=x; c_right=back; dpad_up=dpup; dpad_down=dpdown; dpad_left=dpleft; dpad_right=dpright
+ 
+ 8BitDo 64 (DInput) | name=8BitDo 64, n64 | stick_x=leftx+; stick_y=lefty-; a=a; b=b; z=lefttrigger,righttrigger; start=start; l=leftshoulder; r=rightshoulder; c_up=b15; c_down=b16; c_left=b18; c_right=b19; dpad_up=dpup; dpad_down=dpdown; dpad_left=dpleft; dpad_right=dpright

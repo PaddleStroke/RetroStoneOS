@@ -1,0 +1,215 @@
+diff --git a/assets/shaders/opengl/default.shader.glsl b/assets/shaders/opengl/default.shader.glsl
+index 5e0f93f..046207d 100644
+--- a/assets/shaders/opengl/default.shader.glsl
++++ b/assets/shaders/opengl/default.shader.glsl
+@@ -130,14 +130,18 @@
+ 
+     float random(in vec3 value) {
+         float random = dot(sin(value), vec3(12.9898, 78.233, 37.719));
++        @if(gles2)
++        return fract(sin(random) * 43758.5453);
++        @else
+         return fract(sin(random) * 143758.5453);
++        @end
+     }
+ 
+     vec4 fromLinear(vec4 linearRGB){
+         bvec3 cutoff = lessThan(linearRGB.rgb, vec3(0.0031308));
+         vec3 higher = vec3(1.055)*pow(linearRGB.rgb, vec3(1.0/2.4)) - vec3(0.055);
+         vec3 lower = linearRGB.rgb * vec3(12.92);
+-        return vec4(mix(higher, lower, cutoff), linearRGB.a);
++        return vec4(mix(higher, lower, vec3(cutoff)), linearRGB.a);
+     }
+ 
+     vec4 filter3point(in sampler2D tex, in vec2 texCoord, in vec2 texSize) {
+@@ -183,7 +187,9 @@
+                 vec4 texVal@{i} = hookTexture2D(@{i}, uTex@{i}, vTexCoordAdj@{i}, texSize@{i});
+ 
+                 @if(o_masks[i])
+-                    @if(opengles)
++                    @if(gles2)
++                        vec2 maskSize@{i} = texSize@{i};
++                    @elseif(opengles)
+                         vec2 maskSize@{i} = vec2(textureSize(uTexMask@{i}, 0));
+                     @else
+                         vec2 maskSize@{i} = textureSize(uTexMask@{i}, 0);
+diff --git a/cmake/SetFlags.cmake b/cmake/SetFlags.cmake
+index 44bfce2..eeef3d2 100644
+--- a/cmake/SetFlags.cmake
++++ b/cmake/SetFlags.cmake
+@@ -116,6 +116,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
+   NDEBUG
+   VERSION_US=1
+   "$<$<BOOL:${USE_OPENGLES}>:USE_OPENGLES>"
++  "$<$<BOOL:${USE_GLES2}>:USE_GLES2>"
+   ENABLE_RUMBLE=1
+   F3DEX_GBI=1
+   _LANGUAGE_C
+diff --git a/src/engine/tracks/LuigiRaceway.cpp b/src/engine/tracks/LuigiRaceway.cpp
+index 70127e1..de5cf79 100644
+--- a/src/engine/tracks/LuigiRaceway.cpp
++++ b/src/engine/tracks/LuigiRaceway.cpp
+@@ -256,12 +256,32 @@ void LuigiRaceway::Draw(ScreenContext* arg0) {
+     // Invalidate Jumbotron textures so they update each frame
+     // This could be more efficient if we exposed the non-opcode based invalidation to be called
+     // inside copy_framebuffers_port
++#ifdef USE_GLES2
++    static const void* sJumbotronBlankedFor;
++    if (sJumbotronBlankedFor != this) {
++        for (const char* tex : { gTexture68272C, gTexture682928, gTexture682B24, gTexture682D20, gTexture682F1C, gTexture683118 }) {
++            u8* px = (u8*) LOAD_ASSET_RAW(tex);
++            for (int k = 0; k < 64 * 32; k++) { // RGBA16, big-endian: opaque black
++                px[2 * k] = 0x00;
++                px[2 * k + 1] = 0x01;
++            }
++        }
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture68272C);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682928);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682B24);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682D20);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682F1C);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture683118);
++        sJumbotronBlankedFor = this;
++    }
++#else
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture68272C);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682928);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682B24);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682D20);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682F1C);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture683118);
++#endif
+ 
+     if (func_80290C20(arg0->camera) == 1) {
+         gDPSetCombineMode(gDisplayListHead++, G_CC_SHADE, G_CC_SHADE);
+@@ -304,8 +324,10 @@ void LuigiRaceway::Draw(ScreenContext* arg0) {
+          * The jumbo television screen used to be split into six sections to fit into the n64's texture size
+          * restrictions It isn't split into six sections anymore
+          */
++#ifndef USE_GLES2
+         CopyJumbotron(D_800DC5DC, D_800DC5E0, currentScreenSection,
+                                             (u16*) gPortFramebuffers[prevFrame]);
++#endif
+     }
+ }
+ 
+diff --git a/src/engine/tracks/ToadsTurnpike.cpp b/src/engine/tracks/ToadsTurnpike.cpp
+index 3952927..d26b726 100644
+--- a/src/engine/tracks/ToadsTurnpike.cpp
++++ b/src/engine/tracks/ToadsTurnpike.cpp
+@@ -105,7 +105,7 @@ ToadsTurnpike::ToadsTurnpike() {
+     mCloudType = CloudType::STARS;
+ 
+     FVector finish;
+-    finish.x = -38.0f * xOrientation;
++    finish.x = (gIsMirrorMode != 0) ? 38.0f : -38.0f;
+     finish.y = (f32) (0 - 15);
+     finish.z = 16;
+ 
+diff --git a/src/engine/tracks/WarioStadium.cpp b/src/engine/tracks/WarioStadium.cpp
+index 99e672e..af040fc 100644
+--- a/src/engine/tracks/WarioStadium.cpp
++++ b/src/engine/tracks/WarioStadium.cpp
+@@ -236,12 +236,32 @@ void WarioStadium::Draw(ScreenContext* arg0) {
+     // Invalidate Jumbotron textures so they update each frame
+     // This could be more efficient if we exposed the non-opcode based invalidation to be called
+     // inside copy_framebuffers_port
++#ifdef USE_GLES2
++    static const void* sJumbotronBlankedFor;
++    if (sJumbotronBlankedFor != this) {
++        for (const char* tex : { gTexture68272C, gTexture682928, gTexture682B24, gTexture682D20, gTexture682F1C, gTexture683118 }) {
++            u8* px = (u8*) LOAD_ASSET_RAW(tex);
++            for (int k = 0; k < 64 * 32; k++) { // RGBA16, big-endian: opaque black
++                px[2 * k] = 0x00;
++                px[2 * k + 1] = 0x01;
++            }
++        }
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture68272C);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682928);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682B24);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682D20);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682F1C);
++        gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture683118);
++        sJumbotronBlankedFor = this;
++    }
++#else
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture68272C);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682928);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682B24);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682D20);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture682F1C);
+     gSPInvalidateTexCache(gDisplayListHead++, (uintptr_t) gTexture683118);
++#endif
+ 
+     if (func_80290C20(arg0->camera) == 1) {
+         gDPSetCombineMode(gDisplayListHead++, G_CC_SHADE, G_CC_SHADE);
+@@ -281,7 +301,9 @@ void WarioStadium::Draw(ScreenContext* arg0) {
+          * The jumbo television screen used to be split into six sections to fit into the n64's texture size
+          * restrictions It isn't split into six sections anymore
+          */
++#ifndef USE_GLES2
+         CopyJumbotron(D_800DC5DC, D_800DC5E0, currentScreenSection, (u16*) gPortFramebuffers[prevFrame]);
++#endif
+     }
+ }
+ 
+diff --git a/src/main.c b/src/main.c
+index 1bdbee6..12896a5 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -804,7 +804,9 @@ void race_logic_loop(void) {
+     // Copies after all the main rendering is complete. This is accurate to hardware.
+     // This means things like jumbotron will have the pause menu rendered in it.
+     // To avoid that, this line can be moved above func_800591B4.
++#ifndef USE_GLES2
+     FB_WriteFramebufferSliceToCPU(&gDisplayListHead, gPortFramebuffers[sRenderingFramebuffer], true);
++#endif
+     gDPFullSync(gDisplayListHead++);
+     gSPEndDisplayList(gDisplayListHead++);
+ 
+diff --git a/src/port/Engine.cpp b/src/port/Engine.cpp
+index 23036ad..d03a40e 100644
+--- a/src/port/Engine.cpp
++++ b/src/port/Engine.cpp
+@@ -96,6 +96,13 @@ GameEngine::GameEngine() {
+     this->context->InitConfiguration();    // without this line InitConsoleVariables fails at Config::Reload()
+     this->context->InitConsoleVariables(); // without this line the controldeck constructor failes in
+                                            // ShipDeviceIndexMappingManager::UpdateControllerNamesFromConfig()
++#ifdef USE_GLES2
++    if (!CVarGetInteger("gGles2DefaultsApplied", 0)) {
++        CVarSetInteger("gTextureFilter", 1); // FILTER_LINEAR
++        CVarSetInteger("gGles2DefaultsApplied", 1);
++        CVarSave();
++    }
++#endif
+ 
+     auto defaultMappings = std::make_shared<Ship::ControllerDefaultMappings>(
+         // KeyboardKeyToButtonMappings
+@@ -127,10 +134,17 @@ GameEngine::GameEngine() {
+         // SDLButtonToButtonMappings
+         std::unordered_map<CONTROLLERBUTTONS_T, std::unordered_set<SDL_GameControllerButton>>{
+             { BTN_A, { SDL_CONTROLLER_BUTTON_A } },
++#ifdef USE_GLES2
++            { BTN_B, { SDL_CONTROLLER_BUTTON_B } },
++            { BTN_Z, { SDL_CONTROLLER_BUTTON_X } },
++            { BTN_START, { SDL_CONTROLLER_BUTTON_START } },
++            { BTN_CLEFT, { SDL_CONTROLLER_BUTTON_Y } },
++#else
+             { BTN_B, { SDL_CONTROLLER_BUTTON_X } },
+             { BTN_START, { SDL_CONTROLLER_BUTTON_START } },
+             { BTN_CLEFT, { SDL_CONTROLLER_BUTTON_Y } },
+             { BTN_CDOWN, { SDL_CONTROLLER_BUTTON_B } },
++#endif
+             { BTN_DUP, { SDL_CONTROLLER_BUTTON_DPAD_UP } },
+             { BTN_DDOWN, { SDL_CONTROLLER_BUTTON_DPAD_DOWN } },
+             { BTN_DLEFT, { SDL_CONTROLLER_BUTTON_DPAD_LEFT } },
+@@ -145,6 +159,9 @@ GameEngine::GameEngine() {
+             { BTN_R, { { SDL_CONTROLLER_AXIS_TRIGGERRIGHT, 1 } } },
+             { BTN_Z, { { SDL_CONTROLLER_AXIS_TRIGGERLEFT, 1 } } },
+             { BTN_CUP, { { SDL_CONTROLLER_AXIS_RIGHTY, -1 } } },
++#ifdef USE_GLES2
++            { BTN_CDOWN, { { SDL_CONTROLLER_AXIS_RIGHTY, 1 } } },
++#endif
+             { BTN_CRIGHT, { { SDL_CONTROLLER_AXIS_RIGHTX, 1 } } }
+         },
+         // SDLAxisDirectionToAxisDirectionMappings - use built-in LUS defaults

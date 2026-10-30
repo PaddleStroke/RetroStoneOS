@@ -1,0 +1,187 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2b872a44..22a361f1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -114,9 +114,13 @@ add_compile_definitions(
+ )
+ 
+ # Find necessary libraries
+-if (UNIX AND NOT APPLE)
++if (UNIX AND NOT APPLE AND NOT USE_GLES2)
+ find_package(OpenGL REQUIRED)
+ endif()
++# the game knows it is a GLES2 build too (its first-start settings, Engine.cpp)
++if (USE_GLES2)
++add_compile_definitions(USE_GLES2)
++endif()
+ 
+ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/properties.h.in ${CMAKE_CURRENT_SOURCE_DIR}/properties.h @ONLY)
+ 
+diff --git a/port/shaders/opengl/default.shader.fs b/port/shaders/opengl/default.shader.fs
+index 404caae6..f9b5dd43 100644
+--- a/port/shaders/opengl/default.shader.fs
++++ b/port/shaders/opengl/default.shader.fs
+@@ -53,14 +53,18 @@ uniform int texture_filtering[2];
+ 
+ float random(in vec3 value) {
+     float random = dot(sin(value), vec3(12.9898, 78.233, 37.719));
++@if(gles2)
++    return fract(sin(random) * 43758.5453);
++@else
+     return fract(sin(random) * 143758.5453);
++@end
+ }
+ 
+ vec4 fromLinear(vec4 linearRGB){
+     bvec3 cutoff = lessThan(linearRGB.rgb, vec3(0.0031308));
+     vec3 higher = vec3(1.055)*pow(linearRGB.rgb, vec3(1.0/2.4)) - vec3(0.055);
+     vec3 lower = linearRGB.rgb * vec3(12.92);
+-    return vec4(mix(higher, lower, cutoff), linearRGB.a);
++    return vec4(mix(higher, lower, vec3(cutoff)), linearRGB.a);
+ }
+ 
+ vec4 filter3point(in sampler2D tex, in vec2 texCoord, in vec2 texSize) {
+@@ -106,7 +110,9 @@ void main() {
+             vec4 texVal@{i} = hookTexture2D(@{i}, uTex@{i}, vTexCoordAdj@{i}, texSize@{i});
+ 
+             @if(o_masks[i])
+-                @if(opengles) 
++                @if(gles2)
++                    vec2 maskSize@{i} = texSize@{i};
++                @elseif(opengles)
+                     vec2 maskSize@{i} = vec2(textureSize(uTexMask@{i}, 0));
+                 @else 
+                     vec2 maskSize@{i} = textureSize(uTexMask@{i}, 0);
+diff --git a/src/engine/fox_play.c b/src/engine/fox_play.c
+index c11c9dd6..d0e192a5 100644
+--- a/src/engine/fox_play.c
++++ b/src/engine/fox_play.c
+@@ -7172,7 +7172,8 @@ void Play_Main(void) {
+ 
+             if ((gControllerPress[gMainController].button & START_BUTTON) &&
+                 (gPlayer[0].state == PLAYERSTATE_LEVEL_INTRO) &&
+-                gSaveFile.save.data.planet[sSaveSlotFromLevel[gCurrentLevel]].normalClear) {
++                (gSaveFile.save.data.planet[sSaveSlotFromLevel[gCurrentLevel]].normalClear ||
++                 CVarGetInteger("gSkipAnyIntro", 1))) {
+                 Audio_ClearVoice();
+                 Audio_SetEnvSfxReverb(0);
+                 Play_ClearObjectData();
+diff --git a/src/port/Engine.cpp b/src/port/Engine.cpp
+index bc0ccb1f..a2323027 100644
+--- a/src/port/Engine.cpp
++++ b/src/port/Engine.cpp
+@@ -1,4 +1,7 @@
+ #include "Engine.h"
++#ifdef USE_GLES2
++#include <unistd.h> // _exit
++#endif
+ #include "ui/ImguiUI.h"
+ #include "StringHelper.h"
+ 
+@@ -128,6 +131,17 @@ GameEngine::GameEngine() {
+     this->context->InitConfiguration();    // without this line InitConsoleVariables fails at Config::Reload()
+     this->context->InitConsoleVariables(); // without this line the controldeck constructor failes in
+                                            // ShipDeviceIndexMappingManager::UpdateControllerNamesFromConfig()
++#ifdef USE_GLES2
++    if (!CVarGetInteger("gGles2DefaultsApplied", 0)) {
++        CVarSetInteger("gInterpolationFPS", 20); // the game's own frame rate: no extra frames
++        CVarSetInteger("gLowResMode", 1);        // render at 320x240 (N64 mode), scaled to the screen
++        CVarSetInteger("gTextureFilter", 1);     // FILTER_LINEAR: one hardware sample, not three-point
++        CVarSetInteger("gMSAAValue", 1);
++        CVarSetInteger("gHideMenuHint", 1);      // no F1 key on a handheld
++        CVarSetInteger("gGles2DefaultsApplied", 1);
++        CVarSave();
++    }
++#endif
+ 
+     auto defaultMappings = std::make_shared<Ship::ControllerDefaultMappings>(
+         // KeyboardKeyToButtonMappings - use built-in LUS defaults
+@@ -318,6 +332,27 @@ void GameEngine::Destroy() {
+ 
+ void GameEngine::StartFrame() const {
+     using Ship::KbScancode;
++#ifdef USE_GLES2
++    {
++        static bool startWasDown;
++        bool back = false, start = false;
++
++        for (int i = 0; i < SDL_NumJoysticks(); i++) {
++            SDL_GameController* pad = SDL_GameControllerFromInstanceID(SDL_JoystickGetDeviceInstanceID(i));
++
++            if (pad != nullptr) {
++                back |= SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_BACK) != 0;
++                start |= SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_START) != 0;
++            }
++        }
++        if (back && start && !startWasDown) {
++            SPDLOG_INFO("Select+Start: quitting");
++            this->context->GetLogger()->flush();
++            _exit(0);
++        }
++        startWasDown = start;
++    }
++#endif
+     const int32_t dwScancode = this->context->GetWindow()->GetLastScancode();
+     this->context->GetWindow()->SetLastScancode(-1);
+ 
+diff --git a/src/port/interpolation/FrameInterpolation.cpp b/src/port/interpolation/FrameInterpolation.cpp
+index 8d6c31ce..e0d55170 100644
+--- a/src/port/interpolation/FrameInterpolation.cpp
++++ b/src/port/interpolation/FrameInterpolation.cpp
+@@ -164,6 +164,7 @@ struct Recording {
+ };
+ 
+ bool is_recording;
++bool frame_recording; // StartRecord turned recording on for this frame
+ vector<Path*> current_path;
+ uint32_t camera_epoch;
+ uint32_t previous_camera_epoch;
+@@ -416,7 +417,7 @@ bool camera_interpolation = true;
+ 
+ void FrameInterpolation_ShouldInterpolateFrame(bool shouldInterpolate) {
+     // camera_interpolation = shouldInterpolate;
+-    is_recording = shouldInterpolate;
++    is_recording = shouldInterpolate && frame_recording;
+ }
+ 
+ void FrameInterpolation_StartRecord(void) {
+@@ -424,6 +425,7 @@ void FrameInterpolation_StartRecord(void) {
+     current_recording = {};
+     current_path.clear();
+     current_path.push_back(&current_recording.root_path);
++    frame_recording = false;
+     if (!camera_interpolation) {
+         // default to interpolating
+         camera_interpolation = true;
+@@ -432,6 +434,7 @@ void FrameInterpolation_StartRecord(void) {
+     }
+     if (GameEngine::GetInterpolationFPS() != 20) {
+         is_recording = true;
++        frame_recording = true;
+     }
+ }
+ 
+@@ -456,7 +459,9 @@ void FrameInterpolation_RecordCloseChild(void) {
+     if (has_inv_actor_mtx && current_path.size() == inv_actor_mtx_path_index) {
+         has_inv_actor_mtx = false;
+     }
+-    current_path.pop_back();
++    if (current_path.size() > 1) {
++        current_path.pop_back();
++    }
+ }
+ 
+ void FrameInterpolation_DontInterpolateCamera(void) {
+diff --git a/src/port/ui/ImguiUI.cpp b/src/port/ui/ImguiUI.cpp
+index 5874ac2a..c4af2d96 100644
+--- a/src/port/ui/ImguiUI.cpp
++++ b/src/port/ui/ImguiUI.cpp
+@@ -45,7 +45,7 @@ void SetupGuiElements() {
+     mGameMenuBar = std::make_shared<GameMenuBar>("gOpenMenuBar", CVarGetInteger("gOpenMenuBar", 0));
+     gui->SetMenuBar(mGameMenuBar);
+ 
+-    if (gui->GetMenuBar() && !gui->GetMenuBar()->IsVisible()) {
++    if (gui->GetMenuBar() && !gui->GetMenuBar()->IsVisible() && !CVarGetInteger("gHideMenuHint", 0)) {
+ #if defined(__SWITCH__) || defined(__WIIU__)
+         Notification::Emit({ .message = "Press - to access enhancements menu", .remainingTime = 10.0f });
+ #else

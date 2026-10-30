@@ -62,5 +62,8 @@ int systems_cores_for_file(const char *system, const char *path,
 const struct core_info *systems_core(const char *id);
 /* True if ext (no dot, any case) is a ROM extension for the system. */
 bool systems_ext_ok(const char *system, const char *ext);
+/* "native": games built for the console, started by their own launch
+ * script (no core) */
+bool systems_is_native(const char *system);
 
 #endif
