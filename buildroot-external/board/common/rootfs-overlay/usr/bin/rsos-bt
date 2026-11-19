@@ -10,8 +10,11 @@
 #                         An optional 4th field holds extras, a comma-separated
 #                         list of key=value (readers ignore unknown keys):
 #                         battery=85 (BlueZ "Battery Percentage", for a
-#                         connected device that reports one), e.g.
-#                         "MAC<TAB>connected<TAB>name<TAB>battery=85"
+#                         connected device that reports one) and
+#                         audio=headphones (an A2DP sink: headphones, speaker), e.g.
+#                         "MAC<TAB>connected<TAB>name<TAB>battery=85,audio=headphones"
+#   rsos-bt sink          exit 0 if an A2DP sink is connected (the "bluealsa"
+#                         ALSA PCM then plays to it), 1 if not; for scripts
 #   rsos-bt scan on|off   start discovery in the background (it stops by
 #                         itself after RSOS_BT_SCAN_S seconds, default 300) /
 #                         stop it
@@ -34,8 +37,10 @@ SCAN_S=${RSOS_BT_SCAN_S:-300}
 DAEMON_PID=${RSOS_BT_DAEMON_PID:-/run/rsos-net/bluetoothd.pid}
 PATH=${RSOS_BT_PATH:-/usr/bin:/usr/sbin:/bin:/sbin}
 export PATH
+KINDS=$RUN_DIR/kinds   # MAC<TAB>audio|other cache (bluetoothctl info is slow)
 
 ESC=$(printf '\033')
+TAB=$(printf '\t')
 
 die() {
 	echo "rsos-bt: $*"
@@ -67,6 +72,23 @@ devices() {
 	btctl devices "$@" | sed -n 's/^Device \([0-9A-Fa-f:]\{17\}\) *\(.*\)$/\1 \2/p'
 }
 
+# kind MAC: "audio" for an A2DP sink (headphones, speaker), "other" for the
+# rest, empty while BlueZ does not know yet (no UUIDs or icon, e.g. a device
+# the scan has just seen). Known answers are cached: the list runs every 1.5 s.
+kind() {
+	k=$(grep "^$1$TAB" "$KINDS" 2> /dev/null | cut -f2)
+	if [ -z "$k" ]; then
+		info=$(btctl info "$1")
+		if echo "$info" | grep -qi 'UUID:.*\(Audio Sink\|0000110b-\)\|Icon: audio-'; then
+			k=audio
+		elif echo "$info" | grep -q 'UUID:\|Icon:'; then
+			k=other
+		fi
+		[ -n "$k" ] && mkdir -p "$RUN_DIR" 2> /dev/null && printf '%s\t%s\n' "$1" "$k" >> "$KINDS"
+	fi
+	echo "$k"
+}
+
 # bluetoothd, started by rsos-net bt on
 bt_running() {
 	[ -f "$DAEMON_PID" ] && kill -0 "$(cat "$DAEMON_PID")" 2> /dev/null
@@ -95,6 +117,8 @@ list() {
 					"$(echo "$mac" | tr 'a-f' 'A-F')" ] && continue
 				st=found
 			fi
+			# audio=headphones: an A2DP sink (headphones, speaker)
+			[ "$(kind "$mac")" = audio ] && extra=${extra:+$extra,}audio=headphones
 			printf '%s%s%s%s%s%s\n' "$mac" "$tab" "$st" "$tab" "$name" "${extra:+$tab$extra}"
 			extra=
 		done > "$out.tmp"
@@ -103,6 +127,15 @@ list() {
 	fi
 	mv -f "$out.tmp" "$out" || die "cannot write $out"
 	bt_running || die "Bluetooth is off"
+}
+
+# sink: an A2DP sink is connected
+sink() {
+	bt_running || return 1
+	for mac in $(devices Connected | cut -d' ' -f1); do
+		[ "$(kind "$mac")" = audio ] && return 0
+	done
+	return 1
 }
 
 scan_off() {
@@ -156,6 +189,7 @@ pair() {
 cmd=$1
 case "$cmd" in
 list) list "$2"; exit $? ;;
+sink) sink; exit $? ;;
 scan)
 	case "$2" in
 	on) scan_on ;;
@@ -166,7 +200,7 @@ scan)
 	;;
 pair | connect | disconnect | forget) ;;
 *)
-	echo "usage: rsos-bt {list FILE|scan on|off|pair|connect|disconnect|forget MAC}" >&2
+	echo "usage: rsos-bt {list FILE|sink|scan on|off|pair|connect|disconnect|forget MAC}" >&2
 	exit 2
 	;;
 esac
@@ -187,6 +221,10 @@ disconnect)
 	;;
 forget)
 	btctl remove "$mac" > /dev/null
+	if [ -f "$KINDS" ]; then
+		grep -v "^$mac$TAB" "$KINDS" > "$KINDS.tmp"
+		mv -f "$KINDS.tmp" "$KINDS"
+	fi
 	devices Paired | grep -qi "^$mac " && die "cannot remove $mac"
 	exit 0
 	;;

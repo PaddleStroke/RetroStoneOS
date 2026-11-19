@@ -150,6 +150,7 @@ program also builds and tests on a PC: `cd frontend && make check`. Details: [do
 | [rom-transfer.md](docs/rom-transfer.md) | USB, web page and Windows share |
 | [updates.md](docs/updates.md) | Signed system updates (`.rsu` packages, keys) |
 | [power.md](docs/power.md) | Battery, charging, shutdown |
+| [bluetooth-audio.md](docs/bluetooth-audio.md) | Bluetooth headphones (A2DP): routing, pairing, what to measure |
 | [pro-storage.md](docs/pro-storage.md) | RetroStone2 Pro: eMMC and M.2 storage, starter card; game covers, multi-disc games, memory speed |
 | [translating.md](docs/translating.md) | Adding or fixing a translation |
 | [homebrew.md](docs/homebrew.md) | The bundled games and their licences |

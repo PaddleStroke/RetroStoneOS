@@ -449,6 +449,15 @@ static void audio_process(void)
 	double fill, ratio;
 	int cap, n;
 
+	if (audio_lost()) {
+		/* the Bluetooth headphones went away: back to the card */
+		hlog(HLOG_INFO, "audio: Bluetooth sink lost, using the card");
+		audio_close();
+		audio_cfg.device_bt = NULL;
+		if (audio_wanted)
+			audio_open(&audio_cfg, audio_out, audio_latency_ms() / 2);
+		host_reevaluate_pacing();
+	}
 	core_audio_lock();
 	if (!H.ain_n) {
 		core_audio_unlock();
@@ -2152,6 +2161,11 @@ static void load_settings(void)
 		audio_cfg.device_hdmi = board_get()->audio_hdmi_dev;
 	if (board_get()->audio_hdmi_pcm[0])
 		audio_cfg.hdmi_pcm = board_get()->audio_hdmi_pcm;
+	/* Bluetooth headphones through bluez-alsa (docs/bluetooth-audio.md):
+	 * tried first when a sink is connected; audio_bluetooth = false in
+	 * the settings keeps the sound on the card */
+	if (ini_get_bool(&s, "", "audio_bluetooth", true))
+		audio_cfg.device_bt = "plug:bluealsa";
 	audio_cfg.latency_ms = H.cfg.audio_latency_ms > 0 ? H.cfg.audio_latency_ms :
 			       ini_get_int(&s, "", "audio_latency_ms", 64);
 	audio_set_latency(audio_cfg.latency_ms);

@@ -810,7 +810,7 @@ it like a USB pad. Tests: `board/common/tests/bt-test.sh` (rsos-bt against a
 stub `bluetoothctl`) and `make check-ui` (the screen with
 `frontend/tests/fake-rsos-bt.sh`). TODO(hw): pairing and reconnecting a
 classic pad and an LE pad (the Stadia controller) on the RetroStone2's
-BCM20710.
+BCM20710. Headphones (A2DP through bluez-alsa) are in [bluetooth-audio.md](bluetooth-audio.md).
 
 **SMB share `\\RETROSTONE`**: `ksmbd.ko` (module, `CONFIG_SMB_SERVER=m`) and
 ksmbd-tools are in the image but **never started at boot** and **not wired
