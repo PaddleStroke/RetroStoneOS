@@ -3,7 +3,7 @@
 # bluetoothctl that keeps its devices in a file: the list format (connected,
 # paired, found; nameless devices left out; colour codes stripped), pair =
 # pair + trust + connect with the Just Works agent, a pad that does not pair,
-# connect / disconnect / forget, the scan started in the background and
+# the battery of a connected pad (the battery= extra of the optional 4th field), connect / disconnect / forget, the scan started in the background and
 # stopped, a bad address, Bluetooth off. The real bluetoothctl and pads need
 # the device.
 set -u
@@ -53,7 +53,8 @@ devices)
 info)
 	awk -v m="\$2" '\$1 == m {
 		print "Device " m " (public)"; print "\tPaired: " (\$2 ? "yes" : "no")
-		print "\tTrusted: " (\$3 ? "yes" : "no"); print "\tConnected: " (\$4 ? "yes" : "no") }' \$D
+		print "\tTrusted: " (\$3 ? "yes" : "no"); print "\tConnected: " (\$4 ? "yes" : "no")
+		if (\$4 && m == "E4:17:D8:00:00:01") print "\tBattery Percentage: 0x55 (85)" }' \$D
 	;;
 pair)
 	[ "\$2" = A0:5A:5D:00:00:03 ] && { echo "Failed to pair: org.bluez.Error.AuthenticationFailed"; exit 1; }
@@ -74,8 +75,8 @@ bt() { $SH "$BT" "$@"; }
 
 echo "rsos-bt ($SH)"
 check "list" bt list "$W/list"
-check "list: connected, found, found; the nameless one and colour codes left out" \
-	[ "$(cat "$W/list")" = "E4:17:D8:00:00:01${T}connected${T}8BitDo SN30 Pro
+check "list: connected (with its battery), found, found; the nameless one and colour codes left out" \
+	[ "$(cat "$W/list")" = "E4:17:D8:00:00:01${T}connected${T}8BitDo SN30 Pro${T}battery=85
 F0:13:C3:00:00:02${T}found${T}Stadia5RHM-1a2b
 A0:5A:5D:00:00:03${T}found${T}Wireless Controller" ]
 check "scan on starts a background bluetoothctl" bt scan on
@@ -90,13 +91,15 @@ check "  ... Just Works agent, then trust and connect" \
 	grep -q 'bluetoothctl trust F0:13:C3:00:00:02' $LOG && grep -q 'connect F0:13:C3:00:00:02' $LOG"
 bt list "$W/list"
 check "  ... now connected" grep -q "^F0:13:C3:00:00:02${T}connected${T}" "$W/list"
+check "  ... no extras field for a pad that does not report one" \
+	grep -qx "F0:13:C3:00:00:02${T}connected${T}Stadia5RHM-1a2b" "$W/list"
 out=$(bt pair A0:5A:5D:00:00:03)
 rc=$?
 check "a pad that does not pair: exit 1, the reason" \
 	[ "$rc:$out" = "1:rsos-bt: pairing failed: Failed to pair: org.bluez.Error.AuthenticationFailed" ]
 check "disconnect" bt disconnect E4:17:D8:00:00:01
 bt list "$W/list"
-check "  ... paired, not connected" grep -q "^E4:17:D8:00:00:01${T}paired${T}8BitDo SN30 Pro$" "$W/list"
+check "  ... paired, not connected, no battery" grep -q "^E4:17:D8:00:00:01${T}paired${T}8BitDo SN30 Pro$" "$W/list"
 check "connect" bt connect E4:17:D8:00:00:01
 check "forget" bt forget E4:17:D8:00:00:01
 bt list "$W/list"

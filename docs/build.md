@@ -779,10 +779,20 @@ helper (it never blocks the menu), which drives `bluetoothctl`
 non-interactively:
 
 ```
-rsos-bt list FILE                          # MAC<TAB>connected|paired|found<TAB>name
+rsos-bt list FILE                          # MAC<TAB>connected|paired|found<TAB>name[<TAB>extras]
 rsos-bt scan on|off                        # background discovery while the screen is open
 rsos-bt pair|connect|disconnect|forget MAC
 ```
+
+A connected pad that reports its battery through BlueZ (`Battery Percentage`
+in `bluetoothctl info`) gets the extra `battery=85` and the list shows
+"connected, 85%". The optional 4th field is a comma-separated list of
+`key=value` extras (`MAC<TAB>connected<TAB>name<TAB>battery=85`); the frontend
+ignores keys it does not know, so more can be added; no extras, no 4th field.
+If pairing without a PIN fails
+(`AuthenticationFailed`, or a PIN / passkey request: e.g. a PlayStation 3 pad,
+which must be paired through a USB cable first) the player gets a message that
+says so instead of the generic "put it in pairing mode".
 
 Paired devices are **trusted**, so they come back by themselves: bluetoothd
 puts bonded classic devices on the controller's accept list (page scan for

@@ -839,6 +839,13 @@ msgstr ""
 msgid "please wait..."
 msgstr ""
 
+#. TRANSLATORS: Bluetooth devices: connected pad and its
+#. battery level; %d is a percentage (keep %%)
+#: src/ui/bt_ui.c:164
+#, c-format
+msgid "connected, %d%%"
+msgstr ""
+
 #: src/ui/bt_ui.c:145
 msgid "connected"
 msgstr ""
@@ -893,6 +900,13 @@ msgstr ""
 #: src/ui/bt_ui.c:306
 #, c-format
 msgid "%s connected"
+msgstr ""
+
+#. TRANSLATORS: message; pairing without a PIN failed (some pads,
+#. e.g. a PlayStation 3 pad, must be paired with a USB cable or
+#. need a PIN first)
+#: src/ui/bt_ui.c:333
+msgid "This controller could not pair without a PIN. Some controllers must be paired with a USB cable first."
 msgstr ""
 
 #: src/ui/bt_ui.c:308

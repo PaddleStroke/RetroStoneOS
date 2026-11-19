@@ -6,7 +6,12 @@
 #   rsos-bt list FILE     write the devices BlueZ knows to FILE (replaced
 #                         atomically), one per line: "MAC<TAB>state<TAB>name",
 #                         state = connected, paired or found (seen by the
-#                         scan, with a name: nameless ones are left out)
+#                         scan, with a name: nameless ones are left out).
+#                         An optional 4th field holds extras, a comma-separated
+#                         list of key=value (readers ignore unknown keys):
+#                         battery=85 (BlueZ "Battery Percentage", for a
+#                         connected device that reports one), e.g.
+#                         "MAC<TAB>connected<TAB>name<TAB>battery=85"
 #   rsos-bt scan on|off   start discovery in the background (it stops by
 #                         itself after RSOS_BT_SCAN_S seconds, default 300) /
 #                         stop it
@@ -51,6 +56,12 @@ has() {
 	btctl info "$1" | grep -q "^[[:space:]]*$2: yes"
 }
 
+# battery MAC: the battery percentage BlueZ reports ("Battery Percentage:
+# 0x55 (85)"), nothing if the device does not report one
+battery() {
+	btctl info "$1" | sed -n 's/^[[:space:]]*Battery Percentage:.*(\([0-9]\{1,3\}\)).*$/\1/p' | head -n 1
+}
+
 # "Device MAC name" lines -> "MAC name"
 devices() {
 	btctl devices "$@" | sed -n 's/^Device \([0-9A-Fa-f:]\{17\}\) *\(.*\)$/\1 \2/p'
@@ -72,6 +83,8 @@ list() {
 			name=$(echo "$name" | tr -d '\t')
 			if echo "$conn" | grep -qix "$mac"; then
 				st=connected
+				bat=$(battery "$mac")
+				extra=${bat:+battery=$bat}
 			elif echo "$paired" | grep -qix "$mac"; then
 				st=paired
 			else
@@ -82,7 +95,8 @@ list() {
 					"$(echo "$mac" | tr 'a-f' 'A-F')" ] && continue
 				st=found
 			fi
-			printf '%s%s%s%s%s\n' "$mac" "$tab" "$st" "$tab" "$name"
+			printf '%s%s%s%s%s%s\n' "$mac" "$tab" "$st" "$tab" "$name" "${extra:+$tab$extra}"
+			extra=
 		done > "$out.tmp"
 	else
 		: > "$out.tmp"

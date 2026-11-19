@@ -9,8 +9,9 @@
  * menu:
  *   rsos-bt scan on|off       when the screen opens (and every minute while
  *                             it is open) / closes
- *   rsos-bt list FILE         every BT_LIST_MS: "MAC\tstate\tname" lines,
- *                             state connected|paired|found
+ *   rsos-bt list FILE         every BT_LIST_MS: "MAC\tstate\tname[\tkey=value,...]"
+ *                             lines, state connected|paired|found; the extras
+ *                             (unknown keys are ignored): battery=<percent>
  *   rsos-bt pair|connect|disconnect|forget MAC
  * Paired devices are trusted, so they reconnect by themselves when
  * Bluetooth comes on and when the pad is switched on (bluetoothd).
@@ -34,6 +35,7 @@ enum { ACT_NONE = 0, ACT_PAIR, ACT_CONNECT, ACT_DISCONNECT, ACT_FORGET };
 struct btdev {
 	char mac[18];
 	bool paired, connected;
+	int battery;                    /* percent, -1 = unknown */
 	char name[80];
 };
 
@@ -71,10 +73,20 @@ static void scan(struct ui *ui, bool on)
 		B.next_scan = ui->now + BT_SCAN_MS;
 }
 
-/* the line "MAC\tstate\tname" -> d */
+/* the extras "key=value,key=value": the keys known here, others are ignored */
+static void parse_extras(char *x, struct btdev *d)
+{
+	char *save = NULL;
+
+	for (char *kv = strtok_r(x, ",", &save); kv; kv = strtok_r(NULL, ",", &save))
+		if (!strncmp(kv, "battery=", 8) && kv[8] >= '0' && kv[8] <= '9' && atoi(kv + 8) <= 100)
+			d->battery = atoi(kv + 8);
+}
+
+/* the line "MAC\tstate\tname[\tkey=value,...]" -> d */
 static bool parse_line(char *l, struct btdev *d)
 {
-	char *st = strchr(l, '\t'), *name;
+	char *st = strchr(l, '\t'), *name, *x = NULL;
 
 	if (!st || st - l != 17)
 		return false;
@@ -83,11 +95,16 @@ static bool parse_line(char *l, struct btdev *d)
 	if (name)
 		*name++ = 0;
 	memset(d, 0, sizeof(*d));
+	d->battery = -1;
+	if (name && (x = strchr(name, '\t')))
+		*x++ = 0;
 	strlcpy_(d->mac, l, sizeof(d->mac));
 	d->connected = !strcmp(st, "connected");
 	d->paired = d->connected || !strcmp(st, "paired");
 	if (!d->paired && strcmp(st, "found"))
 		return false;
+	if (x)
+		parse_extras(x, d);
 	strlcpy_(d->name, name && *name ? name : l, sizeof(d->name));
 	return true;
 }
@@ -141,6 +158,10 @@ static void items(struct ui *ui, struct menu *m)
 				strlcpy_(it->value, B.act == ACT_PAIR ? _("pairing...") :
 					 B.act == ACT_CONNECT ? _("connecting...") : _("please wait..."),
 					 sizeof(it->value));
+			else if (d->connected && d->battery >= 0)
+				/* TRANSLATORS: Bluetooth devices: connected pad and its
+				 * battery level; %d is a percentage (keep %%) */
+				snprintf(it->value, sizeof(it->value), _("connected, %d%%"), d->battery);
 			else if (d->connected)
 				strlcpy_(it->value, _("connected"), sizeof(it->value));
 		}
@@ -304,6 +325,12 @@ static void act_done(struct ui *ui, const struct hw_job_result *r)
 		if (r->status == 0)
 			/* TRANSLATORS: toast; %s is the controller's name */
 			ui_toastf(ui, _("%s connected"), B.act_name);
+		else if (act == ACT_PAIR && (strstr(r->out, "Authentication") || strstr(r->out, "PIN") ||
+					     strstr(r->out, "asskey")))
+			/* TRANSLATORS: message; pairing without a PIN failed (some pads,
+			 * e.g. a PlayStation 3 pad, must be paired with a USB cable or
+			 * need a PIN first) */
+			message_open(ui, _("This controller could not pair without a PIN. Some controllers must be paired with a USB cable first."));
 		else if (act == ACT_PAIR)
 			message_open(ui, _("Could not pair the controller. Put it in pairing mode and try again."));
 		else
