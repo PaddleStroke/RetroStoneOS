@@ -37,7 +37,7 @@ layer cake, and every setting lives in one menu.
 - RetroPie hotkeys: **Select+Start** exit, **Select+R/L** save/load state, **Select+Left/Right** state slot, **Select+X** in-game menu, **Select+B** reset.
 - **Select+R2** fast-forward, **Select+L2** screenshot, **Select+Y** game switcher (jump between your recent games, each resumed where you left it).
 - Remaps per system and per game, including the RetroStone2's optional 6-button Mega Drive layout.
-- **Keyboard** (menus): arrows move, **Enter** = A (open, confirm), **Esc** or **Backspace** = B (back), **Tab** = Select, **Space** = Start, X / Y, **Page Up / Page Down** = L / R, **Home / End** = L2 / R2. A keyboard is not a game controller (games need a pad or the built-in buttons), but in a game **Esc** opens the in-game menu (with Exit) and **Tab** is the hotkey button (**Tab+Space** exits).
+- **Keyboard** (menus): arrows move, **Enter** = A (open, confirm), **Esc** or **Backspace** = B (back), **Tab** = Select, **Space** = Start, X / Y, **Page Up / Page Down** = L / R, **Home / End** = L2 / R2. A keyboard is not a game controller (games need a pad or the built-in buttons), but in a game **Esc** opens the in-game menu (with Exit) and **Tab** is the hotkey button (**Tab+Space** exits). A Bluetooth keyboard works the same once paired (Settings > Network > Bluetooth devices); mice are not used yet.
 
 **Finding games**
 - **Letter jump** and **search** (in one list or across all games).

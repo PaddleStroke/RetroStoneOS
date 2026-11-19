@@ -1595,6 +1595,31 @@ static bool name_is_builtin_stick(const struct input *in, const char *name)
 	return s && *s && !strcmp(name, s);
 }
 
+/*
+ * What an unknown evdev node is, from its capability bits (no ioctl, so the
+ * host tests can feed it). USB and Bluetooth (uhid) devices look the same.
+ * A pointer (mouse, trackpad, tablet, a pad's touchpad node) is no gamepad
+ * even with 4+ keys and an absolute X: the generic heuristic would hand it a
+ * player port. Pointers are not used by this layer yet
+ * (docs/input-design.md, "Keyboards and mice").
+ */
+enum dev_kind { DK_OTHER, DK_PAD, DK_KEYBOARD };
+
+static enum dev_kind classify_dev(const unsigned long *keybits, const unsigned long *absbits, int nkeys)
+{
+	bool pointer = TEST_BIT(BTN_LEFT, keybits) || TEST_BIT(BTN_TOUCH, keybits) ||
+		       TEST_BIT(BTN_TOOL_FINGER, keybits) || TEST_BIT(BTN_TOOL_PEN, keybits);
+
+	if (TEST_BIT(BTN_GAMEPAD, keybits) || TEST_BIT(BTN_JOYSTICK, keybits) ||
+	    TEST_BIT(BTN_TRIGGER_HAPPY1, keybits))
+		return DK_PAD;
+	if (TEST_BIT(KEY_ENTER, keybits) && TEST_BIT(KEY_A, keybits))
+		return DK_KEYBOARD;
+	if (TEST_BIT(ABS_X, absbits) && nkeys >= 4 && !pointer)
+		return DK_PAD;
+	return DK_OTHER;
+}
+
 static int dev_open(struct input *in, const char *node)
 {
 	char path[64];
@@ -1650,13 +1675,11 @@ static int dev_open(struct input *in, const char *node)
 	if (d->builtin_stick)
 		d->builtin = true;
 	if (!d->builtin) {
-		bool pad = TEST_BIT(BTN_GAMEPAD, keybits) || TEST_BIT(BTN_JOYSTICK, keybits) ||
-			   TEST_BIT(BTN_TRIGGER_HAPPY1, keybits) ||
-			   (TEST_BIT(ABS_X, absbits) && nkeys >= 4 && !TEST_BIT(KEY_A, keybits));
+		enum dev_kind kind = classify_dev(keybits, absbits, nkeys);
 
-		if (pad) {
+		if (kind == DK_PAD) {
 			/* external gamepad */
-		} else if (TEST_BIT(KEY_ENTER, keybits) && TEST_BIT(KEY_A, keybits)) {
+		} else if (kind == DK_KEYBOARD) {
 			d->keyboard = true;
 		} else if (TEST_BIT(KEY_POWER, keybits) && nkeys <= 4 && in->cfg.handle_power_key) {
 			d->power_only = true;

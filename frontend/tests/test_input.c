@@ -304,6 +304,47 @@ static void keyboard_in_game(void)
 	rig_close(&r);
 }
 
+/* ------------------------------ Bluetooth/USB keyboards and mice (classify) */
+static void set_keys(unsigned long *bits, const int *codes, int n)
+{
+	for (int i = 0; i < n; i++)
+		bits[codes[i] / BITS_PER_LONG_] |= 1ul << (codes[i] % BITS_PER_LONG_);
+}
+
+static enum dev_kind kind_of(const int *keys, int nk, const int *abs, int na)
+{
+	unsigned long kb[NBITS(KEY_CNT)] = { 0 }, ab[NBITS(ABS_CNT)] = { 0 };
+
+	set_keys(kb, keys, nk);
+	set_keys(ab, abs, na);
+	return classify_dev(kb, ab, nk);
+}
+
+static void classify(void)
+{
+	static const int kbd[] = { KEY_ENTER, KEY_A, KEY_ESC, KEY_TAB, KEY_SPACE };
+	static const int mouse[] = { BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA };
+	static const int trackpad[] = { BTN_LEFT, BTN_TOUCH, BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP };
+	static const int media[] = { KEY_VOLUMEUP, KEY_VOLUMEDOWN, KEY_MUTE, KEY_PLAYPAUSE };
+	static const int pad[] = { BTN_SOUTH, BTN_EAST, BTN_NORTH, BTN_WEST };
+	static const int cheap[] = { BTN_TRIGGER, BTN_THUMB, BTN_TOP, BTN_PINKIE };
+	static const int absxy[] = { ABS_X, ABS_Y };
+
+	puts("input: what a Bluetooth/USB keyboard, mouse or trackpad is");
+	CHECK(kind_of(kbd, 5, NULL, 0) == DK_KEYBOARD, "a keyboard is a keyboard");
+	CHECK(kind_of(mouse, 5, NULL, 0) == DK_OTHER, "a relative mouse is ignored");
+	CHECK(kind_of(trackpad, 4, absxy, 2) == DK_OTHER, "an absolute trackpad is no gamepad");
+	CHECK(kind_of(media, 4, NULL, 0) == DK_OTHER, "a keyboard's media-key node is ignored");
+	CHECK(kind_of(pad, 4, absxy, 2) == DK_PAD, "a gamepad is a pad");
+	CHECK(kind_of(cheap, 4, absxy, 2) == DK_PAD, "a joystick-style pad is a pad");
+	CHECK(kind_of(cheap, 4, NULL, 0) == DK_PAD, "joystick buttons alone are a pad");
+	{
+		static const int hmm[] = { 0x2c0 /* BTN_TRIGGER_HAPPY1 */ };
+
+		CHECK(kind_of(hmm, 1, NULL, 0) == DK_PAD, "a pad with only BTN_TRIGGER_HAPPY keys");
+	}
+}
+
 int main(void)
 {
 	puts("input: overflow recovery with stale events in the read buffer");
@@ -313,5 +354,6 @@ int main(void)
 	menu_to_game();
 	stick_detect();
 	keyboard_in_game();
+	classify();
 	return failures ? 1 : 0;
 }
