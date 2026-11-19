@@ -100,6 +100,25 @@ Additional handling:
   a keyboard can still leave it: **Esc opens the in-game menu** (in the menus Esc stays B), and **Tab works as the
   hotkey button** of section 4 (Tab+Space exits, Tab+X menu, Tab+Page Down / Page Up save / load a state...),
   from any keyboard whatever the player order. Test: `make check-input` (`keyboard_in_game`).
+- **Keyboards and mice (USB and Bluetooth)**: a Bluetooth keyboard or mouse reaches the frontend as an ordinary
+  `/dev/input/event*` node (BlueZ HID over `uhid`, docs/build.md "Networking"), so the rules are the same for USB and
+  Bluetooth. `classify_dev()` in `src/input/input.c` sorts a node by its capability bits: a pad (`BTN_GAMEPAD`,
+  `BTN_JOYSTICK`, `BTN_TRIGGER_HAPPY`, or an absolute X with 4+ buttons), a keyboard (`KEY_ENTER` and `KEY_A`) or
+  nothing. What works today:
+  - **Keyboard, menus and the in-game hotkeys**: yes, as above. A keyboard's media-key or system-control nodes are
+    separate devices and are ignored (a system "power" key does what the power button does).
+  - **Mouse, trackpad, tablet** (and a pad's touchpad node): **ignored**. There is no cursor in the menus, and the host
+    does not offer `RETRO_DEVICE_MOUSE` / `POINTER` / `KEYBOARD` to cores (`GET_INPUT_DEVICE_CAPABILITIES` is
+    joypad + analog, `SET_KEYBOARD_CALLBACK` is refused, `input_state_cb` returns 0 for everything else), so DOSBox
+    Pure and ScummVM see no mouse and no physical keyboard from any USB or Bluetooth device; they use their on-screen
+    keyboard and move their cursor with the pad. A pointer node is no longer taken for an unconfigured gamepad
+    (it used to when it had an absolute X and 4+ buttons). Test: `make check-input` (`classify`).
+  - **Pairing**: Settings > Network > Bluetooth devices pairs with Just Works (no PIN). A keyboard or mouse that
+    needs a PIN or a passkey typed on it cannot be paired from the console (no agent). The list does not say what
+    kind of device an entry is. TODO(hw): confirm with a real keyboard and mouse.
+  - **Not built (bigger)**: forwarding keyboard (`RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK`, `RETRO_DEVICE_KEYBOARD`)
+    and mouse (`RETRO_DEVICE_MOUSE`/`POINTER`, relative axes + buttons per port) to cores, a menu cursor, and a
+    device-type label in the Bluetooth list (`bluetoothctl info` `Icon:`).
 - **Rumble** (done, batch 2): the libretro rumble interface (`retro_set_rumble_state`) is forwarded to an evdev
   FF_RUMBLE effect on pads that support it (`input_rumble()` in `src/input/input.c`). The pad's node is opened
   read-write (read-only fallback: no rumble); `EV_FF` + `FF_RUMBLE` in its capabilities marks it. One effect per pad,
