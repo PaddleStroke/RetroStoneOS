@@ -813,8 +813,8 @@ msgstr ""
 
 #. TRANSLATORS: Settings > Network > Bluetooth devices: the hint at the
 #. top (one line, keep it short)
-#: src/ui/bt_ui.c:122
-msgid "Put the controller in pairing mode"
+#: src/ui/bt_ui.c:142
+msgid "Put the controller or headphones in pairing mode"
 msgstr ""
 
 #. TRANSLATORS: Bluetooth devices: list headings
@@ -837,6 +837,26 @@ msgstr ""
 
 #: src/ui/bt_ui.c:142 src/ui/bt_ui.c:201 src/ui/screens.c:819
 msgid "please wait..."
+msgstr ""
+
+#. TRANSLATORS: Bluetooth devices: connected headphones and
+#. their battery level; %d is a percentage (keep %%)
+#: src/ui/bt_ui.c:167
+#, c-format
+msgid "headphones, %d%%"
+msgstr ""
+
+#. TRANSLATORS: Bluetooth devices: connected pad and its
+#. battery level; %d is a percentage (keep %%)
+#: src/ui/bt_ui.c:164
+#, c-format
+msgid "connected, %d%%"
+msgstr ""
+
+#. TRANSLATORS: Bluetooth devices: a connected audio device,
+#. the sound plays through it (short)
+#: src/ui/bt_ui.c:175
+msgid "headphones"
 msgstr ""
 
 #: src/ui/bt_ui.c:145
@@ -895,8 +915,25 @@ msgstr ""
 msgid "%s connected"
 msgstr ""
 
+#. TRANSLATORS: message; pairing without a PIN failed (some pads,
+#. e.g. a PlayStation 3 pad, must be paired with a USB cable or
+#. need a PIN first)
+#: src/ui/bt_ui.c:333
+msgid "This controller could not pair without a PIN. Some controllers must be paired with a USB cable first."
+msgstr ""
+
+#. TRANSLATORS: error message, Bluetooth headphones
+#: src/ui/bt_ui.c:351
+msgid "Could not pair the headphones. Put them in pairing mode and try again."
+msgstr ""
+
 #: src/ui/bt_ui.c:308
 msgid "Could not pair the controller. Put it in pairing mode and try again."
+msgstr ""
+
+#. TRANSLATORS: error message, Bluetooth headphones
+#: src/ui/bt_ui.c:356
+msgid "Could not connect the headphones. Switch them on and try again."
 msgstr ""
 
 #: src/ui/bt_ui.c:310

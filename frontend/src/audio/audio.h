@@ -36,6 +36,14 @@ struct audio_config {
 	 * e.g. "hdmi" gives hdmi:CARD=N,DEV=0, the card's own IEC958 set-up
 	 * (vc4-hdmi on the Raspberry Pi takes IEC958 subframes only) */
 	const char *hdmi_pcm;
+	/* Bluetooth headphones (A2DP through bluez-alsa): the PCM to try first,
+	 * before the LCD / HDMI card, e.g. "plug:bluealsa" (it plays to the
+	 * most recently connected device and fails to open when none is
+	 * connected, so audio falls back to the card). NULL = never. */
+	const char *device_bt;
+	/* its buffer (A2DP adds 100-250 ms anyway; SBC encodes in chunks):
+	 * default 120 ms, never below latency_ms */
+	int latency_bt_ms;
 };
 
 struct audio_stats {
@@ -79,6 +87,13 @@ double audio_fill(void);
  * resume: fade-in. */
 void audio_pause(bool pause);
 bool audio_paused(void);
+
+/* True when the open stream goes to Bluetooth headphones. */
+bool audio_is_bluetooth(void);
+/* True once the Bluetooth sink vanished under an open stream (headphones
+ * switched off or out of range): the caller closes and reopens, which falls
+ * back to the card. Cleared by audio_open(). */
+bool audio_lost(void);
 void audio_keepalive(void);
 
 /* Adds silence (e.g. to reach a target fill). */

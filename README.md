@@ -37,7 +37,7 @@ layer cake, and every setting lives in one menu.
 - RetroPie hotkeys: **Select+Start** exit, **Select+R/L** save/load state, **Select+Left/Right** state slot, **Select+X** in-game menu, **Select+B** reset.
 - **Select+R2** fast-forward, **Select+L2** screenshot, **Select+Y** game switcher (jump between your recent games, each resumed where you left it).
 - Remaps per system and per game, including the RetroStone2's optional 6-button Mega Drive layout.
-- **Keyboard** (menus): arrows move, **Enter** = A (open, confirm), **Esc** or **Backspace** = B (back), **Tab** = Select, **Space** = Start, X / Y, **Page Up / Page Down** = L / R, **Home / End** = L2 / R2. A keyboard is not a game controller (games need a pad or the built-in buttons), but in a game **Esc** opens the in-game menu (with Exit) and **Tab** is the hotkey button (**Tab+Space** exits).
+- **Keyboard** (menus): arrows move, **Enter** = A (open, confirm), **Esc** or **Backspace** = B (back), **Tab** = Select, **Space** = Start, X / Y, **Page Up / Page Down** = L / R, **Home / End** = L2 / R2. A keyboard is not a game controller (games need a pad or the built-in buttons), but in a game **Esc** opens the in-game menu (with Exit) and **Tab** is the hotkey button (**Tab+Space** exits). A Bluetooth keyboard works the same once paired (Settings > Network > Bluetooth devices); mice are not used yet.
 
 **Finding games**
 - **Letter jump** and **search** (in one list or across all games).
@@ -150,6 +150,7 @@ program also builds and tests on a PC: `cd frontend && make check`. Details: [do
 | [rom-transfer.md](docs/rom-transfer.md) | USB, web page and Windows share |
 | [updates.md](docs/updates.md) | Signed system updates (`.rsu` packages, keys) |
 | [power.md](docs/power.md) | Battery, charging, shutdown |
+| [bluetooth-audio.md](docs/bluetooth-audio.md) | Bluetooth headphones (A2DP): routing, pairing, what to measure |
 | [pro-storage.md](docs/pro-storage.md) | RetroStone2 Pro: eMMC and M.2 storage, starter card; game covers, multi-disc games, memory speed |
 | [translating.md](docs/translating.md) | Adding or fixing a translation |
 | [homebrew.md](docs/homebrew.md) | The bundled games and their licences |
