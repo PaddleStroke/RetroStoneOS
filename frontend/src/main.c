@@ -1835,15 +1835,15 @@ static bool launch_idle(void *user)
 		return true;
 	}
 	/* Hang kill switch: the game quits on Select+Start at once; if it is
-	 * still there after HANG_KILL_MS of holding them, it is stuck. */
+	 * still there after HANG_KILL_MS of holding them, it is stuck. A pad
+	 * without Select (an N64 pad) holds Z+Start instead. */
 	if (M.in) {
-		const uint16_t combo = (1u << IN_SELECT) | (1u << IN_START);
 		bool awake = !M.power_ok || power_get_mode() == POWER_MODE_NORMAL;
 
 		input_drain();
 		if (awake)
 			pads_activity(true);
-		if (awake && (input_any_buttons(M.in) & combo) == combo) {
+		if (awake && input_quit_combo_held(M.in)) {
 			if (!M.combo_since) {
 				M.combo_since = t;
 			} else if (M.native && !M.term_sent_at && c > 0 && t - M.combo_since >= NATIVE_QUIT_MS) {
@@ -2377,7 +2377,7 @@ static int game_saves(const struct ui_launch *req, bool remove, void *user)
 static int launch_native(const struct ui_launch *req)
 {
 	char dir[PATH_MAX], home[PATH_MAX], e_home[PATH_MAX + 8], e_cfg[PATH_MAX + 32];
-	char e_data[PATH_MAX + 32], e_dir[PATH_MAX + 16], e_lang[64];
+	char e_data[PATH_MAX + 32], e_dir[PATH_MAX + 16], e_lang[64], e_pads[PATH_MAX + 40];
 	const char *env[12];
 	const char *slash;
 	bool suspended;
@@ -2408,6 +2408,37 @@ static int launch_native(const struct ui_launch *req)
 	/* SDL games: straight to KMS and ALSA, no window system here */
 	env[ne++] = "SDL_VIDEODRIVER=kmsdrm";
 	env[ne++] = "SDL_AUDIODRIVER=alsa";
+	/* the pads set up in Settings > Controls, in the layout SDL games
+	 * expect for their kind (an N64 pad's C buttons on the right stick);
+	 * a file of its own, as the launchers set SDL_GAMECONTROLLERCONFIG */
+	if (M.in) {
+		static char pads[8192], layout[2048];
+		char lpath[PATH_MAX];
+		size_t n, ll = 0;
+		char *dot;
+		FILE *lf;
+
+		/* the port's layout for an N64 pad: "<launch script>.layout" next
+		 * to the script (docs/native-games.md, "Layouts") */
+		layout[0] = 0;
+		snprintf(lpath, sizeof(lpath), "%s", req->rom_path);
+		if ((dot = strrchr(lpath, '.')) && !strcmp(dot, ".sh")) {
+			strcpy(dot, ".layout");
+			if ((lf = fopen(lpath, "r"))) {
+				ll = fread(layout, 1, sizeof(layout) - 1, lf);
+				layout[ll] = 0;
+				fclose(lf);
+				mlog("N64 pad layout: %s", lpath);
+			}
+		}
+		n = input_sdl_mappings_layout(M.in, pads, sizeof(pads), ll ? layout : NULL);
+
+		if (n > 0 && file_write_atomic(P("/run/rsos/sdl-controllers.txt"), pads, n) == 0) {
+			snprintf(e_pads, sizeof(e_pads), "SDL_GAMECONTROLLERCONFIG_FILE=%s",
+				 P("/run/rsos/sdl-controllers.txt"));
+			env[ne++] = e_pads;
+		}
+	}
 	env[ne] = NULL;
 
 	if (M.in) {

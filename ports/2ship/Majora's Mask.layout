@@ -1,0 +1,8 @@
+# N64 pad layout for this port: which SDL element the game reads for each N64 function,
+# so a real N64 pad plays like the built-in buttons do here. Used when an N64 pad is
+# plugged in (Settings > Controls); see docs/native-games.md, "Layouts".
+# Functions: a b z l r start cup cdown cleft cright dpup dpdown dpleft dpright ("none" drops one).
+# Left alone, an N64 pad is: a=a b=b z=lefttrigger l=leftshoulder r=rightshoulder
+# (+ a copy of r on the right trigger), C buttons on the right stick, D-pad on the hat.
+# Majora's Mask: the built-in R1 is C-right here, so N64 R is the right trigger.
+r = righttrigger
