@@ -34,6 +34,7 @@ UI_SRCS := \
 	$(UI_DIR)/src/ui/storage.c \
 	$(UI_DIR)/src/ui/update_ui.c \
 	$(UI_DIR)/src/ui/bt_ui.c \
+	$(UI_DIR)/src/ui/store_ui.c \
 	$(UI_DIR)/src/ui/ui.c \
 	$(UI_DIR)/src/gfx/gfx.c \
 	$(UI_DIR)/src/gfx/font.c \

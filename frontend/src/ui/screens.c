@@ -1202,7 +1202,7 @@ void screens_job_done(struct ui *ui, const struct hw_job_result *r)
 		storage_job_done(ui, r);
 		return;
 	}
-	if (bt_job_done(ui, r))
+	if (bt_job_done(ui, r) || store_job_done(ui, r))
 		return;
 	if (r->tag >= JOB_WIFI && r->tag <= JOB_BT) {
 		int i = r->tag - JOB_WIFI;
@@ -1980,7 +1980,7 @@ static void open_time(struct ui *ui)
 
 /* ---------------------------------------------------------------- main menu */
 /* Settings > System update (ui/update_ui.c, docs/updates.md) */
-enum { ID_SYSUPDATE = 290 };
+enum { ID_SYSUPDATE = 290, ID_STORE = 291 };
 
 static void main_refresh(struct ui *ui, struct menu *m)
 {
@@ -2007,6 +2007,7 @@ static void main_item(struct ui *ui, struct menu *m, struct menu_item *it, int d
 	case ID_STORAGE: open_storage(ui); break;
 	case ID_INFO: open_info(ui); break;
 	case ID_SYSUPDATE: update_open(ui); break;
+	case ID_STORE: store_open(ui); break;
 	case ID_DATETIME: open_time(ui); break;
 	case ID_POWER: open_power(ui); break;
 	case ID_LANGUAGE: language_open(ui, false); break;
@@ -2043,6 +2044,9 @@ void settings_open_main(struct ui *ui)
 	if (update_available(ui))
 		/* TRANSLATORS: Settings item: check for and install a new RetroStoneOS version */
 		menu_add(m, MI_SUBMENU, ID_SYSUPDATE, _("System update"));
+	if (store_available(ui))
+		/* TRANSLATORS: Settings item: download homebrew and freeware games */
+		menu_add(m, MI_SUBMENU, ID_STORE, _("Game store"));
 	menu_add(m, MI_SUBMENU, ID_DATETIME, _("Date & time"));
 	menu_add(m, MI_SUBMENU, ID_POWER, C_("settings", "Power"));
 	/* TRANSLATORS: Settings item: find a game by its name in every system */
@@ -2536,16 +2540,58 @@ static void delete_saves_answer(struct ui *ui, int choice, void *user)
 	game_delete_finish(ui, choice == 1);   /* 0 NO (selected), 1 YES, -1 (B) no */
 }
 
+/* A Ports launcher the game store installed: the store removes the whole port
+ * (rsos-store remove-path: its program and the data made from the ROM; the
+ * game's saves and settings stay), not the launcher alone. True if it did;
+ * false for any other game (not in native/, not from the store, the store
+ * busy with an install), which is then deleted as usual. Quick (a few
+ * files), so it runs here and is waited for. */
+static bool game_delete_by_store(struct ui *ui, const char *path)
+{
+	const char *helper = ui->cfg.store_helper, *roms = ui->cfg.roms_dir ? ui->cfg.roms_dir : "/data/roms";
+	char native[600];
+	size_t l;
+	pid_t pid;
+	int st;
+
+	snprintf(native, sizeof(native), "%s/native/", roms);
+	l = strlen(native);
+	if (!helper || access(helper, X_OK) < 0 || strncmp(path, native, l) || strchr(path + l, '/') ||
+	    ui_store_busy(ui))
+		return false;
+	pid = fork();
+	if (pid < 0)
+		return false;
+	if (pid == 0) {
+		int fd = open("/dev/null", O_WRONLY);
+
+		if (fd >= 0) {
+			dup2(fd, 1);
+			dup2(fd, 2);
+		}
+		execl(helper, helper, "--roms", roms, "remove-path", path, (char *)NULL);
+		_exit(127);
+	}
+	while (waitpid(pid, &st, 0) < 0 && errno == EINTR)
+		;
+	if (!WIFEXITED(st) || WEXITSTATUS(st) != 0)
+		return false;
+	LOGI("ui: %s: the game store removed its port", path);
+	return true;
+}
+
 static void delete_answer(struct ui *ui, int choice, void *user)
 {
 	const char *buttons[3];
 	struct screen *d;
+	bool by_store;
 	int n;
 
 	(void)user;
 	if (choice != 0)
 		return;                    /* CANCEL (selected) or B */
-	if (unlink(g_del.path) < 0) {
+	by_store = game_delete_by_store(ui, g_del.path);
+	if (unlink(g_del.path) < 0 && !(by_store && errno == ENOENT)) {
 		char msg[400];
 
 		/* TRANSLATORS: the game file could not be deleted; %s is the system's reason */

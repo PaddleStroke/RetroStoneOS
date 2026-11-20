@@ -56,6 +56,7 @@ void ui_config_defaults(struct ui_config *cfg)
 	cfg->update_helper = "/usr/bin/rsos-update";   /* used only if it is there */
 	cfg->smb_helper = "/usr/bin/rsos-smb";         /* the same */
 	cfg->bt_helper = "/usr/bin/rsos-bt";           /* the same */
+	cfg->store_helper = "/usr/bin/rsos-store";     /* the same */
 	cfg->data_partition_helper = "/usr/libexec/rsos/data-partition";
 	cfg->storage_helper = "/usr/bin/rsos-storage"; /* used only if it is there */
 	cfg->wpa_conf = "/data/rsos/wpa_supplicant.conf";

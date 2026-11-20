@@ -1543,6 +1543,8 @@ static void idle_busy_check(bool force)
 		why = "os-update";
 	else if (M.ui && ui_storage_busy(M.ui))
 		why = "storage-or-covers";
+	else if (M.ui && ui_store_busy(M.ui))
+		why = "game-store";
 	else if (M.ui && !M.in_game && !ui_is_loaded(M.ui))
 		why = "loading";
 	power_set_busy(why != NULL, why);

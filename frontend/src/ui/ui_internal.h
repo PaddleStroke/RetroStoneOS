@@ -566,7 +566,7 @@ void webshare_open(struct ui *ui);
  * transfer: available (the helper is installed), start (with the transfer's
  * PIN), stop; the helper's end comes back as a job (UI_JOB_SMB*). */
 enum { UI_JOB_SMB = 40, UI_JOB_SMB_STOP = 41, UI_JOB_STORAGE = 42, UI_JOB_STORAGE_TASK = 43,
-       UI_JOB_BT_LIST = 44, UI_JOB_BT_SCAN = 45, UI_JOB_BT_ACT = 46 };
+       UI_JOB_BT_LIST = 44, UI_JOB_BT_SCAN = 45, UI_JOB_BT_ACT = 46, UI_JOB_STORE = 47 };
 
 /* bt_ui.c - Settings > Network > Bluetooth devices (ui->cfg.bt_helper,
  * rsos-bt): pair, connect and forget controllers. */
@@ -619,6 +619,13 @@ bool smb_available(struct ui *ui);
 void smb_start(struct ui *ui);
 void smb_stop(struct ui *ui);
 void smb_job_done(struct ui *ui, const struct hw_job_result *r);
+
+/* store_ui.c - Settings > Game store (docs/store-design.md): the rsos-store helper
+ * (ui->cfg.store_helper) lists, installs and removes the games of the signed catalog. */
+bool store_available(const struct ui *ui);       /* the helper is installed */
+void store_open(struct ui *ui);
+/* true when it was the store's job (UI_JOB_STORE) */
+bool store_job_done(struct ui *ui, const struct hw_job_result *r);
 
 /* update_ui.c - Settings > System update (docs/updates.md): the menu runs
  * the rsos-update helper (cfg.update_helper) and reads its lines. */

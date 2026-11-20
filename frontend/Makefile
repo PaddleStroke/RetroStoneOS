@@ -360,6 +360,25 @@ check-ui: $(UIPREVIEW)
 			expect:|Wireless_Controller a sleep:1500 expect:dialog:Could_not_pair a wait:300 \
 			expect:menu:Bluetooth_devices|Wireless_Controller b sleep:500"
 	rm -rf $(UI_CHECK_DIR)/bt $(UI_CHECK_DIR)/data/rsos/settings.ini
+	@echo "check-ui: Game store (tests/fake-rsos-store.sh): the list by system, install, update flag, remove, a full drive"
+	rm -rf $(UI_CHECK_DIR)/store
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet --store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down expect:menu:Settings|Game_store a sleep:500 wait:1500 			expect:menu:Game_store|Micro_Mage a wait:300 expect:dialog:Micro_Mage_1.0_by_Test_Author_-_CC0_40_KB__A_platformer_for_the_NES.|INSTALL a sleep:3000 wait:1500 			expect:toast=Micro_Mage_installed a wait:300 expect:dialog:Micro_Mage_1.0_by_Test_Author_-_CC0_40_KB__A_platformer_for_the_NES.|REMOVE a sleep:2500 wait:1500 			expect:toast=Micro_Mage_removed b sleep:300 expect:menu:Settings"
+	grep -qx 'list' $(UI_CHECK_DIR)/store/calls.log
+	grep -q -- '--roms .*/roms get micro-mage$$' $(UI_CHECK_DIR)/store/calls.log
+	grep -q -- '--roms .*/roms remove micro-mage$$' $(UI_CHECK_DIR)/store/calls.log
+	rm -rf $(UI_CHECK_DIR)/store
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store FAKE_STORE_FAIL=space $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet 		--store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down a sleep:500 wait:1500 a wait:300 a sleep:1500 wait:1500 			expect:dialog:There_is_not_enough_free_space a wait:300"
+	rm -rf $(UI_CHECK_DIR)/store
+	@echo "check-ui: Game store ports: the ROM found, the question, preparing with progress, installed; no ROM: LOOK AGAIN"
+	rm -rf $(UI_CHECK_DIR)/store
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet --store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down a sleep:500 wait:1500 down down 			expect:menu:Game_store|Ocarina_of_Time a sleep:800 wait:1500 			expect:dialog:Ocarina_of_Time_9.3.1_by_Test_Author_-_CC0_58_MB__A_port_made_from_your_own_ROM.__Your_ROM:_Ocarina_of_Time_(U)_(V1.2).z64|INSTALL a wait:300 			expect:dialog:Preparing_the_game_data_from_your_ROM_takes_about_4_minutes._Keep_the_console_on_and_nothing_else_running.|START 			a wait:300 expect:menu:Game_store|preparing sleep:3500 wait:1500 expect:toast=Ocarina_of_Time_installed 			expect:menu:Game_store|installed"
+	grep -q -- 'find-rom zelda-port$$' $(UI_CHECK_DIR)/store/calls.log
+	grep -q -- '--rom /data/roms/n64/Ocarina of Time (U) (V1.2).z64 install-port zelda-port$$' $(UI_CHECK_DIR)/store/calls.log
+	rm -rf $(UI_CHECK_DIR)/store && mkdir -p $(UI_CHECK_DIR)/store && touch $(UI_CHECK_DIR)/store/norom
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet --store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down a sleep:500 wait:1500 down down a sleep:800 wait:1500 			expect:dialog:Ocarina_of_Time_9.3.1_by_Test_Author_-_CC0_58_MB__A_port_made_from_your_own_ROM.__Needs_your_own_ROM:_Ocarina_of_Time_(US_1.2)._Put_it_in_your_N64_folder_or_on_a_USB_drive,_then_choose_LOOK_AGAIN.|LOOK_AGAIN"
+	rm -rf $(UI_CHECK_DIR)/store
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store FAKE_STORE_FAIL=memory $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet --store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down a sleep:500 wait:1500 down down a sleep:800 wait:1500 			a wait:300 a sleep:1500 wait:1500 expect:dialog:Preparing_the_game_needs_more_free_memory.*"
+	rm -rf $(UI_CHECK_DIR)/store
 	@echo "check-ui: game options act on their game after Favorite re-sorts the list (review F-H4)"
 	rm -rf $(UI_CHECK_DIR)-games && mkdir -p $(UI_CHECK_DIR)-games/data/roms/nes \
 		$(UI_CHECK_DIR)-games/data/rsos $(UI_CHECK_DIR)-games/usr/share/rsos/cores

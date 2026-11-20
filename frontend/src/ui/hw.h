@@ -50,6 +50,8 @@ int hw_job_start(const char *const argv[], int tag);
 /* Non-blocking: returns one finished job, if any. */
 bool hw_job_poll(struct hw_job_result *r);
 int hw_jobs_running(void);
+/* Sends sig to job id's process (its own session leader); false when it is not running. */
+bool hw_job_kill(int id, int sig);
 
 /* True if a non-loopback interface has an IPv4 address (copied to addr). */
 bool hw_has_ipv4(char *addr, size_t n);
