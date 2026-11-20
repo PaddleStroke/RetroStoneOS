@@ -38,8 +38,22 @@ A program that the exFAT partition does not mark executable can be started throu
 * Its output goes to `/run/rsos/game.log`, copied to `rsos/logs/` on the SD card at the next start.
 
 The built-in controls are three input devices (the buttons, the shoulder buttons, the optional analog stick):
-a game that reads only one SDL game controller sees only one of them. Read every `/dev/input/event*` device
-whose name starts with "RetroStone2", or merge them.
+a game that reads only one SDL game controller would see only one of them, and SDL does not take the stick for a
+joystick at all. **`rsos-gamepad`** (RetroStone2, build 18 or newer) merges them into one standard virtual
+gamepad, "RetroStoneOS Gamepad" (uinput): the buttons by position (bottom = SDL "a", left = "x"), L1/R1 the
+shoulders, L2/R2 the triggers, the optional C/Z the stick clicks, the D-pad as hat 0, the stick as the left stick
+(centred while it is not fitted, as in the menu). A launch script for an SDL game starts it and gives SDL its
+mapping (ports/starship/Star Fox 64.sh):
+
+```sh
+SDL_GAMECONTROLLERCONFIG="$(/usr/bin/rsos-gamepad --print-mapping)"
+export SDL_GAMECONTROLLERCONFIG
+export SDL_GAMECONTROLLER_IGNORE_DEVICES=0x0001/0x0001   # the raw button devices
+/usr/bin/rsos-gamepad &
+```
+
+It runs in the game's process group, so the menu stops it with the game. A game can also read the devices
+itself from `/dev/input` (ports/sm64/controller_rsos.c does, to follow the N64 emulator's button settings).
 
 ## What the menu does around it
 
