@@ -595,6 +595,38 @@ check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
 	grep -q 'crashed' $(FE_LOG)
 	grep -q 'signal 15: exiting' $(FE_LOG)
 	grep -q 'exit 0 after' $(FE_LOG)
+	@echo "check-frontend: 2a. a native game: its script runs in its folder, HOME on /data, SDL on KMS"
+	@# the native games only: the menu starts on them
+	mv $(FE_CHECK_DIR)/data/roms/nes $(FE_CHECK_DIR)/data/nes.aside
+	rm -f $(FE_CHECK_DIR)/data/rsos/cache/systems.idx
+	printf 'language = en\nlast_system = native\n' > $(FE_SETTINGS)
+	rm -f $(FE_LOG)
+	mkdir -p $(FE_CHECK_DIR)/data/roms/native/files
+	printf 'echo "$$PWD|$$HOME|$$SDL_VIDEODRIVER|$$RSOS_GAME_DIR" > files/ran.txt\nexit $${RSOS_TEST_NATIVE_EXIT:-0}\n' \
+		> "$(FE_CHECK_DIR)/data/roms/native/Native Test.sh"
+	$(FE_RUN) --script "wait:600 a wait:500 a wait:1500 shot:$(FE_CHECK_DIR)/native.png term"
+	grep -q 'launch native Native Test' $(FE_LOG)
+	grep -q 'native game ended: 0' $(FE_LOG)
+	test "$$(cat $(FE_CHECK_DIR)/data/roms/native/files/ran.txt)" = \
+		"$(FE_CHECK_DIR)/data/roms/native|$(FE_CHECK_DIR)/data/rsos/native-home|kmsdrm|$(FE_CHECK_DIR)/data/roms/native"
+	grep -q '^=== \[.*\] launch native: .*Native Test.sh' $(FE_GAME_LOG)
+	@echo "check-frontend: 2b. a native game that fails: its exit code is shown"
+	printf 'language = en\nlast_system = native\n' > $(FE_SETTINGS)
+	rm -f $(FE_LOG)
+	RSOS_TEST_NATIVE_EXIT=3 $(FE_RUN) --script "wait:600 a wait:500 a wait:1500 term"
+	grep -q 'native game ended: 3' $(FE_LOG)
+	@echo "check-frontend: 2c. the menu stops: the native game and what it started go too"
+	printf 'language = en\nlast_system = native\n' > $(FE_SETTINGS)
+	rm -f $(FE_LOG) $(FE_CHECK_DIR)/data/roms/native/files/bg.pid
+	printf 'sleep 300 &\necho $$! > files/bg.pid\nwait\n' > "$(FE_CHECK_DIR)/data/roms/native/Native Test.sh"
+	$(FE_RUN) --script "wait:600 a wait:500 a game:wait:1000 game:term"
+	grep -q 'signal 15: asking the game to quit' $(FE_LOG)
+	grep -q 'native game ended: 143' $(FE_LOG)
+	test -s $(FE_CHECK_DIR)/data/roms/native/files/bg.pid
+	! kill -0 $$(cat $(FE_CHECK_DIR)/data/roms/native/files/bg.pid) 2> /dev/null
+	rm -rf $(FE_CHECK_DIR)/data/roms/native
+	mv $(FE_CHECK_DIR)/data/nes.aside $(FE_CHECK_DIR)/data/roms/nes
+	rm -f $(FE_CHECK_DIR)/data/rsos/cache/systems.idx
 	@echo "check-frontend: 3. charge mode, charger already unplugged: power-off"
 	rm -f $(FE_LOG)
 	printf 'charger\n' > $(FE_CHECK_DIR)/run/rsos/bootreason

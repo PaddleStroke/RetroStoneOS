@@ -66,6 +66,7 @@
 #include "i18n/i18n.h"
 #include "splash.h"
 #include "ui/settings.h"
+#include "ui/systems.h"
 #include "ui/ui.h"
 #include "ui/util.h"
 #include "board_apply.h"   /* after ui/ui.h: board_apply_ui() */
@@ -77,6 +78,7 @@
 #define MENU_UP_PATH      "/run/rsos/menu-up"    /* written once the menu is on screen */
 #define CHILD_GRACE_MS    8000   /* game child: time to save after SIGTERM/SIGUSR2 */
 #define HANG_KILL_MS      5000   /* Select+Start held this long: kill the game */
+#define NATIVE_QUIT_MS    1000   /* native game: Select+Start held this long asks it to quit */
 #define SHUTDOWN_MSG_MS   0      /* no hold: the "Powering off..." frame is drawn at the
 				    next loop pass, then the state is flushed and init
 				    signalled right away (docs/power.md, shutdown) */
@@ -174,6 +176,7 @@ static struct {
 
 	/* game */
 	bool in_game;
+	bool native;                /* the game is a native one (host_launch_native: a process group) */
 	int64_t combo_since;
 	int64_t term_sent_at;
 	int64_t poweroff_sent_at;
@@ -1271,12 +1274,50 @@ static void pw_critical(const struct power_status *st, void *user)
 		scr_draw();
 }
 
+/* A native game's sleep: every backlight's bl_power (0 = on, 4 = off). */
+static void native_backlight(bool on)
+{
+	const char *dir = P("/sys/class/backlight");
+	DIR *d = opendir(dir);
+	struct dirent *de;
+
+	if (!d)
+		return;
+	while ((de = readdir(d))) {
+		char p[PATH_MAX];
+		int fd;
+
+		if (de->d_name[0] == '.')
+			continue;
+		snprintf(p, sizeof(p), "%s/%s/bl_power", dir, de->d_name);
+		fd = open(p, O_WRONLY | O_CLOEXEC);
+		if (fd < 0)
+			continue;
+		if (write(fd, on ? "0\n" : "4\n", 2) < 0)
+			mlog("%s: %s", p, strerror(errno));
+		close(fd);
+	}
+	closedir(d);
+}
+
 static void pw_sleep(bool enter, void *user)
 {
 	pid_t c = host_child_pid();
 
 	(void)user;
 	mlog("%s", enter ? "sleep" : "wake");
+	if (M.in_game && M.native && c > 0) {
+		/* a native game knows nothing of RetroStoneOS: frozen (sound and
+		 * picture stop), the backlight off by hand (it owns the display) */
+		if (enter) {
+			kill(-c, SIGSTOP);
+			native_backlight(false);
+		} else {
+			native_backlight(true);
+			kill(-c, SIGCONT);
+		}
+		return;
+	}
 	if (M.in_game && c > 0) {
 		/* the game pauses, closes ALSA and turns its own display off */
 		kill(c, enter ? RSOS_SIG_SLEEP : RSOS_SIG_WAKE);
@@ -1349,6 +1390,14 @@ static void pw_shutdown(enum power_reason why, void *user)
 	 * gamedb, caches */
 	if (M.ui)
 		ui_power_event(M.ui, why == POWER_REASON_REBOOT ? UI_PWR_REBOOT : UI_PWR_SHUTDOWN);
+	if (M.in_game && M.native && c > 0) {
+		/* no save state: the game saves on its own (sm64: at each star);
+		 * SIGCONT in case it was asleep */
+		kill(-c, SIGTERM);
+		kill(-c, SIGCONT);
+		M.poweroff_sent_at = now_ms();
+		return;
+	}
 	if (M.in_game && c > 0) {
 		/* SRAM flush + .state.auto, exit 3; launch_idle() waits for it
 		 * (then SIGKILL after CHILD_GRACE_MS) and the launch callback
@@ -1386,6 +1435,8 @@ static void pw_idle(enum power_idle_event ev, int seconds, void *user)
 	(void)user;
 	mlog("idle power-off: %s", ev == POWER_IDLE_WARN ? "notice (10 s)" : "cancelled");
 	(void)seconds;
+	if (M.in_game && M.native)
+		return;     /* held off (game_nostate): it cannot come */
 	if (M.in_game && c > 0) {
 		kill(c, ev == POWER_IDLE_WARN ? RSOS_SIG_IDLE_WARN : RSOS_SIG_IDLE_CANCEL);
 		return;
@@ -1773,7 +1824,7 @@ static bool launch_idle(void *user)
 	if (M.quit && c > 0) {
 		if (!M.term_sent_at) {
 			mlog("signal %d: asking the game to quit", (int)M.quit);
-			kill(c, SIGTERM);
+			kill(M.native ? -c : c, SIGTERM);
 			M.term_sent_at = t;
 		} else if (t - M.term_sent_at > CHILD_GRACE_MS) {
 			return true;
@@ -1795,6 +1846,13 @@ static bool launch_idle(void *user)
 		if (awake && (input_any_buttons(M.in) & combo) == combo) {
 			if (!M.combo_since) {
 				M.combo_since = t;
+			} else if (M.native && !M.term_sent_at && c > 0 && t - M.combo_since >= NATIVE_QUIT_MS) {
+				/* a native game has no menu of ours: Select+Start
+				 * held quits it (SIGKILL after HANG_KILL_MS) */
+				mlog("Select+Start held: asking the native game to quit");
+				kill(-c, SIGTERM);
+				kill(-c, SIGCONT);
+				M.term_sent_at = t;
 			} else if (t - M.combo_since >= HANG_KILL_MS) {
 				mlog("Select+Start held %d s: killing the game", HANG_KILL_MS / 1000);
 				M.combo_since = 0;
@@ -1838,6 +1896,8 @@ static bool has_resume(const struct ui_launch *req, void *user)
 	const char *core_path = req->core_path;
 
 	(void)user;
+	if (systems_is_native(req->system))
+		return false;
 	if (!core_path || !*core_path || access(core_path, R_OK) != 0) {
 		if (host_pick_core(req->system, req->rom_path, core, sizeof(core)) < 0)
 			return false;
@@ -2306,6 +2366,109 @@ static int game_saves(const struct ui_launch *req, bool remove, void *user)
 	return n;
 }
 
+/*
+ * A native game (system "native", docs/native-games.md): its launch script
+ * runs with /bin/sh in the script's folder, in its own process group, with
+ * the display, sound and pads handed over as for a libretro game. It has
+ * no save states, no in-game menu and no RetroStoneOS signals: Select+Start
+ * held quits it (SIGTERM, SIGKILL later), sleep freezes it, a power-off
+ * stops it, and the idle power-off waits until it has ended.
+ */
+static int launch_native(const struct ui_launch *req)
+{
+	char dir[PATH_MAX], home[PATH_MAX], e_home[PATH_MAX + 8], e_cfg[PATH_MAX + 32];
+	char e_data[PATH_MAX + 32], e_dir[PATH_MAX + 16], e_lang[64];
+	const char *env[12];
+	const char *slash;
+	bool suspended;
+	int r, exit_code = -1, ne = 0, ret = 0;
+
+	slash = strrchr(req->rom_path, '/');
+	if (!slash || access(req->rom_path, R_OK) != 0) {
+		set_msg(req, "%s", _("This game cannot start: its launch script is missing."));
+		mlog("launch native %s: %s", req->rom_path, strerror(errno));
+		return -1;
+	}
+	snprintf(dir, sizeof(dir), "%.*s", (int)(slash - req->rom_path), req->rom_path);
+	/* the root file system is read-only: settings a game keeps in its
+	 * HOME go to the data partition */
+	snprintf(home, sizeof(home), "%s", P("/data/rsos/native-home"));
+	if (mkdir(home, 0755) < 0 && errno != EEXIST)
+		mlog("%s: %s", home, strerror(errno));
+	snprintf(e_home, sizeof(e_home), "HOME=%s", home);
+	snprintf(e_cfg, sizeof(e_cfg), "XDG_CONFIG_HOME=%s/.config", home);
+	snprintf(e_data, sizeof(e_data), "XDG_DATA_HOME=%s/.local/share", home);
+	snprintf(e_dir, sizeof(e_dir), "RSOS_GAME_DIR=%s", dir);
+	snprintf(e_lang, sizeof(e_lang), "RSOS_LANG=%s", i18n_language());
+	env[ne++] = e_home;
+	env[ne++] = e_cfg;
+	env[ne++] = e_data;
+	env[ne++] = e_dir;
+	env[ne++] = e_lang;
+	/* SDL games: straight to KMS and ALSA, no window system here */
+	env[ne++] = "SDL_VIDEODRIVER=kmsdrm";
+	env[ne++] = "SDL_AUDIODRIVER=alsa";
+	env[ne] = NULL;
+
+	if (M.in) {
+		input_set_mode(M.in, INPUT_MODE_GAME);
+		input_set_docked(M.in, true);
+	}
+	if (M.power_ok)
+		power_set_game_running(true);
+	suspended = scr_suspend() == 0;
+	if (!suspended) {
+		mlog("display_suspend failed: closing the display for the game");
+		scr_shutdown();
+	}
+	M.in_game = M.native = true;
+	M.combo_since = M.term_sent_at = M.poweroff_sent_at = 0;
+	M.game_busy = M.resume_recorded = false;
+	M.game_nostate = true;          /* no resume state: the idle power-off waits */
+	idle_busy_check(true);
+	M.game_log_checked_at = 0;
+	mlog("launch native %s (%s)", req->game_name, req->rom_path);
+
+	r = host_launch_native(req->rom_path, dir, env, P(GAME_LOG_PATH), launch_idle, (void *)req, &exit_code);
+
+	native_backlight(true);         /* asleep when it was stopped */
+	M.in_game = M.native = false;
+	M.game_buttons = 0;
+	M.game_nostate = false;
+	idle_busy_check(true);
+	/* the menu comes back, also to show "Powering off..." */
+	restore_display_after_game(suspended);
+	if (M.in) {
+		input_set_docked(M.in, M.out.type == DISPLAY_OUTPUT_HDMI);
+		input_drain();
+		input_set_mode(M.in, INPUT_MODE_UI);
+	}
+	if (M.power_ok)
+		power_set_game_running(false);
+
+	if (r < 0) {
+		set_msg(req, _("Cannot start the game process (%s)."), strerror(-r));
+		mlog("host_launch_native: %s", strerror(-r));
+		ret = -1;
+	} else {
+		mlog("native game ended: %d", exit_code);
+		/* 143 = SIGTERM, 137 = SIGKILL: Select+Start or a power-off */
+		if (exit_code != 0 && exit_code != 128 + SIGTERM && exit_code != 128 + SIGKILL &&
+		    !M.term_sent_at && !M.poweroff_sent_at && !M.quit && !M.shutdown_req) {
+			/* TRANSLATORS: a native game (no emulator) ended with an
+			 * error; %d is its exit code */
+			set_msg(req, _("The game ended with an error (%d). Its messages are in rsos/logs on the SD card."),
+				exit_code);
+			ret = -1;
+		}
+	}
+	if (M.shutdown_req && !M.shutdown_at)
+		M.shutdown_at = now_ms() + SHUTDOWN_MSG_MS;
+	M.poweroff_sent_at = 0;
+	M.need_redraw = true;
+	return ret;
+}
+
 static int launch_game(const struct ui_launch *req, void *user)
 {
 	char core[PATH_MAX], msg[256] = "", game[256], p1dev[320] = "";
@@ -2319,6 +2482,8 @@ static int launch_game(const struct ui_launch *req, void *user)
 	int na = 0, r, ret = 0;
 
 	(void)user;
+	if (systems_is_native(req->system))
+		return launch_native(req);
 	/* The UI picked the core (game > system > default); host_pick_core()
 	 * only when it has no library path. */
 	if (!core_path || !*core_path || access(core_path, R_OK) != 0) {
