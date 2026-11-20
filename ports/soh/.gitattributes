@@ -1,0 +1,2 @@
+# the patches carry CRLF lines of their targets (libultraship shaders): byte for byte
+*.patch -text

@@ -579,6 +579,33 @@ check`): screen off never commits `ACTIVE` = 0 on the panel CRTC, shows black an
 - `CONFIG_DRM_FBDEV_EMULATION` is off (`linux.fragment`), so nothing lights the panel before `display_init()`: the
   frontend's first modeset is the first picture. There is no fbdev client to fight over master either.
 
+## 9b. Native ports on SDL2 (RetroStoneOS 0.1.5.23)
+
+The native ports (docs/native-games.md) are separate SDL2 programs, not libretro hosts, so they do not use
+`display.c`. The RetroStone2's SDL2 (Buildroot patch `board/retrostone2/patches/sdl2/0001-kmsdrm-output-policy.patch`,
+SDL 2.32.10 `kmsdrm`) takes the same decisions:
+
+- **Output policy** (`frontend/src/follow/policy.[ch]`, pure C, tested by `tests/test_follow_policy.c`): HDMI when it
+  is connected and usable, else the built-in panel; the policy mode (`RSOS_HDMI_W/H/HZ`, default 1280x720@60, else
+  the preferred mode); HDMI never on the panel's CRTC (`RSOS_HDMI_CRTC`, default 1; `RSOS_PANEL_KEEP`, default 1).
+  SDL opens only that output, as one display.
+- **Fixed render size**: the game gets one display of `RSOS_RENDER_W/H` (default 640x480) and an XRGB8888 GBM
+  surface of that size (the sun4i scaler refuses the alpha format). A first modeset puts a black framebuffer on
+  the CRTC, then every frame is a `drmModeSetPlane` of the game's buffer on the primary plane, scaled to the mode
+  and aspect-fit (the panel 1:1, HDMI e.g. 1440x1080 in 1920x1080). The game never sees a resolution change.
+- **Live switching**: every 15 swaps SDL re-reads the connectors without probing (`drmModeGetConnectorCurrent`; the
+  HPD poll of kernel patch 0001 keeps them current) and runs the policy again. On a change the output left is
+  switched off (HDMI) or put on a black frame (the panel never stops scanning, section 8.5), the panel's backlight
+  goes off behind HDMI (`bl_power` 4) and on again for the panel, and the same frame is shown on the new output.
+- **Sound follows the picture** (0.1.5.28): `SDL_alsa_audio.c` plays on the HDMI sound card (`sun4ihdmi`, or
+  `RSOS_AUDIO_HDMI_DEV`) while `rsos_audio_hdmi` says the game is on HDMI, else on the usual device, and moves the
+  sound with the same switch (the pcm is closed and opened again on the other card, set up as the first one was).
+- Per frame the game's buffer is shown with the usual non-blocking page flip once the first modeset has put the
+  scaled plane in place (a plane update per frame waits for the vblank and slowed the ports down).
+- Not done: the menu does not hand its output choice to the game (SDL decides by itself, with the same policy).
+- The 640x480 mode on HDMI (an unscaled plane on CRTC 1) showed nothing on a Dell P2312H; 800x600 and 1920x1080
+  work. Not understood yet.
+
 ## 10. Hardware test checklist (UART console)
 
 Build with `BR2_PACKAGE_RSOS_FRONTEND=y`. `rsos-kmstest` and `rsos-display-selftest` are in `/usr/bin`. Save every

@@ -1,0 +1,254 @@
+diff --git a/Makefile b/Makefile
+index cfac1e8..529d7e1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -19,6 +19,11 @@ DEFINES :=
+ TARGET_N64 ?= 0
+ # Build for Emscripten/WebGL
+ TARGET_WEB ?= 0
++# Build for RetroStoneOS (SDL2 KMS/DRM + GLES2 + ALSA, cross-compiled:
++# CROSS_PC=arm-linux- SDL2_CONFIG=<the staging sdl2-config>)
++TARGET_LINUX_KMSDRM ?= 0
++CROSS_PC ?=
++SDL2_CONFIG ?= sdl2-config
+ # Compiler to use (ido or gcc)
+ 
+ 
+@@ -314,6 +319,14 @@ include Makefile.split
+ LEVEL_C_FILES     := $(wildcard levels/*/leveldata.c) $(wildcard levels/*/script.c) $(wildcard levels/*/geo.c)
+ C_FILES           := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c)) $(LEVEL_C_FILES)
+ CXX_FILES         := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
++ifeq ($(TARGET_LINUX_KMSDRM),1)
++  # RetroStoneOS (RetroStone2): SDL2 on KMS/DRM with GLES2, ALSA; no X11,
++  # PulseAudio or Wii U adapter
++  C_FILES := $(filter-out src/pc/audio/audio_pulse.c src/pc/controller/controller_wup.c \
++    src/pc/controller/wup.c src/pc/gfx/gfx_glx.c,$(C_FILES))
++  CXX_FILES := $(filter-out src/pc/gfx/gfx_direct3d11.cpp src/pc/gfx/gfx_direct3d12.cpp \
++    src/pc/gfx/gfx_direct3d_common.cpp src/pc/gfx/gfx_dxgi.cpp src/pc/audio/audio_wasapi.cpp,$(CXX_FILES))
++endif
+ S_FILES           := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.s))
+ ULTRA_C_FILES     := $(foreach dir,$(ULTRA_SRC_DIRS),$(wildcard $(dir)/*.c))
+ GODDARD_C_FILES   := $(foreach dir,$(GODDARD_SRC_DIRS),$(wildcard $(dir)/*.c))
+@@ -458,8 +471,8 @@ else # TARGET_N64
+ 
+ AS := as
+ ifneq ($(TARGET_WEB),1)
+-  CC := gcc
+-  CXX := g++
++  CC := $(CROSS_PC)gcc
++  CXX := $(CROSS_PC)g++
+ else
+   CC := emcc
+ endif
+@@ -477,7 +490,10 @@ ifeq ($(TARGET_WINDOWS),1)
+   PLATFORM_CFLAGS  := -DTARGET_WINDOWS
+   PLATFORM_LDFLAGS := -lm -lxinput9_1_0 -lole32 -no-pie -mwindows
+ endif
+-ifeq ($(TARGET_LINUX),1)
++ifeq ($(TARGET_LINUX_KMSDRM),1)
++  PLATFORM_CFLAGS  := -DTARGET_LINUX -DTARGET_LINUX_KMSDRM
++  PLATFORM_LDFLAGS := -lm -lpthread -lasound
++else ifeq ($(TARGET_LINUX),1)
+   PLATFORM_CFLAGS  := -DTARGET_LINUX `pkg-config --cflags libusb-1.0`
+   PLATFORM_LDFLAGS := -lm -lpthread `pkg-config --libs libusb-1.0` -lasound -lpulse -no-pie
+ endif
+@@ -496,7 +512,10 @@ ifeq ($(ENABLE_OPENGL),1)
+     GFX_CFLAGS  += $(shell sdl2-config --cflags) -DGLEW_STATIC
+     GFX_LDFLAGS += $(shell sdl2-config --libs) -lglew32 -lopengl32 -lwinmm -limm32 -lversion -loleaut32 -lsetupapi
+   endif
+-  ifeq ($(TARGET_LINUX),1)
++  ifeq ($(TARGET_LINUX_KMSDRM),1)
++    GFX_CFLAGS  += $(shell $(SDL2_CONFIG) --cflags)
++    GFX_LDFLAGS += $(shell $(SDL2_CONFIG) --libs) -lEGL -lGLESv2
++  else ifeq ($(TARGET_LINUX),1)
+     GFX_CFLAGS  += $(shell sdl2-config --cflags)
+     GFX_LDFLAGS += -lGL $(shell sdl2-config --libs) -lX11 -lXrandr
+   endif
+@@ -517,7 +536,12 @@ endif
+ GFX_CFLAGS += -DWIDESCREEN
+ 
+ CC_CHECK := $(CC) -fsyntax-only -fsigned-char -Wall -Wextra -Wno-format-security -D_LANGUAGE_C $(DEF_INC_CFLAGS) $(PLATFORM_CFLAGS) $(GFX_CFLAGS)
++ifeq ($(TARGET_LINUX_KMSDRM),1)
++# the cross compiler's own CPU flags (Cortex-A7), not the build machine's
++CFLAGS := $(OPT_FLAGS) -D_LANGUAGE_C $(DEF_INC_CFLAGS) $(PLATFORM_CFLAGS) $(GFX_CFLAGS) -fno-strict-aliasing -fwrapv
++else
+ CFLAGS := $(OPT_FLAGS) -D_LANGUAGE_C $(DEF_INC_CFLAGS) $(PLATFORM_CFLAGS) $(GFX_CFLAGS) -fno-strict-aliasing -fwrapv -march=native
++endif
+ 
+ ASFLAGS := -I include -I $(BUILD_DIR) $(foreach d,$(DEFINES),--defsym $(d))
+ 
+diff --git a/src/game/memory.c b/src/game/memory.c
+index 36ceff3..9b91338 100644
+--- a/src/game/memory.c
++++ b/src/game/memory.c
+@@ -518,7 +518,9 @@ void alloc_only_pool_clear(struct AllocOnlyPool *pool) {
+ 
+ void *alloc_only_pool_alloc(struct AllocOnlyPool *pool, s32 size) {
+     u8 *addr;
+-    u32 s = size;
++    /* every block 8-byte aligned, like the block header above: on 32-bit
++     * ARM a float store to a misaligned address is a fatal SIGBUS */
++    u32 s = ALIGN8(size);
+     if (pool->lastBlockSize - pool->lastBlockNextPos < s) {
+         struct AllocOnlyPoolBlock *block;
+         u32 nextSize = pool->lastBlockSize * 2;
+diff --git a/src/pc/audio/audio_pulse.h b/src/pc/audio/audio_pulse.h
+index c4d7e4b..7fbae7a 100644
+--- a/src/pc/audio/audio_pulse.h
++++ b/src/pc/audio/audio_pulse.h
+@@ -3,7 +3,7 @@
+ 
+ #include "../compat.h"
+ 
+-#if defined(__linux__) || defined(__BSD__)
++#if (defined(__linux__) || defined(__BSD__)) && !defined(TARGET_LINUX_KMSDRM)
+ extern struct AudioAPI audio_pulse;
+ #define HAVE_PULSE_AUDIO 1
+ #else
+diff --git a/src/pc/controller/controller_entry_point.c b/src/pc/controller/controller_entry_point.c
+index f86cf0d..7de45c1 100644
+--- a/src/pc/controller/controller_entry_point.c
++++ b/src/pc/controller/controller_entry_point.c
+@@ -12,9 +12,12 @@
+ #include "controller_sdl.h"
+ #endif
+ 
+-#ifdef __linux__
++#if defined(__linux__) && !defined(TARGET_LINUX_KMSDRM)
+ #include "controller_wup.h"
+ #endif
++#ifdef TARGET_LINUX_KMSDRM
++#include "controller_rsos.h"
++#endif
+ 
+ static struct ControllerAPI *controller_implementations[] = {
+     &controller_recorded_tas,
+@@ -23,8 +26,11 @@ static struct ControllerAPI *controller_implementations[] = {
+ #else
+     &controller_sdl,
+ #endif
+-#ifdef __linux__
++#if defined(__linux__) && !defined(TARGET_LINUX_KMSDRM)
+     &controller_wup,
++#endif
++#ifdef TARGET_LINUX_KMSDRM
++    &controller_rsos,
+ #endif
+     &controller_keyboard,
+ };
+diff --git a/src/pc/controller/controller_sdl.c b/src/pc/controller/controller_sdl.c
+index f6880e7..1674531 100644
+--- a/src/pc/controller/controller_sdl.c
++++ b/src/pc/controller/controller_sdl.c
+@@ -4,6 +4,7 @@
+ #include <stdint.h>
+ #include <stdbool.h>
+ #include <math.h>
++#include <string.h>
+ 
+ #include <SDL2/SDL.h>
+ 
+@@ -38,6 +39,13 @@ static void controller_sdl_read(OSContPad *pad) {
+     }
+     if (sdl_cntrl == NULL) {
+         for (int i = 0; i < SDL_NumJoysticks(); i++) {
++#ifdef TARGET_LINUX_KMSDRM
++            /* the built-in controls: controller_rsos reads them together */
++            if (SDL_JoystickNameForIndex(i) != NULL &&
++                strncmp(SDL_JoystickNameForIndex(i), "RetroStone2", 11) == 0) {
++                continue;
++            }
++#endif
+             if (SDL_IsGameController(i)) {
+                 sdl_cntrl = SDL_GameControllerOpen(i);
+                 if (sdl_cntrl != NULL) {
+diff --git a/src/pc/gfx/gfx_glx.c b/src/pc/gfx/gfx_glx.c
+index 9d2743e..182b682 100644
+--- a/src/pc/gfx/gfx_glx.c
++++ b/src/pc/gfx/gfx_glx.c
+@@ -1,6 +1,6 @@
+ #include "../compat.h"
+ 
+-#if defined(__linux__) || defined(__BSD__)
++#if (defined(__linux__) && !defined(TARGET_LINUX_KMSDRM)) || defined(__BSD__)
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <stdbool.h>
+diff --git a/src/pc/gfx/gfx_opengl.c b/src/pc/gfx/gfx_opengl.c
+index 7bc9745..8d40dfb 100644
+--- a/src/pc/gfx/gfx_opengl.c
++++ b/src/pc/gfx/gfx_opengl.c
+@@ -175,7 +175,11 @@ static struct ShaderProgram *gfx_opengl_create_and_load_new_shader(uint32_t shad
+     size_t num_floats = 4;
+ 
+     // Vertex shader
++#ifdef TARGET_LINUX_KMSDRM
++    append_line(vs_buf, &vs_len, "#version 100");
++#else
+     append_line(vs_buf, &vs_len, "#version 110");
++#endif
+     append_line(vs_buf, &vs_len, "attribute vec4 aVtxPos;");
+     if (cc_features.used_textures[0] || cc_features.used_textures[1]) {
+         append_line(vs_buf, &vs_len, "attribute vec2 aTexCoord;");
+@@ -206,8 +210,12 @@ static struct ShaderProgram *gfx_opengl_create_and_load_new_shader(uint32_t shad
+     append_line(vs_buf, &vs_len, "}");
+ 
+     // Fragment shader
++#ifdef TARGET_LINUX_KMSDRM
++    append_line(fs_buf, &fs_len, "#version 100");
++    append_line(fs_buf, &fs_len, "precision mediump float;");
++#else
+     append_line(fs_buf, &fs_len, "#version 110");
+-    //append_line(fs_buf, &fs_len, "precision mediump float;");
++#endif
+     if (cc_features.used_textures[0] || cc_features.used_textures[1]) {
+         append_line(fs_buf, &fs_len, "varying vec2 vTexCoord;");
+     }
+diff --git a/src/pc/gfx/gfx_sdl2.c b/src/pc/gfx/gfx_sdl2.c
+index 4fd5c43..9b2a1a2 100644
+--- a/src/pc/gfx/gfx_sdl2.c
++++ b/src/pc/gfx/gfx_sdl2.c
+@@ -1,6 +1,6 @@
+ #include "../compat.h"
+ 
+-#if !defined(__linux__) && !defined(__BSD__) && defined(ENABLE_OPENGL)
++#if ((!defined(__linux__) && !defined(__BSD__)) || defined(TARGET_LINUX_KMSDRM)) && defined(ENABLE_OPENGL)
+ 
+ #ifdef __MINGW32__
+ #define FOR_WINDOWS 1
+@@ -155,6 +155,13 @@ int test_vsync(void) {
+ static void gfx_sdl_init(const char *game_name, bool start_in_fullscreen) {
+     SDL_Init(SDL_INIT_VIDEO);
+ 
++#ifdef TARGET_LINUX_KMSDRM
++    /* GLES2 on the Mali-400 (Mesa lima), the screen's own mode, no cursor */
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
++    SDL_ShowCursor(SDL_DISABLE);
++#endif
+     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+ 
+diff --git a/src/pc/pc_main.c b/src/pc/pc_main.c
+index 89aa1fa..380f27c 100644
+--- a/src/pc/pc_main.c
++++ b/src/pc/pc_main.c
+@@ -166,7 +166,7 @@ void main_func(void) {
+     wm_api = &gfx_dxgi_api;
+ #elif defined(ENABLE_OPENGL)
+     rendering_api = &gfx_opengl_api;
+-    #if defined(__linux__) || defined(__BSD__)
++    #if (defined(__linux__) && !defined(TARGET_LINUX_KMSDRM)) || defined(__BSD__)
+         wm_api = &gfx_glx;
+     #else
+         wm_api = &gfx_sdl;
+diff --git a/tools/armips.cpp b/tools/armips.cpp
+index 2e26cf9..ef434a8 100644
+--- a/tools/armips.cpp
++++ b/tools/armips.cpp
+@@ -1,3 +1,4 @@
++#include <cstdint>
+ // armips assembler v0.11
+ // https://github.com/Kingcom/armips/
+ // To simplify compilation, all files have been concatenated into one.

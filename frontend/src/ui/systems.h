@@ -62,5 +62,14 @@ int systems_cores_for_file(const char *system, const char *path,
 const struct core_info *systems_core(const char *id);
 /* True if ext (no dot, any case) is a ROM extension for the system. */
 bool systems_ext_ok(const char *system, const char *ext);
+/* "native": games built for the console, started by their own launch
+ * script (no core) */
+bool systems_is_native(const char *system);
+/* "ports": the one carousel entry that lists the games of doom, cavestory and
+ * native (and roms/ports). Those three are not shown on their own. */
+bool systems_is_ports_member(const char *system);
+/* The system a game of the "ports" list launches as (its extension decides:
+ * .sh native, .exe cavestory, else doom); any other system unchanged. */
+const char *systems_effective(const char *system, const char *path);
 
 #endif

@@ -418,6 +418,14 @@ bool hw_job_poll(struct hw_job_result *r)
 	return false;
 }
 
+bool hw_job_kill(int id, int sig)
+{
+	for (int i = 0; i < HW_MAX_JOBS; i++)
+		if (g_jobs[i].id == id && g_jobs[i].pid > 0)
+			return kill(g_jobs[i].pid, sig) == 0;
+	return false;
+}
+
 int hw_jobs_running(void)
 {
 	int n = 0;

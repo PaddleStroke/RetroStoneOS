@@ -13,6 +13,8 @@
  *   rsos-mkupdate sign (-s SECKEY | --key-env VAR) -o OUT.rsu IN.rsu
  *   rsos-mkupdate verify -p PUBKEY FILE.rsu
  *   rsos-mkupdate info FILE.rsu
+ *   rsos-mkupdate signfile (-s SECKEY | --key-env VAR) -o OUT.sig FILE    sign any file (the store catalog)
+ *   rsos-mkupdate verifyfile -p PUBKEY -x SIG FILE
  *
  * Keys are signify keys without a passphrase (a CI secret cannot type
  * one): `signify -V -p update.pub -x manifest.sig -m manifest` checks a
@@ -405,10 +407,93 @@ static int cmd_info(const char *path)
 	return 0;
 }
 
+/* The whole file in memory (a catalog: small), NUL-terminated. */
+static char *slurp(const char *path, size_t *len)
+{
+	FILE *f = fopen(path, "rb");
+	char *b;
+	long n;
+
+	if (!f)
+		return NULL;
+	if (fseek(f, 0, SEEK_END) < 0 || (n = ftell(f)) < 0 || n > (32 << 20) || fseek(f, 0, SEEK_SET) < 0) {
+		fclose(f);
+		return NULL;
+	}
+	b = malloc((size_t)n + 1);
+	if (!b || fread(b, 1, (size_t)n, f) != (size_t)n) {
+		free(b);
+		fclose(f);
+		return NULL;
+	}
+	fclose(f);
+	b[n] = 0;
+	*len = (size_t)n;
+	return b;
+}
+
+static int cmd_signfile(const char *sk_path, const char *env, const char *out, const char *in)
+{
+	static char sig[1024];
+	struct rsu_seckey sk;
+	struct rsu_sig s;
+	size_t n;
+	char *data;
+
+	if (!out || !in)
+		return die("signfile needs -o OUT.sig and a file%s", "");
+	data = slurp(in, &n);
+	if (!data)
+		return die("cannot read %s", in);
+	if (load_seckey(sk_path, env, &sk) < 0) {
+		free(data);
+		return 1;
+	}
+	rsu_sign(&sk, data, n, &s);
+	crypto_wipe(&sk, sizeof(sk));
+	free(data);
+	if (rsu_sig_format(&s, "verify with store.pub (RetroStoneOS store key)", sig, sizeof(sig)) < 0)
+		return die("signature does not fit%s", "");
+	unlink(out);
+	if (write_new(out, sig, 0644) < 0)
+		return die("cannot write %s", out);
+	printf("%s: signed\n", in);
+	return 0;
+}
+
+static int cmd_verifyfile(const char *pk_path, const char *sig_path, const char *in)
+{
+	struct rsu_pubkey pk;
+	struct rsu_sig s;
+	size_t n, sn;
+	char *data, *st;
+	int ok;
+
+	if (!pk_path || !sig_path || !in)
+		return die("verifyfile needs -p PUBKEY -x SIG and a file%s", "");
+	if (rsu_pubkey_load(pk_path, &pk) < 0)
+		return die("%s: not a signify public key", pk_path);
+	st = slurp(sig_path, &sn);
+	if (!st || rsu_sig_parse(st, sn, &s) < 0) {
+		free(st);
+		return die("%s: not a signify signature", sig_path);
+	}
+	free(st);
+	data = slurp(in, &n);
+	if (!data)
+		return die("cannot read %s", in);
+	ok = rsu_verify(&pk, &s, data, n);
+	free(data);
+	if (!ok)
+		return die("%s: bad signature", in);
+	printf("%s: good signature\n", in);
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	struct pack_opts po = { 0 };
-	const char *cmd = argc > 1 ? argv[1] : NULL, *pk = NULL, *comment = NULL, *pos = NULL;
+	const char *cmd = argc > 1 ? argv[1] : NULL, *pk = NULL, *comment = NULL, *pos = NULL, *sigf = NULL;
 
 	for (int i = 2; i < argc; i++) {
 		const char *a = argv[i], *v = i + 1 < argc ? argv[i + 1] : NULL;
@@ -420,6 +505,7 @@ int main(int argc, char **argv)
 		OPT("-s", po.sk)
 		OPT("-p", pk)
 		OPT("-c", comment)
+		OPT("-x", sigf)
 		OPT("--key-env", po.key_env)
 		OPT("--image", po.image)
 		OPT("--payload", po.payload)
@@ -455,6 +541,10 @@ int main(int argc, char **argv)
 		return cmd_pack(&po);
 	if (!strcmp(cmd, "sign"))
 		return cmd_sign(po.sk, po.key_env, po.out, pos);
+	if (!strcmp(cmd, "signfile"))
+		return cmd_signfile(po.sk, po.key_env, po.out, pos);
+	if (!strcmp(cmd, "verifyfile"))
+		return cmd_verifyfile(pk, sigf, pos);
 	if (!strcmp(cmd, "verify") && pos)
 		return cmd_verify(pk, pos);
 	if (!strcmp(cmd, "info") && pos)

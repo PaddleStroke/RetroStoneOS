@@ -285,6 +285,9 @@ struct ui_config {
 	 * the Bluetooth switch while Bluetooth is on; missing / NULL / "": no
 	 * such item. The string must outlive the UI. */
 	const char *bt_helper;       /* "/usr/bin/rsos-bt" */
+	/* Settings > Game store (store_ui.c): downloads from the signed catalog;
+	 * missing / NULL / "": no such item. The string must outlive the UI. */
+	const char *store_helper;    /* "/usr/bin/rsos-store" */
 	/* formats an unreadable /data after the player confirmed it on the
 	 * storage screen (ui_data_problem): run with --format-confirmed. The
 	 * string must outlive the UI. */
@@ -457,6 +460,8 @@ bool ui_update_busy(const struct ui *ui);
 /* A storage task (eMMC install, starter card, disk erase) or a game cover
  * download runs, also in the background (no idle power-off; storage.c). */
 bool ui_storage_busy(const struct ui *ui);
+/* A game store download or a port install runs (no idle power-off; store_ui.c). */
+bool ui_store_busy(const struct ui *ui);
 /* True once every game list has been loaded/validated (the background
  * loader is done and the carousel matches a full load). */
 bool ui_lists_complete(const struct ui *ui);

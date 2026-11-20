@@ -475,22 +475,28 @@ struct wstep {
 	bool axis;            /* expects a stick axis */
 };
 
+/*
+ * One list of steps per kind of controller (input.h, enum input_pad_type),
+ * in the controller's own words. Only the buttons the menu cannot do
+ * without are required; any other step is skipped by pressing a button
+ * already set, or by waiting.
+ */
 /* TRANSLATORS: controller set-up wizard: what to press now (big text, one line) */
-static const struct wstep g_steps[] = {
-	{ "dpup", N_("Press D-pad UP"), false, false },
-	{ "dpdown", N_("Press D-pad DOWN"), false, false },
-	{ "dpleft", N_("Press D-pad LEFT"), false, false },
-	{ "dpright", N_("Press D-pad RIGHT"), false, false },
+static const struct wstep g_steps_modern[] = {
+	{ "dpup", N_("Press D-pad UP"), true, false },
+	{ "dpdown", N_("Press D-pad DOWN"), true, false },
+	{ "dpleft", N_("Press D-pad LEFT"), true, false },
+	{ "dpright", N_("Press D-pad RIGHT"), true, false },
 	{ "b", N_("Press the RIGHT face button (A)"), false, false },
 	{ "a", N_("Press the BOTTOM face button (B)"), false, false },
-	{ "y", N_("Press the TOP face button (X)"), false, false },
-	{ "x", N_("Press the LEFT face button (Y)"), false, false },
+	{ "y", N_("Press the TOP face button (X)"), true, false },
+	{ "x", N_("Press the LEFT face button (Y)"), true, false },
 	{ "leftshoulder", N_("Press L1"), true, false },
 	{ "rightshoulder", N_("Press R1"), true, false },
 	{ "lefttrigger", N_("Press L2"), true, false },
 	{ "righttrigger", N_("Press R2"), true, false },
-	{ "back", N_("Press SELECT"), false, false },
-	{ "start", N_("Press START"), false, false },
+	{ "back", N_("Press SELECT"), true, false },
+	{ "start", N_("Press START"), true, false },
 	{ "leftstick", N_("Press the left stick (L3)"), true, false },
 	{ "rightstick", N_("Press the right stick (R3)"), true, false },
 	{ "leftx", N_("Push the left stick RIGHT"), true, true },
@@ -499,16 +505,62 @@ static const struct wstep g_steps[] = {
 	{ "righty", N_("Push the right stick DOWN"), true, true },
 };
 
-#define WIZ_STEPS ((int)ARRAY_SIZE(g_steps))
+/* N64, in the database's names for it (input.h): the C buttons on the
+ * right stick halves, Z on lefttrigger; no Select (Z + Start held) */
+static const struct wstep g_steps_n64[] = {
+	{ "dpup", N_("Press D-pad UP"), true, false },
+	{ "dpdown", N_("Press D-pad DOWN"), true, false },
+	{ "dpleft", N_("Press D-pad LEFT"), true, false },
+	{ "dpright", N_("Press D-pad RIGHT"), true, false },
+	{ "a", N_("Press A"), false, false },
+	{ "b", N_("Press B"), false, false },
+	{ "lefttrigger", N_("Press Z (the trigger underneath)"), true, false },
+	{ "leftshoulder", N_("Press L"), true, false },
+	{ "rightshoulder", N_("Press R"), true, false },
+	{ "start", N_("Press START"), false, false },
+	{ "-righty", N_("Press C-UP"), true, false },
+	{ "+righty", N_("Press C-DOWN"), true, false },
+	{ "-rightx", N_("Press C-LEFT"), true, false },
+	{ "+rightx", N_("Press C-RIGHT"), true, false },
+	{ "leftx", N_("Push the stick RIGHT"), true, true },
+	{ "lefty", N_("Push the stick DOWN"), true, true },
+};
+
+/* GameCube, by label (input.h): Z on rightshoulder, L / R on the triggers,
+ * the C stick on the right stick; no Select (Z + Start held) */
+static const struct wstep g_steps_gc[] = {
+	{ "dpup", N_("Press D-pad UP"), true, false },
+	{ "dpdown", N_("Press D-pad DOWN"), true, false },
+	{ "dpleft", N_("Press D-pad LEFT"), true, false },
+	{ "dpright", N_("Press D-pad RIGHT"), true, false },
+	{ "a", N_("Press A (the big button)"), false, false },
+	{ "b", N_("Press B"), false, false },
+	{ "x", N_("Press X"), true, false },
+	{ "y", N_("Press Y"), true, false },
+	{ "rightshoulder", N_("Press Z"), true, false },
+	{ "lefttrigger", N_("Press L all the way"), true, false },
+	{ "righttrigger", N_("Press R all the way"), true, false },
+	{ "start", N_("Press START"), false, false },
+	{ "leftx", N_("Push the stick RIGHT"), true, true },
+	{ "lefty", N_("Push the stick DOWN"), true, true },
+	{ "rightx", N_("Push the C stick RIGHT"), true, true },
+	{ "righty", N_("Push the C stick DOWN"), true, true },
+};
+
+#define WIZ_MAX_STEPS 20
 #define WIZ_SKIP_MS 6000
+#define WIZ_BOUNCE_MS 500
 
 struct wizard {
 	struct screen base;
 	int slot;
 	char name[80];
+	enum input_pad_type type;
+	const struct wstep *steps;
+	int nsteps;
 	int step;
 	int64_t step_t0;
-	char result[WIZ_STEPS][24];
+	char result[WIZ_MAX_STEPS][24];
 	bool done;
 };
 
@@ -527,16 +579,18 @@ static void wiz_render(struct ui *ui, struct screen *scr, struct gfx_surface *s)
 	draw_panel(s, x, y, pw, ph, MAX(4, H / 60), ms->bg);
 	draw_text_box(ui, s, f, _("Configure controller"), x, y + lh / 3, pw, lh, AL_CENTER, ms->title);
 	draw_text_box(ui, s, fs, w->name, x, y + lh, pw, lh, AL_CENTER, ms->text_dim);
-	if (w->step < WIZ_STEPS) {
-		const struct wstep *st = &g_steps[w->step];
+	if (w->step < w->nsteps) {
+		const struct wstep *st = &w->steps[w->step];
 		int left = (int)((WIZ_SKIP_MS - (ui->now - w->step_t0)) / 1000);
 
 		draw_text_box(ui, s, fb, _(st->prompt), x, y + ph / 2 - lh, pw, lh * 3 / 2, AL_CENTER,
 			      ms->accent);
-		snprintf(buf, sizeof(buf), _("Step %d of %d"), w->step + 1, WIZ_STEPS);
+		snprintf(buf, sizeof(buf), _("Step %d of %d"), w->step + 1, w->nsteps);
 		draw_text_box(ui, s, fs, buf, x, y + ph / 2 + lh / 2, pw, lh, AL_CENTER, ms->text_dim);
 		if (st->optional) {
-			snprintf(buf, sizeof(buf), _("Not on this pad? Wait %d s to skip"), MAX(0, left));
+			/* TRANSLATORS: controller wizard; %d is seconds */
+			snprintf(buf, sizeof(buf), _("Not on this pad? Press a button already set, or wait %d s"),
+				 MAX(0, left));
 			draw_text_box(ui, s, fs, buf, x, y + ph - lh * 3 / 2, pw, lh, AL_CENTER,
 				      ms->text_dim);
 		}
@@ -548,12 +602,18 @@ static void wiz_finish(struct ui *ui, struct wizard *w)
 	char map[1024] = "";
 	int r = -1;
 
-	for (int i = 0; i < WIZ_STEPS; i++) {
+	for (int i = 0; i < w->nsteps; i++) {
 		char e[40];
 
 		if (!w->result[i][0])
 			continue;
-		snprintf(e, sizeof(e), "%s%s:%s", map[0] ? "," : "", g_steps[i].target, w->result[i]);
+		snprintf(e, sizeof(e), "%s%s:%s", map[0] ? "," : "", w->steps[i].target, w->result[i]);
+		strncat(map, e, sizeof(map) - strlen(map) - 1);
+	}
+	if (w->type != IN_PAD_MODERN) {
+		char e[40];
+
+		snprintf(e, sizeof(e), ",type:%s", input_pad_type_id(w->type));
 		strncat(map, e, sizeof(map) - strlen(map) - 1);
 	}
 	if (ui->cfg.input) {
@@ -569,7 +629,7 @@ static void wiz_finish(struct ui *ui, struct wizard *w)
 
 static void wiz_record(struct ui *ui, struct wizard *w, const char *elem)
 {
-	const struct wstep *st = &g_steps[w->step];
+	const struct wstep *st = &w->steps[w->step];
 	char v[24];
 
 	if (st->axis) {
@@ -578,16 +638,24 @@ static void wiz_record(struct ui *ui, struct wizard *w, const char *elem)
 			return;
 		snprintf(v, sizeof(v), "%s%s", elem + 1, elem[0] == '-' ? "~" : "");
 	} else {
-		/* buttons, hats and half axes ("+a5" for analog triggers) */
+		/* buttons, hats and half axes ("+a5" for analog triggers, an
+		 * N64 adapter's C buttons on a stick) */
 		if ((elem[0] == '+' || elem[0] == '-') && strcmp(st->target, "lefttrigger") &&
-		    strcmp(st->target, "righttrigger") && strncmp(st->target, "dp", 2))
+		    strcmp(st->target, "righttrigger") && strncmp(st->target, "dp", 2) &&
+		    st->target[0] != '+' && st->target[0] != '-')
 			return;
 		strlcpy_(v, elem, sizeof(v));
 	}
-	/* refuse an element already used (bouncing buttons) */
+	/* an element already used: the last one again within the bounce time is
+	 * a bouncing button; otherwise it skips an optional step */
 	for (int i = 0; i < w->step; i++)
-		if (!strcmp(w->result[i], v))
+		if (!strcmp(w->result[i], v)) {
+			if (st->optional && (i != w->step - 1 || ui->now - w->step_t0 > WIZ_BOUNCE_MS)) {
+				w->step++;
+				w->step_t0 = ui->now;
+			}
 			return;
+		}
 	strlcpy_(w->result[w->step], v, sizeof(w->result[0]));
 	w->step++;
 	w->step_t0 = ui->now;
@@ -603,21 +671,21 @@ static bool wiz_update(struct ui *ui, struct screen *scr)
 		ui_pop(ui);
 		return true;
 	}
-	while (w->step < WIZ_STEPS && input_capture_next(ui->cfg.input, elem, sizeof(elem))) {
+	while (w->step < w->nsteps && input_capture_next(ui->cfg.input, elem, sizeof(elem))) {
 		wiz_record(ui, w, elem);
 		redraw = true;
 	}
-	if (w->step < WIZ_STEPS && g_steps[w->step].optional &&
+	if (w->step < w->nsteps && w->steps[w->step].optional &&
 	    ui->now - w->step_t0 > WIZ_SKIP_MS) {
 		w->step++;
 		w->step_t0 = ui->now;
 		redraw = true;
 	}
-	if (w->step >= WIZ_STEPS) {
+	if (w->step >= w->nsteps) {
 		wiz_finish(ui, w);
 		return true;
 	}
-	return redraw || g_steps[w->step].optional;
+	return redraw || w->steps[w->step].optional;
 }
 
 static int wiz_timeout(struct ui *ui, struct screen *s)
@@ -649,13 +717,24 @@ static const struct screen_ops wiz_ops = {
 	.opaque = false,
 };
 
-static void wizard_open(struct ui *ui, int slot)
+static void wizard_open(struct ui *ui, int slot, enum input_pad_type type)
 {
 	struct wizard *w = xcalloc(1, sizeof(*w));
 	struct input_device_info di;
 
 	w->base.ops = &wiz_ops;
 	w->slot = slot;
+	w->type = type;
+	if (type == IN_PAD_N64) {
+		w->steps = g_steps_n64;
+		w->nsteps = (int)ARRAY_SIZE(g_steps_n64);
+	} else if (type == IN_PAD_GC) {
+		w->steps = g_steps_gc;
+		w->nsteps = (int)ARRAY_SIZE(g_steps_gc);
+	} else {
+		w->steps = g_steps_modern;
+		w->nsteps = (int)ARRAY_SIZE(g_steps_modern);
+	}
 	w->step_t0 = ui->now;
 	if (ui->cfg.input) {
 		input_device_info(ui->cfg.input, slot, &di);
@@ -665,11 +744,80 @@ static void wizard_open(struct ui *ui, int slot)
 	ui_push(ui, &w->base);
 }
 
+/* "What kind of controller is this?": the wizard's steps and the layouts
+ * derived from the mapping follow the answer (input.h, enum input_pad_type) */
+static int g_padtype_slot = -1;
+#define ID_PAD_FORGET (ID_PAD0 + IN_PAD_TYPES)
+
+static void open_padcfg(struct ui *ui);
+
+static void padtype_item(struct ui *ui, struct menu *m, struct menu_item *it, int dir)
+{
+	int slot = g_padtype_slot;
+
+	(void)m;
+	if (dir != 0 || it->id < ID_PAD0 || slot < 0)
+		return;
+	if (it->id == ID_PAD_FORGET) {
+		int r = ui->cfg.input ? input_forget_user_mapping(ui->cfg.input, slot) : -1;
+
+		ui_pop(ui);       /* frees m */
+		ui_pop(ui);       /* the list of controllers: its values changed */
+		open_padcfg(ui);
+		if (r == 0)
+			/* TRANSLATORS: toast after removing a controller's own set-up */
+			ui_toastf(ui, "%s", _("Controller set up automatically again"));
+		return;
+	}
+	ui_pop(ui);           /* frees m */
+	wizard_open(ui, slot, (enum input_pad_type)(it->id - ID_PAD0));
+}
+
+static void padtype_open(struct ui *ui, int slot)
+{
+	/* TRANSLATORS: controller set-up: the first question, a menu title */
+	struct menu *m = menu_new(ui, _("What kind of controller is it?"), K_PADCFG);
+	struct input_device_info di = { 0 };
+
+	g_padtype_slot = slot;
+	if (ui->cfg.input)
+		input_device_info(ui->cfg.input, slot, &di);
+	/* TRANSLATORS: kinds of controller (menu entries) */
+	menu_add(m, MI_ACTION, ID_PAD0 + IN_PAD_MODERN, _("SNES, Xbox, PlayStation, Switch or similar"));
+	menu_add(m, MI_ACTION, ID_PAD0 + IN_PAD_N64, _("Nintendo 64"));
+	menu_add(m, MI_ACTION, ID_PAD0 + IN_PAD_GC, _("GameCube"));
+	if (di.present && di.source == IN_MAP_USER)
+		/* TRANSLATORS: controller set-up: remove your own set-up of this
+		 * controller and use the automatic one (or none) */
+		menu_add(m, MI_ACTION, ID_PAD_FORGET, _("Forget my set-up (automatic)"));
+	m->on_item = padtype_item;
+	menu_open(ui, m);
+}
+
+/* How a controller is set up, for the list: its kind and where the mapping
+ * comes from */
+static const char *padcfg_value(const struct input_device_info *di)
+{
+	bool user = di->source == IN_MAP_USER;
+	bool known = di->source == IN_MAP_GCDB || di->source == IN_MAP_PROFILE;
+
+	/* TRANSLATORS: how a controller is set up (the value next to its name):
+	 * your own mapping of an N64 / GameCube / other pad, a known N64 /
+	 * GameCube / other pad, the Linux standard, a keyboard, none */
+	if (di->type == IN_PAD_N64 && (user || known))
+		return user ? _("N64, custom") : _("N64");
+	if (di->type == IN_PAD_GC && (user || known))
+		return user ? _("GameCube, custom") : _("GameCube");
+	return user ? _("custom") : known ? _("known pad") :
+	       di->source == IN_MAP_GAMEPAD_SPEC ? _("standard") :
+	       di->source == IN_MAP_KEYBOARD ? _("keyboard") : _("not configured");
+}
+
 static void padcfg_item(struct ui *ui, struct menu *m, struct menu_item *it, int dir)
 {
 	(void)m;
 	if (dir == 0 && it->id >= ID_PAD0)
-		wizard_open(ui, it->id - ID_PAD0);
+		padtype_open(ui, it->id - ID_PAD0);
 }
 
 static void open_padcfg(struct ui *ui)
@@ -686,13 +834,7 @@ static void open_padcfg(struct ui *ui)
 			if (!di.present || di.builtin || !strncmp(di.path, "", 1))
 				continue;
 			it = menu_add(m, MI_ACTION, ID_PAD0 + i, di.name);
-				/* TRANSLATORS: how a controller is set up: your own mapping, from the
-			 * database of known pads, the Linux standard, a keyboard, none */
-			snprintf(it->value, sizeof(it->value), "%s",
-				 di.source == IN_MAP_USER ? _("custom") :
-				 di.source == IN_MAP_GCDB ? _("known pad") :
-				 di.source == IN_MAP_GAMEPAD_SPEC ? _("standard") :
-				 di.source == IN_MAP_KEYBOARD ? _("keyboard") : _("not configured"));
+			snprintf(it->value, sizeof(it->value), "%s", padcfg_value(&di));
 			n++;
 		}
 	}
@@ -1060,7 +1202,7 @@ void screens_job_done(struct ui *ui, const struct hw_job_result *r)
 		storage_job_done(ui, r);
 		return;
 	}
-	if (bt_job_done(ui, r))
+	if (bt_job_done(ui, r) || store_job_done(ui, r))
 		return;
 	if (r->tag >= JOB_WIFI && r->tag <= JOB_BT) {
 		int i = r->tag - JOB_WIFI;
@@ -1838,7 +1980,7 @@ static void open_time(struct ui *ui)
 
 /* ---------------------------------------------------------------- main menu */
 /* Settings > System update (ui/update_ui.c, docs/updates.md) */
-enum { ID_SYSUPDATE = 290 };
+enum { ID_SYSUPDATE = 290, ID_STORE = 291 };
 
 static void main_refresh(struct ui *ui, struct menu *m)
 {
@@ -1865,6 +2007,7 @@ static void main_item(struct ui *ui, struct menu *m, struct menu_item *it, int d
 	case ID_STORAGE: open_storage(ui); break;
 	case ID_INFO: open_info(ui); break;
 	case ID_SYSUPDATE: update_open(ui); break;
+	case ID_STORE: store_open(ui); break;
 	case ID_DATETIME: open_time(ui); break;
 	case ID_POWER: open_power(ui); break;
 	case ID_LANGUAGE: language_open(ui, false); break;
@@ -1901,6 +2044,9 @@ void settings_open_main(struct ui *ui)
 	if (update_available(ui))
 		/* TRANSLATORS: Settings item: check for and install a new RetroStoneOS version */
 		menu_add(m, MI_SUBMENU, ID_SYSUPDATE, _("System update"));
+	if (store_available(ui))
+		/* TRANSLATORS: Settings item: download homebrew and freeware games */
+		menu_add(m, MI_SUBMENU, ID_STORE, _("Game store"));
 	menu_add(m, MI_SUBMENU, ID_DATETIME, _("Date & time"));
 	menu_add(m, MI_SUBMENU, ID_POWER, C_("settings", "Power"));
 	/* TRANSLATORS: Settings item: find a game by its name in every system */
@@ -2394,16 +2540,58 @@ static void delete_saves_answer(struct ui *ui, int choice, void *user)
 	game_delete_finish(ui, choice == 1);   /* 0 NO (selected), 1 YES, -1 (B) no */
 }
 
+/* A Ports launcher the game store installed: the store removes the whole port
+ * (rsos-store remove-path: its program and the data made from the ROM; the
+ * game's saves and settings stay), not the launcher alone. True if it did;
+ * false for any other game (not in native/, not from the store, the store
+ * busy with an install), which is then deleted as usual. Quick (a few
+ * files), so it runs here and is waited for. */
+static bool game_delete_by_store(struct ui *ui, const char *path)
+{
+	const char *helper = ui->cfg.store_helper, *roms = ui->cfg.roms_dir ? ui->cfg.roms_dir : "/data/roms";
+	char native[600];
+	size_t l;
+	pid_t pid;
+	int st;
+
+	snprintf(native, sizeof(native), "%s/native/", roms);
+	l = strlen(native);
+	if (!helper || access(helper, X_OK) < 0 || strncmp(path, native, l) || strchr(path + l, '/') ||
+	    ui_store_busy(ui))
+		return false;
+	pid = fork();
+	if (pid < 0)
+		return false;
+	if (pid == 0) {
+		int fd = open("/dev/null", O_WRONLY);
+
+		if (fd >= 0) {
+			dup2(fd, 1);
+			dup2(fd, 2);
+		}
+		execl(helper, helper, "--roms", roms, "remove-path", path, (char *)NULL);
+		_exit(127);
+	}
+	while (waitpid(pid, &st, 0) < 0 && errno == EINTR)
+		;
+	if (!WIFEXITED(st) || WEXITSTATUS(st) != 0)
+		return false;
+	LOGI("ui: %s: the game store removed its port", path);
+	return true;
+}
+
 static void delete_answer(struct ui *ui, int choice, void *user)
 {
 	const char *buttons[3];
 	struct screen *d;
+	bool by_store;
 	int n;
 
 	(void)user;
 	if (choice != 0)
 		return;                    /* CANCEL (selected) or B */
-	if (unlink(g_del.path) < 0) {
+	by_store = game_delete_by_store(ui, g_del.path);
+	if (unlink(g_del.path) < 0 && !(by_store && errno == ENOENT)) {
 		char msg[400];
 
 		/* TRANSLATORS: the game file could not be deleted; %s is the system's reason */
@@ -2496,7 +2684,7 @@ static void game_delete_ask(struct ui *ui, struct game *g)
  * or .m3u keeps the track / disc files it lists (they are not renamed).
  */
 struct ren_ctx {
-	char system[32], path[1024], rel[1024], root[1024], stem[256], ext[32];
+	char system[32], esys[32], path[1024], rel[1024], root[1024], stem[256], ext[32];
 };
 
 static struct ren_ctx g_ren;
@@ -2534,7 +2722,7 @@ static void rename_cover_answer(struct ui *ui, int choice, void *user)
 {
 	(void)user;
 	if (choice == 0)
-		covers_start_one(ui, g_ren.system, g_ren.root, g_ren.path);
+		covers_start_one(ui, g_ren.esys, g_ren.root, g_ren.path);
 }
 
 static void rename_done(struct ui *ui, const char *text, bool ok, void *user)
@@ -2581,9 +2769,9 @@ static void rename_done(struct ui *ui, const char *text, bool ok, void *user)
 	snprintf(sub, sizeof(sub), "%s/media/covers", g_ren.root);
 	rename_by_stem(sub, g_ren.stem, name);
 	path_dirname(ui->cfg.data_dir, root, sizeof(root));
-	snprintf(sub, sizeof(sub), "%s/saves/%s", root, g_ren.system);
+	snprintf(sub, sizeof(sub), "%s/saves/%s", root, g_ren.esys);
 	nsaves += rename_by_stem(sub, g_ren.stem, name);
-	snprintf(sub, sizeof(sub), "%s/states/%s", root, g_ren.system);
+	snprintf(sub, sizeof(sub), "%s/states/%s", root, g_ren.esys);
 	nsaves += rename_by_stem(sub, g_ren.stem, name);
 	slash = strrchr(g_ren.rel, '/');
 	if (slash)
@@ -2620,6 +2808,8 @@ static void game_rename_ask(struct ui *ui, struct game *g)
 		return;
 	memset(&g_ren, 0, sizeof(g_ren));
 	strlcpy_(g_ren.system, g->system, sizeof(g_ren.system));
+	/* its saves and covers go by the system it launches as */
+	strlcpy_(g_ren.esys, systems_effective(g->system, g->path), sizeof(g_ren.esys));
 	strlcpy_(g_ren.path, g->path, sizeof(g_ren.path));
 	strlcpy_(g_ren.rel, g->rel, sizeof(g_ren.rel));
 	/* the system's ROM folder (the covers' parent): the path without rel */

@@ -28,6 +28,111 @@ pid_t host_child_pid(void)
 	return child_pid;
 }
 
+extern char **environ;
+
+int host_launch_native(const char *script, const char *cwd, const char *const *env,
+		       const char *log_path, bool (*idle)(void *), void *user, int *exit_code)
+{
+	const char *argv[] = { "/bin/sh", script, NULL };
+	const char **envp;
+	char hdr[1200];
+	struct timespec ts;
+	int n = 0, ne = 0, wstatus = 0, hdr_len, log_flags = O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC;
+	struct stat lst;
+	pid_t pid;
+
+	*exit_code = -1;
+	/* the environment is made before fork(): the child only calls
+	 * async-signal-safe functions (the menu has threads) */
+	while (environ && environ[n])
+		n++;
+	while (env && env[ne])
+		ne++;
+	envp = calloc((size_t)(n + ne + 1), sizeof(*envp));
+	if (!envp)
+		return -ENOMEM;
+	n = 0;
+	for (int i = 0; env && env[i]; i++)
+		envp[n++] = env[i];
+	for (int i = 0; environ && environ[i]; i++) {
+		const char *eq = strchr(environ[i], '=');
+		bool replaced = false;
+
+		for (int j = 0; eq && env && env[j]; j++)
+			if (!strncmp(env[j], environ[i], (size_t)(eq - environ[i]) + 1))
+				replaced = true;
+		if (!replaced)
+			envp[n++] = environ[i];
+	}
+	envp[n] = NULL;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	hdr_len = snprintf(hdr, sizeof(hdr), "\n=== [%5lld.%03ld] launch native: %s\n",
+			   (long long)ts.tv_sec, ts.tv_nsec / 1000000, script);
+	if (hdr_len < 0)
+		hdr_len = 0;
+	if (hdr_len > (int)sizeof(hdr) - 1)
+		hdr_len = (int)sizeof(hdr) - 1;
+	if (stat(log_path, &lst) == 0 && lst.st_size > (1 << 20))
+		log_flags |= O_TRUNC;      /* keep /run small */
+
+	pid = fork();
+	if (pid < 0) {
+		int e = errno;
+
+		free(envp);
+		return -e;
+	}
+	if (pid == 0) {
+		sigset_t none;
+		int fd;
+
+		sigemptyset(&none);
+		sigprocmask(SIG_SETMASK, &none, NULL);
+		signal(SIGPIPE, SIG_DFL);
+		signal(SIGCHLD, SIG_DFL);
+		setsid();               /* its own process group: kill(-pid) */
+		fd = open(log_path, log_flags, 0644);
+		if (fd >= 0) {
+			if (hdr_len > 0 && write(fd, hdr, (size_t)hdr_len) < 0) {
+				/* the game runs without its header */
+			}
+			dup2(fd, 1);
+			dup2(fd, 2);
+		}
+		if (chdir(cwd) < 0)
+			_exit(126);
+		execve(argv[0], (char *const *)argv, (char *const *)envp);
+		_exit(127);
+	}
+	free(envp);
+	child_pid = pid;
+	hlog(HLOG_INFO, "native game %d started: %s", (int)pid, script);
+
+	for (;;) {
+		pid_t w = waitpid(pid, &wstatus, WNOHANG);
+
+		if (w == pid)
+			break;
+		if (w < 0 && errno != EINTR)
+			break;
+		if (idle && idle(user)) {
+			hlog(HLOG_WARN, "killing native game %d on request", (int)pid);
+			kill(-pid, SIGKILL);
+		}
+		poll(NULL, 0, 100);
+	}
+	/* what the script started and left behind goes too */
+	kill(-pid, SIGKILL);
+	child_pid = 0;
+	if (WIFEXITED(wstatus))
+		*exit_code = WEXITSTATUS(wstatus);
+	else if (WIFSIGNALED(wstatus))
+		*exit_code = 128 + WTERMSIG(wstatus);
+	hlog(HLOG_INFO, "native game %d ended: %d", (int)pid, *exit_code);
+	return 0;
+}
+
 static void parse_line(char *line, const struct host_launch_opts *opts, struct host_launch_result *res)
 {
 	char *arg = strchr(line, ' ');

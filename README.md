@@ -30,6 +30,7 @@ layer cake, and every setting lives in one menu.
 
 **Laptop-style display switching**
 - Plug HDMI in and the picture moves to the TV (720p, or 640x480 for the retro look). Unplug it and it's back on the LCD, even mid-game.
+  The native **Ports** do the same: they render at 640x480 and the display engine scales them to the screen in use ([docs/native-games.md](docs/native-games.md)).
 - In docked mode, the controller that starts a game becomes player 1.
 
 **Controls**
@@ -150,6 +151,7 @@ program also builds and tests on a PC: `cd frontend && make check`. Details: [do
 | [rom-transfer.md](docs/rom-transfer.md) | USB, web page and Windows share |
 | [updates.md](docs/updates.md) | Signed system updates (`.rsu` packages, keys) |
 | [power.md](docs/power.md) | Battery, charging, shutdown |
+| [native-games.md](docs/native-games.md) | Ports: native games, HDMI switching, N64 pad layouts |
 | [pro-storage.md](docs/pro-storage.md) | RetroStone2 Pro: eMMC and M.2 storage, starter card; game covers, multi-disc games, memory speed |
 | [translating.md](docs/translating.md) | Adding or fixing a translation |
 | [homebrew.md](docs/homebrew.md) | The bundled games and their licences |

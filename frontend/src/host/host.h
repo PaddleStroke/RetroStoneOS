@@ -207,6 +207,18 @@ struct host_launch_result {
 int host_launch(const char *core_path, const char *rom_path, const char *system,
 		const struct host_launch_opts *opts, struct host_launch_result *res);
 
+/*
+ * A native game (system "native"): "/bin/sh script" in its own process
+ * group (pgid = pid: signal it with kill(-pid, ...), which reaches what the
+ * script started), with cwd as the working directory and env (NAME=value,
+ * NULL-terminated) added to this process's environment. Output appended to
+ * log_path. idle() runs every ~100 ms; true kills the group (SIGKILL).
+ * No status pipe, no save states: *exit_code = the exit status, or 128 +
+ * the signal. Returns 0, or -errno if fork/exec failed.
+ */
+int host_launch_native(const char *script, const char *cwd, const char *const *env,
+		       const char *log_path, bool (*idle)(void *), void *user, int *exit_code);
+
 /* The running game process (0 if none): forward SIGTERM to it. */
 pid_t host_child_pid(void);
 

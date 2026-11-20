@@ -26,6 +26,7 @@
 #define RSOS_INPUT_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 /* RetroPad button ids: identical to RETRO_DEVICE_ID_JOYPAD_*, so the
@@ -78,6 +79,7 @@ enum input_p1_policy { INPUT_P1_AUTO = 0, INPUT_P1_BUILTIN, INPUT_P1_EXTERNAL };
 enum input_mapping_source {
 	IN_MAP_BUILTIN = 0, IN_MAP_USER, IN_MAP_GCDB, IN_MAP_GAMEPAD_SPEC,
 	IN_MAP_KEYBOARD, IN_MAP_NONE,
+	IN_MAP_PROFILE,              /* a known pad's built-in profile (input.c) */
 };
 
 struct input_config {
@@ -121,6 +123,26 @@ struct input_port_info {
 	enum input_mapping_source source;
 };
 
+/*
+ * The kind of controller (docs/input-design.md §2). The SDL element names of
+ * a mapping mean what they mean in the SDL GameControllerDB for that kind of
+ * pad, and each use (menu, games, native games) derives its layout from it:
+ *   MODERN: a SNES/Xbox/PlayStation/Switch shape, by position (the default):
+ *           a = bottom, b = right, x = left, y = top face button
+ *   N64:    a = A, b = B, -righty / +righty / -rightx / +rightx = C-up /
+ *           C-down / C-left / C-right (buttons, or a stick), lefttrigger = Z,
+ *           leftshoulder = L, rightshoulder = R; no Select: Z + Start held
+ *   GC:     GameCube, by label: a = A, b = B, x = X, y = Y,
+ *           rightshoulder = Z, lefttrigger / righttrigger = L / R,
+ *           rightx / righty = the C stick; no Select: Z + Start held
+ * In the games N64 and GameCube pads are positional like any pad (A on
+ * RetroPad B, B on RetroPad Y; an N64's C buttons are also its right stick);
+ * in the menus A confirms and B goes back. A user mapping saves the type as
+ * "type:n64" (other programs ignore it); the database and the built-in
+ * profiles give it for the pads they know.
+ */
+enum input_pad_type { IN_PAD_MODERN = 0, IN_PAD_N64, IN_PAD_GC, IN_PAD_TYPES };
+
 struct input_device_info {
 	bool present;
 	bool builtin;
@@ -129,8 +151,12 @@ struct input_device_info {
 	char guid[33];
 	char path[32];
 	enum input_mapping_source source;
+	enum input_pad_type type;
 	int port;                    /* -1 = none */
 };
+
+const char *input_pad_type_id(enum input_pad_type t);          /* "modern", "n64", "gc" */
+enum input_pad_type input_pad_type_from_id(const char *id);    /* unknown: MODERN */
 
 struct input;
 
@@ -242,7 +268,7 @@ int input_brightness_set(struct input *in, int value);
 /*
  * Raw capture for the "Configure controller" screen: while active, the
  * events of `slot` are not mapped; each new button press, hat direction or
- * axis push past half range is reported by input_capture_next() as an SDL
+ * axis push past a third of its range is reported by input_capture_next() as an SDL
  * mapping element ("b3", "h0.1", "+a2", "-a1").
  */
 void input_capture_begin(struct input *in, int slot);
@@ -251,6 +277,36 @@ void input_capture_end(struct input *in);
 /* Saves "<guid>,<name>,a:b0,..." (SDL format, targets in SDL names) to
  * <user_map_dir>/<guid>.cfg and re-resolves the device. */
 int input_save_user_mapping(struct input *in, int slot, const char *mapping);
+/* Removes the user mapping of `slot` (back to the automatic one). */
+int input_forget_user_mapping(struct input *in, int slot);
+
+/*
+ * The quit combination is held on some pad: Select + Start, on a pad
+ * without Select (N64, GameCube) Z + Start, or a Home / Guide / PS button.
+ * For the native games, which the menu watches while they run (it quits
+ * them after a hold).
+ */
+bool input_quit_combo_held(const struct input *in);
+
+/*
+ * SDL GameControllerDB lines ("guid,name,mapping,platform:Linux,\n") for
+ * the external pads, made from the mapping the menu uses (user, built-in
+ * profile, database or the Linux standard), in the database's names for
+ * their type (an N64 pad: A/B on a/b, the C buttons on the right stick, Z
+ * on the left trigger). For the native games
+ * (SDL_GAMECONTROLLERCONFIG_FILE), so they see each pad as the menu does.
+ * Returns the length written.
+ */
+size_t input_sdl_mappings(const struct input *in, char *buf, size_t n);
+
+/*
+ * The same, with a port's layout for an N64 pad (docs/native-games.md,
+ * "Layouts"): text of "function = SDL element" lines (a, b, z, l, r, start,
+ * cup, cdown, cleft, cright, dpup..dpright; "none" drops one) that renames
+ * the elements of an N64 pad's mapping, so the pad does in that game what
+ * the built-in buttons do there. NULL = no layout.
+ */
+size_t input_sdl_mappings_layout(const struct input *in, char *buf, size_t n, const char *layout);
 
 const char *input_btn_name(enum input_btn b);   /* "A", "B", "L1", ... */
 

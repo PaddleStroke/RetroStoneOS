@@ -1,0 +1,1012 @@
+--- a/src/video/kmsdrm/SDL_kmsdrmvideo.c
++++ b/src/video/kmsdrm/SDL_kmsdrmvideo.c
+@@ -45,6 +45,7 @@
+ #include "SDL_kmsdrmmouse.h"
+ #include "SDL_kmsdrmdyn.h"
+ #include "SDL_kmsdrmvulkan.h"
++#include "policy.h"   /* RetroStoneOS output policy (rsos patch) */
+ #include <sys/stat.h>
+ #include <sys/param.h>
+ #include <sys/utsname.h>
+@@ -711,6 +712,262 @@
+     return SDL_FALSE;
+ }
+ 
++
++/* ---- RetroStoneOS output policy (sdl2 patch 0001) ----------------------
++ * The game picks its output as the libretro host does (display.c): HDMI when
++ * plugged in, else the built-in panel; the policy mode; HDMI never on the
++ * panel's CRTC. The menu's environment sets the settings (RSOS_HDMI_W/H/HZ,
++ * RSOS_HDMI_CRTC, RSOS_PANEL_KEEP); defaults are the RetroStone2's. */
++static int rsos_env_int(const char *name, int def)
++{
++    const char *v = SDL_getenv(name);
++    return v && *v ? SDL_atoi(v) : def;
++}
++
++/* Does the connector have an EDID blob? (The kernel's no-EDID DMT list is
++ * not a real EDID.) */
++static SDL_bool rsos_connector_has_edid(int drm_fd, drmModeConnector *connector)
++{
++    int i;
++
++    for (i = 0; i < connector->count_props; i++) {
++        drmModePropertyPtr prop = KMSDRM_drmModeGetProperty(drm_fd, connector->props[i]);
++        SDL_bool edid = SDL_FALSE;
++
++        if (prop && SDL_strcmp(prop->name, "EDID") == 0 && connector->prop_values[i] != 0) {
++            edid = SDL_TRUE;
++        }
++        if (prop) {
++            KMSDRM_drmModeFreeProperty(prop);
++        }
++        if (edid) {
++            return SDL_TRUE;
++        }
++    }
++    return SDL_FALSE;
++}
++
++/* The connector's possible CRTCs: the union over its encoders. */
++static uint32_t rsos_possible_crtcs(int drm_fd, drmModeRes *resources, drmModeConnector *connector)
++{
++    uint32_t mask = 0;
++    int i, j;
++
++    for (i = 0; i < resources->count_encoders; i++) {
++        drmModeEncoder *enc = KMSDRM_drmModeGetEncoder(drm_fd, resources->encoders[i]);
++
++        if (!enc) {
++            continue;
++        }
++        for (j = 0; j < connector->count_encoders; j++) {
++            if (connector->encoders[j] == enc->encoder_id) {
++                mask |= enc->possible_crtcs;
++            }
++        }
++        KMSDRM_drmModeFreeEncoder(enc);
++    }
++    return mask;
++}
++
++/* Forced by the policy for the next AddDisplay() (0 = none). */
++static uint32_t rsos_force_crtc_id;
++static int rsos_force_w, rsos_force_h, rsos_force_hz;
++static uint32_t rsos_force_conn_id;
++static int rsos_choice_hdmi;
++
++/* The policy's choice among the connectors: sets rsos_force_* and returns
++ * the connector id to open first (0 = none). */
++static uint32_t rsos_policy_choose(int drm_fd, drmModeRes *resources, int probe)
++{
++    struct pf_cfg cfg;
++    struct pf_conn conns[PF_MAX_CONNS];
++    int idx[PF_MAX_CONNS];
++    struct pf_choice ch;
++    int n = 0, i;
++
++    SDL_memset(&cfg, 0, sizeof(cfg));
++    cfg.hdmi_w = rsos_env_int("RSOS_HDMI_W", 1280);
++    cfg.hdmi_h = rsos_env_int("RSOS_HDMI_H", 720);
++    cfg.hdmi_hz = rsos_env_int("RSOS_HDMI_HZ", 60);
++    cfg.hdmi_builtin_mode = SDL_TRUE;
++    cfg.hdmi_crtc_index = rsos_env_int("RSOS_HDMI_CRTC", 1);
++    cfg.panel_keep_scanning = rsos_env_int("RSOS_PANEL_KEEP", 1) != 0;
++    cfg.crtc_count = resources->count_crtcs;
++    rsos_rw = rsos_env_int("RSOS_RENDER_W", 640);
++    rsos_rh = rsos_env_int("RSOS_RENDER_H", 480);
++
++    for (i = 0; i < resources->count_connectors && n < PF_MAX_CONNS; i++) {
++        drmModeConnector *c = probe ? KMSDRM_drmModeGetConnector(drm_fd, resources->connectors[i])
++                                    : KMSDRM_drmModeGetConnectorCurrent(drm_fd, resources->connectors[i]);
++        struct pf_conn *p = &conns[n];
++        int m;
++
++        if (!c) {
++            continue;
++        }
++        SDL_memset(p, 0, sizeof(*p));
++        p->kind = (c->connector_type == DRM_MODE_CONNECTOR_HDMIA ||
++                   c->connector_type == DRM_MODE_CONNECTOR_HDMIB ||
++                   c->connector_type == DRM_MODE_CONNECTOR_DVID ||
++                   c->connector_type == DRM_MODE_CONNECTOR_DVII ||
++                   c->connector_type == DRM_MODE_CONNECTOR_DisplayPort) ? PF_KIND_HDMI : PF_KIND_LCD;
++        p->connected = c->connection == DRM_MODE_CONNECTED && c->count_modes > 0;
++        p->has_edid = rsos_connector_has_edid(drm_fd, c);
++        p->possible_crtcs = rsos_possible_crtcs(drm_fd, resources, c);
++        for (m = 0; m < c->count_modes && p->nmodes < PF_MAX_MODES; m++) {
++            p->modes[p->nmodes].w = c->modes[m].hdisplay;
++            p->modes[p->nmodes].h = c->modes[m].vdisplay;
++            p->modes[p->nmodes].hz = (int)c->modes[m].vrefresh;
++            p->modes[p->nmodes].preferred = (c->modes[m].type & DRM_MODE_TYPE_PREFERRED) != 0;
++            p->nmodes++;
++        }
++        idx[n] = i;
++        n++;
++        KMSDRM_drmModeFreeConnector(c);
++    }
++
++    ch = pf_choose(&cfg, conns, n);
++    for (i = 0; i < n; i++) {
++        SDL_LogDebug(SDL_LOG_CATEGORY_VIDEO, "rsos: conn %d kind %d connected %d edid %d modes %d possible_crtcs %x",
++                     i, (int)conns[i].kind, conns[i].connected, conns[i].has_edid, conns[i].nmodes, (unsigned)conns[i].possible_crtcs);
++    }
++    SDL_LogDebug(SDL_LOG_CATEGORY_VIDEO, "rsos: policy conn %d crtc %d mode %dx%d@%d (crtcs %d)", ch.conn, ch.crtc, ch.w, ch.h, ch.hz, cfg.crtc_count);
++    if (ch.conn < 0 || ch.crtc < 0) {
++        return 0;
++    }
++    rsos_force_crtc_id = resources->crtcs[ch.crtc];
++    rsos_crtc_index = ch.crtc;
++    rsos_scaled = 1;
++    rsos_force_w = ch.w;
++    rsos_force_h = ch.h;
++    rsos_force_hz = ch.hz;
++    rsos_force_conn_id = resources->connectors[idx[ch.conn]];
++    rsos_choice_hdmi = conns[ch.conn].kind == PF_KIND_HDMI;
++    return rsos_force_conn_id;
++}
++
++
++/* The built-in panel's backlight (on = 0, off = 4): off behind HDMI, as the
++ * libretro host does. The panel itself keeps scanning a black frame. */
++static void rsos_backlight(SDL_bool on)
++{
++    DIR *d = opendir("/sys/class/backlight");
++    struct dirent *de;
++
++    if (!d) {
++        return;
++    }
++    while ((de = readdir(d)) != NULL) {
++        char path[256];
++        int fd;
++
++        if (de->d_name[0] == '.') {
++            continue;
++        }
++        SDL_snprintf(path, sizeof(path), "/sys/class/backlight/%s/bl_power", de->d_name);
++        fd = open(path, O_WRONLY | O_CLOEXEC);
++        if (fd >= 0) {
++            if (write(fd, on ? "0\n" : "4\n", 2) < 0) {
++                /* nothing to do */
++            }
++            close(fd);
++        }
++    }
++    closedir(d);
++}
++
++static SDL_bool rsos_is_external(uint32_t type)
++{
++    return type == DRM_MODE_CONNECTOR_HDMIA || type == DRM_MODE_CONNECTOR_HDMIB ||
++           type == DRM_MODE_CONNECTOR_DVID || type == DRM_MODE_CONNECTOR_DVII ||
++           type == DRM_MODE_CONNECTOR_DisplayPort;
++}
++
++/* Called now and then from SwapWindow: when the policy would choose another
++ * output (HDMI plugged in or unplugged), moves the game there. The game
++ * renders the same size all along, so it never notices. Returns 1 when the
++ * output changed (the caller shows the frame with rsos_scanout(first=1)). */
++int rsos_check_output(SDL_VideoData *viddata, SDL_DisplayData *dispdata)
++{
++    int fd = viddata->drm_fd;
++    drmModeRes *res = KMSDRM_drmModeGetResources(fd);
++    drmModeConnector *c;
++    drmModeCrtc *crtc;
++    uint32_t nc;
++    int i, found = -1, idx = -1;
++
++    if (!res) {
++        return 0;
++    }
++    nc = rsos_policy_choose(fd, res, 0);
++    if (!nc || nc == dispdata->connector->connector_id) {
++        KMSDRM_drmModeFreeResources(res);
++        return 0;
++    }
++    c = KMSDRM_drmModeGetConnector(fd, nc);
++    crtc = KMSDRM_drmModeGetCrtc(fd, rsos_force_crtc_id);
++    if (!c || !crtc || c->count_modes <= 0) {
++        if (c) {
++            KMSDRM_drmModeFreeConnector(c);
++        }
++        if (crtc) {
++            KMSDRM_drmModeFreeCrtc(crtc);
++        }
++        KMSDRM_drmModeFreeResources(res);
++        return 0;
++    }
++    for (i = 0; i < c->count_modes; i++) {
++        if ((int)c->modes[i].hdisplay == rsos_force_w && (int)c->modes[i].vdisplay == rsos_force_h &&
++            (int)c->modes[i].vrefresh == rsos_force_hz) {
++            found = i;
++            break;
++        }
++    }
++    for (i = 0; found < 0 && i < c->count_modes; i++) {
++        if (c->modes[i].type & DRM_MODE_TYPE_PREFERRED) {
++            found = i;
++        }
++    }
++    if (found < 0) {
++        found = 0;
++    }
++    for (i = 0; i < res->count_crtcs; i++) {
++        if (res->crtcs[i] == crtc->crtc_id) {
++            idx = i;
++        }
++    }
++
++    SDL_LogDebug(SDL_LOG_CATEGORY_VIDEO, "rsos: output change: conn %u -> %u crtc %u mode %dx%d",
++                 dispdata->connector->connector_id, nc, crtc->crtc_id,
++                 (int)c->modes[found].hdisplay, (int)c->modes[found].vdisplay);
++
++    if (rsos_is_external(dispdata->connector->connector_type)) {
++        /* leaving HDMI: its CRTC off */
++        KMSDRM_drmModeSetCrtc(fd, dispdata->crtc->crtc_id, 0, 0, 0, NULL, 0, NULL);
++    } else {
++        /* leaving the panel: it keeps scanning a black frame (never switched off) */
++        uint32_t black = rsos_black_fb(fd, dispdata->mode.hdisplay, dispdata->mode.vdisplay);
++        uint32_t oc = dispdata->connector->connector_id;
++
++        if (black) {
++            KMSDRM_drmModeSetCrtc(fd, dispdata->crtc->crtc_id, black, 0, 0, &oc, 1, &dispdata->mode);
++        }
++    }
++    rsos_backlight(rsos_is_external(c->connector_type) ? SDL_FALSE : SDL_TRUE);
++    rsos_audio_hdmi = rsos_is_external(c->connector_type) ? 1 : 0;   /* the sound follows (SDL_alsa_audio.c) */
++
++    KMSDRM_drmModeFreeConnector(dispdata->connector);
++    KMSDRM_drmModeFreeCrtc(dispdata->crtc);
++    dispdata->connector = c;
++    dispdata->crtc = crtc;
++    dispdata->mode = c->modes[found];
++    if (idx >= 0) {
++        rsos_crtc_index = idx;
++    }
++    KMSDRM_drmModeFreeResources(res);
++    return 1;
++}
++
+ /* Gets a DRM connector, builds an SDL_Display with it, and adds it to the
+    list of SDL Displays in _this->displays[]  */
+ static void KMSDRM_AddDisplay(_THIS, drmModeConnector *connector, drmModeRes *resources)
+@@ -790,6 +1047,11 @@
+         goto cleanup;
+     }
+ 
++    /* RetroStoneOS: the policy's CRTC for the chosen connector */
++    if (rsos_force_crtc_id && connector->connector_id == rsos_force_conn_id) {
++        encoder->crtc_id = rsos_force_crtc_id;
++    }
++
+     /* Try to find a CRTC connected to this encoder */
+     crtc = KMSDRM_drmModeGetCrtc(viddata->drm_fd, encoder->crtc_id);
+ 
+@@ -845,6 +1107,29 @@
+         }
+     }
+ 
++    /* RetroStoneOS: the policy's mode (1280x720@60 on HDMI by default) */
++    if (rsos_force_crtc_id && connector->connector_id == rsos_force_conn_id) {
++        for (i = 0; i < connector->count_modes; i++) {
++            drmModeModeInfo *mode = &connector->modes[i];
++
++            if ((int)mode->hdisplay == rsos_force_w && (int)mode->vdisplay == rsos_force_h &&
++                (int)mode->vrefresh == rsos_force_hz) {
++                mode_index = i;
++                crtc->mode = connector->modes[i];
++                break;
++            }
++        }
++        if (mode_index >= 0) {
++            /* One output, one mode, as the libretro host runs it: SDL offers
++               only the policy mode, whatever size the game asks for. */
++            connector->modes[0] = connector->modes[mode_index];
++            connector->count_modes = 1;
++            mode_index = 0;
++            crtc->mode = connector->modes[0];
++        }
++    }
++
++    SDL_LogDebug(SDL_LOG_CATEGORY_VIDEO, "rsos: AddDisplay conn %u forced=%d mode_index %d crtc %u", connector->connector_id, (int)(rsos_force_crtc_id && connector->connector_id == rsos_force_conn_id), mode_index, crtc ? crtc->crtc_id : 0);
+     if (mode_index == -1) {
+         ret = SDL_SetError("Failed to find index of mode attached to the CRTC.");
+         goto cleanup;
+@@ -898,8 +1183,8 @@
+     modedata->mode_index = mode_index;
+ 
+     display.driverdata = dispdata;
+-    display.desktop_mode.w = dispdata->mode.hdisplay;
+-    display.desktop_mode.h = dispdata->mode.vdisplay;
++    display.desktop_mode.w = rsos_scaled ? rsos_rw : dispdata->mode.hdisplay;
++    display.desktop_mode.h = rsos_scaled ? rsos_rh : dispdata->mode.vdisplay;
+     display.desktop_mode.refresh_rate = dispdata->mode.vrefresh;
+     display.desktop_mode.format = SDL_PIXELFORMAT_ARGB8888;
+     display.desktop_mode.driverdata = modedata;
+@@ -963,6 +1248,21 @@
+         goto cleanup;
+     }
+ 
++    /* RetroStoneOS: the output policy's connector becomes display 0 */
++    rsos_force_crtc_id = 0;
++    rsos_scaled = 0;
++    if (rsos_policy_choose(viddata->drm_fd, resources, 1)) {
++        drmModeConnector *connector = KMSDRM_drmModeGetConnector(viddata->drm_fd, rsos_force_conn_id);
++
++        rsos_audio_hdmi = rsos_choice_hdmi;
++
++        if (connector && connector->connection == DRM_MODE_CONNECTED && connector->count_modes) {
++            KMSDRM_AddDisplay(_this, connector, resources);
++        } else if (connector) {
++            KMSDRM_drmModeFreeConnector(connector);
++        }
++    }
++
+     /* Iterate on the available connectors. For every connected connector,
+        we create an SDL_Display and add it to the list of SDL Displays. */
+     for (i = 0; i < resources->count_connectors; i++) {
+@@ -972,6 +1272,13 @@
+         if (!connector) {
+             continue;
+         }
++        /* One output at a time, as the libretro host does: once the output
++           chosen by the policy is open, no other display exists, so a window
++           cannot land on the other screen whatever its position. */
++        if (rsos_force_crtc_id && SDL_GetNumVideoDisplays() > 0) {
++            KMSDRM_drmModeFreeConnector(connector);
++            continue;
++        }
+ 
+         if (connector->connection == DRM_MODE_CONNECTED && connector->count_modes) {
+             /* If it's a connected connector with available videomodes, try to add
+@@ -1181,7 +1488,8 @@
+        or SetWindowFullscreen, send a fake event for now since the actual
+        recreation is deferred */
+     KMSDRM_GetModeToSet(window, &mode);
+-    SDL_SendWindowEvent(window, SDL_WINDOWEVENT_RESIZED, mode.hdisplay, mode.vdisplay);
++    SDL_SendWindowEvent(window, SDL_WINDOWEVENT_RESIZED, rsos_scaled ? rsos_rw : mode.hdisplay,
++                        rsos_scaled ? rsos_rh : mode.vdisplay);
+ }
+ 
+ /* This determines the size of the fb, which comes from the GBM surface
+@@ -1193,7 +1501,9 @@
+     SDL_VideoDisplay *display = SDL_GetDisplayForWindow(window);
+     SDL_DisplayData *dispdata = (SDL_DisplayData *)display->driverdata;
+ 
+-    uint32_t surface_fmt = GBM_FORMAT_ARGB8888;
++    /* RetroStoneOS: the scaled plane takes XRGB8888 (as the libretro host does);
++       the sun4i scaler refuses the alpha format */
++    uint32_t surface_fmt = rsos_scaled ? GBM_FORMAT_XRGB8888 : GBM_FORMAT_ARGB8888;
+     uint32_t surface_flags = GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING;
+ 
+     EGLContext egl_context;
+@@ -1216,13 +1526,14 @@
+        mode that's set in sync with what SDL_video.c thinks is set */
+     KMSDRM_GetModeToSet(window, &dispdata->mode);
+ 
+-    display->current_mode.w = dispdata->mode.hdisplay;
+-    display->current_mode.h = dispdata->mode.vdisplay;
++    display->current_mode.w = rsos_scaled ? rsos_rw : dispdata->mode.hdisplay;
++    display->current_mode.h = rsos_scaled ? rsos_rh : dispdata->mode.vdisplay;
+     display->current_mode.refresh_rate = dispdata->mode.vrefresh;
+     display->current_mode.format = SDL_PIXELFORMAT_ARGB8888;
+ 
+     windata->gs = KMSDRM_gbm_surface_create(viddata->gbm_dev,
+-                                            dispdata->mode.hdisplay, dispdata->mode.vdisplay,
++                                            rsos_scaled ? rsos_rw : dispdata->mode.hdisplay,
++                                            rsos_scaled ? rsos_rh : dispdata->mode.vdisplay,
+                                             surface_fmt, surface_flags);
+ 
+     if (!windata->gs) {
+@@ -1246,7 +1557,8 @@
+     ret = SDL_EGL_MakeCurrent(_this, windata->egl_surface, egl_context);
+ 
+     SDL_SendWindowEvent(window, SDL_WINDOWEVENT_RESIZED,
+-                        dispdata->mode.hdisplay, dispdata->mode.vdisplay);
++                        rsos_scaled ? rsos_rw : dispdata->mode.hdisplay,
++                        rsos_scaled ? rsos_rh : dispdata->mode.vdisplay);
+ 
+     windata->egl_surface_dirty = SDL_FALSE;
+ 
+@@ -1363,8 +1675,8 @@
+             modedata->mode_index = i;
+         }
+ 
+-        mode.w = conn->modes[i].hdisplay;
+-        mode.h = conn->modes[i].vdisplay;
++        mode.w = rsos_scaled ? rsos_rw : conn->modes[i].hdisplay;
++        mode.h = rsos_scaled ? rsos_rh : conn->modes[i].vdisplay;
+         mode.refresh_rate = conn->modes[i].vrefresh;
+         mode.format = SDL_PIXELFORMAT_ARGB8888;
+         mode.driverdata = modedata;
+--- a/src/video/kmsdrm/SDL_kmsdrmvideo.h
++++ b/src/video/kmsdrm/SDL_kmsdrmvideo.h
+@@ -123,6 +123,7 @@
+ 
+ typedef struct SDL_WindowData
+ {
++    int rsos_poll; /* frames since the last output check */
+     SDL_VideoData *viddata;
+     /* SDL internals expect EGL surface to be here, and in KMSDRM the GBM surface is
+        what supports the EGL surface on the driver side, so all these surfaces and buffers
+@@ -192,6 +193,14 @@
+ int KMSDRM_GLES_SwapWindow(_THIS, SDL_Window *window);
+ void KMSDRM_GLES_DeleteContext(_THIS, SDL_GLContext context);
+ 
++
++/* RetroStoneOS scaled scan-out (rsos_scanout.c) */
++extern volatile int rsos_audio_hdmi;
++extern int rsos_scaled, rsos_rw, rsos_rh, rsos_crtc_index;
++int rsos_scanout(SDL_VideoData *viddata, SDL_DisplayData *dispdata, uint32_t fb_id, int first);
++uint32_t rsos_black_fb(int fd, int w, int h);
++int rsos_check_output(SDL_VideoData *viddata, SDL_DisplayData *dispdata);
++
+ #endif /* __SDL_KMSDRMVIDEO_H__ */
+ 
+ /* vi: set ts=4 sw=4 expandtab: */
+--- a/src/video/kmsdrm/SDL_kmsdrmopengles.c
++++ b/src/video/kmsdrm/SDL_kmsdrmopengles.c
+@@ -149,13 +149,27 @@
+         return 0;
+     }
+ 
++    if (windata->bo && rsos_scaled && ++windata->rsos_poll >= 15) {
++        /* about four times a second: HDMI plugged in or out? */
++        windata->rsos_poll = 0;
++        if (rsos_check_output(viddata, dispdata)) {
++            ret = rsos_scanout(viddata, dispdata, fb_info->fb_id, 1);
++            return ret == 0 ? 1 : 0;
++        }
++    }
++
+     if (!windata->bo) {
+         /* On the first swap, immediately present the new front buffer. Before
+            drmModePageFlip can be used the CRTC has to be configured to use
+            the current connector and mode with drmModeSetCrtc */
+-        ret = KMSDRM_drmModeSetCrtc(viddata->drm_fd,
+-                                    dispdata->crtc->crtc_id, fb_info->fb_id, 0, 0,
+-                                    &dispdata->connector->connector_id, 1, &dispdata->mode);
++        SDL_LogDebug(SDL_LOG_CATEGORY_VIDEO, "rsos: first SetCrtc crtc %u conn %u mode %dx%d@%d", dispdata->crtc->crtc_id, dispdata->connector->connector_id, (int)dispdata->mode.hdisplay, (int)dispdata->mode.vdisplay, (int)dispdata->mode.vrefresh);
++        if (rsos_scaled) {
++            ret = rsos_scanout(viddata, dispdata, fb_info->fb_id, 1);
++        } else {
++            ret = KMSDRM_drmModeSetCrtc(viddata->drm_fd,
++                                        dispdata->crtc->crtc_id, fb_info->fb_id, 0, 0,
++                                        &dispdata->connector->connector_id, 1, &dispdata->mode);
++        }
+ 
+         if (ret) {
+             SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not set videomode on CRTC.");
+@@ -178,6 +192,9 @@
+             flip_flags |= DRM_MODE_PAGE_FLIP_ASYNC;
+         }
+ 
++        /* RetroStoneOS: with the scaled plane the usual page flip is kept (it only
++           changes the framebuffer: the plane keeps its scaling), so the game does not
++           wait for the vblank inside the swap, as before. */
+         ret = KMSDRM_drmModePageFlip(viddata->drm_fd, dispdata->crtc->crtc_id,
+                                      fb_info->fb_id, flip_flags, &windata->waiting_for_flip);
+ 
+--- a/src/video/kmsdrm/SDL_kmsdrmsym.h
++++ b/src/video/kmsdrm/SDL_kmsdrmsym.h
+@@ -80,6 +80,7 @@
+                                       int32_t hot_x, int32_t hot_y))
+ SDL_KMSDRM_SYM(int,drmModeMoveCursor,(int fd, uint32_t crtcId, int x, int y))
+ SDL_KMSDRM_SYM(drmModeEncoderPtr,drmModeGetEncoder,(int fd, uint32_t encoder_id))
++SDL_KMSDRM_SYM(drmModeConnectorPtr,drmModeGetConnectorCurrent,(int fd, uint32_t connector_id))
+ SDL_KMSDRM_SYM(drmModeConnectorPtr,drmModeGetConnector,(int fd, uint32_t connector_id))
+ SDL_KMSDRM_SYM(int,drmHandleEvent,(int fd,drmEventContextPtr evctx))
+ SDL_KMSDRM_SYM(int,drmModePageFlip,(int fd, uint32_t crtc_id, uint32_t fb_id,
+--- a/src/video/kmsdrm/rsos_scanout.c
++++ b/src/video/kmsdrm/rsos_scanout.c
+@@ -0,0 +1,168 @@
++/*
++ * rsos_scanout.c - RetroStoneOS: scaled scan-out for SDL's KMSDRM driver.
++ *
++ * The game renders into a fixed-size GBM surface (rsos_rw x rsos_rh, the
++ * built-in panel's size by default). The surface is shown on the CRTC's
++ * primary plane, scaled by the display engine to the active output (the
++ * panel 1:1, an HDMI monitor aspect-fit with black bars), as the libretro
++ * host does (display.c, "XR24 640x480 scaled to 1440x1080+240+0"). The game
++ * never sees a resolution change.
++ */
++#include "../../SDL_internal.h"
++
++#ifdef SDL_VIDEO_DRIVER_KMSDRM
++
++#include "SDL_kmsdrmvideo.h"
++#include "SDL_kmsdrmdyn.h"
++
++#include <errno.h>
++#include <string.h>
++#include <sys/ioctl.h>
++
++/* 1 while the game is on an external screen (HDMI), 0 on the built-in one, -1 unknown:
++ * SDL's ALSA backend plays on the HDMI sound card or the speaker accordingly */
++volatile int rsos_audio_hdmi = -1;
++int rsos_scaled;                 /* the policy chose the output: scaled scan-out */
++int rsos_rw = 640, rsos_rh = 480; /* the size the game renders at */
++int rsos_crtc_index;
++
++static uint32_t plane_id;
++static struct { int w, h; uint32_t fb; } blacks[4];
++static int dst_x, dst_y, dst_w, dst_h;
++
++#define RSOS_UNIVERSAL_PLANES 2
++#define RSOS_PLANE_PRIMARY 1
++
++static uint32_t find_primary_plane(int fd, int crtc_index)
++{
++    drmModePlaneRes *pr;
++    uint32_t found = 0;
++    uint32_t i;
++
++    KMSDRM_drmSetClientCap(fd, RSOS_UNIVERSAL_PLANES, 1);
++    pr = KMSDRM_drmModeGetPlaneResources(fd);
++    if (!pr) {
++        return 0;
++    }
++    for (i = 0; i < pr->count_planes && !found; i++) {
++        drmModePlane *p = KMSDRM_drmModeGetPlane(fd, pr->planes[i]);
++        drmModeObjectProperties *props;
++        uint32_t j;
++
++        if (!p) {
++            continue;
++        }
++        if (p->possible_crtcs & (1u << crtc_index)) {
++            props = KMSDRM_drmModeObjectGetProperties(fd, p->plane_id, DRM_MODE_OBJECT_PLANE);
++            for (j = 0; props && j < props->count_props; j++) {
++                drmModePropertyPtr prop = KMSDRM_drmModeGetProperty(fd, props->props[j]);
++
++                if (prop) {
++                    if (SDL_strcmp(prop->name, "type") == 0 && props->prop_values[j] == RSOS_PLANE_PRIMARY) {
++                        found = p->plane_id;
++                    }
++                    KMSDRM_drmModeFreeProperty(prop);
++                }
++            }
++            if (props) {
++                KMSDRM_drmModeFreeObjectProperties(props);
++            }
++        }
++        KMSDRM_drmModeFreePlane(p);
++    }
++    KMSDRM_drmModeFreePlaneResources(pr);
++    return found;
++}
++
++/* A mode-sized black framebuffer: SetCrtc needs one at least as big as the
++ * mode, and it is what shows around the scaled picture. */
++static int make_black_fb(int fd, int w, int h, uint32_t *out)
++{
++    struct drm_mode_create_dumb c;
++    uint32_t fb = 0;
++
++    SDL_memset(&c, 0, sizeof(c));
++    c.width = (uint32_t)w;
++    c.height = (uint32_t)h;
++    c.bpp = 32;
++    if (ioctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &c) < 0) {
++        return -errno;
++    }
++    if (KMSDRM_drmModeAddFB(fd, (uint32_t)w, (uint32_t)h, 24, 32, c.pitch, c.handle, &fb) != 0) {
++        return -EINVAL;
++    }
++    *out = fb;
++    return 0;
++}
++
++/* The black framebuffer for a mode size (made once per size). */
++uint32_t rsos_black_fb(int fd, int w, int h)
++{
++    int i;
++
++    for (i = 0; i < 4; i++) {
++        if (blacks[i].fb && blacks[i].w == w && blacks[i].h == h) {
++            return blacks[i].fb;
++        }
++    }
++    for (i = 0; i < 4; i++) {
++        if (!blacks[i].fb) {
++            if (make_black_fb(fd, w, h, &blacks[i].fb) != 0) {
++                return 0;
++            }
++            blacks[i].w = w;
++            blacks[i].h = h;
++            return blacks[i].fb;
++        }
++    }
++    return 0;
++}
++
++static void fit_rect(int mw, int mh)
++{
++    if ((long)mw * rsos_rh >= (long)mh * rsos_rw) { /* height-limited */
++        dst_h = mh;
++        dst_w = (int)((long)mh * rsos_rw / rsos_rh);
++    } else {
++        dst_w = mw;
++        dst_h = (int)((long)mw * rsos_rh / rsos_rw);
++    }
++    dst_x = (mw - dst_w) / 2;
++    dst_y = (mh - dst_h) / 2;
++}
++
++/* Shows fb_id (the game's frame) on the display's CRTC. first = 1 sets the
++ * mode (the first swap, or a new output); then every frame is one plane
++ * update, which the kernel completes at the next vblank. */
++int rsos_scanout(SDL_VideoData *viddata, SDL_DisplayData *dispdata, uint32_t fb_id, int first)
++{
++    int fd = viddata->drm_fd;
++    uint32_t conn = dispdata->connector->connector_id;
++    uint32_t black;
++    int ret;
++
++    if (first) {
++        plane_id = find_primary_plane(fd, rsos_crtc_index);
++        if (!plane_id) {
++            SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "rsos: no primary plane for CRTC %d", rsos_crtc_index);
++            return -ENODEV;
++        }
++        black = rsos_black_fb(fd, dispdata->mode.hdisplay, dispdata->mode.vdisplay);
++        if (!black) {
++            return -ENOMEM;
++        }
++        ret = KMSDRM_drmModeSetCrtc(fd, dispdata->crtc->crtc_id, black, 0, 0, &conn, 1, &dispdata->mode);
++        if (ret) {
++            return ret;
++        }
++        fit_rect(dispdata->mode.hdisplay, dispdata->mode.vdisplay);
++        SDL_LogDebug(SDL_LOG_CATEGORY_VIDEO, "rsos: plane %u shows %dx%d scaled to %dx%d+%d+%d on %dx%d",
++                     plane_id, rsos_rw, rsos_rh, dst_w, dst_h, dst_x, dst_y,
++                     (int)dispdata->mode.hdisplay, (int)dispdata->mode.vdisplay);
++    }
++    return KMSDRM_drmModeSetPlane(fd, plane_id, dispdata->crtc->crtc_id, fb_id, 0,
++                                  dst_x, dst_y, (uint32_t)dst_w, (uint32_t)dst_h,
++                                  0, 0, (uint32_t)rsos_rw << 16, (uint32_t)rsos_rh << 16);
++}
++
++#endif /* SDL_VIDEO_DRIVER_KMSDRM */
+--- a/src/video/kmsdrm/policy.c
++++ b/src/video/kmsdrm/policy.c
+@@ -0,0 +1,117 @@
++/*
++ * policy.c - output decision, see policy.h. Same rules as display.c:
++ *   - HDMI when it is connected and has a usable mode, else the built-in panel;
++ *   - HDMI mode: the configured size and refresh, else the preferred one,
++ *     else the first; with no EDID the CEA 720p60 timing (builtin);
++ *   - panel_keep_scanning: the panel keeps CRTC 0 (the first LCD's CRTC),
++ *     HDMI takes hdmi_crtc_index (or the lowest free one), never the panel's.
++ */
++#include <stddef.h>
++
++#include "policy.h"
++
++static const struct pf_mode cea_720p60 = { 1280, 720, 60, false };
++
++static const struct pf_mode *find_mode(const struct pf_conn *c, int w, int h, int hz)
++{
++	for (int i = 0; i < c->nmodes; i++)
++		if (c->modes[i].w == w && c->modes[i].h == h && c->modes[i].hz == hz)
++			return &c->modes[i];
++	for (int i = 0; i < c->nmodes; i++)
++		if (c->modes[i].w == w && c->modes[i].h == h)
++			return &c->modes[i];
++	return NULL;
++}
++
++bool pf_pick_mode(const struct pf_cfg *cfg, const struct pf_conn *c, struct pf_mode *out, bool *builtin)
++{
++	const struct pf_mode *m = NULL;
++
++	*builtin = false;
++	if (c->kind == PF_KIND_HDMI) {
++		if ((!c->has_edid || c->nmodes == 0) && cfg->hdmi_builtin_mode) {
++			*out = cea_720p60;
++			*builtin = true;
++			return true;
++		}
++		if (cfg->hdmi_w > 0 && cfg->hdmi_h > 0)
++			m = find_mode(c, cfg->hdmi_w, cfg->hdmi_h, cfg->hdmi_hz > 0 ? cfg->hdmi_hz : 60);
++	}
++	for (int i = 0; !m && i < c->nmodes; i++)
++		if (c->modes[i].preferred)
++			m = &c->modes[i];
++	if (!m && c->nmodes > 0)
++		m = &c->modes[0];
++	if (!m)
++		return false;
++	*out = *m;
++	return true;
++}
++
++static bool crtc_ok(const struct pf_conn *c, const struct pf_cfg *cfg, int i)
++{
++	return i >= 0 && i < cfg->crtc_count && (c->possible_crtcs & (1u << i));
++}
++
++/* First CRTC that conn can use, lowest index first. */
++static int first_crtc(const struct pf_conn *c, const struct pf_cfg *cfg, int avoid)
++{
++	for (int i = 0; i < cfg->crtc_count; i++)
++		if (i != avoid && crtc_ok(c, cfg, i))
++			return i;
++	return -1;
++}
++
++struct pf_choice pf_choose(const struct pf_cfg *cfg, const struct pf_conn *conns, int nconns)
++{
++	struct pf_choice ch = { .conn = -1, .crtc = -1 };
++	int lcd = -1, hdmi = -1, panel_crtc = -1;
++	struct pf_mode m;
++	bool builtin;
++
++	for (int i = 0; i < nconns && i < PF_MAX_CONNS; i++) {
++		if (!conns[i].connected)
++			continue;
++		if (conns[i].kind == PF_KIND_LCD && lcd < 0)
++			lcd = i;
++		if (conns[i].kind == PF_KIND_HDMI && hdmi < 0)
++			hdmi = i;
++	}
++	if (lcd >= 0) {
++		/* the panel's CRTC: the lowest one it can use */
++		panel_crtc = first_crtc(&conns[lcd], cfg, -1);
++	}
++
++	/* HDMI wins when it can show a picture, else the panel */
++	if (hdmi >= 0 && pf_pick_mode(cfg, &conns[hdmi], &m, &builtin)) {
++		int crtc;
++
++		if (cfg->panel_keep_scanning && lcd >= 0) {
++			/* HDMI never on the panel's CRTC */
++			crtc = crtc_ok(&conns[hdmi], cfg, cfg->hdmi_crtc_index) &&
++			       cfg->hdmi_crtc_index != panel_crtc ? cfg->hdmi_crtc_index
++			       : first_crtc(&conns[hdmi], cfg, panel_crtc);
++		} else {
++			crtc = crtc_ok(&conns[hdmi], cfg, cfg->hdmi_crtc_index) ? cfg->hdmi_crtc_index
++			       : first_crtc(&conns[hdmi], cfg, -1);
++		}
++		if (crtc >= 0) {
++			ch.conn = hdmi;
++			ch.crtc = crtc;
++			ch.w = m.w;
++			ch.h = m.h;
++			ch.hz = m.hz;
++			ch.builtin = builtin;
++			return ch;
++		}
++	}
++	if (lcd >= 0 && pf_pick_mode(cfg, &conns[lcd], &m, &builtin) && panel_crtc >= 0) {
++		ch.conn = lcd;
++		ch.crtc = panel_crtc;
++		ch.w = m.w;
++		ch.h = m.h;
++		ch.hz = m.hz;
++		ch.builtin = builtin;
++	}
++	return ch;
++}
+--- a/src/video/kmsdrm/policy.h
++++ b/src/video/kmsdrm/policy.h
+@@ -0,0 +1,54 @@
++/*
++ * policy.h - which output (built-in panel or HDMI), which CRTC and which
++ * mode a RetroStoneOS process uses. Pure logic: no DRM, no I/O. It mirrors
++ * pick_mode() and choose_crtc() in frontend/src/display.c, so the libretro
++ * host and the native ports (SDL2 patch, ports/) take the same decision.
++ */
++#ifndef RSOS_FOLLOW_POLICY_H
++#define RSOS_FOLLOW_POLICY_H
++
++#include <stdbool.h>
++#include <stdint.h>
++
++#define PF_MAX_MODES 64
++#define PF_MAX_CONNS 8
++
++enum pf_kind { PF_KIND_LCD = 0, PF_KIND_HDMI = 1 };
++
++struct pf_mode {
++	int w, h, hz;
++	bool preferred;
++};
++
++struct pf_conn {
++	enum pf_kind kind;
++	bool connected;
++	bool has_edid;
++	uint32_t possible_crtcs;   /* bit i = CRTC i can drive this connector */
++	int nmodes;
++	struct pf_mode modes[PF_MAX_MODES];
++};
++
++struct pf_cfg {
++	int hdmi_w, hdmi_h, hdmi_hz;   /* policy mode, default 1280x720@60 */
++	bool hdmi_builtin_mode;        /* no EDID: use CEA 720p60 */
++	int hdmi_crtc_index;           /* preferred CRTC for HDMI (default 1) */
++	bool panel_keep_scanning;      /* the panel keeps its CRTC for good */
++	int crtc_count;
++};
++
++struct pf_choice {
++	int conn;        /* index into conns, -1 = none usable */
++	int crtc;        /* -1 = none */
++	int w, h, hz;
++	bool builtin;    /* the CEA timing, not an EDID mode */
++};
++
++/* Decide the output. want_hdmi = the user's choice when HDMI is connected
++ * (always true in the default policy: HDMI when plugged in). */
++struct pf_choice pf_choose(const struct pf_cfg *cfg, const struct pf_conn *conns, int nconns);
++
++/* The mode pf_choose() would give one connector (no CRTC check). */
++bool pf_pick_mode(const struct pf_cfg *cfg, const struct pf_conn *c, struct pf_mode *out, bool *builtin);
++
++#endif
+--- a/src/audio/alsa/SDL_alsa_audio.c
++++ b/src/audio/alsa/SDL_alsa_audio.c
+@@ -368,12 +368,66 @@
+ }
+ #endif /* SND_CHMAP_API_VERSION */
+ 
++
++/* RetroStoneOS: the sound follows the picture. The KMSDRM video driver says whether the game is on HDMI
++   (rsos_audio_hdmi, rsos_scanout.c); then the HDMI sound card plays, else the usual device. A device the
++   game or the user chose (AUDIODEV, a named device) is left alone. */
++static int ALSA_configure_pcm(_THIS, snd_pcm_t *pcm_handle);
++extern volatile int rsos_audio_hdmi __attribute__((weak));
++
++static const char *rsos_hdmi_device(void)
++{
++    const char *d = SDL_getenv("RSOS_AUDIO_HDMI_DEV");
++
++    return d && *d ? d : "plughw:CARD=sun4ihdmi,DEV=0";
++}
++
++static int rsos_route_hdmi(_THIS)
++{
++    if (this->iscapture || this->handle || SDL_getenv("AUDIODEV") || !&rsos_audio_hdmi) {
++        return 0;
++    }
++    return rsos_audio_hdmi > 0;
++}
++
++/* Plays on another sound card from now on: the new pcm is set up as the first one was. */
++static void rsos_alsa_reopen(_THIS, const char *device)
++{
++    SDL_AudioSpec keep = this->spec;
++    snd_pcm_t *old = this->hidden->pcm_handle, *pcm = NULL;
++    void (*swizzle)(_THIS, void *, Uint32) = this->hidden->swizzle_func;
++
++    if (ALSA_snd_pcm_open(&pcm, device, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK) < 0) {
++        return;
++    }
++    this->hidden->pcm_handle = pcm;
++    if (ALSA_configure_pcm(this, pcm) < 0) {
++        this->hidden->pcm_handle = old;
++        this->hidden->swizzle_func = swizzle;
++        this->spec = keep;
++        ALSA_snd_pcm_close(pcm);
++        return;
++    }
++    this->spec = keep;    /* the game's buffers stay as they are: writei takes any size */
++#if !SDL_ALSA_NON_BLOCKING
++    ALSA_snd_pcm_nonblock(pcm, 0);
++#endif
++    ALSA_snd_pcm_close(old);
++    SDL_LogDebug(SDL_LOG_CATEGORY_AUDIO, "rsos: the sound moved to %s", device);
++}
++
+ static void ALSA_PlayDevice(_THIS)
+ {
+     const Uint8 *sample_buf = (const Uint8 *)this->hidden->mixbuf;
+     const int frame_size = ((SDL_AUDIO_BITSIZE(this->spec.format)) / 8) *
+                            this->spec.channels;
+     snd_pcm_uframes_t frames_left = ((snd_pcm_uframes_t)this->spec.samples);
++    int rsos_route = rsos_route_hdmi(this);
++
++    if (rsos_route != this->hidden->rsos_route) {
++        this->hidden->rsos_route = rsos_route;
++        rsos_alsa_reopen(this, rsos_route ? rsos_hdmi_device() : get_audio_device(this->handle, this->spec.channels));
++    }
+ 
+     this->hidden->swizzle_func(this, this->hidden->mixbuf, frames_left);
+ 
+@@ -585,11 +639,11 @@
+     return 0;
+ }
+ 
+-static int ALSA_OpenDevice(_THIS, const char *devname)
++/* RetroStoneOS: the configuration of an open pcm, from ALSA_OpenDevice (also used to move
++   the sound to another card). */
++static int ALSA_configure_pcm(_THIS, snd_pcm_t *pcm_handle)
+ {
+     int status = 0;
+-    SDL_bool iscapture = this->iscapture;
+-    snd_pcm_t *pcm_handle = NULL;
+     snd_pcm_hw_params_t *hwparams = NULL;
+     snd_pcm_sw_params_t *swparams = NULL;
+     snd_pcm_format_t format = 0;
+@@ -601,26 +655,6 @@
+     char chmap_str[64];
+ #endif
+ 
+-    /* Initialize all variables that we clean on shutdown */
+-    this->hidden = (struct SDL_PrivateAudioData *)SDL_malloc(sizeof(*this->hidden));
+-    if (!this->hidden) {
+-        return SDL_OutOfMemory();
+-    }
+-    SDL_zerop(this->hidden);
+-
+-    /* Open the audio device */
+-    /* Name of device should depend on # channels in spec */
+-    status = ALSA_snd_pcm_open(&pcm_handle,
+-                               get_audio_device(this->handle, this->spec.channels),
+-                               iscapture ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK,
+-                               SND_PCM_NONBLOCK);
+-
+-    if (status < 0) {
+-        return SDL_SetError("ALSA: Couldn't open audio device: %s", ALSA_snd_strerror(status));
+-    }
+-
+-    this->hidden->pcm_handle = pcm_handle;
+-
+     /* Figure out what the hardware is capable of */
+     snd_pcm_hw_params_alloca(&hwparams);
+     status = ALSA_snd_pcm_hw_params_any(pcm_handle, hwparams);
+@@ -744,6 +778,40 @@
+         return SDL_SetError("Couldn't set software audio parameters: %s", ALSA_snd_strerror(status));
+     }
+ 
++    return 0;
++}
++
++static int ALSA_OpenDevice(_THIS, const char *devname)
++{
++    int status = 0;
++    SDL_bool iscapture = this->iscapture;
++    snd_pcm_t *pcm_handle = NULL;
++
++    /* Initialize all variables that we clean on shutdown */
++    this->hidden = (struct SDL_PrivateAudioData *)SDL_malloc(sizeof(*this->hidden));
++    if (!this->hidden) {
++        return SDL_OutOfMemory();
++    }
++    SDL_zerop(this->hidden);
++
++    /* Open the audio device */
++    /* Name of device should depend on # channels in spec */
++    this->hidden->rsos_route = rsos_route_hdmi(this);
++    status = ALSA_snd_pcm_open(&pcm_handle,
++                               this->hidden->rsos_route ? rsos_hdmi_device() : get_audio_device(this->handle, this->spec.channels),
++                               iscapture ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK,
++                               SND_PCM_NONBLOCK);
++
++    if (status < 0) {
++        return SDL_SetError("ALSA: Couldn't open audio device: %s", ALSA_snd_strerror(status));
++    }
++
++    this->hidden->pcm_handle = pcm_handle;
++
++    if (ALSA_configure_pcm(this, pcm_handle) < 0) {
++        return -1;
++    }
++
+     /* Calculate the final parameters for this audio specification */
+     SDL_CalculateAudioSpec(&this->spec);
+ 
+--- a/src/audio/alsa/SDL_alsa_audio.h
++++ b/src/audio/alsa/SDL_alsa_audio.h
+@@ -39,6 +39,9 @@
+     Uint8 *mixbuf;
+     int mixlen;
+ 
++    /* RetroStoneOS: 1 while the sound is on the HDMI card */
++    int rsos_route;
++
+     /* swizzle function */
+     void (*swizzle_func)(_THIS, void *buffer, Uint32 bufferlen);
+ };

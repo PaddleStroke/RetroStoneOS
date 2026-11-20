@@ -80,13 +80,54 @@ Each input device is resolved in this order:
    come from the board profile (board.ini `builtin_pad_prefix`, `builtin_stick`, docs/porting.md); a board without
    them (a Raspberry Pi with USB pads) has no built-in pad.
 2. **User mapping** saved earlier: `/data/rsos/input/<guid>.cfg` (made with the "Configure controller" screen).
-3. **SDL GameControllerDB** (`gamecontrollerdb.txt`, zlib licence, shipped in the rootfs). We compute the SDL-style GUID from
+   "Configure controller" first asks what kind of pad it is, then walks through that pad's buttons. Only A, B and
+   Start are needed; any other step is skipped by pressing a button already set, or by waiting 6 s.
+   - **SNES, Xbox, PlayStation, Switch or similar** (`modern`): the usual 20 steps, by position.
+   - **Nintendo 64** (`n64`): A, B, Z, L, R, Start, the four C buttons, the stick.
+   - **GameCube** (`gc`): A, B, X, Y, Z, L, R, Start, the stick, the C stick.
+   - **Forget my set-up (automatic)** (shown once a pad has a user mapping) deletes it: the pad is mapped by (3)-(6)
+     again, or is unconfigured.
+   - A mapping without the left stick (skipped, or made before the stick could be set) still gets `ABS_X`/`ABS_Y`.
+   - The wizard reads a stick push past a third of the axis range: an 8-bit stick resting at 128 never goes
+     past half.
+3. **Built-in profiles** (`g_profiles` in `src/input/input.c`) for pads whose kernel layout no database line describes
+   right, by vendor:product (and, for pads that pass as another, by the keys they have). All are hid-nintendo's
+   (linux 6.18): the Switch Online **N64** pad (C-up on Select, B on the right button), the Switch Online **NES**
+   pads (they say they are Joy-Cons; A at the bottom), the Switch Online **Genesis** pad (the database's line is for
+   another layout).
+   Then pads of **drivers that follow the Linux gamepad spec**: `xpad` (Xbox 360/One/Series over USB, many clones),
+   `playstation` (DualSense), `sony` (DualShock 3/4), `nintendo` (Switch Pro, Joy-Cons, Switch Online SNES),
+   `hid-steam` (Steam Controller; its left touch pad is no d-pad, its clicks are). The driver is read from
+   `/sys/class/input/eventN/device/device/driver` and logged (`input: ... (xpad) ...`). The database is not asked
+   for them: a line made under another driver or version could only be wrong.
+4. **SDL GameControllerDB** (`gamecontrollerdb.txt`, zlib licence, shipped in the rootfs). We compute the SDL-style GUID from
    the evdev `input_id` (bus, vendor, product, version) and parse the mapping line ourselves. SDL isn't needed. This covers
-   thousands of USB/BT pads, including cheap clones.
-4. **Linux gamepad spec**: if the device reports BTN_GAMEPAD and uses the standard codes (xpad, hid-sony,
-   hid-playstation, hid-nintendo, and hid-generic for many pads), use the codes directly, since they are already positional.
-5. **Unknown device**: the UI shows a "New controller detected: hold any button to configure" prompt, which opens a guided
+   thousands of USB/BT pads, including cheap clones, adapters and 8BitDo pads. The kind of pad comes from its name
+   there: "GameCube" or the word "GC" is a GameCube pad (an adapter for both GameCube and N64 maps the GameCube way),
+   "N64" or "Nintendo 64" an N64 pad.
+5. **Linux gamepad spec**: any other device with BTN_GAMEPAD, by its codes (already positional).
+6. **Unknown device**: the UI shows a "New controller detected: hold any button to configure" prompt, which opens a guided
    mapping screen (the EmulationStation "configure input" flow) and saves to (2).
+
+### Kinds of pad
+The SDL names in a mapping mean what the database means by them for that kind of pad (`input.h`,
+`enum input_pad_type`):
+
+| Kind | Names | In a game (RetroPad) | In the menus |
+|---|---|---|---|
+| `modern` | by position: `a` bottom, `b` right, `x` left, `y` top | `a` = B, `b` = A, `x` = Y, `y` = X | A (right) confirms, B (bottom) goes back |
+| `n64` | `a` = A, `b` = B, `-righty`/`+righty`/`-rightx`/`+rightx` = C-up/down/left/right (buttons or a stick), `lefttrigger` = Z, `leftshoulder` = L, `rightshoulder` = R | A = B, B = Y, C-up/down/left/right = X/A/L3/R3 **and** the right stick (what the N64 core reads as C), Z = L2 | A confirms, B goes back, Z is Select |
+| `gc` | by label: `a` = A, `b` = B, `x` = X, `y` = Y, `rightshoulder` = Z, `lefttrigger`/`righttrigger` = L/R, `rightx`/`righty` = C stick | A = B, B = Y, X = A, Y = X (by position), Z = R1, L/R = L2/R2 | A confirms, B goes back |
+
+- N64 and GameCube pads have no Select: **Z + Start held 1 s** opens the in-game menu, and quits a native game.
+- **Home / Guide / PS** (any pad that has one): opens the in-game menu; held, it quits a native game.
+- A **PlayStation pad's touch pad** is a device of its own with ABS_X and a few keys: it is not taken for a pad
+  (no BTN_TOUCH / multitouch axes on a pad). The motion sensors (PlayStation, Switch) have no keys: ignored too.
+- Not supported: Nintendo's GameCube adapter (WUP-028, 057e:0337) and a Mayflash in its "Wii U" mode need a driver
+  Linux does not have; a Mayflash adapter in **PC mode** works (the database knows it). Two Joy-Cons are two pads,
+  not one (that needs joycond).
+- Test: `make check-input` (`n64_pad`, `known_pads`: each known pad laid out from its kernel driver's codes or its
+  database line, with no hardware).
 
 Additional handling:
 - **Hats** (ABS_HAT0X/Y) become the D-pad.

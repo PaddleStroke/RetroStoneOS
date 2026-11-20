@@ -266,8 +266,9 @@ check-power: $(POWER_TEST)
 check-transfer: $(TR_BUILD)/test_transfer
 	$(TR_BUILD)/test_transfer
 	@# USB import and network upload know every system of the carousel
-	@# (sysmap.c lacked the second batch of cores until 0.1.4)
-	@sed -n 's/^\t{ "\([a-z0-9]*\)", NC_("system".*/\1/p' src/ui/systems.c | grep -vx retrostone | sort > $(TR_BUILD)/sys-ui.txt
+	@# (sysmap.c lacked the second batch of cores until 0.1.4); "ports" only
+	@# lists the games of doom, cavestory and native, which have their own folders
+	@sed -n 's/^\t{ "\([a-z0-9]*\)", NC_("system".*/\1/p' src/ui/systems.c | grep -vxE 'retrostone|ports' | sort > $(TR_BUILD)/sys-ui.txt
 	@sed -n 's/^\t{ "\([a-z0-9]*\)", "[^"]*", {.*/\1/p' src/transfer/sysmap.c | sort > $(TR_BUILD)/sys-tr.txt
 	@diff $(TR_BUILD)/sys-ui.txt $(TR_BUILD)/sys-tr.txt || \
 		{ echo "check-transfer: src/ui/systems.c (<) and src/transfer/sysmap.c (>) list different systems"; exit 1; }
@@ -360,6 +361,25 @@ check-ui: $(UIPREVIEW)
 			expect:|Wireless_Controller a sleep:1500 expect:dialog:Could_not_pair a wait:300 \
 			expect:menu:Bluetooth_devices|Wireless_Controller b sleep:500"
 	rm -rf $(UI_CHECK_DIR)/bt $(UI_CHECK_DIR)/data/rsos/settings.ini
+	@echo "check-ui: Game store (tests/fake-rsos-store.sh): the list by system, install, update flag, remove, a full drive"
+	rm -rf $(UI_CHECK_DIR)/store
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet --store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down expect:menu:Settings|Game_store a sleep:500 wait:1500 			expect:menu:Game_store|Micro_Mage a wait:300 expect:dialog:Micro_Mage_1.0_by_Test_Author_-_CC0_40_KB__A_platformer_for_the_NES.|INSTALL a sleep:3000 wait:1500 			expect:toast=Micro_Mage_installed a wait:300 expect:dialog:Micro_Mage_1.0_by_Test_Author_-_CC0_40_KB__A_platformer_for_the_NES.|REMOVE a sleep:2500 wait:1500 			expect:toast=Micro_Mage_removed b sleep:300 expect:menu:Settings"
+	grep -q -- '^--out .* list$$' $(UI_CHECK_DIR)/store/calls.log
+	grep -q -- '--roms .*/roms get micro-mage$$' $(UI_CHECK_DIR)/store/calls.log
+	grep -q -- '--roms .*/roms remove micro-mage$$' $(UI_CHECK_DIR)/store/calls.log
+	rm -rf $(UI_CHECK_DIR)/store
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store FAKE_STORE_FAIL=space $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet 		--store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down a sleep:500 wait:1500 a wait:300 a sleep:1500 wait:1500 			expect:dialog:There_is_not_enough_free_space a wait:300"
+	rm -rf $(UI_CHECK_DIR)/store
+	@echo "check-ui: Game store ports: the ROM found, the question, preparing with progress, installed; no ROM: LOOK AGAIN"
+	rm -rf $(UI_CHECK_DIR)/store
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet --store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down a sleep:500 wait:1500 down down 			expect:menu:Game_store|Ocarina_of_Time a sleep:800 wait:1500 			expect:dialog:Ocarina_of_Time_9.3.1_by_Test_Author_-_CC0_58_MB__A_port_made_from_your_own_ROM.__Your_ROM:_Ocarina_of_Time_(U)_(V1.2).z64|INSTALL a wait:300 			expect:dialog:Preparing_the_game_data_from_your_ROM_takes_about_4_minutes._Keep_the_console_on_and_nothing_else_running.|START 			a wait:300 sleep:3500 wait:1500 expect:toast=Ocarina_of_Time_installed 			expect:menu:Game_store|Ocarina_of_Time"
+	grep -q -- 'find-rom zelda-port$$' $(UI_CHECK_DIR)/store/calls.log
+	grep -q -- '--rom /data/roms/n64/Ocarina of Time (U) (V1.2).z64 install-port zelda-port$$' $(UI_CHECK_DIR)/store/calls.log
+	rm -rf $(UI_CHECK_DIR)/store && mkdir -p $(UI_CHECK_DIR)/store && touch $(UI_CHECK_DIR)/store/norom
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet --store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down a sleep:500 wait:1500 down down a sleep:800 wait:1500 			expect:dialog:Ocarina_of_Time_9.3.1_by_Test_Author_-_CC0_58_MB__A_port_made_from_your_own_ROM.__Needs_your_own_ROM:_Ocarina_of_Time_(US_1.2)._Put_it_in_your_N64_folder_or_on_a_USB_drive,_then_choose_LOOK_AGAIN.|LOOK_AGAIN"
+	rm -rf $(UI_CHECK_DIR)/store
+	FAKE_STORE_DIR=$(UI_CHECK_DIR)/store FAKE_STORE_FAIL=memory $(UIPREVIEW) --root $(UI_CHECK_DIR) --quiet --store-helper $(CURDIR)/tests/fake-rsos-store.sh 		--keys "start down down down down down down down down a sleep:500 wait:1500 down down a sleep:800 wait:1500 			a wait:300 a sleep:1500 wait:1500 expect:dialog:Preparing_the_game_needs_more_free_memory."
+	rm -rf $(UI_CHECK_DIR)/store
 	@echo "check-ui: game options act on their game after Favorite re-sorts the list (review F-H4)"
 	rm -rf $(UI_CHECK_DIR)-games && mkdir -p $(UI_CHECK_DIR)-games/data/roms/nes \
 		$(UI_CHECK_DIR)-games/data/rsos $(UI_CHECK_DIR)-games/usr/share/rsos/cores
@@ -595,6 +615,38 @@ check-frontend: $(FRONTEND) $(HOST_TESTCORE) $(SPLASH)
 	grep -q 'crashed' $(FE_LOG)
 	grep -q 'signal 15: exiting' $(FE_LOG)
 	grep -q 'exit 0 after' $(FE_LOG)
+	@echo "check-frontend: 2a. a native game: its script runs in its folder, HOME on /data, SDL on KMS"
+	@# the native games only: the menu starts on them
+	mv $(FE_CHECK_DIR)/data/roms/nes $(FE_CHECK_DIR)/data/nes.aside
+	rm -f $(FE_CHECK_DIR)/data/rsos/cache/systems.idx
+	printf 'language = en\nlast_system = native\n' > $(FE_SETTINGS)
+	rm -f $(FE_LOG)
+	mkdir -p $(FE_CHECK_DIR)/data/roms/native/files
+	printf 'echo "$$PWD|$$HOME|$$SDL_VIDEODRIVER|$$RSOS_GAME_DIR" > files/ran.txt\nexit $${RSOS_TEST_NATIVE_EXIT:-0}\n' \
+		> "$(FE_CHECK_DIR)/data/roms/native/Native Test.sh"
+	$(FE_RUN) --script "wait:600 a wait:500 a wait:1500 shot:$(FE_CHECK_DIR)/native.png term"
+	grep -q 'launch native Native Test' $(FE_LOG)
+	grep -q 'native game ended: 0' $(FE_LOG)
+	test "$$(cat $(FE_CHECK_DIR)/data/roms/native/files/ran.txt)" = \
+		"$(FE_CHECK_DIR)/data/roms/native|$(FE_CHECK_DIR)/data/rsos/native-home|kmsdrm|$(FE_CHECK_DIR)/data/roms/native"
+	grep -q '^=== \[.*\] launch native: .*Native Test.sh' $(FE_GAME_LOG)
+	@echo "check-frontend: 2b. a native game that fails: its exit code is shown"
+	printf 'language = en\nlast_system = native\n' > $(FE_SETTINGS)
+	rm -f $(FE_LOG)
+	RSOS_TEST_NATIVE_EXIT=3 $(FE_RUN) --script "wait:600 a wait:500 a wait:1500 term"
+	grep -q 'native game ended: 3' $(FE_LOG)
+	@echo "check-frontend: 2c. the menu stops: the native game and what it started go too"
+	printf 'language = en\nlast_system = native\n' > $(FE_SETTINGS)
+	rm -f $(FE_LOG) $(FE_CHECK_DIR)/data/roms/native/files/bg.pid
+	printf 'sleep 300 &\necho $$! > files/bg.pid\nwait\n' > "$(FE_CHECK_DIR)/data/roms/native/Native Test.sh"
+	$(FE_RUN) --script "wait:600 a wait:500 a game:wait:1000 game:term"
+	grep -q 'signal 15: asking the game to quit' $(FE_LOG)
+	grep -q 'native game ended: 143' $(FE_LOG)
+	test -s $(FE_CHECK_DIR)/data/roms/native/files/bg.pid
+	! kill -0 $$(cat $(FE_CHECK_DIR)/data/roms/native/files/bg.pid) 2> /dev/null
+	rm -rf $(FE_CHECK_DIR)/data/roms/native
+	mv $(FE_CHECK_DIR)/data/nes.aside $(FE_CHECK_DIR)/data/roms/nes
+	rm -f $(FE_CHECK_DIR)/data/rsos/cache/systems.idx
 	@echo "check-frontend: 3. charge mode, charger already unplugged: power-off"
 	rm -f $(FE_LOG)
 	printf 'charger\n' > $(FE_CHECK_DIR)/run/rsos/bootreason

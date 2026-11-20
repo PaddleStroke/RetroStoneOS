@@ -559,7 +559,8 @@ to the default, then to the first theme found. The default stays `rsos-dark` (pr
 - **Hide / Delete** (batch 2, game options): "Hide this game" (gamedb `hidden`; also the gamelist.xml `hidden`
   flag) removes it from the lists; Settings > Game lists > "Show hidden games" (key `show_hidden`) shows them again,
   marked "(hidden)". "Delete this game" asks `Delete "<file>" from the SD card?` [DELETE] [CANCEL] (CANCEL
-  selected; for .m3u/.cue: "The discs/tracks it lists are kept"), deletes the file only, then asks "Also delete its
+  selected; for .m3u/.cue: "The discs/tracks it lists are kept"), deletes the file only (a Ports launcher the game
+  store installed: the store removes the whole port, keeping its saves and settings), then asks "Also delete its
   saves and save states?" [NO] [YES] (NO selected): `.srm`/`.rtc` in `/data/saves/<system>/`, `.state*` (and their
   `.png`) in `/data/states/<system>/` (their `.bak` copies too). The game is removed from every list and from
   gamedb.tsv. If another file of the system's ROM folder has the same save name (`Game.zip` next to `Game.sfc`, the

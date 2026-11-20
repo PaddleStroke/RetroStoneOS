@@ -43,7 +43,7 @@ static const char *const g_systems[][2] = {
 	{ "gamegear", "gg" }, { "psx", "pbp" }, { "pcengine", "pce" }, { "pcenginecd", "ccd" },
 	{ "ngp", "ngp" }, { "ngpc", "ngc" }, { "wonderswan", "ws" }, { "wonderswancolor", "wsc" },
 	{ "atari2600", "a26" }, { "atari7800", "a78" }, { "atarilynx", "lnx" }, { "coleco", "col" },
-	{ "msx", "mx1" }, { "arcade", "zip" }, { "fbneo", "7z" }, { "neogeo", "neo" }, { "neocd", "cue" },
+	{ "msx", "mx1" }, { "doom", "wad" }, { "cavestory", "exe" }, { "arcade", "zip" }, { "fbneo", "7z" }, { "neogeo", "neo" }, { "neocd", "cue" },
 };
 
 /* src/ui/ui_internal.h: Settings > Game lists > Refresh game lists (force) */
@@ -641,6 +641,28 @@ int main(int argc, char **argv)
 		CHECK(strstr(st2, "ngp:1") && strstr(st2, "complete=1"),
 		      "Refresh game lists finds it again (%s)", field(st2, "carousel", f1, sizeof(f1)));
 		ui_destroy(ui);
+	}
+
+	printf("12. Doom, Cave Story and the native games are one Ports list\n");
+	{
+		struct boot e;
+		char c1[512];
+
+		dir("data/roms/native");
+		dir("data/roms/ports");
+		put("data/roms/doom/E1M1.wad", "x");
+		put("data/roms/cavestory/Doukutsu.exe", "x");
+		put("data/roms/native/Test Game.sh", "x");
+		put("data/roms/ports/Other.wad", "x");
+		boot(&e, NULL, NULL);
+		CHECK(strstr(e.final, "ports:4"), "one Ports entry with the four games: %s",
+		      field(e.final, "carousel", c1, sizeof(c1)));
+		CHECK(!strstr(e.final, "doom:") && !strstr(e.final, "cavestory:") && !strstr(e.final, "native:"),
+		      "the three are not shown on their own");
+		CHECK(!strcmp(systems_effective("ports", "/r/native/Test Game.sh"), "native"), "a .sh launches as a native game");
+		CHECK(!strcmp(systems_effective("ports", "/r/ports/Doukutsu.EXE"), "cavestory"), "an .exe as Cave Story");
+		CHECK(!strcmp(systems_effective("ports", "/r/doom/E1M1.wad"), "doom"), "a .wad as Doom");
+		CHECK(!strcmp(systems_effective("snes", "/r/snes/x.sfc"), "snes"), "any other system is unchanged");
 	}
 
 	printf(g_fail ? "test_loader: %d FAILED\n" : "test_loader: all passed\n", g_fail);

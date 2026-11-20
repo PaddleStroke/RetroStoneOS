@@ -1,0 +1,126 @@
+diff --git a/soh/assets/tools/torch-cli/main.cpp b/soh/assets/tools/torch-cli/main.cpp
+index bc2a3d14..44fb4cea 100644
+--- a/soh/assets/tools/torch-cli/main.cpp
++++ b/soh/assets/tools/torch-cli/main.cpp
+@@ -1,3 +1,6 @@
++#include <fstream>
++#include <iterator>
++#include <vector>
+ // Build-time ROM extraction, for the ExtractAssets target and anything else that needs an
+ // archive without launching the game.
+ //
+@@ -98,7 +101,9 @@ int main(int argc, char** argv) {
+ 
+     for (const auto& rom : roms) {
+         // A fresh extraction per ROM; torch names the archive from config.yml.
+-        const std::string archive = SohTorch::Extract(rom, src, dest, version, nullptr);
++        std::ifstream romFile(rom, std::ios::binary);
++        std::vector<uint8_t> romData((std::istreambuf_iterator<char>(romFile)), std::istreambuf_iterator<char>());
++        const std::string archive = SohTorch::Extract(std::move(romData), src, dest, version, nullptr);
+         if (archive.empty()) {
+             fprintf(stderr, "failed to extract %s\n", rom.c_str());
+             return 1;
+diff --git a/soh/soh/ResourceManagerHelpers.cpp b/soh/soh/ResourceManagerHelpers.cpp
+index 69a482f6..12b24bb6 100644
+--- a/soh/soh/ResourceManagerHelpers.cpp
++++ b/soh/soh/ResourceManagerHelpers.cpp
+@@ -9,6 +9,23 @@
+ 
+ #include "ResourceManagerHelpers.h"
+ #include "OTRGlobals.h"
++#include <mutex>
++#include <string>
++#include <unordered_map>
++
++static bool NoAltAssetFiles() {
++    static const bool none =
++        Ship::Context::GetRawInstance()->GetResourceManager()->GetArchiveManager()->ListFiles("alt/*")->empty();
++    return none;
++}
++
++struct ResolvedByName {
++    std::string path;
++    bool mq;
++    std::shared_ptr<Ship::IResource> res;
++};
++static std::unordered_map<const char*, ResolvedByName> sResolvedByName;
++static std::mutex sResolvedByNameMutex;
+ #include "cvar_prefixes.h"
+ #include "Enhancements/enhancementTypes.h"
+ #include "Enhancements/randomizer/dungeon.h"
+@@ -267,20 +284,37 @@ extern "C" bool ResourceMgr_IsAltAssetsEnabled() {
+ // Unloads a resource if an alternate version exists when alt assets are enabled
+ // The resource is only removed from the internal cache to prevent it from used in the next resource lookup
+ extern "C" void ResourceMgr_UnloadOriginalWhenAltExists(const char* resName) {
+-    if (ResourceMgr_IsAltAssetsEnabled() && ResourceMgr_FileAltExists((char*)resName)) {
++    if (!NoAltAssetFiles() && ResourceMgr_IsAltAssetsEnabled() && ResourceMgr_FileAltExists((char*)resName)) {
+         ResourceMgr_UnloadResource((char*)resName);
+     }
+ }
+ 
+ std::shared_ptr<Ship::IResource> ResourceMgr_GetResourceByNameHandlingMQ(const char* path) {
++    const bool mq = ResourceMgr_IsGameMasterQuest();
++    const bool keep = path != nullptr && NoAltAssetFiles();
++    if (keep) {
++        std::lock_guard<std::mutex> lock(sResolvedByNameMutex);
++        auto it = sResolvedByName.find(path);
++        if (it != sResolvedByName.end() && it->second.mq == mq && it->second.path == path) {
++            return it->second.res;
++        }
++    }
+     std::string Path = path;
+-    if (ResourceMgr_IsGameMasterQuest()) {
++    if (mq) {
+         size_t pos = 0;
+         if ((pos = Path.find("/nonmq/", 0)) != std::string::npos) {
+             Path.replace(pos, 7, "/mq/");
+         }
+     }
+-    return Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(Path.c_str());
++    auto res = Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(Path.c_str());
++    if (keep && res != nullptr) {
++        std::lock_guard<std::mutex> lock(sResolvedByNameMutex);
++        if (sResolvedByName.size() >= 4096) {
++            sResolvedByName.clear();
++        }
++        sResolvedByName[path] = { path, mq, res };
++    }
++    return res;
+ }
+ 
+ extern "C" char* ResourceMgr_GetResourceDataByNameHandlingMQ(const char* path) {
+diff --git a/soh/soh/mixer.c b/soh/soh/mixer.c
+index 303a977d..aebbe568 100644
+--- a/soh/soh/mixer.c
++++ b/soh/soh/mixer.c
+@@ -748,11 +748,11 @@ void aMixImplNEON(uint16_t count, int16_t gain, uint16_t in_addr, uint16_t out_a
+             int16x8_t outLoVec2 = vcombine_s16(outLoVec, outLoVec);
+             int16x4_t inLoVec = vget_low_s16(inVec);
+             int16x8_t inLoVec2 = vcombine_s16(inLoVec, inLoVec);
+-            int32x4_t outX7fffHiVec = vmull_high_n_s16(outVec, 0x7FFF);
+-            int32x4_t outX7fffLoVec = vmull_high_n_s16(outLoVec2, 0x7FFF);
++            int32x4_t outX7fffHiVec = vmull_n_s16(vget_high_s16(outVec), 0x7FFF);
++            int32x4_t outX7fffLoVec = vmull_n_s16(vget_high_s16(outLoVec2), 0x7FFF);
+ 
+-            int32x4_t inGainLoVec = vmull_high_s16(inLoVec2, gainVec);
+-            int32x4_t inGainHiVec = vmull_high_s16(inVec, gainVec);
++            int32x4_t inGainLoVec = vmull_s16(vget_high_s16(inLoVec2), vget_high_s16(gainVec));
++            int32x4_t inGainHiVec = vmull_s16(vget_high_s16(inVec), vget_high_s16(gainVec));
+             int32x4_t addVecLo = vaddq_s32(outX7fffLoVec, inGainLoVec);
+             int32x4_t addVecHi = vaddq_s32(outX7fffHiVec, inGainHiVec);
+             addVecHi = vaddq_s32(addVecHi, x4000Vec);
+diff --git a/soh/src/code/audio_load.c b/soh/src/code/audio_load.c
+index d7de0389..00814510 100644
+--- a/soh/src/code/audio_load.c
++++ b/soh/src/code/audio_load.c
+@@ -1252,8 +1252,8 @@ void AudioLoad_Init(void* heap, size_t heapSize) {
+     gAudioContext.resetTimer = 0;
+ 
+     memset(&gAudioContext, 0, sizeof(gAudioContext));
+-    memset(gAudioContext.seqToPlay, 0, 8);
+-    memset(gAudioContext.seqReplaced, 0, 8);
++    memset(gAudioContext.seqToPlay, 0, sizeof(gAudioContext.seqToPlay));
++    memset(gAudioContext.seqReplaced, 0, sizeof(gAudioContext.seqReplaced));
+ 
+     switch (osTvType) {
+         case OS_TV_PAL:
