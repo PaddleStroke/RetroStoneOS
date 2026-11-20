@@ -1322,7 +1322,7 @@ void covers_start(struct ui *ui)
 			lr = strlen(g->rel);
 			if (lr + 1 >= lp || strcmp(g->path + lp - lr, g->rel) || g->path[lp - lr - 1] != '/')
 				continue;
-			fprintf(f, "%s\t%.*s\t%s\n", se->name, (int)(lp - lr - 1), g->path, g->path);
+			fprintf(f, "%s\t%.*s\t%s\n", systems_effective(g->system, g->path), (int)(lp - lr - 1), g->path, g->path);
 			n++;
 		}
 		nsys += n > before;

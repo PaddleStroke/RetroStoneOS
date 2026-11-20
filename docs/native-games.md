@@ -1,7 +1,10 @@
 # Native games
 
 A native game is a program built for the console itself (ARM, Linux), started without an emulator: an
-open-source game engine, a source port, a homebrew game. The menu lists them as the system **Native games**.
+open-source game engine, a source port, a homebrew game. The menu lists them in the one system **Ports**, with the
+Doom and Cave Story games (folders `roms/native`, `roms/doom`, `roms/cavestory`, and `roms/ports` for any of them).
+A game of the list starts as the system it belongs to: a `.sh` launch script as a native game (this page), a `.wad`
+as Doom, an `.exe` as Cave Story (their libretro cores). Favorites and play statistics follow the games.
 
 [ports/](../ports/README.md) has build scripts for three N64 PC ports (Super Mario 64, Star Fox 64, Ocarina of
 Time), each built on a PC from the user's own ROM. No game or game data is in this repository.

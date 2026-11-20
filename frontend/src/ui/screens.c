@@ -2638,7 +2638,7 @@ static void game_delete_ask(struct ui *ui, struct game *g)
  * or .m3u keeps the track / disc files it lists (they are not renamed).
  */
 struct ren_ctx {
-	char system[32], path[1024], rel[1024], root[1024], stem[256], ext[32];
+	char system[32], esys[32], path[1024], rel[1024], root[1024], stem[256], ext[32];
 };
 
 static struct ren_ctx g_ren;
@@ -2676,7 +2676,7 @@ static void rename_cover_answer(struct ui *ui, int choice, void *user)
 {
 	(void)user;
 	if (choice == 0)
-		covers_start_one(ui, g_ren.system, g_ren.root, g_ren.path);
+		covers_start_one(ui, g_ren.esys, g_ren.root, g_ren.path);
 }
 
 static void rename_done(struct ui *ui, const char *text, bool ok, void *user)
@@ -2723,9 +2723,9 @@ static void rename_done(struct ui *ui, const char *text, bool ok, void *user)
 	snprintf(sub, sizeof(sub), "%s/media/covers", g_ren.root);
 	rename_by_stem(sub, g_ren.stem, name);
 	path_dirname(ui->cfg.data_dir, root, sizeof(root));
-	snprintf(sub, sizeof(sub), "%s/saves/%s", root, g_ren.system);
+	snprintf(sub, sizeof(sub), "%s/saves/%s", root, g_ren.esys);
 	nsaves += rename_by_stem(sub, g_ren.stem, name);
-	snprintf(sub, sizeof(sub), "%s/states/%s", root, g_ren.system);
+	snprintf(sub, sizeof(sub), "%s/states/%s", root, g_ren.esys);
 	nsaves += rename_by_stem(sub, g_ren.stem, name);
 	slash = strrchr(g_ren.rel, '/');
 	if (slash)
@@ -2762,6 +2762,8 @@ static void game_rename_ask(struct ui *ui, struct game *g)
 		return;
 	memset(&g_ren, 0, sizeof(g_ren));
 	strlcpy_(g_ren.system, g->system, sizeof(g_ren.system));
+	/* its saves and covers go by the system it launches as */
+	strlcpy_(g_ren.esys, systems_effective(g->system, g->path), sizeof(g_ren.esys));
 	strlcpy_(g_ren.path, g->path, sizeof(g_ren.path));
 	strlcpy_(g_ren.rel, g->rel, sizeof(g_ren.rel));
 	/* the system's ROM folder (the covers' parent): the path without rel */

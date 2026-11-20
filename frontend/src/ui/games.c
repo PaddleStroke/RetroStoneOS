@@ -1303,7 +1303,9 @@ struct gamedb *gamedb_open(const char *path)
 		}
 		if (nf < 2 || !*f[0] || !*f[1])
 			continue;
-		e = db_find(db, f[0], f[1], true);
+		/* doom, cavestory and native are one list now ("ports"): what was
+		 * kept for their games (favorites, play time...) is theirs still */
+		e = db_find(db, systems_is_ports_member(f[0]) ? "ports" : f[0], f[1], true);
 		e->favorite = nf > 2 && atoi(f[2]);
 		e->lastplayed = nf > 3 ? strtoll(f[3], NULL, 10) : 0;
 		e->playcount = nf > 4 ? atoi(f[4]) : 0;

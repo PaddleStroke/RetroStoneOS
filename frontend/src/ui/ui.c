@@ -465,13 +465,14 @@ bool ui_first_boot_busy(const struct ui *ui)
 /* ---------------------------------------------------------------- launching */
 const char *ui_game_core(struct ui *ui, const struct game *g, const char **name)
 {
+	const char *sys = systems_effective(g->system, g->path);
 	const struct core_info *cores[MAX_CORES_PER_SYSTEM];
 	int n = systems_cores_for_file(g->system, g->path, cores, MAX_CORES_PER_SYSTEM);
 	char key[64];
 	const char *want;
 	const struct core_info *c = NULL;
 
-	snprintf(key, sizeof(key), "core.%s", g->system);
+	snprintf(key, sizeof(key), "core.%s", sys);
 	want = g->core && *g->core ? g->core : settings_get(ui->settings, key, "");
 	for (int i = 0; i < n && want && *want; i++)
 		if (!strcmp(cores[i]->id, want))
@@ -507,12 +508,12 @@ static void fill_launch(struct ui *ui, const struct game *g, struct ui_launch *r
 
 	memset(req, 0, sizeof(*req));
 	req->rom_path = g->path;
-	req->system = g->system;
+	req->system = systems_effective(g->system, g->path);
 	req->core = core;
 	req->core_path = ci ? ci->library : "";
 	req->game_name = g->name;
 	req->bios_dir = ui->cfg.bios_dir;
-	snprintf(key, sizeof(key), "core.%s", g->system);
+	snprintf(key, sizeof(key), "core.%s", req->system);
 	sys_core = settings_get(ui->settings, key, "");
 	req->core_source = g->core && *g->core && !strcmp(g->core, core) ? "game" :
 			   sys_core && *sys_core && !strcmp(sys_core, core) ? "system" : "default";
@@ -621,7 +622,7 @@ static struct game *find_game(struct ui *ui, const char *system, const char *rom
 	for (int i = 0; i < ui->nsys; i++) {
 		struct sysent *se = &ui->sys[i];
 
-		if (se->is_collection || strcmp(se->name, system))
+		if (se->is_collection || strcmp(se->name, systems_is_ports_member(system) ? "ports" : system))
 			continue;
 		/* during a game (play time, settings from the game process) only
 		 * the lists already there: the loader is paused */

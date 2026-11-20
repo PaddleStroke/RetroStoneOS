@@ -183,6 +183,49 @@ static bool has_folder_alias(const struct sysdef *sd)
 	return false;
 }
 
+/* The one Ports entry (systems.c): the games of every folder it is made of,
+ * in one list: roms/ports, roms/doom, roms/cavestory and roms/native, also on
+ * the other disks. The games keep their folder (the scan cache, which is by
+ * system name, is not used here: these folders are small). Thread-safe. */
+static void load_ports(struct loader *L, struct lres *r)
+{
+	static const char *const folders[] = { "ports", "doom", "cavestory", "native" };
+	int64_t t0 = ui_now_us();
+
+	r->st.from_cache = true;
+	for (int d = -1; d < L->nlibs; d++) {
+		const char *roms = d < 0 ? L->roms_dir : L->lib_roms[d];
+
+		for (size_t i = 0; i < ARRAY_SIZE(folders); i++) {
+			char dir[1100];
+			struct gamelist *gl;
+			struct games_load_stats st;
+
+			snprintf(dir, sizeof(dir), "%s/%s", roms, folders[i]);
+			if (!dir_exists(dir))
+				continue;
+			gl = games_load("ports", dir, NULL, L->alt, &st);
+			r->st.read_us += st.read_us;
+			r->st.stat_us += st.stat_us;
+			r->st.parse_us += st.parse_us;
+			r->st.scan_us += st.scan_us;
+			r->st.xml_us += st.xml_us;
+			r->st.save_us += st.save_us;
+			r->st.ndirs += st.ndirs;
+			r->st.from_cache = false;
+			if (!gl)
+				continue;
+			if (!r->gl) {
+				r->gl = gl;
+				continue;
+			}
+			games_merge(r->gl, gl);
+			games_free(gl);
+		}
+	}
+	r->st.total_us = ui_now_us() - t0;
+}
+
 static struct lres *load_one(struct loader *L, int sidx)
 {
 	const struct sysdef *sd = systems_get(sidx);
@@ -193,6 +236,10 @@ static struct lres *load_one(struct loader *L, int sidx)
 	r->sidx = sidx;
 	if (!sd)
 		return r;
+	if (!strcmp(sd->name, "ports")) {
+		load_ports(L, r);
+		return r;
+	}
 	if (L->empty_mt[sidx] && !has_folder_alias(sd) && !L->nlibs) {
 		/* empty last time: its stamp (one stat() and one readdir:
 		 * games_dir_stamp) says whether it still is (and one more stat()
