@@ -1,0 +1,426 @@
+diff --git a/cmake/dependencies/linux.cmake b/cmake/dependencies/linux.cmake
+index 02301f13..8e231e1b 100644
+--- a/cmake/dependencies/linux.cmake
++++ b/cmake/dependencies/linux.cmake
+@@ -2,7 +2,10 @@
+ find_package(SDL2 REQUIRED)
+ target_link_libraries(ImGui PUBLIC SDL2::SDL2)
+ 
+-if (USE_OPENGLES)
++if (USE_GLES2)
++    target_link_libraries(ImGui PUBLIC GLESv2)
++    add_compile_definitions(IMGUI_IMPL_OPENGL_ES2)
++elseif (USE_OPENGLES)
+     target_link_libraries(ImGui PUBLIC ${OPENGL_GLESv2_LIBRARY})
+     add_compile_definitions(IMGUI_IMPL_OPENGL_ES3)
+ else()
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index db92a29a..1675a88e 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -8,6 +8,11 @@ set_property(TARGET libultraship PROPERTY C_STANDARD 11)
+ 
+ set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+ option(USE_OPENGLES "Enable GLES3" OFF)
++# OpenGL ES 2.0 (Mali-400 and other GLES2-only GPUs); implies USE_OPENGLES
++option(USE_GLES2 "Enable GLES2" OFF)
++if (USE_GLES2)
++    set(USE_OPENGLES ON)
++endif()
+ option(GFX_DEBUG_DISASSEMBLER "Enable libgfxd" OFF)
+ 
+ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+@@ -286,6 +291,7 @@ else()
+         $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=0>
+         $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=1>
+         $<$<BOOL:${USE_OPENGLES}>:USE_OPENGLES>
++        $<$<BOOL:${USE_GLES2}>:USE_GLES2>
+         $<$<BOOL:${GFX_DEBUG_DISASSEMBLER}>:GFX_DEBUG_DISASSEMBLER>
+     )
+ endif()
+diff --git a/src/debug/CrashHandler.cpp b/src/debug/CrashHandler.cpp
+index 5f2256ac..df5179a7 100644
+--- a/src/debug/CrashHandler.cpp
++++ b/src/debug/CrashHandler.cpp
+@@ -2,6 +2,9 @@
+ #include "utils/StringHelper.h"
+ #include "CrashHandler.h"
+ #include "Context.h"
++#ifndef _WIN32
++#include <unistd.h> // _exit
++#endif
+ 
+ #ifdef _WIN32
+ #include <windows.h>
+@@ -199,11 +202,11 @@ static void ErrorHandler(int sig, siginfo_t* sigInfo, void* data) {
+ 
+     Context::GetInstance()->GetLogger()->flush();
+     spdlog::shutdown();
+-    exit(1);
++    _exit(128 + sig);
+ }
+ 
+ static void ShutdownHandler(int sig, siginfo_t* sigInfo, void* data) {
+-    exit(1);
++    _exit(128 + sig);
+ }
+ 
+ #elif _WIN32
+diff --git a/src/graphic/Fast3D/backends/gfx_opengl.cpp b/src/graphic/Fast3D/backends/gfx_opengl.cpp
+index 097e2e86..4074598d 100644
+--- a/src/graphic/Fast3D/backends/gfx_opengl.cpp
++++ b/src/graphic/Fast3D/backends/gfx_opengl.cpp
+@@ -27,6 +27,49 @@
+ #include "../interpreter.h"
+ #include <public/bridge/consolevariablebridge.h>
+ 
++#include <cstring>
++
++#ifdef USE_GLES2
++/*
++ * OpenGL ES 2.0: no sized texture formats, no multisampling, no blits and no
++ * depth reads. Multisampling stays off (mMaxMsaaLevel 1), so the multisample
++ * calls below are never reached; CopyFramebuffer and GetPixelDepth have their
++ * own GLES2 versions. Depth: packed depth+stencil when the driver has
++ * GL_OES_packed_depth_stencil, else a 16-bit depth buffer.
++ */
++#define GL_RGB8 GL_RGB
++#define GL_RGBA8 GL_RGBA
++#define GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
++#define GL_DEPTH_STENCIL GL_DEPTH_STENCIL_OES
++#define GL_UNSIGNED_INT_24_8 GL_UNSIGNED_INT_24_8_OES
++#define GL_READ_FRAMEBUFFER GL_FRAMEBUFFER
++#define GL_DRAW_FRAMEBUFFER GL_FRAMEBUFFER
++#define glBlitFramebuffer(...) ((void)0)
++#define glReadBuffer(b) ((void)0)
++#define glRenderbufferStorageMultisample(target, samples, format, w, h) glRenderbufferStorage(target, format, w, h)
++static bool sPackedDepthStencil = true;
++#endif
++
++namespace Fast {
++static void RenderbufferDepthStorage(GLsizei width, GLsizei height) {
++#ifdef USE_GLES2
++    glRenderbufferStorage(GL_RENDERBUFFER, sPackedDepthStencil ? GL_DEPTH24_STENCIL8_OES : GL_DEPTH_COMPONENT16,
++                          width, height);
++#else
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
++#endif
++}
++
++static void FramebufferDepthAttach(GLuint rb) {
++#ifdef USE_GLES2
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rb);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sPackedDepthStencil ? rb : 0);
++#else
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rb);
++#endif
++}
++} // namespace Fast
++
+ namespace Fast {
+ int GfxRenderingAPIOGL::GetMaxTextureSize() {
+     GLint max_texture_size;
+@@ -273,13 +316,23 @@ std::string GfxRenderingAPIOGL::BuildFsShader(const CCFeatures& cc_features) {
+         { "attr", "in" },
+         { "opengles", false },
+         { "core_opengl", true },
++        { "gles2", false },
+         { "texture", "texture" },
+         { "vOutColor", "vOutColor" },
++#elif defined(USE_GLES2)
++        { "GLSL_VERSION", "#version 100\nprecision mediump float;" },
++        { "attr", "varying" },
++        { "opengles", false },
++        { "core_opengl", false },
++        { "gles2", true },
++        { "texture", "texture2D" },
++        { "vOutColor", "gl_FragColor" },
+ #elif defined(USE_OPENGLES)
+         { "GLSL_VERSION", "#version 300 es\nprecision mediump float;" },
+         { "attr", "in" },
+         { "opengles", true },
+         { "core_opengl", false },
++        { "gles2", false },
+         { "texture", "texture" },
+         { "vOutColor", "vOutColor" },
+ #else
+@@ -287,6 +340,7 @@ std::string GfxRenderingAPIOGL::BuildFsShader(const CCFeatures& cc_features) {
+         { "attr", "varying" },
+         { "opengles", false },
+         { "core_opengl", false },
++        { "gles2", false },
+         { "texture", "texture2D" },
+         { "vOutColor", "gl_FragColor" },
+ #endif
+@@ -336,6 +390,11 @@ static std::string BuildVsShader(const CCFeatures& cc_features) {
+                                      { "attr", "in" },
+                                      { "out", "out" },
+                                      { "opengles", false }
++#elif defined(USE_GLES2)
++                                     { "GLSL_VERSION", "#version 100" },
++                                     { "attr", "attribute" },
++                                     { "out", "varying" },
++                                     { "opengles", false }
+ #elif defined(USE_OPENGLES)
+                                      { "GLSL_VERSION", "#version 300 es" },
+                                      { "attr", "in" },
+@@ -389,9 +448,8 @@ ShaderProgram* GfxRenderingAPIOGL::CreateAndLoadNewShader(uint64_t shader_id0, u
+         GLint max_length = 0;
+         glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &max_length);
+         char error_log[1024];
+-        // fprintf(stderr, "Vertex shader compilation failed\n");
+-        glGetShaderInfoLog(vertex_shader, max_length, &max_length, &error_log[0]);
+-        // fprintf(stderr, "%s\n", &error_log[0]);
++        glGetShaderInfoLog(vertex_shader, sizeof(error_log), nullptr, error_log);
++        fprintf(stderr, "Vertex shader compilation failed:\n%s\n%s\n", error_log, vs_buf.c_str());
+         abort();
+     }
+ 
+@@ -403,9 +461,8 @@ ShaderProgram* GfxRenderingAPIOGL::CreateAndLoadNewShader(uint64_t shader_id0, u
+         GLint max_length = 0;
+         glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &max_length);
+         char error_log[1024];
+-        fprintf(stderr, "Fragment shader compilation failed\n");
+-        glGetShaderInfoLog(fragment_shader, max_length, &max_length, &error_log[0]);
+-        fprintf(stderr, "%s\n", &error_log[0]);
++        glGetShaderInfoLog(fragment_shader, sizeof(error_log), nullptr, error_log);
++        fprintf(stderr, "Fragment shader compilation failed:\n%s\n%s\n", error_log, fs_buf.c_str());
+         abort();
+     }
+ 
+@@ -541,7 +598,9 @@ void GfxRenderingAPIOGL::UploadTexture(const uint8_t* rgba32_buf, uint32_t width
+     textures[mCurrentTextureIds[mCurrentTile]].height = height;
+ }
+ 
+-#ifdef USE_OPENGLES
++#ifdef USE_GLES2
++#define GL_MIRROR_CLAMP_TO_EDGE GL_MIRRORED_REPEAT
++#elif defined(USE_OPENGLES)
+ #define GL_MIRROR_CLAMP_TO_EDGE 0x8743
+ #endif
+ 
+@@ -659,7 +718,16 @@ void GfxRenderingAPIOGL::Init() {
+     glGenBuffers(1, &mOpenglVbo);
+     glBindBuffer(GL_ARRAY_BUFFER, mOpenglVbo);
+ 
+-#if defined(__APPLE__) || defined(USE_OPENGLES)
++#ifdef USE_GLES2
++    {
++        const char* ext = (const char*)glGetString(GL_EXTENSIONS);
++
++        sPackedDepthStencil = ext != nullptr && strstr(ext, "GL_OES_packed_depth_stencil") != nullptr;
++        SPDLOG_INFO("OpenGL ES 2.0: {} ({}), depth buffer {}", (const char*)glGetString(GL_RENDERER),
++                    (const char*)glGetString(GL_VERSION), sPackedDepthStencil ? "24-bit + stencil" : "16-bit");
++    }
++#endif
++#if defined(__APPLE__) || (defined(USE_OPENGLES) && !defined(USE_GLES2))
+     glGenVertexArrays(1, &mOpenglVao);
+     glBindVertexArray(mOpenglVao);
+ #endif
+@@ -674,17 +742,21 @@ void GfxRenderingAPIOGL::Init() {
+ 
+     glGenRenderbuffers(1, &mPixelDepthRb);
+     glBindRenderbuffer(GL_RENDERBUFFER, mPixelDepthRb);
+-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1, 1);
++    RenderbufferDepthStorage(1, 1);
+     glBindRenderbuffer(GL_RENDERBUFFER, 0);
+ 
+     glGenFramebuffers(1, &mPixelDepthFb);
+     glBindFramebuffer(GL_FRAMEBUFFER, mPixelDepthFb);
+-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mPixelDepthRb);
++    FramebufferDepthAttach(mPixelDepthRb);
+     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+ 
+     mPixelDepthRbSize = 1;
+ 
++#ifdef USE_GLES2
++    mMaxMsaaLevel = 1;
++#else
+     glGetIntegerv(GL_MAX_SAMPLES, &mMaxMsaaLevel);
++#endif
+ }
+ 
+ void GfxRenderingAPIOGL::OnResize() {
+@@ -708,6 +780,10 @@ int GfxRenderingAPIOGL::CreateFramebuffer() {
+     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++#ifdef USE_GLES2
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++#endif
+     glBindTexture(GL_TEXTURE_2D, 0);
+ 
+     GLuint clrbufMsaa;
+@@ -716,7 +792,7 @@ int GfxRenderingAPIOGL::CreateFramebuffer() {
+     GLuint rbo;
+     glGenRenderbuffers(1, &rbo);
+     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1, 1);
++    RenderbufferDepthStorage(1, 1);
+     glBindRenderbuffer(GL_RENDERBUFFER, 0);
+ 
+     GLuint fbo;
+@@ -763,7 +839,7 @@ void GfxRenderingAPIOGL::UpdateFramebufferParameters(int fb_id, uint32_t width,
+             (fb.width != width || fb.height != height || fb.msaa_level != msaa_level || !fb.has_depth_buffer)) {
+             glBindRenderbuffer(GL_RENDERBUFFER, fb.rbo);
+             if (msaa_level <= 1) {
+-                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
++                RenderbufferDepthStorage(width, height);
+             } else {
+                 glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa_level, GL_DEPTH24_STENCIL8, width, height);
+             }
+@@ -771,9 +847,9 @@ void GfxRenderingAPIOGL::UpdateFramebufferParameters(int fb_id, uint32_t width,
+         }
+ 
+         if (!fb.has_depth_buffer && has_depth_buffer) {
+-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb.rbo);
++            FramebufferDepthAttach(fb.rbo);
+         } else if (fb.has_depth_buffer && !has_depth_buffer) {
+-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
++            FramebufferDepthAttach(0);
+         }
+     }
+ 
+@@ -838,6 +914,34 @@ void GfxRenderingAPIOGL::CopyFramebuffer(int fb_dst_id, int fb_src_id, int srcX0
+     FramebufferOGL src = mFrameBuffers[fb_src_id];
+     const FramebufferOGL& dst = mFrameBuffers[fb_dst_id];
+ 
++#ifdef USE_GLES2
++    // No blits: copy into the destination's colour texture, unscaled and in the
++    // same orientation only (G_COPYFB effects; Starship does not use them).
++    if (fb_dst_id == 0 || srcX1 - srcX0 != dstX1 - dstX0 || srcY1 - srcY0 != dstY1 - dstY0 ||
++        src.invertY != dst.invertY) {
++        static bool warned;
++        if (!warned) {
++            SPDLOG_WARN("GLES2: scaled, flipped or on-screen framebuffer copies are not supported");
++            warned = true;
++        }
++        return;
++    }
++    // OpenGL's origin is the bottom left, as in the blit path below
++    if (!src.invertY) {
++        int h = srcY1 - srcY0;
++        srcY1 = src.height - srcY0;
++        srcY0 = srcY1 - h;
++    }
++    glDisable(GL_SCISSOR_TEST);
++    glBindFramebuffer(GL_FRAMEBUFFER, src.fbo);
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_2D, dst.clrbuf);
++    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, dstX0, dstY0, srcX0, srcY0, srcX1 - srcX0, srcY1 - srcY0);
++    glBindFramebuffer(GL_FRAMEBUFFER, mFrameBuffers[mCurrentFrameBuffer].fbo);
++    glEnable(GL_SCISSOR_TEST);
++    return;
++#endif
++
+     // Adjust y values for non-inverted source frame buffers because opengl uses bottom left for origin
+     if (!src.invertY) {
+         int temp = srcY1 - srcY0;
+@@ -909,6 +1013,14 @@ std::unordered_map<std::pair<float, float>, uint16_t, hash_pair_ff>
+ GfxRenderingAPIOGL::GetPixelDepth(int fb_id, const std::set<std::pair<float, float>>& coordinates) {
+     std::unordered_map<std::pair<float, float>, uint16_t, hash_pair_ff> res;
+ 
++#ifdef USE_GLES2
++    // GLES2 cannot read the depth buffer: every point is reported at the far plane
++    for (const auto& coord : coordinates) {
++        res.emplace(coord, 0xFFFC);
++    }
++    return res;
++#endif
++
+     FramebufferOGL& fb = mFrameBuffers[fb_id];
+ 
+     // When looking up one value and the framebuffer is single-sampled, we can read pixels directly
+@@ -930,8 +1042,8 @@ GfxRenderingAPIOGL::GetPixelDepth(int fb_id, const std::set<std::pair<float, flo
+             glDeleteRenderbuffers(1, &mPixelDepthRb);
+             glGenRenderbuffers(1, &mPixelDepthRb);
+             glBindRenderbuffer(GL_RENDERBUFFER, mPixelDepthRb);
+-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, coordinates.size(), 1);
+-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mPixelDepthRb);
++            RenderbufferDepthStorage(coordinates.size(), 1);
++            FramebufferDepthAttach(mPixelDepthRb);
+             glBindRenderbuffer(GL_RENDERBUFFER, 0);
+ 
+             mPixelDepthRbSize = coordinates.size();
+diff --git a/src/graphic/Fast3D/backends/gfx_opengl.h b/src/graphic/Fast3D/backends/gfx_opengl.h
+index d5fd9002..a8889618 100644
+--- a/src/graphic/Fast3D/backends/gfx_opengl.h
++++ b/src/graphic/Fast3D/backends/gfx_opengl.h
+@@ -16,6 +16,10 @@
+ #elif __APPLE__
+ #include <SDL2/SDL.h>
+ #include <GL/glew.h>
++#elif defined(USE_GLES2)
++#include <SDL2/SDL.h>
++#include <GLES2/gl2.h>
++#include <GLES2/gl2ext.h>
+ #elif USE_OPENGLES
+ #include <SDL2/SDL.h>
+ #include <GLES3/gl3.h>
+diff --git a/src/graphic/Fast3D/backends/gfx_sdl2.cpp b/src/graphic/Fast3D/backends/gfx_sdl2.cpp
+index 1387e280..6a62bb8b 100644
+--- a/src/graphic/Fast3D/backends/gfx_sdl2.cpp
++++ b/src/graphic/Fast3D/backends/gfx_sdl2.cpp
+@@ -343,6 +343,13 @@ void GfxWindowBackendSDL2::Init(const char* gameName, const char* gfxApiName, bo
+     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+ #endif
++#if defined(USE_GLES2)
++    // an OpenGL ES 2.0 context (without it, Mesa drivers such as lima give
++    // desktop OpenGL 2.1, whose GLSL 1.20 compiles none of our shaders)
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
++#endif
+ 
+ #ifdef _WIN32
+     // Use high-resolution mTimer by default on Windows 10 (so that NtSetTimerResolution (...) hacks are not needed)
+diff --git a/src/graphic/Fast3D/shaders/opengl/default.shader.fs b/src/graphic/Fast3D/shaders/opengl/default.shader.fs
+index 404caae6..f9b5dd43 100644
+--- a/src/graphic/Fast3D/shaders/opengl/default.shader.fs
++++ b/src/graphic/Fast3D/shaders/opengl/default.shader.fs
+@@ -53,14 +53,18 @@ uniform int texture_filtering[2];
+ 
+ float random(in vec3 value) {
+     float random = dot(sin(value), vec3(12.9898, 78.233, 37.719));
++@if(gles2)
++    return fract(sin(random) * 43758.5453);
++@else
+     return fract(sin(random) * 143758.5453);
++@end
+ }
+ 
+ vec4 fromLinear(vec4 linearRGB){
+     bvec3 cutoff = lessThan(linearRGB.rgb, vec3(0.0031308));
+     vec3 higher = vec3(1.055)*pow(linearRGB.rgb, vec3(1.0/2.4)) - vec3(0.055);
+     vec3 lower = linearRGB.rgb * vec3(12.92);
+-    return vec4(mix(higher, lower, cutoff), linearRGB.a);
++    return vec4(mix(higher, lower, vec3(cutoff)), linearRGB.a);
+ }
+ 
+ vec4 filter3point(in sampler2D tex, in vec2 texCoord, in vec2 texSize) {
+@@ -106,7 +110,9 @@ void main() {
+             vec4 texVal@{i} = hookTexture2D(@{i}, uTex@{i}, vTexCoordAdj@{i}, texSize@{i});
+ 
+             @if(o_masks[i])
+-                @if(opengles) 
++                @if(gles2)
++                    vec2 maskSize@{i} = texSize@{i};
++                @elseif(opengles)
+                     vec2 maskSize@{i} = vec2(textureSize(uTexMask@{i}, 0));
+                 @else 
+                     vec2 maskSize@{i} = textureSize(uTexMask@{i}, 0);
+diff --git a/src/window/gui/Gui.cpp b/src/window/gui/Gui.cpp
+index 953d4514..9df16003 100644
+--- a/src/window/gui/Gui.cpp
++++ b/src/window/gui/Gui.cpp
+@@ -220,6 +220,8 @@ void Gui::ImGuiBackendInit() {
+         case WindowBackend::FAST3D_SDL_OPENGL:
+ #ifdef __APPLE__
+             ImGui_ImplOpenGL3_Init("#version 410 core");
++#elif defined(USE_GLES2)
++            ImGui_ImplOpenGL3_Init("#version 100");
+ #elif USE_OPENGLES
+             ImGui_ImplOpenGL3_Init("#version 300 es");
+ #else
