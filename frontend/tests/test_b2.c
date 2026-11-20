@@ -56,8 +56,10 @@ static void test_systems(const char *cores)
 		int n = systems_cores_for(nw[i].name, cs, MAX_CORES_PER_SYSTEM);
 
 		CHECK(sd && !strcmp(sd->fullname, nw[i].full) && sd->maker[0] && sd->year > 1900 && n > 0 &&
-		      !strcmp(cs[0]->id, nw[i].core) && pos(nw[i].name) >= 0,
-		      "%s: \"%s\" (%s, %d), default core %s, in the carousel at %d", nw[i].name, sd ? sd->fullname : "?",
+		      !strcmp(cs[0]->id, nw[i].core) &&
+		      /* Doom and Cave Story are listed inside the one Ports entry */
+		      (systems_is_ports_member(nw[i].name) ? pos(nw[i].name) < 0 : pos(nw[i].name) >= 0),
+		      "%s: \"%s\" (%s, %d), default core %s, carousel position %d", nw[i].name, sd ? sd->fullname : "?",
 		      sd ? sd->maker : "?", sd ? sd->year : 0, n ? cs[0]->id : "none", pos(nw[i].name));
 	}
 	for (int i = 0; i < systems_count(); i++)
@@ -69,8 +71,8 @@ static void test_systems(const char *cores)
 	      pos("amstradcpc") < pos("dos") && pos("dos") < pos("scummvm") && pos("c64") > pos("coleco") &&
 	      pos("scummvm") < pos("arcade"),
 	      "the computers together (C64, Spectrum, MSX, CPC, then DOS and ScummVM), before the arcade systems");
-	CHECK(pos("pico8") > pos("neocd") && pos("doom") == pos("pico8") + 1 && pos("cavestory") == pos("doom") + 1,
-	      "PICO-8, then the ports (Doom, Cave Story), after the arcade systems");
+	CHECK(pos("pico8") > pos("neocd") && pos("ports") == pos("pico8") + 1,
+	      "PICO-8, then the one Ports entry (Doom, Cave Story, native games), after the arcade systems");
 	CHECK(systems_find("dos")->theme[1] && !strcmp(systems_find("dos")->theme[1], "pc") &&
 	      !strcmp(systems_find("doom")->theme[1], "ports") && !strcmp(systems_find("supergrafx")->theme[2], "pcengine"),
 	      "theme folders: dos -> pc, doom -> ports, supergrafx -> pcengine (sets without their own)");
