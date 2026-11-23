@@ -96,7 +96,9 @@ BR2_PACKAGE_WPA_SUPPLICANT=y
 BR2_PACKAGE_WPA_SUPPLICANT_CLI=y
 BR2_PACKAGE_BLUEZ5_UTILS=y
 BR2_PACKAGE_BLUEZ5_UTILS_CLIENT=y
+BR2_PACKAGE_BLUEZ5_UTILS_PLUGINS_AUDIO=y
 BR2_PACKAGE_BLUEZ5_UTILS_PLUGINS_HID=y
+BR2_PACKAGE_BLUEZ_ALSA=y
 
 # Root filesystem (one A/B slot): ext4, mounted read-only, kernel + dtb +
 # boot.scr in /boot. 384 MiB = the slot size in genimage.cfg.

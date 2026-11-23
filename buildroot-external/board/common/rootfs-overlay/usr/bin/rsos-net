@@ -57,6 +57,7 @@ ETH_MODULES=$RSOS_BOARD_ETH_MODULES
 BT_MODULE=${RSOS_BOARD_BT_MODULE:-hci_uart}
 BT_HCI=hci0
 BLUETOOTHD=/usr/libexec/bluetooth/bluetoothd
+BLUEALSA_BIN=/usr/bin/bluealsa
 BT_STORE=/data/rsos/bluetooth.img
 BT_STORE_MNT=/var/lib/bluetooth
 
@@ -278,6 +279,12 @@ bt_on() {
 		"$BLUETOOTHD" -n > /dev/null 2>&1 9>&- &
 		echo $! > "$RUN_DIR/bluetoothd.pid"
 	fi
+	# Bluetooth headphones: the bluealsa daemon serves the "bluealsa" ALSA PCM (A2DP
+	# source only: no headset / hands-free). It waits for bluetoothd itself.
+	if [ -x "$BLUEALSA_BIN" ] && [ ! -f "$RUN_DIR/bluealsa.pid" ]; then
+		"$BLUEALSA_BIN" -p a2dp-source > /dev/null 2>&1 9>&- &
+		echo $! > "$RUN_DIR/bluealsa.pid"
+	fi
 }
 
 # BlueZ keeps its pairings in /var/lib/bluetooth/<adapter>/<device>/, with
@@ -324,6 +331,7 @@ bt_store_umount() {
 }
 
 bt_off() {
+	kill_pidfile "$RUN_DIR/bluealsa.pid"
 	kill_pidfile "$RUN_DIR/bluetoothd.pid"
 	# Let bluetoothd write its state and exit before the store goes away.
 	i=0

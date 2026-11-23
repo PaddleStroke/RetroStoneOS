@@ -25,6 +25,8 @@ static struct {
 	int fade_in;            /* frames left in the fade-in ramp */
 	int16_t last_l, last_r; /* last frame written (fade-out start) */
 	bool paused;
+	bool bt;                /* the stream goes to Bluetooth headphones */
+	bool lost;              /* ... and the sink vanished */
 	struct audio_stats st;
 	char dev[64];
 } A = { .latency_ms = 64 };
@@ -34,6 +36,7 @@ void audio_config_defaults(struct audio_config *cfg)
 	memset(cfg, 0, sizeof(*cfg));
 	cfg->latency_ms = 64;
 	cfg->periods = 4;
+	cfg->latency_bt_ms = 120;
 }
 
 static bool name_has(const char *s, const char *sub)
@@ -146,23 +149,45 @@ int audio_open(const struct audio_config *cfg, enum audio_output out, int prefil
 	if (A.cfg.latency_ms > 0 && A.latency_ms < A.cfg.latency_ms)
 		A.latency_ms = A.cfg.latency_ms;
 	A.out = out;
-	dev = audio_pick_device(&A.cfg, out);
-	if (!dev) {
-		hlog(HLOG_WARN, "audio: no ALSA card for the %s", out == AUDIO_OUT_HDMI ? "HDMI output" : "LCD");
-		return -ENODEV;
+	A.bt = A.lost = false;
+	/* Bluetooth headphones first: bluez-alsa fails the open when no sink
+	 * is connected (no bluealsa, no headphones), then the card is used. */
+	pcm = NULL;
+	if (A.cfg.device_bt && *A.cfg.device_bt &&
+	    snd_pcm_open(&pcm, A.cfg.device_bt, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK) >= 0) {
+		int lat = A.cfg.latency_bt_ms > A.latency_ms ? A.cfg.latency_bt_ms : A.latency_ms;
+
+		if (setup(pcm, lat, A.cfg.periods) >= 0) {
+			A.bt = true;
+			dev = A.cfg.device_bt;
+			prefill_ms = lat / 2;
+		} else {
+			hlog(HLOG_WARN, "audio: cannot configure %s, using the card", A.cfg.device_bt);
+			snd_pcm_close(pcm);
+			pcm = NULL;
+		}
+	} else {
+		pcm = NULL;
+	}
+	if (!pcm) {
+		dev = audio_pick_device(&A.cfg, out);
+		if (!dev) {
+			hlog(HLOG_WARN, "audio: no ALSA card for the %s", out == AUDIO_OUT_HDMI ? "HDMI output" : "LCD");
+			return -ENODEV;
+		}
+		err = snd_pcm_open(&pcm, dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
+		if (err < 0) {
+			hlog(HLOG_WARN, "audio: cannot open %s: %s", dev, snd_strerror(err));
+			return err;
+		}
+		err = setup(pcm, A.latency_ms, A.cfg.periods);
+		if (err < 0) {
+			hlog(HLOG_WARN, "audio: cannot configure %s: %s", dev, snd_strerror(err));
+			snd_pcm_close(pcm);
+			return err;
+		}
 	}
 	hstrlcpy(A.dev, dev, sizeof(A.dev));
-	err = snd_pcm_open(&pcm, dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
-	if (err < 0) {
-		hlog(HLOG_WARN, "audio: cannot open %s: %s", dev, snd_strerror(err));
-		return err;
-	}
-	err = setup(pcm, A.latency_ms, A.cfg.periods);
-	if (err < 0) {
-		hlog(HLOG_WARN, "audio: cannot configure %s: %s", dev, snd_strerror(err));
-		snd_pcm_close(pcm);
-		return err;
-	}
 	A.pcm = pcm;
 	A.paused = false;
 	A.st.opens++;
@@ -264,6 +289,11 @@ static int write_raw(const int16_t *frames, int n)
 		if (w == -EPIPE || w == -ESTRPIPE) {
 			recover((int)w);
 			continue;
+		}
+		if (w == -ENODEV && A.bt) {
+			/* the headphones are gone: the host reopens on the card */
+			A.lost = true;
+			break;
 		}
 		if (w < 0) {
 			hlog_once("alsa-write", "audio: write error %s", snd_strerror((int)w));
@@ -392,6 +422,16 @@ void audio_pause(bool pause)
 bool audio_paused(void)
 {
 	return A.paused;
+}
+
+bool audio_is_bluetooth(void)
+{
+	return A.pcm && A.bt;
+}
+
+bool audio_lost(void)
+{
+	return A.pcm && A.lost;
 }
 
 void audio_get_stats(struct audio_stats *st)

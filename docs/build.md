@@ -779,10 +779,20 @@ helper (it never blocks the menu), which drives `bluetoothctl`
 non-interactively:
 
 ```
-rsos-bt list FILE                          # MAC<TAB>connected|paired|found<TAB>name
+rsos-bt list FILE                          # MAC<TAB>connected|paired|found<TAB>name[<TAB>extras]
 rsos-bt scan on|off                        # background discovery while the screen is open
 rsos-bt pair|connect|disconnect|forget MAC
 ```
+
+A connected pad that reports its battery through BlueZ (`Battery Percentage`
+in `bluetoothctl info`) gets the extra `battery=85` and the list shows
+"connected, 85%". The optional 4th field is a comma-separated list of
+`key=value` extras (`MAC<TAB>connected<TAB>name<TAB>battery=85`); the frontend
+ignores keys it does not know, so more can be added; no extras, no 4th field.
+If pairing without a PIN fails
+(`AuthenticationFailed`, or a PIN / passkey request: e.g. a PlayStation 3 pad,
+which must be paired through a USB cable first) the player gets a message that
+says so instead of the generic "put it in pairing mode".
 
 Paired devices are **trusted**, so they come back by themselves: bluetoothd
 puts bonded classic devices on the controller's accept list (page scan for
@@ -800,7 +810,7 @@ it like a USB pad. Tests: `board/common/tests/bt-test.sh` (rsos-bt against a
 stub `bluetoothctl`) and `make check-ui` (the screen with
 `frontend/tests/fake-rsos-bt.sh`). TODO(hw): pairing and reconnecting a
 classic pad and an LE pad (the Stadia controller) on the RetroStone2's
-BCM20710.
+BCM20710. Headphones (A2DP through bluez-alsa) are in [bluetooth-audio.md](bluetooth-audio.md).
 
 **SMB share `\\RETROSTONE`**: `ksmbd.ko` (module, `CONFIG_SMB_SERVER=m`) and
 ksmbd-tools are in the image but **never started at boot** and **not wired
