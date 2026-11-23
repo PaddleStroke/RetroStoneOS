@@ -5,7 +5,8 @@
 # board/retrostone2/patches/uboot/uboot.hash.
 #   scripts/ci/uboot-host-tools.sh <bin directory>
 # The tarball is taken from $BR2_DL_DIR/uboot/ when it is there, else
-# downloaded from ftp.denx.de.
+# downloaded from ftp.denx.de, or from Buildroot's mirror (sources.buildroot.net,
+# Buildroot's own BR2_BACKUP_SITE) when ftp.denx.de cannot be reached.
 set -eu
 export LC_ALL=C
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -23,7 +24,9 @@ mkdir -p "$W" "$DEST"
 SRC=${BR2_DL_DIR:-$W}/uboot/$T
 [ -f "$SRC" ] || SRC=$W/$T
 if [ ! -f "$SRC" ]; then
-	wget -q -O "$SRC.part" "https://ftp.denx.de/pub/u-boot/$T"
+	wget -q -T 60 -t 2 -O "$SRC.part" "https://ftp.denx.de/pub/u-boot/$T" ||
+		wget -q -T 60 -t 2 -O "$SRC.part" "https://sources.buildroot.net/uboot/$T" ||
+		{ echo "uboot-host-tools: cannot download $T" >&2; exit 1; }
 	mv "$SRC.part" "$SRC"
 fi
 echo "$SHA  $SRC" | sha256sum -c -

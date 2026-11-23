@@ -16,7 +16,13 @@ Bluetooth on) pairs, connects and forgets pads; paired pads reconnect by themsel
 held down on the RetroStone2** (issue #10): the face buttons and the D-pad are now read every 5 ms like the
 shoulder buttons; with interrupts, a release could be lost in the kernel, leaving the button held until its next
 press. **Adafruit PiGRRL 2** (issue #6): up/down, L/Select and R/Start were swapped, and the boot logo now fits the
-320x240 screen.
+320x240 screen. **Bluetooth extras** (contributed by KurdtNervanna): a connected pad shows its battery level
+("connected, 85%"), and a pad that needs a PIN or a USB cable to pair (a PlayStation 3 pad, for example) now says
+so. A Bluetooth or USB **keyboard** works in the menus and for the in-game hotkeys; a mouse or trackpad no longer
+takes a player port as if it were a gamepad. **Bluetooth headphones (experimental, RetroStone2)**: headphones
+can be paired in the same screen and the game sound goes to them; this is untested on real headphones, the sound
+arrives a little late (A2DP), and the volume wheel does not change their volume yet. `audio_bluetooth = false` in
+the settings keeps the sound on the speaker.
 
 **In RetroStoneOS 0.1.4**: Import from USB and the network upload page recognise every system's folder: the
 WonderSwan, Neo Geo Pocket, Atari 7800, Lynx, ColecoVision, MSX, PC Engine CD and Neo Geo CD folders were reported
